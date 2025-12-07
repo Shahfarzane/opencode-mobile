@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
+## [1.0.6] - 2025-12-08
+
+- Enhance shell environment detection
+
+
 ## [1.0.5] - 2025-12-07
 
 - Fixed "Load older messages" incorrectly scrolling to bottom
