@@ -34,11 +34,32 @@ const HINT_DELAY_MS = 30000;
 export function OnboardingScreen({ onCliAvailable }: OnboardingScreenProps) {
   const [copied, setCopied] = React.useState(false);
   const [showHint, setShowHint] = React.useState(false);
+  const [isDesktopApp, setIsDesktopApp] = React.useState(false);
 
   React.useEffect(() => {
     const timer = setTimeout(() => setShowHint(true), HINT_DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
+
+  React.useEffect(() => {
+    setIsDesktopApp(typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined');
+  }, []);
+
+  const handleDragStart = React.useCallback(async (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea, code')) {
+      return;
+    }
+    if (e.button !== 0) return;
+    if (isDesktopApp) {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const window = getCurrentWindow();
+        await window.startDragging();
+      } catch (error) {
+        console.error('Failed to start window dragging:', error);
+      }
+    }
+  }, [isDesktopApp]);
 
   const checkCliAvailability = React.useCallback(async (): Promise<boolean> => {
     try {
@@ -76,7 +97,10 @@ export function OnboardingScreen({ onCliAvailable }: OnboardingScreenProps) {
   }, [checkCliAvailability, onCliAvailable]);
 
   return (
-    <div className="h-full flex items-center justify-center bg-transparent p-8 relative">
+    <div
+      className="h-full flex items-center justify-center bg-transparent p-8 relative cursor-default select-none"
+      onMouseDown={handleDragStart}
+    >
       <div className="w-full space-y-4 text-center">
         <div className="space-y-4">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
