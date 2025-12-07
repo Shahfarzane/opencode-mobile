@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
+## [1.0.8] - 2025-12-08
+
+- Added fallback detection for OpenCode CLI in ~/.opencode/bin
+- Added window focus after app restart/update
+- Adapted traffic lights position and corner radius for older macOS versions
+
+
 ## [1.0.7] - 2025-12-08
 
 - Optimized Opencode binary detection
