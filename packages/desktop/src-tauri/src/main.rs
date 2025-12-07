@@ -230,6 +230,29 @@ fn get_macos_major_version() -> isize {
 }
 
 #[cfg(target_os = "macos")]
+fn adjust_traffic_lights_position<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>, x: f64, y: f64) {
+    use objc2::runtime::AnyObject;
+    use objc2::msg_send;
+    use objc2_foundation::{NSRect, NSPoint};
+
+    if let Ok(ns_window) = window.ns_window() {
+        unsafe {
+            let ns_window: *mut AnyObject = ns_window.cast();
+            let close_button: *mut AnyObject = msg_send![ns_window, standardWindowButton: 0usize];
+
+            if !close_button.is_null() {
+                let superview: *mut AnyObject = msg_send![close_button, superview];
+                if !superview.is_null() {
+                    let frame: NSRect = msg_send![superview, frame];
+                    let new_frame = NSRect::new(NSPoint::new(x, y), frame.size);
+                    let _: () = msg_send![superview, setFrame: new_frame];
+                }
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
 fn prevent_app_nap() {
     use objc2_foundation::{NSActivityOptions, NSProcessInfo, NSString};
 
@@ -279,34 +302,20 @@ fn main() {
             if let Some(window) = app.get_webview_window("main") {
                 #[cfg(target_os = "macos")]
                 {
+                    let macos_version = get_macos_major_version();
+                    info!("[macos] Detected macOS version: {}", macos_version);
+
+                    let corner_radius = if macos_version >= 26 { 24.0 } else { 10.0 };
                     if let Err(error) =
-                        apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, Some(24.0))
+                        apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, Some(corner_radius))
                     {
                         warn!("[desktop:vibrancy] Failed to apply macOS vibrancy: {}", error);
                     } else {
-                        info!("[desktop:vibrancy] Applied macOS Sidebar vibrancy to main window");
+                        info!("[desktop:vibrancy] Applied macOS Sidebar vibrancy with radius {}", corner_radius);
                     }
 
-                    let macos_version = get_macos_major_version();
-                    info!("[macos] Detected macOS version: {}", macos_version);
                     if macos_version < 26 {
-                        use objc::{msg_send, sel, sel_impl, runtime::Object};
-
-                        if let Ok(ns_window) = window.ns_window() {
-                            unsafe {
-                                let ns_window = ns_window.cast::<Object>();
-                                let close_button: *mut Object = msg_send![ns_window, standardWindowButton: 0u64];
-
-                                if !close_button.is_null() {
-                                    let superview: *mut Object = msg_send![close_button, superview];
-                                    if !superview.is_null() {
-                                        let frame: ((f64, f64), (f64, f64)) = msg_send![superview, frame];
-                                        let new_frame = ((frame.0.0, frame.0.1 - 6.0), frame.1);
-                                        let _: () = msg_send![superview, setFrame: new_frame];
-                                    }
-                                }
-                            }
-                        }
+                        adjust_traffic_lights_position(&window, 17.0, 20.0);
                     }
                 }
 
