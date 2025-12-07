@@ -287,6 +287,7 @@ fn main() {
                 }
 
                 let _ = window.show();
+                let _ = window.set_focus();
             }
 
             let runtime = DesktopRuntime::initialize_sync()?;
