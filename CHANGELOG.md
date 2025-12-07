@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
+## [1.0.7] - 2025-12-08
+
+- Optimized Opencode binary detection
+- Adjusted app update experience
+
+
 ## [1.0.6] - 2025-12-08
 
 - Enhance shell environment detection
