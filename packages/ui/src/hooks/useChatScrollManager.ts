@@ -106,6 +106,8 @@ export const useChatScrollManager = ({
     const lastScrolledAnchorIdRef = React.useRef<string | null>(null);
     const lastSessionIdRef = React.useRef<string | null>(null);
     const lastMessageCountRef = React.useRef<number>(sessionMessages.length);
+    const lastFirstMessageIdRef = React.useRef<string | null>(sessionMessages.length > 0 ? getMessageId(sessionMessages[0]) : null);
+    const lastLastMessageIdRef = React.useRef<string | null>(sessionMessages.length > 0 ? getMessageId(sessionMessages[sessionMessages.length - 1]) : null);
     const spacerHeightRef = React.useRef(0);
 
     const viewportHeightRef = React.useRef<number>(0);
@@ -175,7 +177,6 @@ export const useChatScrollManager = ({
         const container = scrollRef.current;
 
         if (!container || !anchorIdRef.current) {
-
             return;
         }
 
@@ -246,7 +247,6 @@ export const useChatScrollManager = ({
     }, [scrollEngine]);
 
     const scrollToNewAnchor = React.useCallback((messageId: string) => {
-
         if (lastScrolledAnchorIdRef.current === messageId) {
             return;
         }
@@ -366,6 +366,8 @@ export const useChatScrollManager = ({
             lastSessionIdRef.current = currentSessionId;
             MessageFreshnessDetector.getInstance().recordSessionStart(currentSessionId);
             lastMessageCountRef.current = sessionMessages.length;
+            lastFirstMessageIdRef.current = sessionMessages.length > 0 ? getMessageId(sessionMessages[0]) : null;
+            lastLastMessageIdRef.current = sessionMessages.length > 0 ? getMessageId(sessionMessages[sessionMessages.length - 1]) : null;
             lastScrolledAnchorIdRef.current = null;
 
             anchorIdRef.current = null;
@@ -381,6 +383,8 @@ export const useChatScrollManager = ({
 
         if (isSyncing) {
             lastMessageCountRef.current = sessionMessages.length;
+            lastFirstMessageIdRef.current = sessionMessages.length > 0 ? getMessageId(sessionMessages[0]) : null;
+            lastLastMessageIdRef.current = sessionMessages.length > 0 ? getMessageId(sessionMessages[sessionMessages.length - 1]) : null;
             return;
         }
 
@@ -392,14 +396,31 @@ export const useChatScrollManager = ({
         const nextCount = sessionMessages.length;
 
         if (nextCount > previousCount && previousCount > 0) {
+            const addedCount = nextCount - previousCount;
 
-            const previousLastId = getMessageId(sessionMessages[previousCount - 1]);
+            const previousFirstId = lastFirstMessageIdRef.current;
+            const newFirstId = getMessageId(sessionMessages[0]);
+            const newLastId = getMessageId(sessionMessages[nextCount - 1]);
+            const previousLastId = lastLastMessageIdRef.current;
 
-            const wasAppended = previousLastId !== null &&
-                 getMessageId(sessionMessages[Math.min(previousCount - 1, nextCount - 1)]) === previousLastId;
+            const firstIdChanged = previousFirstId !== null && newFirstId !== previousFirstId;
+            const lastIdChanged = previousLastId !== null && newLastId !== previousLastId;
+
+            const wasPrepended = firstIdChanged && !lastIdChanged;
+            const wasAppended = lastIdChanged && !firstIdChanged;
+
+            if (wasPrepended) {
+                anchorIdRef.current = null;
+                hasAnchoredOnceRef.current = false;
+                setAnchorId(null);
+                updateSpacerHeight(0);
+                lastMessageCountRef.current = nextCount;
+                lastFirstMessageIdRef.current = newFirstId;
+                lastLastMessageIdRef.current = newLastId;
+                return;
+            }
 
             if (wasAppended) {
-
                 const appendedMessages = sessionMessages.slice(previousCount, nextCount);
                 const newUserMessage = appendedMessages.find(isUserMessage);
 
@@ -411,16 +432,14 @@ export const useChatScrollManager = ({
                         scrollToNewAnchor(newAnchorId);
                     }
                 } else {
-
                     refreshSpacer();
                 }
-            } else {
-
-                refreshSpacer();
             }
         }
 
         lastMessageCountRef.current = nextCount;
+        lastFirstMessageIdRef.current = sessionMessages.length > 0 ? getMessageId(sessionMessages[0]) : null;
+        lastLastMessageIdRef.current = sessionMessages.length > 0 ? getMessageId(sessionMessages[sessionMessages.length - 1]) : null;
     }, [currentSessionId, isSyncing, refreshSpacer, scrollToNewAnchor, sessionMessages]);
 
     React.useEffect(() => {
