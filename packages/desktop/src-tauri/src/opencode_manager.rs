@@ -505,16 +505,23 @@ fn resolve_opencode_binary() -> Option<String> {
         return None;
     }
 
-    // Check explicit override
     if let Ok(value) = std::env::var("OPENCODE_BINARY") {
         if !value.is_empty() && Path::new(&value).exists() {
-            info!("[desktop:opencode] using binary from OPENCODE_BINARY: {}", value);
+            info!("[desktop:opencode] using binary from OPENCODE_BINARY env: {}", value);
             return Some(value);
         }
     }
 
-    // Use login shell to get full PATH (app bundles have limited PATH)
-    if let Ok(login_path) = detect_login_shell_path() {
+    let shell_env = detect_shell_env();
+
+    if let Some(ref binary) = shell_env.opencode_binary {
+        if Path::new(binary).exists() {
+            info!("[desktop:opencode] using binary from shell OPENCODE_BINARY: {}", binary);
+            return Some(binary.clone());
+        }
+    }
+
+    if let Some(ref login_path) = shell_env.path {
         for dir in login_path.split(':') {
             let candidate = format!("{}/opencode", dir);
             if Path::new(&candidate).exists() {
@@ -552,23 +559,109 @@ fn merge_paths(login_path: &str, current: &str) -> String {
     segments.join(":")
 }
 
-fn detect_login_shell_path() -> Result<String> {
+#[derive(Default)]
+struct ShellEnv {
+    path: Option<String>,
+    opencode_binary: Option<String>,
+}
+
+#[cfg(target_os = "macos")]
+fn get_user_shell() -> Option<String> {
+    use std::process::Command;
+
+    let username = dirs::home_dir()
+        .and_then(|p| p.file_name().map(|s| s.to_string_lossy().to_string()))?;
+
+    let output = Command::new("dscl")
+        .args([".", "-read", &format!("/Users/{}", username), "UserShell"])
+        .output()
+        .ok()?;
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        stdout.split(':').nth(1).map(|s| s.trim().to_string())
+    } else {
+        None
+    }
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn get_user_shell() -> Option<String> {
+    std::env::var("SHELL").ok()
+}
+
+#[cfg(not(unix))]
+fn get_user_shell() -> Option<String> {
+    None
+}
+
+fn build_shell_env_command(shell: &str) -> Vec<String> {
+    let shell_name = std::path::Path::new(shell)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("sh");
+
+    match shell_name {
+        "bash" => vec![
+            "-c".to_string(),
+            "source ~/.bash_profile 2>/dev/null; source ~/.bashrc 2>/dev/null; echo \"__PATH__=$PATH\"; echo \"__OPENCODE_BINARY__=$OPENCODE_BINARY\"".to_string(),
+        ],
+        "zsh" => vec![
+            "-lic".to_string(),
+            "echo \"__PATH__=$PATH\"; echo \"__OPENCODE_BINARY__=$OPENCODE_BINARY\"".to_string(),
+        ],
+        _ => vec![
+            "-lic".to_string(),
+            "echo \"__PATH__=$PATH\"; echo \"__OPENCODE_BINARY__=$OPENCODE_BINARY\"".to_string(),
+        ],
+    }
+}
+
+fn detect_shell_env() -> ShellEnv {
     #[cfg(not(unix))]
     {
-        Err(anyhow!("login shell path unsupported"))
+        ShellEnv::default()
     }
     #[cfg(unix)]
     {
         use std::process::Command;
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".into());
-        let output = Command::new(&shell)
-            .arg("-lic")
-            .arg("echo -n $PATH")
-            .output()?;
-        if output.status.success() {
-            Ok(String::from_utf8_lossy(&output.stdout).to_string())
-        } else {
-            Err(anyhow!("shell PATH detection failed"))
+
+        let shell = get_user_shell().unwrap_or_else(|| "/bin/zsh".into());
+        let args = build_shell_env_command(&shell);
+
+        let output = match Command::new(&shell).args(&args).output() {
+            Ok(o) => o,
+            Err(e) => {
+                warn!("[desktop:opencode] failed to run shell {}: {}", shell, e);
+                return ShellEnv::default();
+            }
+        };
+
+        if !output.status.success() {
+            warn!("[desktop:opencode] shell env detection failed for {}", shell);
+            return ShellEnv::default();
         }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let mut env = ShellEnv::default();
+
+        for line in stdout.lines() {
+            if let Some(path) = line.strip_prefix("__PATH__=") {
+                if !path.is_empty() {
+                    env.path = Some(path.to_string());
+                }
+            } else if let Some(binary) = line.strip_prefix("__OPENCODE_BINARY__=") {
+                if !binary.is_empty() {
+                    env.opencode_binary = Some(binary.to_string());
+                }
+            }
+        }
+
+        env
     }
+}
+
+fn detect_login_shell_path() -> Result<String> {
+    detect_shell_env()
+        .path
+        .ok_or_else(|| anyhow!("shell PATH detection failed"))
 }
