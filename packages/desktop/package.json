@@ -10,6 +10,8 @@
   ],
   "scripts": {
     "tauri": "tauri",
+    "tauri:dev": "tauri dev --features devtools",
+    "tauri:build": "tauri build",
     "dev": "vite dev --host 127.0.0.1 --port 1421",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5051",

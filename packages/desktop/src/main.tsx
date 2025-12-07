@@ -22,6 +22,21 @@ if (!(window as typeof globalThis & { process?: unknown }).process) {
   };
 }
 
+if (import.meta.env.PROD) {
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+      e.preventDefault();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'r') {
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  });
+}
+
 declare global {
   interface Window {
     __OPENCHAMBER_RUNTIME_APIS__?: RuntimeAPIs;

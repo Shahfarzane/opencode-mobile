@@ -47,7 +47,9 @@ use portpicker::pick_unused_port;
 use reqwest::{header, Body as ReqwestBody, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tauri::{Emitter, Manager, WebviewWindow};
+use tauri::{Emitter, Manager};
+#[cfg(feature = "devtools")]
+use tauri::WebviewWindow;
 use tauri_plugin_dialog::init as dialog_plugin;
 use tauri_plugin_fs::init as fs_plugin;
 use tauri_plugin_log::{Target, TargetKind};
@@ -212,6 +214,7 @@ async fn desktop_restart_opencode(state: tauri::State<'_, DesktopRuntime>) -> Re
         .map_err(|err| err.to_string())
 }
 
+#[cfg(feature = "devtools")]
 #[tauri::command]
 async fn desktop_open_devtools(window: WebviewWindow) -> Result<(), String> {
     window.open_devtools();
@@ -309,6 +312,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             desktop_server_info,
             desktop_restart_opencode,
+            #[cfg(feature = "devtools")]
             desktop_open_devtools,
             load_settings,
             save_settings,
