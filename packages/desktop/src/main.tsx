@@ -237,14 +237,24 @@ if (typeof window !== 'undefined') {
   });
 }
 
-const runtimeReady = new Promise<void>((resolve) => {
-  listen('openchamber:runtime-ready', () => {
-    console.info('[main] Runtime ready event received');
-    resolve();
-  });
-});
+const checkRuntimeReady = async (): Promise<boolean> => {
+  try {
+    await invoke('desktop_server_info');
+    return true;
+  } catch {
+    return false;
+  }
+};
 
-await runtimeReady;
+const alreadyReady = await checkRuntimeReady();
+if (!alreadyReady) {
+  await new Promise<void>((resolve) => {
+    listen('openchamber:runtime-ready', () => {
+      console.info('[main] Runtime ready event received');
+      resolve();
+    });
+  });
+}
 
 try {
   await import('@openchamber/ui/main');
