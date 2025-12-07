@@ -252,10 +252,17 @@ if (typeof window !== 'undefined') {
   });
 }
 
+interface ServerInfo {
+  server_port: number;
+  opencode_port: number | null;
+  api_prefix: string;
+  cli_available: boolean;
+}
+
 const checkRuntimeReady = async (): Promise<boolean> => {
   try {
-    await invoke('desktop_server_info');
-    return true;
+    const info = await invoke<ServerInfo>('desktop_server_info');
+    return info.cli_available && info.opencode_port !== null;
   } catch {
     return false;
   }
