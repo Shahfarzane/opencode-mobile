@@ -79,22 +79,10 @@ pub(crate) struct DesktopRuntime {
 }
 
 impl DesktopRuntime {
-    async fn initialize() -> Result<Self> {
+    fn initialize_sync() -> Result<Self> {
         let settings = Arc::new(SettingsStore::new()?);
-
-        // Read lastDirectory from settings before starting OpenCode
-        let initial_dir = settings.last_directory().await.ok().flatten();
-
+        let initial_dir = tauri::async_runtime::block_on(settings.last_directory()).ok().flatten();
         let opencode = Arc::new(OpenCodeManager::new_with_directory(initial_dir.clone()));
-
-        // Try to start OpenCode if CLI is available
-        if opencode.is_cli_available() {
-            if let Err(e) = opencode.ensure_running().await {
-                warn!("[desktop] Failed to start OpenCode: {}", e);
-            }
-        } else {
-            info!("[desktop] OpenCode CLI not available - running in limited mode");
-        }
 
         let client = Client::builder().build()?;
 
@@ -117,6 +105,16 @@ impl DesktopRuntime {
             opencode,
             settings,
         })
+    }
+
+    async fn start_opencode(&self) {
+        if self.opencode.is_cli_available() {
+            if let Err(e) = self.opencode.ensure_running().await {
+                warn!("[desktop] Failed to start OpenCode: {}", e);
+            }
+        } else {
+            info!("[desktop] OpenCode CLI not available - running in limited mode");
+        }
     }
 
     async fn shutdown(&self) {
@@ -257,18 +255,17 @@ fn main() {
         .plugin(fs_plugin())
         .plugin(notification_plugin())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .plugin(log_builder.build())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             prevent_app_nap();
 
-            let runtime = tauri::async_runtime::block_on(DesktopRuntime::initialize())?;
-            app.manage(runtime.clone());
+            app.manage(TerminalState::new());
 
-            // Background assistant completion notifications (SSE) independent of the webview lifecycle
-            let app_handle = app.app_handle();
-            spawn_assistant_notifications(app_handle.clone(), runtime.clone());
-            spawn_session_activity_tracker(app_handle.clone(), runtime.clone());
+            let stored_state = tauri::async_runtime::block_on(load_window_state()).unwrap_or(None);
+            let manager = WindowStateManager::new(stored_state.clone().unwrap_or_default());
+            app.manage(manager.clone());
 
             if let Some(window) = app.get_webview_window("main") {
                 #[cfg(target_os = "macos")]
@@ -281,29 +278,31 @@ fn main() {
                         info!("[desktop:vibrancy] Applied macOS Sidebar vibrancy to main window");
                     }
                 }
-            }
-            
-            app.manage(TerminalState::new());
 
-            let stored_state = tauri::async_runtime::block_on(load_window_state()).unwrap_or(None);
-            let manager = WindowStateManager::new(stored_state.clone().unwrap_or_default());
-            app.manage(manager.clone());
-
-            if let Some(saved) = stored_state {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window_state::apply_window_state(&window, &saved);
+                if let Some(saved) = &stored_state {
+                    let _ = window_state::apply_window_state(&window, saved);
                 }
+
+                let _ = window.show();
             }
 
-            // Restore bookmarks on startup (macOS security-scoped access)
-            // We'll do this synchronously within the setup to avoid lifetime issues
-            tauri::async_runtime::block_on(async {
-                if let Err(e) =
-                    restore_bookmarks_on_startup(app.state::<DesktopRuntime>().clone()).await
-                {
+            let runtime = DesktopRuntime::initialize_sync()?;
+            app.manage(runtime.clone());
+
+            let app_handle = app.app_handle().clone();
+            let runtime_clone = runtime.clone();
+            tauri::async_runtime::spawn(async move {
+                runtime_clone.start_opencode().await;
+
+                if let Err(e) = restore_bookmarks_on_startup(app_handle.state::<DesktopRuntime>().clone()).await {
                     warn!("Failed to restore bookmarks on startup: {}", e);
                 }
+
+                let _ = app_handle.emit("openchamber:runtime-ready", ());
             });
+
+            spawn_assistant_notifications(app.app_handle().clone(), runtime.clone());
+            spawn_session_activity_tracker(app.app_handle().clone(), runtime.clone());
 
             Ok(())
         })

@@ -44,6 +44,7 @@ uuid = { version = "1.18.1", features = ["v4"] }
 tokio-util = { version = "0.7", features = ["io"] }
 tauri-plugin-notification = "2.3.3"
 tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 
 [build-dependencies]
 tauri-build = { version = "2.5.3", features = [] }
