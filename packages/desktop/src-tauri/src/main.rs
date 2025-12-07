@@ -222,17 +222,23 @@ async fn desktop_open_devtools(window: WebviewWindow) -> Result<(), String> {
 }
 
 #[cfg(target_os = "macos")]
+fn get_macos_major_version() -> isize {
+    use objc2_foundation::NSProcessInfo;
+    let process_info = NSProcessInfo::processInfo();
+    let version = process_info.operatingSystemVersion();
+    version.majorVersion
+}
+
+#[cfg(target_os = "macos")]
 fn prevent_app_nap() {
     use objc2_foundation::{NSActivityOptions, NSProcessInfo, NSString};
 
-    // NSActivityUserInitiated (0x00FFFFFF) | NSActivityLatencyCritical (0xFF00000000)
     let options = NSActivityOptions(0x00FFFFFF | 0xFF00000000);
     let reason = NSString::from_str("Prevent App Nap");
 
     let process_info = NSProcessInfo::processInfo();
     let activity = process_info.beginActivityWithOptions_reason(options, &reason);
 
-    // Leak the activity token to keep it active indefinitely
     std::mem::forget(activity);
 
     info!("[macos] App Nap prevention enabled via objc2");
@@ -279,6 +285,28 @@ fn main() {
                         warn!("[desktop:vibrancy] Failed to apply macOS vibrancy: {}", error);
                     } else {
                         info!("[desktop:vibrancy] Applied macOS Sidebar vibrancy to main window");
+                    }
+
+                    let macos_version = get_macos_major_version();
+                    info!("[macos] Detected macOS version: {}", macos_version);
+                    if macos_version < 26 {
+                        use objc::{msg_send, sel, sel_impl, runtime::Object};
+
+                        if let Ok(ns_window) = window.ns_window() {
+                            unsafe {
+                                let ns_window = ns_window.cast::<Object>();
+                                let close_button: *mut Object = msg_send![ns_window, standardWindowButton: 0u64];
+
+                                if !close_button.is_null() {
+                                    let superview: *mut Object = msg_send![close_button, superview];
+                                    if !superview.is_null() {
+                                        let frame: ((f64, f64), (f64, f64)) = msg_send![superview, frame];
+                                        let new_frame = ((frame.0.0, frame.0.1 - 6.0), frame.1);
+                                        let _: () = msg_send![superview, setFrame: new_frame];
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
