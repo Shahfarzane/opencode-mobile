@@ -377,6 +377,7 @@ export const useChatScrollManager = ({
             spacerHeightRef.current = 0;
             setSpacerHeight(0);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on session change, not message changes
     }, [currentSessionId, sessionMessages.length]);
 
     useIsomorphicLayoutEffect(() => {
@@ -396,8 +397,6 @@ export const useChatScrollManager = ({
         const nextCount = sessionMessages.length;
 
         if (nextCount > previousCount && previousCount > 0) {
-            const addedCount = nextCount - previousCount;
-
             const previousFirstId = lastFirstMessageIdRef.current;
             const newFirstId = getMessageId(sessionMessages[0]);
             const newLastId = getMessageId(sessionMessages[nextCount - 1]);

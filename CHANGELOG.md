@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Pending
+
+## [1.0.5] - 2025-12-07
+
+- Fixed "Load older messages" incorrectly scrolling to bottom
+- Fixed page refresh getting stuck on splash screen
+- Disabled devtools and page refresh in production builds
+
 
 ## [1.0.4] - 2025-12-07
 
