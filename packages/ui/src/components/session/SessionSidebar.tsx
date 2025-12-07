@@ -940,7 +940,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ mobileVariant = 
                 !isDesktopRuntime && 'bg-sidebar/60',
               )}
             >
-              <RiFolder6Line className="h-4 w-4" />
+              <RiFolder6Line className="h-[1.125rem] w-[1.125rem] translate-y-px" />
             </span>
             <div className="min-w-0 flex-1 overflow-hidden">
               <p className="truncate whitespace-nowrap typography-ui font-semibold text-muted-foreground group-hover:text-foreground">
@@ -959,7 +959,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ mobileVariant = 
               )}
               aria-label="Manage worktrees"
             >
-              <RiGitRepositoryLine className="h-5 w-5" />
+              <RiGitRepositoryLine className="h-[1.125rem] w-[1.125rem] translate-y-px" />
             </button>
           ) : null}
         </div>

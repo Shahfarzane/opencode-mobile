@@ -176,8 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
                             onClick={() => setSettingsDialogOpen(true)}
                             className={cn(
                                 'flex items-center gap-2 rounded-md px-3 py-2',
-                                'text-sm text-muted-foreground',
-                                'hover:bg-accent hover:text-accent-foreground',
+                                'text-sm font-semibold text-muted-foreground',
+                                'hover:text-foreground',
                                 'transition-colors'
                             )}
                         >
