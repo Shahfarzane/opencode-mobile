@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "OpenChamber",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "ai.opencode.openchamber",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -47,9 +47,18 @@
       "signingIdentity": null,
       "infoPlist": "Info.plist",
       "dmg": {
-        "appPosition": { "x": 180, "y": 170 },
-        "applicationFolderPosition": { "x": 480, "y": 170 },
-        "windowSize": { "width": 660, "height": 400 }
+        "appPosition": {
+          "x": 180,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 170
+        },
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        }
       }
     },
     "createUpdaterArtifacts": true
