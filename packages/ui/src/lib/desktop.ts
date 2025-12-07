@@ -274,3 +274,4 @@ export const restartToApplyUpdate = async (): Promise<boolean> => {
     return false;
   }
 };
+

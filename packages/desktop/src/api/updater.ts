@@ -30,21 +30,26 @@ let cachedUpdate: Update | null = null;
 export async function checkForUpdates(): Promise<UpdateInfo> {
   try {
     const { check } = await import('@tauri-apps/plugin-updater');
-    const update = await check();
+    const [update, currentVersion] = await Promise.all([
+      check(),
+      getCurrentVersion(),
+    ]);
     cachedUpdate = update;
 
     if (!update) {
       return {
         available: false,
-        currentVersion: await getCurrentVersion(),
+        currentVersion,
       };
     }
+
+    const changelogNotes = await fetchChangelogNotes(currentVersion, update.version);
 
     return {
       available: true,
       version: update.version,
-      currentVersion: await getCurrentVersion(),
-      body: update.body ?? undefined,
+      currentVersion,
+      body: changelogNotes ?? update.body ?? undefined,
       date: update.date ?? undefined,
     };
   } catch (error) {
@@ -102,4 +107,39 @@ async function getCurrentVersion(): Promise<string> {
   } catch {
     return 'unknown';
   }
+}
+
+async function fetchChangelogNotes(fromVersion: string, toVersion: string): Promise<string | undefined> {
+  try {
+    const response = await fetch(
+      'https://raw.githubusercontent.com/btriapitsyn/openchamber/main/CHANGELOG.md'
+    );
+    if (!response.ok) return undefined;
+
+    const changelog = await response.text();
+    const sections = changelog.split(/^## /m).slice(1);
+
+    const fromNum = parseVersion(fromVersion);
+    const toNum = parseVersion(toVersion);
+
+    const relevantSections = sections.filter((section) => {
+      const match = section.match(/^\[(\d+\.\d+\.\d+)\]/);
+      if (!match) return false;
+      const ver = parseVersion(match[1]);
+      return ver > fromNum && ver <= toNum;
+    });
+
+    if (relevantSections.length === 0) return undefined;
+
+    return relevantSections
+      .map((s) => '## ' + s.trim())
+      .join('\n\n');
+  } catch {
+    return undefined;
+  }
+}
+
+function parseVersion(version: string): number {
+  const parts = version.split('.').map(Number);
+  return (parts[0] || 0) * 10000 + (parts[1] || 0) * 100 + (parts[2] || 0);
 }

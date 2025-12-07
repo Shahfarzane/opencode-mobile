@@ -25,31 +25,43 @@ export type UseUpdateCheckReturn = UpdateState & {
   dismiss: () => void;
 };
 
-const MOCK_UPDATE: UpdateState = {
+interface MockUpdateConfig {
+  currentVersion?: string;
+  newVersion?: string;
+}
+
+// Set window.__OPENCHAMBER_MOCK_UPDATE__ = { currentVersion: '1.0.3', newVersion: '1.0.8' } to test with real changelog
+declare global {
+  interface Window {
+    __OPENCHAMBER_MOCK_UPDATE__?: boolean | MockUpdateConfig;
+  }
+}
+
+const getMockConfig = (): MockUpdateConfig | null => {
+  if (typeof window === 'undefined') return null;
+  const mock = window.__OPENCHAMBER_MOCK_UPDATE__;
+  if (!mock) return null;
+  if (mock === true) return { currentVersion: '1.0.3', newVersion: '1.0.8' };
+  return mock;
+};
+
+const createMockUpdate = (config: MockUpdateConfig): UpdateState => ({
   checking: false,
   available: true,
   downloading: false,
   downloaded: false,
   info: {
     available: true,
-    version: '99.0.0-test',
-    currentVersion: '0.0.0',
-    body: 'Test update for UI development',
+    version: config.newVersion ?? '99.0.0-test',
+    currentVersion: config.currentVersion ?? '0.0.0',
+    body: undefined,
   },
   progress: null,
   error: null,
-};
-
-// Set window.__OPENCHAMBER_MOCK_UPDATE__ = true in console to test UI
-declare global {
-  interface Window {
-    __OPENCHAMBER_MOCK_UPDATE__?: boolean;
-  }
-}
+});
 
 const shouldMockUpdate = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return window.__OPENCHAMBER_MOCK_UPDATE__ === true;
+  return getMockConfig() !== null;
 };
 
 export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
@@ -64,7 +76,7 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
   });
 
   const [mockMode, setMockMode] = useState(shouldMockUpdate);
-  const [mockState, setMockState] = useState<UpdateState>(MOCK_UPDATE);
+  const [mockState, setMockState] = useState<UpdateState | null>(null);
 
   // Check for mock mode changes (for console toggling)
   useEffect(() => {
@@ -73,7 +85,10 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
       if (shouldMock !== mockMode) {
         setMockMode(shouldMock);
         if (shouldMock) {
-          setMockState(MOCK_UPDATE);
+          const config = getMockConfig();
+          if (config) {
+            setMockState(createMockUpdate(config));
+          }
         }
       }
     }, 500);
@@ -82,7 +97,15 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
 
   const checkForUpdates = useCallback(async () => {
     if (mockMode) {
-      setMockState(MOCK_UPDATE);
+      const config = getMockConfig();
+      if (config) {
+        const mockUpdate = createMockUpdate(config);
+        mockUpdate.info = {
+          ...mockUpdate.info!,
+          body: `## [${config.newVersion}] - 2025-01-01\n- Mock update for UI testing`,
+        };
+        setMockState(mockUpdate);
+      }
       return;
     }
     if (!isDesktopRuntime()) {
@@ -173,7 +196,7 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
 
   const dismiss = useCallback(() => {
     if (mockMode) {
-      setMockState(MOCK_UPDATE);
+      setMockState(null);
       return;
     }
     setState((prev) => ({ ...prev, available: false, downloaded: false, info: null }));
@@ -189,7 +212,7 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
     }
   }, [checkOnMount, checkForUpdates, mockMode]);
 
-  const currentState = mockMode ? mockState : state;
+  const currentState = (mockMode && mockState) ? mockState : state;
 
   return {
     ...currentState,

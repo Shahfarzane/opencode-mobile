@@ -5,7 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { RiDownloadLine, RiExternalLinkLine, RiLoaderLine, RiRestartLine, RiSparklingLine } from '@remixicon/react';
+import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+import { RiDownloadCloudLine, RiDownloadLine, RiExternalLinkLine, RiLoaderLine, RiRestartLine } from '@remixicon/react';
 import { cn } from '@/lib/utils';
 import type { UpdateInfo, UpdateProgress } from '@/lib/desktop';
 
@@ -47,24 +48,38 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <RiSparklingLine className="h-5 w-5 text-primary" />
+            <RiDownloadCloudLine className="h-5 w-5 text-primary" />
             Update Available
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
-          {info?.currentVersion && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Current version</span>
-              <span className="font-mono">{info.currentVersion}</span>
+          {(info?.currentVersion || info?.version) && (
+            <div className="flex items-center gap-2 text-sm">
+              {info?.currentVersion && (
+                <span className="font-mono">{info.currentVersion}</span>
+              )}
+              {info?.currentVersion && info?.version && (
+                <span className="text-muted-foreground">→</span>
+              )}
+              {info?.version && (
+                <span className="font-mono text-primary">{info.version}</span>
+              )}
             </div>
           )}
 
-          {info?.version && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">New version</span>
-              <span className="font-mono text-primary">{info.version}</span>
-            </div>
+          {info?.body && (
+            <ScrollableOverlay
+              className="max-h-48 rounded-md border border-border bg-muted/30 p-3"
+              fillContainer={false}
+            >
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap pr-3">
+                {info.body
+                  .replace(/^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}\s*/gm, '— v$1 —\n')
+                  .replace(/^- /gm, '• ')
+                  .trim()}
+              </div>
+            </ScrollableOverlay>
           )}
 
           {downloading && (
@@ -94,15 +109,14 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md',
-                'text-sm font-medium',
-                'border border-border',
-                'hover:bg-accent hover:text-accent-foreground',
+                'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md',
+                'text-sm text-muted-foreground',
+                'hover:text-foreground hover:bg-accent',
                 'transition-colors'
               )}
             >
               <RiExternalLinkLine className="h-4 w-4" />
-              View Release Notes
+              GitHub
             </a>
 
             {!downloaded && !downloading && (
