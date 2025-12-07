@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 - Pending
 
+## [1.0.2] - 2025-12-07
+- Updated MacOS window design to the latest one
+
 ## [1.0.1] - 2025-12-07
 
 - Initial public release of OpenChamber web and desktop packages in a unified monorepo.
