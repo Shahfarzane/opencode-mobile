@@ -1,0 +1,390 @@
+import React from 'react';
+import type { Message, Part } from '@opencode-ai/sdk';
+import { useCurrentSessionActivity } from '@/hooks/useSessionActivity';
+
+export interface ChatMessageEntry {
+    info: Message;
+    parts: Part[];
+}
+
+export interface Turn {
+    turnId: string;
+    userMessage: ChatMessageEntry;
+    assistantMessages: ChatMessageEntry[];
+}
+
+export type TurnActivityKind = 'tool' | 'reasoning' | 'justification';
+
+export interface TurnActivityPart {
+    id: string;
+    turnId: string;
+    messageId: string;
+    kind: TurnActivityKind;
+    part: Part;
+    endedAt?: number;
+}
+
+interface TurnDiffStats {
+    additions: number;
+    deletions: number;
+    files: number;
+}
+
+export interface TurnGroupingContext {
+    turnId: string;
+    isFirstAssistantInTurn: boolean;
+
+    summaryBody?: string;
+
+    activityParts: TurnActivityPart[];
+    hasTools: boolean;
+    hasReasoning: boolean;
+    diffStats?: TurnDiffStats;
+
+    isWorking: boolean;
+    isGroupExpanded: boolean;
+
+    previewedPartIds: Set<string>;
+    toggleGroup: () => void;
+    markPartsPreviewed: (partIds: string[]) => void;
+}
+
+interface TurnUiState {
+    isExpanded: boolean;
+    previewedPartIds: Set<string>;
+}
+
+interface TurnActivityInfo {
+    activityParts: TurnActivityPart[];
+    hasTools: boolean;
+    hasReasoning: boolean;
+    summaryBody?: string;
+    diffStats?: TurnDiffStats;
+}
+
+const ENABLE_TEXT_JUSTIFICATION_ACTIVITY = false;
+
+export const detectTurns = (messages: ChatMessageEntry[]): Turn[] => {
+    const result: Turn[] = [];
+    let currentTurn: Turn | null = null;
+
+    messages.forEach((msg) => {
+        const role = (msg.info as { clientRole?: string | null | undefined }).clientRole ?? msg.info.role;
+
+        if (role === 'user') {
+            currentTurn = {
+                turnId: msg.info.id,
+                userMessage: msg,
+                assistantMessages: [],
+            };
+            result.push(currentTurn);
+        } else if (role === 'assistant' && currentTurn) {
+            currentTurn.assistantMessages.push(msg);
+        }
+    });
+
+    return result;
+};
+
+const extractFinalAssistantText = (turn: Turn): string | undefined => {
+
+    for (const assistantMsg of turn.assistantMessages) {
+
+        for (const part of assistantMsg.parts) {
+            if (part.type === 'step-finish') {
+                const finishReason = (part as { reason?: string | null | undefined }).reason;
+                const infoFinish = (assistantMsg.info as { finish?: string | null | undefined }).finish;
+
+                if (finishReason === 'stop' || infoFinish === 'stop') {
+
+                    const textPart = assistantMsg.parts.find(p => p.type === 'text');
+                    if (textPart) {
+                        const textContent = (textPart as { text?: string | null | undefined }).text ??
+                                          (textPart as { content?: string | null | undefined }).content;
+                        if (typeof textContent === 'string' && textContent.trim().length > 0) {
+                            return textContent;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return undefined;
+};
+
+const getTurnActivityInfo = (turn: Turn): TurnActivityInfo => {
+    interface SummaryDiff {
+        additions?: number | null | undefined;
+        deletions?: number | null | undefined;
+        file?: string | null | undefined;
+    }
+    interface UserSummaryPayload {
+        body?: string | null | undefined;
+        diffs?: SummaryDiff[] | null | undefined;
+    }
+
+    const summaryBody = extractFinalAssistantText(turn);
+
+    let diffStats: TurnDiffStats | undefined;
+
+    const summary = (turn.userMessage.info as { summary?: UserSummaryPayload | null | undefined }).summary;
+    const diffs = summary?.diffs;
+    if (Array.isArray(diffs) && diffs.length > 0) {
+        let additions = 0;
+        let deletions = 0;
+        let files = 0;
+
+        diffs.forEach((diff) => {
+            if (!diff) {
+                return;
+            }
+            const diffAdditions = typeof diff.additions === 'number' ? diff.additions : 0;
+            const diffDeletions = typeof diff.deletions === 'number' ? diff.deletions : 0;
+
+            if (diffAdditions !== 0 || diffDeletions !== 0) {
+                files += 1;
+            }
+            additions += diffAdditions;
+            deletions += diffDeletions;
+        });
+
+        if (files > 0) {
+            diffStats = {
+                additions,
+                deletions,
+                files,
+            };
+        }
+    }
+
+    let hasTools = false;
+    let hasReasoning = false;
+
+    turn.assistantMessages.forEach((msg) => {
+        msg.parts.forEach((part) => {
+            if (part.type === 'tool') {
+                hasTools = true;
+            } else if (part.type === 'reasoning') {
+                hasReasoning = true;
+            }
+        });
+    });
+
+    const activityParts: TurnActivityPart[] = [];
+    let syntheticIdCounter = 0;
+
+    turn.assistantMessages.forEach((msg) => {
+        const messageId = msg.info.id;
+        const hasStopFinishInMessage = ENABLE_TEXT_JUSTIFICATION_ACTIVITY
+            ? msg.parts.some((part) => {
+                  if (part.type !== 'step-finish') return false;
+                  const reason = (part as { reason?: string | null | undefined }).reason;
+                  return reason === 'stop';
+              })
+            : false;
+
+        msg.parts.forEach((part) => {
+            const baseId =
+                (typeof part.id === 'string' && part.id.trim().length > 0)
+                    ? part.id
+                    : `${messageId}-activity-${syntheticIdCounter++}`;
+
+            if (part.type === 'tool') {
+                const state = (part as { state?: { time?: { end?: number | null | undefined } | null | undefined } | null | undefined }).state;
+                const time = state?.time;
+                const end = typeof time?.end === 'number' ? time.end : undefined;
+
+                activityParts.push({
+                    id: baseId,
+                    turnId: turn.turnId,
+                    messageId,
+                    kind: 'tool',
+                    part,
+                    endedAt: end,
+                });
+                return;
+            }
+
+            if (part.type === 'reasoning') {
+                const text = (part as { text?: string | null | undefined; content?: string | null | undefined }).text
+                    ?? (part as { text?: string | null | undefined; content?: string | null | undefined }).content;
+                if (typeof text !== 'string' || text.trim().length === 0) {
+                    return;
+                }
+                const time = (part as { time?: { end?: number | null | undefined } | null | undefined }).time;
+                const end = typeof time?.end === 'number' ? time.end : undefined;
+
+                activityParts.push({
+                    id: baseId,
+                    turnId: turn.turnId,
+                    messageId,
+                    kind: 'reasoning',
+                    part,
+                    endedAt: end,
+                });
+                return;
+            }
+
+            if (
+                ENABLE_TEXT_JUSTIFICATION_ACTIVITY &&
+                part.type === 'text' &&
+                (hasTools || hasReasoning) &&
+                !hasStopFinishInMessage
+            ) {
+                const text =
+                    (part as { text?: string | null | undefined; content?: string | null | undefined }).text ??
+                    (part as { text?: string | null | undefined; content?: string | null | undefined }).content;
+                if (typeof text !== 'string' || text.trim().length === 0) {
+                    return;
+                }
+                const time = (part as { time?: { end?: number | null | undefined } | null | undefined }).time;
+                const end = typeof time?.end === 'number' ? time.end : undefined;
+
+                activityParts.push({
+                    id: baseId,
+                    turnId: turn.turnId,
+                    messageId,
+                    kind: 'justification',
+                    part,
+                    endedAt: end,
+                });
+            }
+        });
+    });
+
+    return {
+        activityParts,
+        hasTools,
+        hasReasoning,
+        summaryBody,
+        diffStats,
+    };
+};
+
+interface UseTurnGroupingResult {
+    turns: Turn[];
+    getTurnForMessage: (messageId: string) => Turn | undefined;
+    getContextForMessage: (messageId: string) => TurnGroupingContext | undefined;
+}
+
+export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingResult => {
+    const { isWorking: sessionIsWorking } = useCurrentSessionActivity();
+
+    const turns = React.useMemo(() => detectTurns(messages), [messages]);
+
+    const lastTurnId = React.useMemo(() => {
+        if (turns.length === 0) return null;
+        return turns[turns.length - 1]!.turnId;
+    }, [turns]);
+
+    const messageToTurn = React.useMemo(() => {
+        const map = new Map<string, Turn>();
+        turns.forEach((turn) => {
+            map.set(turn.userMessage.info.id, turn);
+            turn.assistantMessages.forEach((msg) => {
+                map.set(msg.info.id, turn);
+            });
+        });
+        return map;
+    }, [turns]);
+
+    const turnActivityInfo = React.useMemo(() => {
+        const map = new Map<string, TurnActivityInfo>();
+        turns.forEach((turn) => {
+            map.set(turn.turnId, getTurnActivityInfo(turn));
+        });
+        return map;
+    }, [turns]);
+
+    const [turnUiStates, setTurnUiStates] = React.useState<Map<string, TurnUiState>>(
+        () => new Map()
+    );
+
+    const getOrCreateTurnState = React.useCallback(
+        (turnId: string): TurnUiState => {
+            const existing = turnUiStates.get(turnId);
+            if (existing) return existing;
+            return { isExpanded: false, previewedPartIds: new Set<string>() };
+        },
+        [turnUiStates]
+    );
+
+    const toggleGroup = React.useCallback((turnId: string) => {
+        setTurnUiStates((prev) => {
+            const next = new Map(prev);
+            const current = next.get(turnId) ?? { isExpanded: false, previewedPartIds: new Set<string>() };
+            next.set(turnId, { ...current, isExpanded: !current.isExpanded });
+            return next;
+        });
+    }, []);
+
+    const markPartsPreviewedInternal = React.useCallback((turnId: string, partIds: string[]) => {
+        if (partIds.length === 0) return;
+
+        setTurnUiStates((prev) => {
+            const next = new Map(prev);
+            const state = next.get(turnId) ?? { isExpanded: false, previewedPartIds: new Set<string>() };
+            const newPreviewed = new Set(state.previewedPartIds);
+            partIds.forEach((id) => {
+                if (id && id.trim().length > 0) {
+                    newPreviewed.add(id);
+                }
+            });
+            next.set(turnId, { ...state, previewedPartIds: newPreviewed });
+            return next;
+        });
+    }, []);
+
+    const getTurnForMessage = React.useCallback(
+        (messageId: string): Turn | undefined => {
+            return messageToTurn.get(messageId);
+        },
+        [messageToTurn]
+    );
+
+    const getContextForMessage = React.useCallback(
+        (messageId: string): TurnGroupingContext | undefined => {
+            const turn = messageToTurn.get(messageId);
+            if (!turn) return undefined;
+
+            const isAssistantMessage = turn.assistantMessages.some(
+                (msg) => msg.info.id === messageId
+            );
+            if (!isAssistantMessage) return undefined;
+
+            const activityInfo = turnActivityInfo.get(turn.turnId);
+            const activityParts = activityInfo?.activityParts ?? [];
+            const hasTools = Boolean(activityInfo?.hasTools);
+            const hasReasoning = Boolean(activityInfo?.hasReasoning);
+            const summaryBody = activityInfo?.summaryBody;
+            const diffStats = activityInfo?.diffStats;
+
+            const firstAssistantId = turn.assistantMessages[0]?.info.id;
+            const isFirstAssistantInTurn = messageId === firstAssistantId;
+
+            const uiState = getOrCreateTurnState(turn.turnId);
+            const isTurnWorking = sessionIsWorking && lastTurnId === turn.turnId;
+
+            return {
+                turnId: turn.turnId,
+                isFirstAssistantInTurn,
+                summaryBody,
+                activityParts,
+                hasTools,
+                hasReasoning,
+                diffStats,
+                isWorking: isTurnWorking,
+                isGroupExpanded: uiState.isExpanded,
+                previewedPartIds: uiState.previewedPartIds,
+                toggleGroup: () => toggleGroup(turn.turnId),
+                markPartsPreviewed: (partIds: string[]) => markPartsPreviewedInternal(turn.turnId, partIds),
+            };
+        }, [getOrCreateTurnState, lastTurnId, sessionIsWorking, markPartsPreviewedInternal, messageToTurn, toggleGroup, turnActivityInfo]
+    );
+
+    return {
+        turns,
+        getTurnForMessage,
+        getContextForMessage,
+    };
+};

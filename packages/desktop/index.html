@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#151313" />
+    <link rel="preload" href="/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <title>OpenChamber Desktop</title>
+    <style>
+      @font-face {
+        font-family: 'IBM Plex Mono';
+        font-weight: 600;
+        font-style: normal;
+        src: url('/ibm-plex-mono-latin-600-normal.woff2') format('woff2');
+        font-display: block;
+      }
+      :root {
+        color-scheme: dark;
+      }
+      html,
+      body,
+      #root {
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        margin: 0;
+        font-family: 'IBM Plex Mono', monospace;
+        background-color: transparent;
+        color: #ffffff;
+      }
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        font-size: 2.5rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+      }
+      .loading span {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(8px);
+        animation: slideUp 0.5s ease-out forwards;
+      }
+      @keyframes slideUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body class="h-full">
+    <div id="root" class="h-full">
+      <div class="loading"><span style="animation-delay:0.1s">O</span><span style="animation-delay:0.15s">p</span><span style="animation-delay:0.2s">e</span><span style="animation-delay:0.25s">n</span><span style="animation-delay:0.3s">C</span><span style="animation-delay:0.35s">h</span><span style="animation-delay:0.4s">a</span><span style="animation-delay:0.45s">m</span><span style="animation-delay:0.5s">b</span><span style="animation-delay:0.55s">e</span><span style="animation-delay:0.6s">r</span></div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

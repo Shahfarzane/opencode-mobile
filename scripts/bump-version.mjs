@@ -1,0 +1,64 @@
+#!/usr/bin/env node
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
+
+const PACKAGES = [
+  'package.json',
+  'packages/ui/package.json',
+  'packages/web/package.json',
+  'packages/desktop/package.json',
+];
+
+const TAURI_CONF = 'packages/desktop/src-tauri/tauri.conf.json';
+const CARGO_TOML = 'packages/desktop/src-tauri/Cargo.toml';
+
+const newVersion = process.argv[2];
+if (!newVersion || !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(newVersion)) {
+  console.error('Usage: node scripts/bump-version.mjs <version>');
+  console.error('Example: node scripts/bump-version.mjs 0.2.0');
+  console.error('Example: node scripts/bump-version.mjs 0.2.0-beta.1');
+  process.exit(1);
+}
+
+console.log(`Bumping version to ${newVersion}\n`);
+
+// Update package.json files
+for (const pkgPath of PACKAGES) {
+  const fullPath = path.join(ROOT, pkgPath);
+  const pkg = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+  const oldVersion = pkg.version;
+  pkg.version = newVersion;
+  fs.writeFileSync(fullPath, JSON.stringify(pkg, null, 2) + '\n');
+  console.log(`  ${pkgPath}: ${oldVersion} -> ${newVersion}`);
+}
+
+// Update tauri.conf.json
+const tauriConfPath = path.join(ROOT, TAURI_CONF);
+const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, 'utf8'));
+const oldTauriVersion = tauriConf.version;
+tauriConf.version = newVersion;
+fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + '\n');
+console.log(`  ${TAURI_CONF}: ${oldTauriVersion} -> ${newVersion}`);
+
+// Update Cargo.toml
+const cargoPath = path.join(ROOT, CARGO_TOML);
+let cargoContent = fs.readFileSync(cargoPath, 'utf8');
+const cargoMatch = cargoContent.match(/^version = "(.*)"/m);
+const oldCargoVersion = cargoMatch ? cargoMatch[1] : 'unknown';
+cargoContent = cargoContent.replace(
+  /^version = ".*"$/m,
+  `version = "${newVersion}"`
+);
+fs.writeFileSync(cargoPath, cargoContent);
+console.log(`  ${CARGO_TOML}: ${oldCargoVersion} -> ${newVersion}`);
+
+console.log(`\nVersion bumped to ${newVersion}`);
+console.log('\nNext steps:');
+console.log(`  git add -A`);
+console.log(`  git commit -m "chore: release v${newVersion}"`);
+console.log(`  git tag v${newVersion}`);
+console.log(`  git push origin main --tags`);

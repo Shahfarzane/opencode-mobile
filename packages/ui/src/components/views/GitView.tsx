@@ -1,0 +1,1534 @@
+import React from 'react';
+import { useSessionStore } from '@/stores/useSessionStore';
+import { useFireworksCelebration } from '@/contexts/FireworksContext';
+import type {
+  GitStatus,
+  GitIdentityProfile,
+  GitLogEntry,
+  CommitFileEntry,
+} from '@/lib/api/types';
+import { useGitIdentitiesStore } from '@/stores/useGitIdentitiesStore';
+import { useDirectoryStore } from '@/stores/useDirectoryStore';
+import {
+  useGitStore,
+  useGitStatus,
+  useGitBranches,
+  useGitLog,
+  useGitIdentity,
+  useIsGitRepo,
+} from '@/stores/useGitStore';
+import { Button } from '@/components/ui/button';
+import { ButtonLarge } from '@/components/ui/button-large';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { RiAddLine, RiAiGenerate2, RiArrowDownLine, RiArrowDownSLine, RiArrowUpLine, RiBriefcaseLine, RiCheckboxBlankLine, RiCheckboxLine, RiCodeLine, RiFileCopyLine, RiGitBranchLine, RiGitCommitLine, RiGraduationCapLine, RiHeartLine, RiHomeLine, RiLoader4Line, RiRefreshLine, RiUser3Line } from '@remixicon/react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import type { Session } from '@opencode-ai/sdk';
+import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
+import { useUIStore } from '@/stores/useUIStore';
+
+type SyncAction = 'fetch' | 'pull' | 'push' | null;
+type CommitAction = 'commit' | 'commitAndPush' | null;
+
+const sanitizeBranchNameInput = (value: string): string => {
+  return value
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^A-Za-z0-9._/-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/\/{2,}/g, '/')
+    .replace(/\/-+/g, '/')
+    .replace(/-+\//g, '/')
+    .replace(/^[-/]+/, '')
+    .replace(/[-/]+$/, '');
+};
+
+const renderToastDescription = (text?: string) =>
+  text ? <span className="text-foreground/80 dark:text-foreground/70">{text}</span> : undefined;
+
+const LOG_SIZE_OPTIONS = [
+  { label: '25 commits', value: 25 },
+  { label: '50 commits', value: 50 },
+  { label: '100 commits', value: 100 },
+];
+
+type GitViewSnapshot = {
+  directory?: string;
+  selectedPaths: string[];
+  commitMessage: string;
+};
+
+let gitViewSnapshot: GitViewSnapshot | null = null;
+
+const useEffectiveDirectory = () => {
+  const { currentSessionId, sessions, worktreeMetadata: worktreeMap } = useSessionStore();
+  const { currentDirectory: fallbackDirectory } = useDirectoryStore();
+
+  const worktreeMetadata = currentSessionId ? worktreeMap.get(currentSessionId) ?? undefined : undefined;
+  const currentSession = sessions.find((session) => session.id === currentSessionId);
+  type SessionWithDirectory = Session & { directory?: string };
+  const sessionDirectory: string | undefined = (currentSession as SessionWithDirectory | undefined)?.directory;
+
+  return worktreeMetadata?.path ?? sessionDirectory ?? fallbackDirectory ?? undefined;
+};
+
+export const GitView: React.FC = () => {
+  const { git } = useRuntimeAPIs();
+  const currentDirectory = useEffectiveDirectory();
+  const { currentSessionId, worktreeMetadata: worktreeMap } = useSessionStore();
+  const worktreeMetadata = currentSessionId ? worktreeMap.get(currentSessionId) ?? undefined : undefined;
+
+  const { profiles, globalIdentity, loadProfiles, loadGlobalIdentity } = useGitIdentitiesStore();
+
+  const isGitRepo = useIsGitRepo(currentDirectory ?? null);
+  const status = useGitStatus(currentDirectory ?? null);
+  const branches = useGitBranches(currentDirectory ?? null);
+  const log = useGitLog(currentDirectory ?? null);
+  const currentIdentity = useGitIdentity(currentDirectory ?? null);
+  const isLoading = useGitStore((state) => state.isLoadingStatus);
+  const isLogLoading = useGitStore((state) => state.isLoadingLog);
+  const {
+    setActiveDirectory,
+    fetchAll,
+    fetchStatus,
+    fetchBranches,
+    fetchLog,
+    fetchIdentity,
+    setLogMaxCount,
+  } = useGitStore();
+
+  const initialSnapshot = React.useMemo(() => {
+    if (!gitViewSnapshot) return null;
+    if (gitViewSnapshot.directory !== currentDirectory) return null;
+    return gitViewSnapshot;
+  }, [currentDirectory]);
+
+  const [commitMessage, setCommitMessage] = React.useState(initialSnapshot?.commitMessage ?? '');
+  const [newBranchName, setNewBranchName] = React.useState('');
+  const sanitizedNewBranch = React.useMemo(
+    () => sanitizeBranchNameInput(newBranchName),
+    [newBranchName]
+  );
+  const [syncAction, setSyncAction] = React.useState<SyncAction>(null);
+  const [commitAction, setCommitAction] = React.useState<CommitAction>(null);
+  const [creatingBranch, setCreatingBranch] = React.useState(false);
+  const [lastSyncMessage, setLastSyncMessage] = React.useState<string | null>(null);
+  const [logMaxCountLocal, setLogMaxCountLocal] = React.useState<number>(25);
+  const [isSettingIdentity, setIsSettingIdentity] = React.useState(false);
+  const [branchPickerOpen, setBranchPickerOpen] = React.useState(false);
+  const [branchSearch, setBranchSearch] = React.useState('');
+  const [error] = React.useState<string | null>(null);
+  const { triggerFireworks } = useFireworksCelebration();
+
+  const [selectedPaths, setSelectedPaths] = React.useState<Set<string>>(
+    () => new Set(initialSnapshot?.selectedPaths ?? [])
+  );
+  const [hasUserAdjustedSelection, setHasUserAdjustedSelection] = React.useState(false);
+  const [revertingPaths, setRevertingPaths] = React.useState<Set<string>>(new Set());
+  const [isGeneratingMessage, setIsGeneratingMessage] = React.useState(false);
+  const [generatedHighlights, setGeneratedHighlights] = React.useState<string[]>([]);
+  const clearGeneratedHighlights = React.useCallback(() => {
+    setGeneratedHighlights([]);
+  }, []);
+  const [selectedCommitHash, setSelectedCommitHash] = React.useState<string | null>(null);
+  const [commitFiles, setCommitFiles] = React.useState<CommitFileEntry[]>([]);
+  const [isLoadingCommitFiles, setIsLoadingCommitFiles] = React.useState(false);
+
+  const selectedCommit = React.useMemo(() => {
+    if (!selectedCommitHash || !log) return null;
+    return log.all.find((entry) => entry.hash === selectedCommitHash) ?? null;
+  }, [selectedCommitHash, log]);
+
+  const handleCopyCommitHash = React.useCallback((hash: string) => {
+    navigator.clipboard.writeText(hash).then(() => {
+      toast.success('Commit hash copied');
+    }).catch(() => {
+      toast.error('Failed to copy');
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (!selectedCommitHash || !currentDirectory || !git) {
+      setCommitFiles([]);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingCommitFiles(true);
+
+    git.getCommitFiles(currentDirectory, selectedCommitHash)
+      .then((response) => {
+        if (!cancelled) {
+          setCommitFiles(response.files);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch commit files:', error);
+        if (!cancelled) {
+          setCommitFiles([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingCommitFiles(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCommitHash, currentDirectory, git]);
+
+  React.useEffect(() => {
+    return () => {
+      if (!currentDirectory) {
+        gitViewSnapshot = null;
+        return;
+      }
+
+      gitViewSnapshot = {
+        directory: currentDirectory,
+        selectedPaths: Array.from(selectedPaths),
+        commitMessage,
+      };
+    };
+  }, [commitMessage, currentDirectory, selectedPaths]);
+
+  React.useEffect(() => {
+    loadProfiles();
+    loadGlobalIdentity();
+  }, [loadProfiles, loadGlobalIdentity]);
+
+  React.useEffect(() => {
+    if (currentDirectory) {
+      setActiveDirectory(currentDirectory);
+
+      const dirState = useGitStore.getState().directories.get(currentDirectory);
+      if (!dirState?.status) {
+        fetchAll(currentDirectory, git, { force: true });
+      }
+    }
+  }, [currentDirectory, setActiveDirectory, fetchAll, git]);
+
+  const refreshStatusAndBranches = React.useCallback(
+    async (showErrors = true) => {
+      if (!currentDirectory) return;
+
+      try {
+        await Promise.all([
+          fetchStatus(currentDirectory, git),
+          fetchBranches(currentDirectory, git),
+        ]);
+      } catch (err) {
+        if (showErrors) {
+          const message =
+            err instanceof Error ? err.message : 'Failed to refresh repository state';
+          toast.error(message);
+        }
+      }
+    },
+    [currentDirectory, git, fetchStatus, fetchBranches]
+  );
+
+  const refreshLog = React.useCallback(async () => {
+    if (!currentDirectory) return;
+    await fetchLog(currentDirectory, git, logMaxCountLocal);
+  }, [currentDirectory, git, fetchLog, logMaxCountLocal]);
+
+  const refreshIdentity = React.useCallback(async () => {
+    if (!currentDirectory) return;
+    await fetchIdentity(currentDirectory, git);
+  }, [currentDirectory, git, fetchIdentity]);
+
+  const changeEntries = React.useMemo(() => {
+    if (!status) return [];
+    const files = status.files ?? [];
+    const unique = new Map<string, GitStatus['files'][number]>();
+
+    files.forEach((file) => {
+      unique.set(file.path, file);
+    });
+
+    return Array.from(unique.values()).sort((a, b) => a.path.localeCompare(b.path));
+  }, [status]);
+
+  React.useEffect(() => {
+    if (!status || changeEntries.length === 0) {
+      setSelectedPaths(new Set());
+      setHasUserAdjustedSelection(false);
+      return;
+    }
+
+    setSelectedPaths((previous) => {
+      const next = new Set<string>();
+      const previousSet = previous ?? new Set<string>();
+
+      changeEntries.forEach((file) => {
+        if (previousSet.has(file.path)) {
+          next.add(file.path);
+        } else if (!hasUserAdjustedSelection) {
+          next.add(file.path);
+        }
+      });
+
+      return next;
+    });
+  }, [status, changeEntries, hasUserAdjustedSelection]);
+
+  const handleSyncAction = async (action: Exclude<SyncAction, null>) => {
+    if (!currentDirectory) return;
+    setSyncAction(action);
+
+    try {
+      if (action === 'fetch') {
+        await git.gitFetch(currentDirectory);
+        toast.success('Fetched latest updates');
+      } else if (action === 'pull') {
+        const result = await git.gitPull(currentDirectory);
+        toast.success(`Pulled ${result.files.length} file${result.files.length === 1 ? '' : 's'}`);
+      } else if (action === 'push') {
+        await git.gitPush(currentDirectory);
+        toast.success('Pushed to remote');
+      }
+
+      setLastSyncMessage(`${action.toUpperCase()} completed at ${new Date().toLocaleTimeString()}`);
+      await refreshStatusAndBranches(false);
+      await refreshLog();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : `Failed to ${action === 'pull' ? 'pull' : action}`;
+      toast.error(message);
+    } finally {
+      setSyncAction(null);
+    }
+  };
+
+  const handleCommit = async (options: { pushAfter?: boolean } = {}) => {
+    if (!currentDirectory) return;
+    if (!commitMessage.trim()) {
+      toast.error('Please enter a commit message');
+      return;
+    }
+
+    const filesToCommit = Array.from(selectedPaths).sort();
+    if (filesToCommit.length === 0) {
+      toast.error('Select at least one file to commit');
+      return;
+    }
+
+    const action: CommitAction = options.pushAfter ? 'commitAndPush' : 'commit';
+    setCommitAction(action);
+
+    try {
+      await git.createGitCommit(currentDirectory, commitMessage.trim(), {
+        files: filesToCommit,
+      });
+      toast.success('Commit created successfully');
+      setCommitMessage('');
+      setSelectedPaths(new Set());
+      setHasUserAdjustedSelection(false);
+
+      await refreshStatusAndBranches();
+
+      if (options.pushAfter) {
+        await git.gitPush(currentDirectory);
+        toast.success('Pushed to remote');
+        triggerFireworks();
+        await refreshStatusAndBranches(false);
+      } else {
+        await refreshStatusAndBranches(false);
+      }
+
+      await refreshLog();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create commit';
+      toast.error(message);
+    } finally {
+      setCommitAction(null);
+    }
+  };
+
+  const handleGenerateCommitMessage = React.useCallback(async () => {
+    if (!currentDirectory) return;
+    if (selectedPaths.size === 0) {
+      toast.error('Select at least one file to describe');
+      return;
+    }
+
+    setIsGeneratingMessage(true);
+    try {
+      const { message } = await git.generateCommitMessage(currentDirectory, Array.from(selectedPaths));
+      const subject = message.subject?.trim() ?? '';
+      const highlights = Array.isArray(message.highlights) ? message.highlights : [];
+
+      if (subject) {
+        setCommitMessage(subject);
+      }
+      setGeneratedHighlights(highlights);
+
+      toast.success('Commit message generated');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate commit message';
+      toast.error(message);
+    } finally {
+      setIsGeneratingMessage(false);
+    }
+  }, [currentDirectory, selectedPaths, git]);
+
+  const handleCreateBranch = async () => {
+    if (!currentDirectory || !status) return;
+    const finalName = sanitizedNewBranch;
+    if (!finalName) {
+      toast.error('Provide a branch name using letters, numbers, ".", "_", "-" or "/".');
+      return;
+    }
+    const checkoutBase = status.current ?? null;
+
+    setCreatingBranch(true);
+    try {
+      await git.createBranch(currentDirectory, finalName, checkoutBase ?? 'HEAD');
+      toast.success(`Created branch ${finalName}`);
+
+      let pushSucceeded = false;
+      try {
+        await git.checkoutBranch(currentDirectory, finalName);
+        await git.gitPush(currentDirectory, {
+          remote: 'origin',
+          branch: finalName,
+          options: ['--set-upstream'],
+        });
+        pushSucceeded = true;
+      } catch (pushError) {
+        const message =
+          pushError instanceof Error ? pushError.message : 'Unable to push new branch to origin.';
+        toast.warning('Branch created locally', {
+          description: renderToastDescription(`Upstream setup failed: ${message}`),
+        });
+      } finally {
+        if (checkoutBase) {
+          try {
+            await git.checkoutBranch(currentDirectory, checkoutBase);
+          } catch (restoreError) {
+            console.warn('Failed to restore original branch after creation:', restoreError);
+          }
+        }
+      }
+
+      setNewBranchName('');
+      await refreshStatusAndBranches();
+      await refreshLog();
+
+      if (pushSucceeded) {
+        toast.success(`Upstream set for ${finalName}`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create branch';
+      toast.error(message);
+    } finally {
+      setCreatingBranch(false);
+    }
+  };
+
+  const handleCheckoutBranch = async (branch: string) => {
+    if (!currentDirectory) return;
+    const normalized = branch.replace(/^remotes\//, '');
+
+    if (status?.current === normalized) {
+      setBranchPickerOpen(false);
+      return;
+    }
+
+    try {
+      await git.checkoutBranch(currentDirectory, normalized);
+      toast.success(`Checked out ${normalized}`);
+      setBranchPickerOpen(false);
+      setBranchSearch('');
+      await refreshStatusAndBranches();
+      const activeBranch = status?.current;
+      if (activeBranch) {
+        await git.checkoutBranch(currentDirectory, activeBranch);
+        toast.success(`Checked out ${activeBranch}`);
+      }
+      await refreshLog();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : `Failed to checkout ${normalized}`;
+      toast.error(message);
+    }
+  };
+
+  const handleApplyIdentity = async (profile: GitIdentityProfile) => {
+    if (!currentDirectory) return;
+    setIsSettingIdentity(true);
+
+    try {
+      await git.setGitIdentity(currentDirectory, profile.id);
+      toast.success(`Applied "${profile.name}" to repository`);
+      await refreshIdentity();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to apply git identity';
+      toast.error(message);
+    } finally {
+      setIsSettingIdentity(false);
+    }
+  };
+
+  const localBranches = React.useMemo(() => {
+    if (!branches?.all) return [];
+    return branches.all.filter((branchName: string) => !branchName.startsWith('remotes/')).sort();
+  }, [branches]);
+
+  const remoteBranches = React.useMemo(() => {
+    if (!branches?.all) return [];
+    return branches.all
+      .filter((branchName: string) => branchName.startsWith('remotes/'))
+      .map((branchName: string) => branchName.replace(/^remotes\//, ''))
+      .sort();
+  }, [branches]);
+
+  const branchOptions = React.useMemo(() => {
+    const search = branchSearch.trim().toLowerCase();
+    if (!search) {
+      return {
+        locals: localBranches,
+        remotes: remoteBranches,
+      };
+    }
+
+    return {
+      locals: localBranches.filter((branch: string) => branch.toLowerCase().includes(search)),
+      remotes: remoteBranches.filter((branch: string) => branch.toLowerCase().includes(search)),
+    };
+  }, [branchSearch, localBranches, remoteBranches]);
+
+  React.useEffect(() => {
+    if (!branchPickerOpen) {
+      setBranchSearch('');
+    }
+  }, [branchPickerOpen]);
+
+  const availableIdentities = React.useMemo(() => {
+    const unique = new Map<string, GitIdentityProfile>();
+    if (globalIdentity) {
+      unique.set(globalIdentity.id, globalIdentity);
+    }
+    for (const profile of profiles) {
+      unique.set(profile.id, profile);
+    }
+    return Array.from(unique.values());
+  }, [profiles, globalIdentity]);
+
+  const activeIdentityProfile = React.useMemo((): GitIdentityProfile | null => {
+    if (currentIdentity?.userName && currentIdentity?.userEmail) {
+      const match = profiles.find(
+        (profile) =>
+          profile.userName === currentIdentity.userName &&
+          profile.userEmail === currentIdentity.userEmail
+      );
+
+      if (match) {
+        return match;
+      }
+
+      if (
+        globalIdentity &&
+        globalIdentity.userName === currentIdentity.userName &&
+        globalIdentity.userEmail === currentIdentity.userEmail
+      ) {
+        return globalIdentity;
+      }
+
+      return {
+        id: 'local-config',
+        name: currentIdentity.userName,
+        userName: currentIdentity.userName,
+        userEmail: currentIdentity.userEmail,
+        sshKey: currentIdentity.sshCommand?.replace('ssh -i ', '') ?? null,
+        color: 'info',
+        icon: 'user',
+      };
+    }
+
+    return globalIdentity ?? null;
+  }, [currentIdentity, profiles, globalIdentity]);
+
+  const uniqueChangeCount = changeEntries.length;
+  const selectedCount = selectedPaths.size;
+  const isBusy = isLoading || syncAction !== null || commitAction !== null;
+
+  const toggleFileSelection = (path: string) => {
+    setSelectedPaths((previous) => {
+      const next = new Set(previous);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+    setHasUserAdjustedSelection(true);
+  };
+
+  const selectAll = () => {
+    const next = new Set(changeEntries.map((file) => file.path));
+    setSelectedPaths(next);
+    setHasUserAdjustedSelection(true);
+  };
+
+  const clearSelection = () => {
+    setSelectedPaths(new Set());
+    setHasUserAdjustedSelection(true);
+  };
+
+  const handleRevertFile = React.useCallback(
+    async (filePath: string) => {
+      if (!currentDirectory) return;
+
+      setRevertingPaths((previous) => {
+        const next = new Set(previous);
+        next.add(filePath);
+        return next;
+      });
+
+      try {
+        await git.revertGitFile(currentDirectory, filePath);
+        toast.success(`Reverted ${filePath}`);
+        await refreshStatusAndBranches(false);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to revert changes';
+        toast.error(message);
+      } finally {
+        setRevertingPaths((previous) => {
+          const next = new Set(previous);
+          next.delete(filePath);
+          return next;
+        });
+      }
+    },
+    [currentDirectory, refreshStatusAndBranches, git]
+  );
+
+  if (!currentDirectory) {
+    return (
+      <div className="flex h-full items-center justify-center px-4 text-center">
+        <p className="typography-ui-label text-muted-foreground">
+          Select a session or directory to view repository details.
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading && isGitRepo === null) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <RiLoader4Line className="size-4 animate-spin" />
+          <span className="typography-ui-label">Checking repository…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGitRepo === false) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+        <RiGitBranchLine className="mb-3 size-6 text-muted-foreground" />
+        <p className="typography-ui-label font-semibold text-foreground">Not a Git repository</p>
+        <p className="typography-meta mt-1 text-muted-foreground">
+          Choose a different directory or initialize Git to use this workspace.
+        </p>
+      </div>
+    );
+  }
+
+  const hasChanges = uniqueChangeCount > 0;
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden bg-background">
+      {}
+      {status && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/40 px-3 py-2 bg-background">
+          <div className="flex items-center gap-2">
+            <RiGitBranchLine className="size-4 text-primary" />
+            <span className="typography-ui-label font-semibold text-foreground">
+              {status.current || 'Detached HEAD'}
+            </span>
+            {status.tracking && (
+              <span className="typography-meta text-muted-foreground">
+                → {status.tracking}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 typography-meta text-muted-foreground">
+            <span>
+              <RiArrowUpLine className="inline size-3.5 text-primary/70" />
+              <span className="font-semibold text-foreground ml-0.5">{status.ahead}</span>
+            </span>
+            <span>
+              <RiArrowDownLine className="inline size-3.5 text-primary/70" />
+              <span className="font-semibold text-foreground ml-0.5">{status.behind}</span>
+            </span>
+            <span>
+              <span className="font-semibold text-foreground">{status.files.length}</span> changes
+            </span>
+          </div>
+          <div className="flex-1" />
+          <IdentityDropdown
+            activeProfile={activeIdentityProfile}
+            identities={availableIdentities}
+            onSelect={handleApplyIdentity}
+            isApplying={isSettingIdentity}
+          />
+        </div>
+      )}
+
+      {}
+      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-border/40 bg-background/80">
+        <ButtonLarge
+          variant="default"
+          onClick={() => handleSyncAction('fetch')}
+          disabled={syncAction !== null || !status}
+        >
+          {syncAction === 'fetch' ? (
+            <RiLoader4Line size={16} className="animate-spin" />
+          ) : (
+            <RiRefreshLine size={16} />
+          )}
+          Fetch
+        </ButtonLarge>
+        <ButtonLarge
+          variant="default"
+          onClick={() => handleSyncAction('pull')}
+          disabled={syncAction !== null || !status}
+        >
+          {syncAction === 'pull' ? (
+            <RiLoader4Line size={16} className="animate-spin" />
+          ) : (
+            <RiArrowDownLine size={16} />
+          )}
+          Pull
+        </ButtonLarge>
+        <ButtonLarge
+          variant="default"
+          onClick={() => handleSyncAction('push')}
+          disabled={syncAction !== null || !status}
+        >
+          {syncAction === 'push' ? (
+            <RiLoader4Line size={16} className="animate-spin" />
+          ) : (
+            <RiArrowUpLine size={16} />
+          )}
+          Push
+        </ButtonLarge>
+
+        <div className="hidden sm:block w-px h-6 bg-border/60 mx-1" />
+
+        {}
+        {!worktreeMetadata && (
+          <>
+            <DropdownMenu open={branchPickerOpen} onOpenChange={setBranchPickerOpen}>
+              <Tooltip delayDuration={1000}>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 px-2 py-1 h-8">
+                      <RiGitBranchLine className="size-4" />
+                      <span className="max-w-[120px] truncate hidden sm:inline">
+                        {status?.current || 'Branch'}
+                      </span>
+                      <RiArrowDownSLine className="size-4 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>
+                  Switch branch ({localBranches.length} local · {remoteBranches.length} remote)
+                </TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="start" className="w-72 p-0 max-h-[60vh] flex flex-col">
+                <Command className="h-full min-h-0">
+                  <CommandInput
+                    placeholder="Search branches…"
+                    value={branchSearch}
+                    onValueChange={setBranchSearch}
+                  />
+                  <CommandList
+                    scrollbarClassName="overlay-scrollbar--flush overlay-scrollbar--dense overlay-scrollbar--zero"
+                    disableHorizontal
+                  >
+                    <CommandEmpty>No branches found.</CommandEmpty>
+                    <CommandGroup heading="Local branches">
+                      {branchOptions.locals.map((branchName: string) => (
+                        <CommandItem
+                          key={`local-${branchName}`}
+                          onSelect={() => handleCheckoutBranch(branchName)}
+                        >
+                          <span className="flex flex-1 flex-col">
+                            <span className="typography-ui-label text-foreground">
+                              {branchName}
+                            </span>
+                            {branches?.branches?.[branchName]?.ahead ||
+                            branches?.branches?.[branchName]?.behind ? (
+                              <span className="typography-micro text-muted-foreground">
+                                {branches.branches[branchName].ahead || 0} ahead ·{' '}
+                                {branches.branches[branchName].behind || 0} behind
+                              </span>
+                            ) : null}
+                          </span>
+                          {status?.current === branchName && (
+                            <span className="typography-micro text-primary">Current</span>
+                          )}
+                        </CommandItem>
+                      ))}
+                      {branchOptions.locals.length === 0 && (
+                        <CommandItem disabled className="justify-center">
+                          <span className="typography-meta text-muted-foreground">
+                            No local branches
+                          </span>
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                    <CommandSeparator />
+                    <CommandGroup heading="Remote branches">
+                      {branchOptions.remotes.map((branchName: string) => (
+                        <CommandItem
+                          key={`remote-${branchName}`}
+                          onSelect={() => handleCheckoutBranch(branchName)}
+                        >
+                          <span className="typography-ui-label text-foreground">{branchName}</span>
+                        </CommandItem>
+                      ))}
+                      {branchOptions.remotes.length === 0 && (
+                        <CommandItem disabled className="justify-center">
+                          <span className="typography-meta text-muted-foreground">
+                            No remote branches
+                          </span>
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Input
+              placeholder="New branch"
+              value={newBranchName}
+              onChange={(event) => setNewBranchName(event.target.value)}
+              className="h-8 w-32 sm:w-40 rounded-lg bg-background/80 text-sm"
+            />
+            <Tooltip delayDuration={1000}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={handleCreateBranch}
+                  disabled={creatingBranch || !sanitizedNewBranch}
+                >
+                  {creatingBranch ? (
+                    <RiLoader4Line className="size-4 animate-spin" />
+                  ) : (
+                    <RiAddLine className="size-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={8}>
+                {sanitizedNewBranch ? `Create branch "${sanitizedNewBranch}"` : 'Enter branch name'}
+              </TooltipContent>
+            </Tooltip>
+          </>
+        )}
+
+        <div className="flex-1" />
+        {lastSyncMessage && (
+          <span className="typography-micro text-muted-foreground hidden lg:inline">
+            {lastSyncMessage}
+          </span>
+        )}
+      </div>
+
+      {}
+      {error && (
+        <div className="mx-3 mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
+          <p className="typography-ui-label text-destructive">{error}</p>
+          <p className="typography-meta text-destructive/80">
+            Try refreshing or confirm the repository is accessible.
+          </p>
+        </div>
+      )}
+
+      {}
+      <ScrollableOverlay outerClassName="flex-1 min-h-0" className="p-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {}
+          <section className="flex flex-col rounded-2xl border border-border/60 bg-background/70 min-h-[280px] max-h-[400px]">
+            <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/40">
+              <h3 className="typography-ui-header font-semibold text-foreground">Changes</h3>
+              <div className="flex items-center gap-2">
+                <span className="typography-meta text-muted-foreground">
+                  {selectedCount}/{uniqueChangeCount}
+                </span>
+                {uniqueChangeCount > 0 && (
+                  <>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={selectAll}>
+                      All
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={clearSelection}
+                      disabled={selectedCount === 0}
+                    >
+                      None
+                    </Button>
+                  </>
+                )}
+              </div>
+            </header>
+            <ScrollableOverlay outerClassName="flex-1 min-h-0" className="w-full">
+              {status?.isClean || uniqueChangeCount === 0 ? (
+                <div className="flex h-full items-center justify-center p-4">
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3">
+                      <RiGitCommitLine className="size-5" style={{ color: 'var(--status-success)' }} />
+                      <p className="typography-ui-label" style={{ color: 'var(--status-success)' }}>
+                        Working tree clean
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {changeEntries.map((file) => (
+                    <ChangeRow
+                      key={file.path}
+                      file={file}
+                      checked={selectedPaths.has(file.path)}
+                      stats={status?.diffStats?.[file.path]}
+                      onToggle={() => toggleFileSelection(file.path)}
+                      onViewDiff={() => useUIStore.getState().navigateToDiff(file.path)}
+                      onRevert={() => handleRevertFile(file.path)}
+                      isReverting={revertingPaths.has(file.path)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </ScrollableOverlay>
+          </section>
+
+          {}
+          <section className="flex flex-col rounded-2xl border border-border/60 bg-background/70 min-h-[280px]">
+            <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/40">
+              <h3 className="typography-ui-header font-semibold text-foreground">Commit</h3>
+            </header>
+            <div className="flex-1 min-h-0 flex flex-col p-3 gap-3">
+              {generatedHighlights.length > 0 && (
+                <div className="space-y-2 rounded-xl border border-border/60 bg-background/60 px-3 py-2 shrink-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="typography-micro text-muted-foreground">AI highlights</p>
+                    <Tooltip delayDuration={1000}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-6"
+                          onClick={() => {
+                            if (generatedHighlights.length === 0) return;
+                            const normalizedHighlights = generatedHighlights
+                              .map((text) => text.trim())
+                              .filter(Boolean);
+                            if (normalizedHighlights.length === 0) {
+                              clearGeneratedHighlights();
+                              return;
+                            }
+                            setCommitMessage((current) => {
+                              const base = current.trim();
+                              const separator = base.length > 0 ? '\n\n' : '';
+                              return `${base}${separator}${normalizedHighlights.join('\n')}`.trim();
+                            });
+                            clearGeneratedHighlights();
+                          }}
+                          aria-label="Insert highlights into commit message"
+                        >
+                          <RiArrowDownLine className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent sideOffset={8}>Append highlights to commit message</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <ul className="space-y-1">
+                    {generatedHighlights.map((highlight, index) => (
+                      <li key={index} className="typography-meta text-foreground">
+                        {highlight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <Textarea
+                value={commitMessage}
+                onChange={(event) => setCommitMessage(event.target.value)}
+                placeholder={hasChanges ? 'Commit message' : 'No changes to commit'}
+                rows={generatedHighlights.length > 0 ? 4 : 8}
+                disabled={commitAction !== null || !hasChanges}
+                className={cn(
+                  "flex-1 rounded-lg bg-background/80 resize-none",
+                  generatedHighlights.length > 0 ? "min-h-[80px]" : "min-h-[180px]"
+                )}
+              />
+              <div className="flex items-center gap-2 shrink-0">
+                <Tooltip delayDuration={1000}>
+                  <TooltipTrigger asChild>
+                    <ButtonLarge
+                      variant="ghost"
+                      onClick={handleGenerateCommitMessage}
+                      disabled={
+                        isGeneratingMessage ||
+                        commitAction !== null ||
+                        selectedCount === 0 ||
+                        isBusy
+                      }
+                      className="px-3"
+                      aria-label="Generate commit message"
+                    >
+                      {isGeneratingMessage ? (
+                        <RiLoader4Line className="size-4 animate-spin" />
+                      ) : (
+                        <RiAiGenerate2 className="size-4 text-primary" />
+                      )}
+                    </ButtonLarge>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={8}>Generate commit message with AI</TooltipContent>
+                </Tooltip>
+                <div className="flex-1" />
+                <ButtonLarge
+                  variant="outline"
+                  onClick={() => {
+                    clearGeneratedHighlights();
+                    handleCommit({ pushAfter: false });
+                  }}
+                  disabled={
+                    commitAction !== null ||
+                    !commitMessage.trim() ||
+                    selectedCount === 0 ||
+                    isGeneratingMessage
+                  }
+                >
+                  {commitAction === 'commit' ? (
+                    <>
+                      <RiLoader4Line className="size-4 animate-spin" />
+                      Committing…
+                    </>
+                  ) : (
+                    <>
+                      <RiGitCommitLine className="size-4" />
+                      Commit
+                    </>
+                  )}
+                </ButtonLarge>
+                <ButtonLarge
+                  variant="default"
+                  onClick={() => {
+                    clearGeneratedHighlights();
+                    handleCommit({ pushAfter: true });
+                  }}
+                  disabled={
+                    commitAction !== null ||
+                    !commitMessage.trim() ||
+                    selectedCount === 0 ||
+                    isGeneratingMessage
+                  }
+                >
+                  {commitAction === 'commitAndPush' ? (
+                    <>
+                      <RiLoader4Line className="size-4 animate-spin" />
+                      Pushing…
+                    </>
+                  ) : (
+                    <>
+                      <RiArrowUpLine className="size-4" />
+                      Commit &amp; Push
+                    </>
+                  )}
+                </ButtonLarge>
+              </div>
+            </div>
+          </section>
+
+          {}
+          {log && (
+            <section className="lg:col-span-2 rounded-2xl border border-border/60 bg-background/70 flex flex-col min-h-[200px]">
+              <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/40 shrink-0">
+                <h3 className="typography-ui-header font-semibold text-foreground">History</h3>
+                <Select
+                  value={String(logMaxCountLocal)}
+                  onValueChange={(value) => {
+                    const newCount = Number(value);
+                    setLogMaxCountLocal(newCount);
+                    if (currentDirectory) {
+                      setLogMaxCount(currentDirectory, newCount);
+                      fetchLog(currentDirectory, git, newCount);
+                    }
+                  }}
+                  disabled={isLogLoading}
+                >
+                  <SelectTrigger
+                    size="sm"
+                    className="data-[size=sm]:h-auto h-7 min-h-7 w-auto justify-between px-2 py-0"
+                    disabled={isLogLoading}
+                  >
+                    <SelectValue placeholder="Commits" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LOG_SIZE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={String(option.value)}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </header>
+              <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border/40">
+                {}
+                <ScrollableOverlay outerClassName="min-h-0 max-h-48 lg:max-h-64" className="w-full">
+                  {log.all.length === 0 ? (
+                    <div className="flex h-full items-center justify-center p-4">
+                      <p className="typography-ui-label text-muted-foreground">
+                        No commits found
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-border/60">
+                      {log.all.map((entry) => (
+                        <CommitRow
+                          key={entry.hash}
+                          entry={entry}
+                          isSelected={selectedCommitHash === entry.hash}
+                          onSelect={() => setSelectedCommitHash(entry.hash)}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </ScrollableOverlay>
+
+                {}
+                <div className="flex flex-col min-h-[120px] lg:min-h-0 overflow-hidden">
+                  {selectedCommit ? (
+                    <div className="flex flex-col h-full overflow-hidden">
+                      {}
+                      <div className="p-3 pb-2 shrink-0 border-b border-border/40">
+                        <p className="typography-ui-label font-semibold text-foreground line-clamp-2">
+                          {selectedCommit.message}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 typography-micro text-muted-foreground">
+                          <span className="text-foreground">{selectedCommit.author_name}</span>
+                          <span>{formatCommitDate(selectedCommit.date)}</span>
+                          <code className="font-mono">{selectedCommit.hash.slice(0, 8)}</code>
+                          <Tooltip delayDuration={500}>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 px-1.5 -ml-1"
+                                onClick={() => handleCopyCommitHash(selectedCommit.hash)}
+                              >
+                                <RiFileCopyLine className="size-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>Copy SHA</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+
+                      {}
+                      <div className="flex-1 min-h-0 overflow-hidden">
+                        <div className="px-3 py-2 border-b border-border/40 shrink-0">
+                          <span className="typography-micro text-muted-foreground">
+                            {isLoadingCommitFiles ? 'Loading...' : `${commitFiles.length} file${commitFiles.length === 1 ? '' : 's'}`}
+                          </span>
+                        </div>
+                        <ScrollableOverlay outerClassName="flex-1 min-h-0 max-h-32" className="w-full">
+                          {isLoadingCommitFiles ? (
+                            <div className="flex items-center justify-center p-3">
+                              <RiLoader4Line className="size-4 animate-spin text-muted-foreground" />
+                            </div>
+                          ) : commitFiles.length === 0 ? (
+                            <div className="p-3 text-center">
+                              <p className="typography-micro text-muted-foreground">No files</p>
+                            </div>
+                          ) : (
+                            <ul className="divide-y divide-border/40">
+                              {commitFiles.map((file) => (
+                                <li key={file.path} className="flex items-center gap-2 px-3 py-1.5">
+                                  <span className={cn(
+                                    "typography-micro font-semibold w-4 shrink-0 text-center",
+                                    file.changeType === 'A' && "text-emerald-500",
+                                    file.changeType === 'D' && "text-red-500",
+                                    file.changeType === 'M' && "text-amber-500",
+                                    file.changeType === 'R' && "text-blue-500"
+                                  )}>
+                                    {file.changeType}
+                                  </span>
+                                  <span className="typography-micro text-foreground truncate flex-1" title={file.path}>
+                                    {file.path}
+                                  </span>
+                                  {!file.isBinary && (
+                                    <span className="typography-micro shrink-0">
+                                      <span className="font-semibold" style={{ color: 'var(--status-success)' }}>+{file.insertions}</span>
+                                      <span className="text-muted-foreground mx-0.5">/</span>
+                                      <span className="font-semibold" style={{ color: 'var(--status-error)' }}>-{file.deletions}</span>
+                                    </span>
+                                  )}
+                                  {file.isBinary && (
+                                    <span className="typography-micro text-muted-foreground shrink-0">binary</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </ScrollableOverlay>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-center p-3">
+                      <p className="typography-meta text-muted-foreground">
+                        Select a commit to view details
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+      </ScrollableOverlay>
+    </div>
+  );
+};
+
+interface ChangeRowProps {
+  file: GitStatus['files'][number];
+  checked: boolean;
+  onToggle: () => void;
+  onViewDiff: () => void;
+  onRevert: () => void;
+  isReverting: boolean;
+  stats?: { insertions: number; deletions: number };
+}
+
+const ChangeRow: React.FC<ChangeRowProps> = ({ file, checked, onToggle, onViewDiff, onRevert, isReverting, stats }) => {
+  const descriptor = React.useMemo(() => describeChange(file), [file]);
+  const indicatorLabel = descriptor.description ?? descriptor.code;
+  const insertions = stats?.insertions ?? 0;
+  const deletions = stats?.deletions ?? 0;
+
+  return (
+    <li>
+      <div
+        className="flex items-center gap-3 px-3 py-2 hover:bg-sidebar/40 cursor-pointer"
+        role="button"
+        tabIndex={0}
+        onClick={onViewDiff}
+        onKeyDown={(event) => {
+          if (event.key === ' ') {
+            event.preventDefault();
+            onToggle();
+          } else if (event.key === 'Enter') {
+            event.preventDefault();
+            onViewDiff();
+          }
+        }}
+      >
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggle();
+          }}
+          aria-pressed={checked}
+          aria-label={`Select ${file.path}`}
+          className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {checked ? (
+            <RiCheckboxLine className="size-4 text-primary" />
+          ) : (
+            <RiCheckboxBlankLine className="size-4" />
+          )}
+        </button>
+        <span
+          className="typography-micro font-semibold uppercase tracking-wide"
+          style={{ color: descriptor.color }}
+          title={indicatorLabel}
+          aria-label={indicatorLabel}
+        >
+          {descriptor.code}
+        </span>
+        <span
+          className="flex-1 min-w-0 break-words typography-ui-label text-foreground"
+          title={file.path}
+        >
+          {file.path}
+        </span>
+        <span className="shrink-0 typography-micro font-semibold">
+          <span style={{ color: 'var(--status-success)' }}>+{insertions}</span>
+          <span className="mx-0.5 text-muted-foreground">/</span>
+          <span style={{ color: 'var(--status-error)' }}>-{deletions}</span>
+        </span>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onRevert();
+              }}
+              disabled={isReverting}
+              className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={`Revert changes for ${file.path}`}
+            >
+              {isReverting ? (
+                <RiLoader4Line className="size-4 animate-spin" />
+              ) : (
+                <RiRefreshLine className="size-4" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={8}>Revert changes</TooltipContent>
+        </Tooltip>
+      </div>
+    </li>
+  );
+};
+
+interface CommitRowProps {
+  entry: GitLogEntry;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}
+
+const CommitRow: React.FC<CommitRowProps> = ({ entry, isSelected, onSelect }) => {
+  return (
+    <li
+      className={cn(
+        "flex items-start gap-3 px-3 py-2 cursor-pointer transition-colors",
+        isSelected ? "bg-sidebar/90" : "hover:bg-sidebar/40"
+      )}
+      onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect?.();
+        }
+      }}
+    >
+      <div className="h-2 w-2 translate-y-2 rounded-full shrink-0" style={{ backgroundColor: 'var(--status-success)' }} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="typography-ui-label font-medium text-foreground line-clamp-1">{entry.message}</p>
+        <p className="typography-meta text-muted-foreground">
+          {entry.author_name} · {formatCommitDate(entry.date)}
+        </p>
+        <p className="typography-micro text-muted-foreground">{entry.hash.slice(0, 8)}</p>
+      </div>
+    </li>
+  );
+};
+
+interface IdentityDropdownProps {
+  activeProfile: GitIdentityProfile | null;
+  identities: GitIdentityProfile[];
+  onSelect: (profile: GitIdentityProfile) => void;
+  isApplying: boolean;
+}
+
+const IdentityDropdown: React.FC<IdentityDropdownProps> = ({
+  activeProfile,
+  identities,
+  onSelect,
+  isApplying,
+}) => {
+  const isDisabled = isApplying || identities.length === 0;
+
+  return (
+    <DropdownMenu>
+      <Tooltip delayDuration={1000}>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 px-3 py-1 typography-ui-label"
+              style={{ color: getIdentityColor(activeProfile?.color) }}
+              disabled={isDisabled}
+            >
+              {isApplying ? (
+                <RiLoader4Line className="size-4 animate-spin" />
+              ) : (
+                <IdentityIcon
+                  icon={activeProfile?.icon}
+                  colorToken={activeProfile?.color}
+                  className="size-4"
+                />
+              )}
+              <span className="max-w-[180px] truncate">
+              {activeProfile?.name || 'No identity'}
+            </span>
+            <RiArrowDownSLine className="size-4 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={8} className="space-y-1">
+          <p className="typography-ui-label text-foreground">
+            {activeProfile?.userName || 'Unknown user'}
+          </p>
+          <p className="typography-meta text-muted-foreground">
+            {activeProfile?.userEmail || 'No email configured'}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end" className="w-64">
+        {identities.length === 0 ? (
+          <div className="px-2 py-1.5">
+            <p className="typography-meta text-muted-foreground">
+              No profiles available to apply.
+            </p>
+          </div>
+        ) : (
+          identities.map((profile) => (
+            <DropdownMenuItem
+              key={profile.id}
+              onSelect={() => onSelect(profile)}
+            >
+              <span className="flex items-center gap-2">
+                <IdentityIcon
+                  icon={profile.icon}
+                  colorToken={profile.color}
+                  className="size-4"
+                />
+                <span className="flex flex-col">
+                  <span className="typography-ui-label text-foreground">{profile.name}</span>
+                  <span className="typography-meta text-muted-foreground">
+                    {profile.userEmail}
+                  </span>
+                </span>
+              </span>
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+function describeChange(file: GitStatus['files'][number]) {
+  const rawCode =
+    file.index && file.index.trim() && file.index.trim() !== '?'
+      ? file.index.trim()
+      : file.working_dir && file.working_dir.trim()
+      ? file.working_dir.trim()
+      : file.index || file.working_dir || ' ';
+
+  const symbol = rawCode.trim().charAt(0) || rawCode.trim() || '·';
+
+  switch (symbol) {
+    case '?':
+      return { code: '?', color: 'var(--status-info)', description: 'Untracked file' };
+    case 'A':
+      return { code: 'A', color: 'var(--status-success)', description: 'New file' };
+    case 'D':
+      return { code: 'D', color: 'var(--status-error)', description: 'Deleted file' };
+    case 'R':
+      return { code: 'R', color: 'var(--status-info)', description: 'Renamed file' };
+    case 'C':
+      return { code: 'C', color: 'var(--status-info)', description: 'Copied file' };
+    default:
+      return { code: 'M', color: 'var(--status-warning)', description: 'Modified file' };
+  }
+}
+
+interface IdentityIconProps {
+  icon?: string | null;
+  className?: string;
+  colorToken?: string | null;
+}
+
+const IDENTITY_ICON_MAP: Record<string, React.ComponentType<React.ComponentProps<typeof RiGitBranchLine>>> = {
+  branch: RiGitBranchLine,
+  briefcase: RiBriefcaseLine,
+  house: RiHomeLine,
+  graduation: RiGraduationCapLine,
+  code: RiCodeLine,
+  heart: RiHeartLine,
+  user: RiUser3Line,
+};
+
+const IDENTITY_COLOR_MAP: Record<string, string> = {
+  keyword: 'var(--syntax-keyword)',
+  error: 'var(--status-error)',
+  string: 'var(--syntax-string)',
+  function: 'var(--syntax-function)',
+  type: 'var(--syntax-type)',
+
+  success: 'var(--status-success)',
+  info: 'var(--status-info)',
+  warning: 'var(--status-warning)',
+};
+
+function getIdentityColor(token?: string | null) {
+  if (!token) {
+    return 'var(--primary)';
+  }
+  return IDENTITY_COLOR_MAP[token] || 'var(--primary)';
+}
+
+const IdentityIcon: React.FC<IdentityIconProps> = ({ icon, className, colorToken }) => {
+  const IconComponent = IDENTITY_ICON_MAP[icon ?? 'branch'] ?? RiUser3Line;
+  return (
+    <IconComponent
+      className={className}
+      style={{ color: getIdentityColor(colorToken) }}
+    />
+  );
+};
+
+function formatCommitDate(date: string) {
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) {
+    return date;
+  }
+
+  return value.toLocaleString(undefined, {
+    hour12: false,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

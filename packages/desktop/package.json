@@ -1,0 +1,38 @@
+{
+  "name": "@openchamber/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "desktopPrerequisites": [
+    "Rust stable toolchain (via rustup)",
+    "Xcode Command Line Tools installed",
+    "Tauri CLI installed (cargo install tauri-cli@^2)"
+  ],
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "vite dev --host 127.0.0.1 --port 1421",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 5051",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-notification": "^2.3.3",
+    "@tauri-apps/plugin-process": "^2",
+    "@tauri-apps/plugin-updater": "^2",
+    "@openchamber/ui": "workspace:*",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@tauri-apps/api": "^2.9.1",
+    "@tauri-apps/plugin-dialog": "^2.4.2",
+    "@types/node": "^24.3.1",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2"
+  }
+}

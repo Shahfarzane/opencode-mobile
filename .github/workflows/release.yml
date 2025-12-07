@@ -1,0 +1,269 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (skip publishing)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+      release_upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=0.0.0-dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract changelog for release
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const version = process.env.VERSION;
+          const changelogPath = 'CHANGELOG.md';
+          if (!fs.existsSync(changelogPath)) {
+            throw new Error('CHANGELOG.md not found; add it before releasing.');
+          }
+          const changelog = fs.readFileSync(changelogPath, 'utf8');
+          const sections = changelog.split(/^## /m);
+          const section = sections.find(s => s.startsWith('[' + version + ']'));
+          if (!section) {
+            throw new Error('Changelog section [' + version + '] not found. Add a section like "## [' + version + '] - YYYY-MM-DD".');
+          }
+          const content = ('## ' + section).trim();
+          fs.mkdirSync('artifacts', { recursive: true });
+          fs.writeFileSync('artifacts/release-notes.md', content + '\n');
+          NODE
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          draft: true
+          generate_release_notes: false
+          body_path: artifacts/release-notes.md
+          name: OpenChamber v${{ steps.get_version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-desktop-macos:
+    needs: create-release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Apple Certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security import $RUNNER_TEMP/certificate.p12 \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Set up notarization credentials
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          # Validate secrets are set
+          if [ -z "$APPLE_ID" ] || [ -z "$APPLE_TEAM_ID" ] || [ -z "$APPLE_PASSWORD" ]; then
+            echo "Error: Missing Apple notarization credentials"
+            exit 1
+          fi
+
+          xcrun notarytool store-credentials "openchamber-notarize" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_PASSWORD"
+
+      - name: Build UI package
+        run: pnpm -C packages/ui run build
+
+      - name: Build Desktop app
+        run: pnpm desktop:build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p artifacts
+          VERSION="${{ needs.create-release.outputs.version }}"
+
+          # Copy DMG
+          cp packages/desktop/src-tauri/target/release/bundle/dmg/*.dmg artifacts/ 2>/dev/null || true
+
+          # Copy tar.gz and signature for updater
+          cp packages/desktop/src-tauri/target/release/bundle/macos/*.tar.gz artifacts/ 2>/dev/null || true
+          cp packages/desktop/src-tauri/target/release/bundle/macos/*.tar.gz.sig artifacts/ 2>/dev/null || true
+
+      - name: Generate update manifest
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+
+          # Find the signature file
+          SIG_FILE=$(find artifacts -name "*.tar.gz.sig" | head -1)
+          if [ -f "$SIG_FILE" ]; then
+            SIGNATURE=$(cat "$SIG_FILE")
+          else
+            SIGNATURE=""
+          fi
+
+          # Find the tar.gz file name
+          TAR_FILE=$(find artifacts -name "*.tar.gz" ! -name "*.sig" | head -1)
+          TAR_NAME=$(basename "$TAR_FILE" 2>/dev/null || echo "OpenChamber.app.tar.gz")
+
+          cat > artifacts/latest.json << EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See release notes at https://github.com/${{ github.repository }}/releases/tag/v${VERSION}",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "${SIGNATURE}",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${TAR_NAME}"
+              }
+            }
+          }
+          EOF
+
+          echo "Generated latest.json:"
+          cat artifacts/latest.json
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.create-release.outputs.version }}
+          files: |
+            artifacts/*.dmg
+            artifacts/*.tar.gz
+            artifacts/*.tar.gz.sig
+            artifacts/latest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build
+
+      - name: Create npm tarball
+        working-directory: packages/web
+        run: npm pack
+
+      - name: Upload npm tarball to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.create-release.outputs.version }}
+          files: packages/web/*.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to npm
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        working-directory: packages/web
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  finalize-release:
+    needs: [create-release, build-desktop-macos, publish-npm]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.create-release.outputs.version }}
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

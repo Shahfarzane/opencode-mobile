@@ -1,0 +1,417 @@
+import { create } from "zustand";
+import type { StoreApi, UseBoundStore } from "zustand";
+import { devtools, persist, createJSONStorage } from "zustand/middleware";
+import type { Agent } from "@opencode-ai/sdk";
+import { opencodeClient } from "@/lib/opencode/client";
+import { emitConfigChange, scopeMatches, subscribeToConfigChanges } from "@/lib/configSync";
+import {
+  startConfigUpdate,
+  finishConfigUpdate,
+  updateConfigUpdateMessage,
+} from "@/lib/configUpdate";
+import { getSafeStorage } from "./utils/safeStorage";
+import { useConfigStore } from "@/stores/useConfigStore";
+
+export interface AgentConfig {
+  name: string;
+  description?: string;
+  model?: string | null;
+  temperature?: number;
+  top_p?: number;
+  prompt?: string;
+  mode?: "primary" | "subagent" | "all";
+  tools?: Record<string, boolean>;
+  permission?: {
+     edit?: "allow" | "ask" | "deny" | "full";
+     bash?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
+     webfetch?: "allow" | "ask" | "deny";
+   };
+
+  disable?: boolean;
+}
+
+const CONFIG_EVENT_SOURCE = "useAgentsStore";
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const MAX_HEALTH_WAIT_MS = 20000;
+const FAST_HEALTH_POLL_INTERVAL_MS = 300;
+const FAST_HEALTH_POLL_ATTEMPTS = 4;
+const SLOW_HEALTH_POLL_BASE_MS = 800;
+const SLOW_HEALTH_POLL_INCREMENT_MS = 200;
+const SLOW_HEALTH_POLL_MAX_MS = 2000;
+
+interface AgentsStore {
+
+  selectedAgentName: string | null;
+  agents: Agent[];
+  isLoading: boolean;
+
+  setSelectedAgent: (name: string | null) => void;
+  loadAgents: () => Promise<boolean>;
+  createAgent: (config: AgentConfig) => Promise<boolean>;
+  updateAgent: (name: string, config: Partial<AgentConfig>) => Promise<boolean>;
+  deleteAgent: (name: string) => Promise<boolean>;
+  getAgentByName: (name: string) => Agent | undefined;
+}
+
+declare global {
+  interface Window {
+    __zustand_agents_store__?: UseBoundStore<StoreApi<AgentsStore>>;
+  }
+}
+
+export const useAgentsStore = create<AgentsStore>()(
+  devtools(
+    persist(
+      (set, get) => ({
+
+        selectedAgentName: null,
+        agents: [],
+        isLoading: false,
+
+        setSelectedAgent: (name: string | null) => {
+          set({ selectedAgentName: name });
+        },
+
+        loadAgents: async () => {
+          set({ isLoading: true });
+          const previousAgents = get().agents;
+          let lastError: unknown = null;
+
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const agents = await opencodeClient.listAgents();
+              set({ agents, isLoading: false });
+              return true;
+            } catch (error) {
+              lastError = error;
+              const waitMs = 200 * (attempt + 1);
+              await new Promise((resolve) => setTimeout(resolve, waitMs));
+            }
+          }
+
+          console.error("Failed to load agents:", lastError);
+          set({ agents: previousAgents, isLoading: false });
+          return false;
+        },
+
+        createAgent: async (config: AgentConfig) => {
+          startConfigUpdate("Creating agent configuration…");
+          let requiresReload = false;
+          try {
+            console.log('[AgentsStore] Creating agent:', config.name);
+
+            const agentConfig: Record<string, unknown> = {
+              mode: config.mode || "subagent",
+            };
+
+            if (config.description) agentConfig.description = config.description;
+            if (config.model) agentConfig.model = config.model;
+            if (config.temperature !== undefined) agentConfig.temperature = config.temperature;
+            if (config.top_p !== undefined) agentConfig.top_p = config.top_p;
+            if (config.prompt) agentConfig.prompt = config.prompt;
+            if (config.tools && Object.keys(config.tools).length > 0) agentConfig.tools = config.tools;
+            if (config.permission) agentConfig.permission = config.permission;
+            if (config.disable !== undefined) agentConfig.disable = config.disable;
+
+            console.log('[AgentsStore] Agent config to save:', agentConfig);
+
+            const response = await fetch(`/api/config/agents/${encodeURIComponent(config.name)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(agentConfig)
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) {
+              const message = payload?.error || 'Failed to create agent';
+              throw new Error(message);
+            }
+
+            console.log('[AgentsStore] Agent created successfully');
+
+            const needsReload = payload?.requiresReload ?? true;
+            if (needsReload) {
+              requiresReload = true;
+              await performFullConfigRefresh({
+                message: payload?.message,
+                delayMs: payload?.reloadDelayMs,
+              });
+              return true;
+            }
+
+            const loaded = await get().loadAgents();
+            if (loaded) {
+              emitConfigChange("agents", { source: CONFIG_EVENT_SOURCE });
+            }
+            return loaded;
+          } catch (error) {
+            console.error("[AgentsStore] Failed to create agent:", error);
+            return false;
+          } finally {
+            if (!requiresReload) {
+              finishConfigUpdate();
+            }
+          }
+        },
+
+        updateAgent: async (name: string, config: Partial<AgentConfig>) => {
+          startConfigUpdate("Updating agent configuration…");
+          let requiresReload = false;
+          try {
+            console.log('[AgentsStore] Updating agent:', name);
+            console.log('[AgentsStore] Config received:', config);
+
+            const agentConfig: Record<string, unknown> = {};
+
+            if (config.mode !== undefined) agentConfig.mode = config.mode;
+            if (config.description !== undefined) agentConfig.description = config.description;
+            if (config.model !== undefined) agentConfig.model = config.model;
+            if (config.temperature !== undefined) agentConfig.temperature = config.temperature;
+            if (config.top_p !== undefined) agentConfig.top_p = config.top_p;
+            if (config.prompt !== undefined) agentConfig.prompt = config.prompt;
+            if (config.tools !== undefined) agentConfig.tools = config.tools;
+            if (config.permission !== undefined) agentConfig.permission = config.permission;
+            if (config.disable !== undefined) agentConfig.disable = config.disable;
+
+            console.log('[AgentsStore] Agent config to update:', agentConfig);
+
+            const response = await fetch(`/api/config/agents/${encodeURIComponent(name)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(agentConfig)
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) {
+              const message = payload?.error || 'Failed to update agent';
+              throw new Error(message);
+            }
+
+            console.log('[AgentsStore] Agent updated successfully');
+
+            const needsReload = payload?.requiresReload ?? true;
+            if (needsReload) {
+              requiresReload = true;
+              await performFullConfigRefresh({
+                message: payload?.message,
+                delayMs: payload?.reloadDelayMs,
+              });
+              return true;
+            }
+
+            const loaded = await get().loadAgents();
+            if (loaded) {
+              emitConfigChange("agents", { source: CONFIG_EVENT_SOURCE });
+            }
+            return loaded;
+          } catch (error) {
+            console.error("[AgentsStore] Failed to update agent:", error);
+            return false;
+          } finally {
+            if (!requiresReload) {
+              finishConfigUpdate();
+            }
+          }
+        },
+
+        deleteAgent: async (name: string) => {
+          startConfigUpdate("Deleting agent configuration…");
+          let requiresReload = false;
+          try {
+            const response = await fetch(`/api/config/agents/${encodeURIComponent(name)}`, {
+              method: 'DELETE'
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) {
+              const message = payload?.error || 'Failed to delete agent';
+              throw new Error(message);
+            }
+
+            console.log('[AgentsStore] Agent deleted successfully');
+
+            const needsReload = payload?.requiresReload ?? true;
+            if (needsReload) {
+              requiresReload = true;
+              await performFullConfigRefresh({
+                message: payload?.message,
+                delayMs: payload?.reloadDelayMs,
+              });
+              return true;
+            }
+
+            const loaded = await get().loadAgents();
+            if (loaded) {
+              emitConfigChange("agents", { source: CONFIG_EVENT_SOURCE });
+            }
+
+            if (get().selectedAgentName === name) {
+              set({ selectedAgentName: null });
+            }
+
+            return loaded;
+          } catch (error) {
+            console.error("Failed to delete agent:", error);
+            return false;
+          } finally {
+            if (!requiresReload) {
+              finishConfigUpdate();
+            }
+          }
+        },
+
+        getAgentByName: (name: string) => {
+          const { agents } = get();
+          return agents.find((a) => a.name === name);
+        },
+      }),
+      {
+        name: "agents-store",
+        storage: createJSONStorage(() => getSafeStorage()),
+        partialize: (state) => ({
+          selectedAgentName: state.selectedAgentName,
+        }),
+      },
+    ),
+    {
+      name: "agents-store",
+    },
+  ),
+);
+
+if (typeof window !== "undefined") {
+  window.__zustand_agents_store__ = useAgentsStore;
+}
+
+async function waitForOpenCodeConnection(delayMs?: number) {
+  const initialPause = typeof delayMs === "number" && delayMs > 0
+    ? Math.min(delayMs, FAST_HEALTH_POLL_INTERVAL_MS)
+    : 0;
+
+  if (initialPause > 0) {
+    await sleep(initialPause);
+  }
+
+  const start = Date.now();
+  let attempt = 0;
+  let lastError: unknown = null;
+
+  while (Date.now() - start < MAX_HEALTH_WAIT_MS) {
+    attempt += 1;
+    updateConfigUpdateMessage(`Waiting for OpenCode… (attempt ${attempt})`);
+
+    try {
+      const isHealthy = await opencodeClient.checkHealth();
+      if (isHealthy) {
+        return;
+      }
+      lastError = new Error("OpenCode health check reported not ready");
+    } catch (error) {
+      lastError = error;
+    }
+
+    const elapsed = Date.now() - start;
+
+    const waitMs =
+      attempt <= FAST_HEALTH_POLL_ATTEMPTS && elapsed < 1200
+        ? FAST_HEALTH_POLL_INTERVAL_MS
+        : Math.min(
+            SLOW_HEALTH_POLL_BASE_MS +
+              Math.max(0, attempt - FAST_HEALTH_POLL_ATTEMPTS) * SLOW_HEALTH_POLL_INCREMENT_MS,
+            SLOW_HEALTH_POLL_MAX_MS,
+          );
+
+    await sleep(waitMs);
+  }
+
+  throw lastError || new Error("OpenCode did not become ready in time");
+}
+
+async function performFullConfigRefresh(options: { message?: string; delayMs?: number } = {}) {
+  const { message, delayMs } = options;
+
+  try {
+    updateConfigUpdateMessage(message || "Reloading OpenCode configuration…");
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem("agents-store");
+      window.localStorage.removeItem("config-store");
+    }
+  } catch (error) {
+    console.warn("[AgentsStore] Failed to prepare config refresh:", error);
+  }
+
+  try {
+    await waitForOpenCodeConnection(delayMs);
+    updateConfigUpdateMessage("Refreshing providers and agents…");
+
+    const configStore = useConfigStore.getState();
+    const agentsStore = useAgentsStore.getState();
+
+    await Promise.all([
+      configStore.loadProviders().then(() => undefined),
+      agentsStore.loadAgents().then(() => undefined),
+    ]);
+
+    emitConfigChange("agents", { source: CONFIG_EVENT_SOURCE });
+  } catch (error) {
+    console.error("[AgentsStore] Failed to refresh configuration after OpenCode restart:", error);
+    updateConfigUpdateMessage("OpenCode reload failed. Please retry refreshing configuration manually.");
+    await sleep(1500);
+  } finally {
+    finishConfigUpdate();
+  }
+}
+
+export async function refreshAfterOpenCodeRestart(options?: { message?: string; delayMs?: number }) {
+  await performFullConfigRefresh(options);
+}
+
+export async function reloadOpenCodeConfiguration(options?: { message?: string; delayMs?: number }) {
+  startConfigUpdate(options?.message || "Reloading OpenCode configuration…");
+
+  try {
+
+    const response = await fetch('/api/config/reload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message = payload?.error || 'Failed to reload configuration';
+      throw new Error(message);
+    }
+
+    if (payload?.requiresReload) {
+      await performFullConfigRefresh({
+        message: payload.message,
+        delayMs: payload.reloadDelayMs,
+      });
+    } else {
+
+      await performFullConfigRefresh(options);
+    }
+  } catch (error) {
+    console.error('[reloadOpenCodeConfiguration] Failed:', error);
+    updateConfigUpdateMessage('Failed to reload configuration. Please try again.');
+    await sleep(2000);
+    finishConfigUpdate();
+    throw error;
+  }
+}
+
+let unsubscribeAgentsConfigChanges: (() => void) | null = null;
+
+if (!unsubscribeAgentsConfigChanges) {
+  unsubscribeAgentsConfigChanges = subscribeToConfigChanges((event) => {
+    if (event.source === CONFIG_EVENT_SOURCE) {
+      return;
+    }
+
+    if (scopeMatches(event, "agents")) {
+      const { loadAgents } = useAgentsStore.getState();
+      void loadAgents();
+    }
+  });
+}

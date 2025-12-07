@@ -1,0 +1,60 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "OpenChamber",
+  "version": "1.0.0",
+  "identifier": "ai.opencode.openchamber",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://127.0.0.1:1421",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "OpenChamber",
+        "transparent": true,
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": {
+          "x": 17,
+          "y": 26
+        },
+        "visible": true,
+        "backgroundThrottling": "disabled"
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "icon": [
+      "icons/icon.icns",
+      "icons/icon.png"
+    ],
+    "macOS": {
+      "exceptionDomain": "localhost",
+      "minimumSystemVersion": "14.0",
+      "signingIdentity": null,
+      "infoPlist": "Info.plist"
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/btriapitsyn/openchamber/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU0NjI5NDJGNEU0QzFEMTYKUldRV0hVeE9MNVJpNUdRemdsbm8wQ2YxQkU4KzBOOEg3TkpXZzIzb244N3Y0R3I4N2FtUk1NMUEK"
+    }
+  }
+}
