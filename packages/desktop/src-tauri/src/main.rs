@@ -315,7 +315,7 @@ fn main() {
                     }
 
                     if macos_version < 26 {
-                        adjust_traffic_lights_position(&window, 17.0, 20.0);
+                        adjust_traffic_lights_position(&window, 17.0, 16.0);
                     }
                 }
 
