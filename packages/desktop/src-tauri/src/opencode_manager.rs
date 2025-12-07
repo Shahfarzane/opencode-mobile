@@ -513,21 +513,18 @@ fn resolve_opencode_binary() -> Option<String> {
         }
     }
 
-    // Find in PATH
-    if let Ok(output) = std::process::Command::new("which")
-        .arg("opencode")
-        .output()
-    {
-        if output.status.success() {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !path.is_empty() {
-                info!("[desktop:opencode] found binary in PATH: {}", path);
-                return Some(path);
+    // Use login shell to get full PATH (app bundles have limited PATH)
+    if let Ok(login_path) = detect_login_shell_path() {
+        for dir in login_path.split(':') {
+            let candidate = format!("{}/opencode", dir);
+            if Path::new(&candidate).exists() {
+                info!("[desktop:opencode] found binary in PATH: {}", candidate);
+                return Some(candidate);
             }
         }
     }
 
-    warn!("[desktop:opencode] opencode binary not found in PATH");
+    warn!("[desktop:opencode] opencode binary not found");
     None
 }
 
