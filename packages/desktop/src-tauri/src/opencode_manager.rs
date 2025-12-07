@@ -531,6 +531,14 @@ fn resolve_opencode_binary() -> Option<String> {
         }
     }
 
+    if let Some(home) = dirs::home_dir() {
+        let fallback = home.join(".opencode/bin/opencode");
+        if fallback.exists() {
+            info!("[desktop:opencode] found binary in fallback location: {:?}", fallback);
+            return Some(fallback.to_string_lossy().to_string());
+        }
+    }
+
     warn!("[desktop:opencode] opencode binary not found");
     None
 }
@@ -602,12 +610,8 @@ fn build_shell_env_command(shell: &str) -> Vec<String> {
 
     match shell_name {
         "bash" => vec![
-            "-c".to_string(),
-            "source ~/.bash_profile 2>/dev/null; source ~/.bashrc 2>/dev/null; echo \"__PATH__=$PATH\"; echo \"__OPENCODE_BINARY__=$OPENCODE_BINARY\"".to_string(),
-        ],
-        "zsh" => vec![
             "-lic".to_string(),
-            "echo \"__PATH__=$PATH\"; echo \"__OPENCODE_BINARY__=$OPENCODE_BINARY\"".to_string(),
+            "source ~/.bashrc 2>/dev/null; echo \"__PATH__=$PATH\"; echo \"__OPENCODE_BINARY__=$OPENCODE_BINARY\"".to_string(),
         ],
         _ => vec![
             "-lic".to_string(),
@@ -626,7 +630,9 @@ fn detect_shell_env() -> ShellEnv {
         use std::process::Command;
 
         let shell = get_user_shell().unwrap_or_else(|| "/bin/zsh".into());
+        info!("[desktop:opencode] detected user shell: {}", shell);
         let args = build_shell_env_command(&shell);
+        info!("[desktop:opencode] shell args: {:?}", args);
 
         let output = match Command::new(&shell).args(&args).output() {
             Ok(o) => o,
@@ -637,11 +643,13 @@ fn detect_shell_env() -> ShellEnv {
         };
 
         if !output.status.success() {
-            warn!("[desktop:opencode] shell env detection failed for {}", shell);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            warn!("[desktop:opencode] shell env detection failed for {}, stderr: {}", shell, stderr);
             return ShellEnv::default();
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
+        info!("[desktop:opencode] shell stdout length: {}", stdout.len());
         let mut env = ShellEnv::default();
 
         for line in stdout.lines() {
@@ -656,6 +664,7 @@ fn detect_shell_env() -> ShellEnv {
             }
         }
 
+        info!("[desktop:opencode] parsed path exists: {}", env.path.is_some());
         env
     }
 }
