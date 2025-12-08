@@ -751,7 +751,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ mobileVariant = 
                 )}
               >
                 {}
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span
                     className={cn(
                       'truncate typography-ui-label font-normal text-foreground',

@@ -64,7 +64,13 @@ use tower_http::cors::CorsLayer;
 use window_state::{load_window_state, persist_window_state, WindowStateManager};
 
 #[cfg(target_os = "macos")]
+use std::sync::atomic::{AtomicBool, Ordering};
+
+#[cfg(target_os = "macos")]
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+
+#[cfg(target_os = "macos")]
+static NEEDS_TRAFFIC_LIGHT_FIX: AtomicBool = AtomicBool::new(false);
 
 const PROXY_BODY_LIMIT: usize = 32 * 1024 * 1024; // 32MB
 const CLIENT_RELOAD_DELAY_MS: u64 = 800;
@@ -318,6 +324,7 @@ fn main() {
                     }
 
                     if macos_version < 26 {
+                        NEEDS_TRAFFIC_LIGHT_FIX.store(true, Ordering::SeqCst);
                         adjust_traffic_lights_position(&window, 17.0, 16.0);
                     }
                 }
@@ -432,6 +439,12 @@ fn main() {
                         size.height as f64,
                         is_maximized,
                     );
+                    #[cfg(target_os = "macos")]
+                    if NEEDS_TRAFFIC_LIGHT_FIX.load(Ordering::SeqCst) {
+                        if let Some(webview) = window.app_handle().get_webview_window("main") {
+                            adjust_traffic_lights_position(&webview, 17.0, 16.0);
+                        }
+                    }
                 }
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
