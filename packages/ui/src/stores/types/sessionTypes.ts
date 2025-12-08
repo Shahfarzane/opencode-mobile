@@ -100,7 +100,8 @@ export interface SessionStore {
     toggleSessionAgentEditMode: (sessionId: string, agentName: string | undefined, defaultMode?: EditPermissionMode) => void;
     setSessionAgentEditMode: (sessionId: string, agentName: string | undefined, mode: EditPermissionMode, defaultMode?: EditPermissionMode) => void;
     loadSessions: () => Promise<void>;
-    createSession: (title?: string, directoryOverride?: string | null) => Promise<Session | null>;
+    createSession: (title?: string, directoryOverride?: string | null, parentID?: string | null) => Promise<Session | null>;
+    createSessionFromAssistantMessage: (sourceMessageId: string) => Promise<void>;
 
     deleteSession: (id: string, options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; remoteName?: string }) => Promise<boolean>;
     deleteSessions: (ids: string[], options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; remoteName?: string }) => Promise<{ deletedIds: string[]; failedIds: string[] }>;

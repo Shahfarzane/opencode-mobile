@@ -20,6 +20,7 @@ import type { AgentMentionInfo } from './message/types';
 import type { StreamPhase, ToolPopupContent } from './message/types';
 import { deriveMessageRole } from './message/messageRole';
 import { filterVisibleParts } from './message/partUtils';
+import { flattenAssistantTextParts } from '@/lib/messages/messageText';
 import { FadeInOnReveal } from './message/FadeInOnReveal';
 import type { TurnGroupingContext } from './hooks/useTurnGrouping';
 
@@ -461,16 +462,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             return assistantSummaryForCopy;
         }
 
-        const textParts = displayParts
-            .filter((part): part is Part & { type: 'text'; text?: string; content?: string } => part.type === 'text')
-            .map((part) => {
-                const text = part.text || part.content || '';
-                return text.trim();
-            })
-            .filter((text) => text.length > 0);
-
-        const combined = textParts.join('\n');
-        return combined.replace(/\n\s*\n+/g, '\n');
+        return flattenAssistantTextParts(displayParts);
     }, [assistantSummaryForCopy, displayParts, isUser]);
 
     const hasTextContent = messageTextContent.length > 0;

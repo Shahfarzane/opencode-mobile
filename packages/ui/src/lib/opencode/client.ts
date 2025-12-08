@@ -354,6 +354,7 @@ class OpencodeService {
     providerID: string;
     modelID: string;
     text: string;
+    prefaceText?: string;
     agent?: string;
     files?: Array<{
       type: 'file';
@@ -371,6 +372,13 @@ class OpencodeService {
 
     // Build parts array using SDK types (TextPartInput | FilePartInput) plus lightweight agent parts
     const parts: Array<TextPartInput | FilePartInput | AgentPartInputLite> = [];
+
+    if (params.prefaceText && params.prefaceText.trim()) {
+      parts.push({
+        type: 'text',
+        text: params.prefaceText
+      });
+    }
 
     // Add text part if there's content
     if (params.text && params.text.trim()) {

@@ -5,7 +5,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { RiArrowDownSLine, RiArrowUpSLine, RiChat1Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
+import { RiArrowDownSLine, RiArrowUpSLine, RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
 import { useUIStore, type MainTab } from '@/stores/useUIStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -233,7 +233,7 @@ export const Header: React.FC = () => {
   }, [isDesktopApp]);
 
   const tabs: TabConfig[] = React.useMemo(() => [
-    { id: 'chat', label: 'Chat', icon: RiChat1Line },
+    { id: 'chat', label: 'Chat', icon: RiChat4Line },
     { id: 'diff', label: 'Diff', icon: RiCodeLine, badge: diffFileCount > 0 ? diffFileCount : undefined },
     { id: 'terminal', label: 'Terminal', icon: RiTerminalBoxLine },
     { id: 'git', label: 'Git', icon: RiGitBranchLine },

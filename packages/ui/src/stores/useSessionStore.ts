@@ -13,6 +13,9 @@ import { useContextStore } from "./contextStore";
 import { usePermissionStore } from "./permissionStore";
 import { opencodeClient } from "@/lib/opencode/client";
 import { useDirectoryStore } from "./useDirectoryStore";
+import { useConfigStore } from "./useConfigStore";
+import { EXECUTION_FORK_META_TEXT } from "@/lib/messages/executionMeta";
+import { flattenAssistantTextParts } from "@/lib/messages/messageText";
 
 export type { AttachedFile, EditPermissionMode };
 export { MEMORY_LIMITS, ACTIVE_SESSION_WINDOW } from "./types/sessionTypes";
@@ -105,13 +108,69 @@ export const useSessionStore = create<SessionStore>()(
                 },
 
                 loadSessions: () => useSessionManagementStore.getState().loadSessions(),
-                createSession: async (title?: string, directoryOverride?: string | null) => {
-                    const result = await useSessionManagementStore.getState().createSession(title, directoryOverride);
+                createSession: async (title?: string, directoryOverride?: string | null, parentID?: string | null) => {
+                    const result = await useSessionManagementStore.getState().createSession(title, directoryOverride, parentID);
 
                     if (result?.id) {
                         await get().setCurrentSession(result.id);
                     }
                     return result;
+                },
+                createSessionFromAssistantMessage: async (sourceMessageId: string) => {
+                    if (!sourceMessageId) {
+                        return;
+                    }
+
+                    const messageStore = useMessageStore.getState();
+                    const { messages, lastUsedProvider } = messageStore;
+                    let sourceEntry: { info: Message; parts: Part[] } | undefined;
+                    let sourceSessionId: string | undefined;
+
+                    messages.forEach((messageList, sessionId) => {
+                        const found = messageList.find((entry) => entry.info?.id === sourceMessageId);
+                        if (found && !sourceEntry) {
+                            sourceEntry = found;
+                            sourceSessionId = sessionId;
+                        }
+                    });
+
+                    if (!sourceEntry || sourceEntry.info.role !== "assistant") {
+                        return;
+                    }
+
+                    const assistantPlanText = flattenAssistantTextParts(sourceEntry.parts);
+                    if (!assistantPlanText.trim()) {
+                        return;
+                    }
+
+                    const sessionManagementStore = useSessionManagementStore.getState();
+                    const directory = resolveSessionDirectory(
+                        sessionManagementStore.sessions,
+                        sourceSessionId ?? null,
+                        sessionManagementStore.getWorktreeMetadata,
+                    );
+
+                    const session = await get().createSession(undefined, directory ?? null, null);
+                    if (!session) {
+                        return;
+                    }
+
+                    const { currentProviderId, currentModelId, currentAgentName } = useConfigStore.getState();
+                    const providerID = currentProviderId || lastUsedProvider?.providerID;
+                    const modelID = currentModelId || lastUsedProvider?.modelID;
+
+                    if (!providerID || !modelID) {
+                        return;
+                    }
+
+                    await opencodeClient.sendMessage({
+                        id: session.id,
+                        providerID,
+                        modelID,
+                        text: assistantPlanText,
+                        prefaceText: EXECUTION_FORK_META_TEXT,
+                        agent: currentAgentName ?? undefined,
+                    });
                 },
                 deleteSession: (id: string, options) => useSessionManagementStore.getState().deleteSession(id, options),
                 deleteSessions: (ids: string[], options) => useSessionManagementStore.getState().deleteSessions(ids, options),

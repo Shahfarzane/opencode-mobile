@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Added assistant answer fork flow so users can start a new session from an assistant plan/response with inherited context.
+
 
 ## [1.0.9] - 2025-12-08
 

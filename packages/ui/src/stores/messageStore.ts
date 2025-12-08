@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
 import type { Message, Part } from "@opencode-ai/sdk";
 import { opencodeClient } from "@/lib/opencode/client";
+import { isExecutionForkMetaText } from "@/lib/messages/executionMeta";
 import type { SessionMemoryState, MessageStreamLifecycle, AttachedFile } from "./types/sessionTypes";
 import { MEMORY_LIMITS } from "./types/sessionTypes";
 import {
@@ -332,7 +333,15 @@ export const useMessageStore = create<MessageStore>()(
                                     userMessageMarker: message.info.role === "user" ? true : (message.info as any)?.userMessageMarker,
                                 } as any;
 
-                                const serverParts = Array.isArray(message.parts) ? [...message.parts] : [];
+                                const serverParts = (Array.isArray(message.parts) ? message.parts : []).map((part) => {
+                                    if (part?.type === 'text') {
+                                        const raw = (part as any).text ?? (part as any).content ?? '';
+                                        if (isExecutionForkMetaText(raw)) {
+                                            return { ...part, synthetic: true } as Part;
+                                        }
+                                    }
+                                    return part;
+                                });
                                 const existingEntry = infoWithMarker?.id
                                     ? previousMessagesById.get(infoWithMarker.id as string)
                                     : undefined;
@@ -935,6 +944,9 @@ export const useMessageStore = create<MessageStore>()(
                         }
 
                     const incomingText = extractTextFromPart(part);
+                    if (isExecutionForkMetaText(incomingText)) {
+                        (part as any).synthetic = true;
+                    }
                     if (streamDebugEnabled() && actualRole === "assistant") {
                         try {
                             console.info("[STREAM-TRACE] part", {
@@ -1789,7 +1801,15 @@ export const useMessageStore = create<MessageStore>()(
                                         : (message.info as any)?.animationSettled,
                             } as any;
 
-                            const serverParts = Array.isArray(message.parts) ? [...message.parts] : [];
+                            const serverParts = (Array.isArray(message.parts) ? message.parts : []).map((part) => {
+                                if (part?.type === 'text') {
+                                    const raw = (part as any).text ?? (part as any).content ?? '';
+                                    if (isExecutionForkMetaText(raw)) {
+                                        return { ...part, synthetic: true } as Part;
+                                    }
+                                }
+                                return part;
+                            });
                             const messageId = typeof infoWithMarker?.id === "string" ? (infoWithMarker.id as string) : undefined;
                             const existingEntry = messageId ? previousMessagesById.get(messageId) : undefined;
 

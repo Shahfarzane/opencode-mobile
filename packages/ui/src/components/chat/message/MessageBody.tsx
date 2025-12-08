@@ -15,11 +15,14 @@ import { cn } from '@/lib/utils';
 import { isEmptyTextPart, extractTextContent } from './partUtils';
 import { FadeInOnReveal } from './FadeInOnReveal';
 import { Button } from '@/components/ui/button';
-import { RiCheckLine, RiFileCopyLine } from '@remixicon/react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { RiCheckLine, RiFileCopyLine, RiChatNewLine } from '@remixicon/react';
 import type { ContentChangeReason } from '@/hooks/useChatScrollManager';
+
 import { SimpleMarkdownRenderer } from '../MarkdownRenderer';
 import { useMessageStore } from '@/stores/messageStore';
-import { useSessionStore } from '@/stores/sessionStore';
+import { useSessionStore } from '@/stores/useSessionStore';
+
 
 const useMigrationTimer = (
     turnGroupingContext: TurnGroupingContext | undefined,
@@ -318,6 +321,12 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         return visibleParts.filter((part) => part.type === 'text');
     }, [visibleParts]);
 
+    const createSessionFromAssistantMessage = useSessionStore((state) => state.createSessionFromAssistantMessage);
+    const isLastAssistantInTurn = turnGroupingContext?.isLastAssistantInTurn ?? false;
+    const hasStopFinish = React.useMemo(() => {
+        return parts.some((part) => part.type === 'step-finish' && (part as { reason?: string | null | undefined }).reason === 'stop');
+    }, [parts]);
+
     const hasTools = toolParts.length > 0;
 
     const hasPendingTools = React.useMemo(() => {
@@ -509,6 +518,18 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
             }
         },
         [hasCopyableText, isTouchContext, onCopyMessage, revealCopyHint]
+    );
+
+    const handleForkClick = React.useCallback(
+        (event: React.MouseEvent<HTMLButtonElement>) => {
+            event.stopPropagation();
+            event.preventDefault();
+            if (!createSessionFromAssistantMessage) {
+                return;
+            }
+            void createSessionFromAssistantMessage(messageId);
+        },
+        [createSessionFromAssistantMessage, messageId]
     );
 
     React.useEffect(() => {
@@ -944,6 +965,8 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         summaryBody &&
         summaryBody.trim().length > 0;
 
+    const shouldShowFooter = hasTextContent && assistantTextParts.length > 0 && hasStopFinish && isLastAssistantInTurn;
+
     return (
         <div
             className={cn(
@@ -960,24 +983,30 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                     {renderedParts}
                     {showSummaryBody && (
                         <FadeInOnReveal key="summary-body">
-                            <div
-                                className="group/assistant-text relative break-words"
-                                onTouchStart={isTouchContext && canCopyMessage && hasCopyableText ? revealCopyHint : undefined}
-                            >
-                                {canCopyMessage && (
+                            <div className="group/assistant-text relative break-words">
+                                <SimpleMarkdownRenderer
+                                    content={summaryBody}
+                                />
+                            </div>
+                        </FadeInOnReveal>
+                    )}
+                </div>
+                <MessageFilesDisplay files={parts} onShowPopup={onShowPopup} />
+                {shouldShowFooter && (
+                    <div className="mt-2 mb-1 flex items-center justify-end gap-2">
+                        {onCopyMessage && (
+                            <Tooltip delayDuration={1000}>
+                                <TooltipTrigger asChild>
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="icon"
                                         data-visible={copyHintVisible || isMessageCopied ? 'true' : undefined}
                                         className={cn(
-                                            'absolute z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border/40 shadow-none bg-background/95 supports-[backdrop-filter]:bg-background/80 hover:bg-accent duration-150',
-                                            'opacity-0 pointer-events-none disabled:opacity-30 disabled:text-muted-foreground/40',
-                                            hasCopyableText &&
-                                                'group-hover/message:opacity-60 group-hover/message:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto',
-                                            (copyHintVisible || isMessageCopied) && 'opacity-100 pointer-events-auto'
+                                            'h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50',
+                                            !hasCopyableText && 'opacity-50',
+                                            (copyHintVisible || isMessageCopied) && 'text-primary'
                                         )}
-                                        style={{ insetInlineEnd: '0.32rem', insetBlockStart: '-0.4rem' }}
                                         disabled={!hasCopyableText}
                                         aria-label="Copy message text"
                                         aria-hidden={!hasCopyableText}
@@ -997,18 +1026,30 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                                         {isMessageCopied ? (
                                             <RiCheckLine className="h-3.5 w-3.5 text-[color:var(--status-success)]" />
                                         ) : (
-                                            <RiFileCopyLine className="h-3.5 w-3.5 text-foreground hover:text-primary focus-visible:text-primary" />
+                                            <RiFileCopyLine className="h-3.5 w-3.5" />
                                         )}
                                     </Button>
-                                )}
-                                <SimpleMarkdownRenderer
-                                    content={summaryBody}
-                                />
-                            </div>
-                        </FadeInOnReveal>
-                    )}
-                </div>
-                <MessageFilesDisplay files={parts} onShowPopup={onShowPopup} />
+                                </TooltipTrigger>
+                                <TooltipContent sideOffset={6}>Copy answer</TooltipContent>
+                            </Tooltip>
+                        )}
+                        <Tooltip delayDuration={1000}>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50"
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                    onClick={handleForkClick}
+                                >
+                                    <RiChatNewLine className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={6}>Start new session from this answer</TooltipContent>
+                        </Tooltip>
+                    </div>
+                )}
             </div>
         </div>
     );

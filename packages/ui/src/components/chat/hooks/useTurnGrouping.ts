@@ -33,6 +33,7 @@ interface TurnDiffStats {
 export interface TurnGroupingContext {
     turnId: string;
     isFirstAssistantInTurn: boolean;
+    isLastAssistantInTurn: boolean;
 
     summaryBody?: string;
 
@@ -48,6 +49,7 @@ export interface TurnGroupingContext {
     toggleGroup: () => void;
     markPartsPreviewed: (partIds: string[]) => void;
 }
+
 
 interface TurnUiState {
     isExpanded: boolean;
@@ -361,6 +363,8 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
 
             const firstAssistantId = turn.assistantMessages[0]?.info.id;
             const isFirstAssistantInTurn = messageId === firstAssistantId;
+            const lastAssistantId = turn.assistantMessages[turn.assistantMessages.length - 1]?.info.id;
+            const isLastAssistantInTurn = messageId === lastAssistantId;
 
             const uiState = getOrCreateTurnState(turn.turnId);
             const isTurnWorking = sessionIsWorking && lastTurnId === turn.turnId;
@@ -368,6 +372,7 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
             return {
                 turnId: turn.turnId,
                 isFirstAssistantInTurn,
+                isLastAssistantInTurn,
                 summaryBody,
                 activityParts,
                 hasTools,
@@ -378,9 +383,11 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
                 previewedPartIds: uiState.previewedPartIds,
                 toggleGroup: () => toggleGroup(turn.turnId),
                 markPartsPreviewed: (partIds: string[]) => markPartsPreviewedInternal(turn.turnId, partIds),
-            };
-        }, [getOrCreateTurnState, lastTurnId, sessionIsWorking, markPartsPreviewedInternal, messageToTurn, toggleGroup, turnActivityInfo]
+            } satisfies TurnGroupingContext;
+        },
+        [getOrCreateTurnState, lastTurnId, markPartsPreviewedInternal, messageToTurn, sessionIsWorking, toggleGroup, turnActivityInfo]
     );
+
 
     return {
         turns,

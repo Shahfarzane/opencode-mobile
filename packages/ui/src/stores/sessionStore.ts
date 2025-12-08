@@ -21,7 +21,7 @@ interface SessionState {
 
 interface SessionActions {
     loadSessions: () => Promise<void>;
-    createSession: (title?: string, directoryOverride?: string | null) => Promise<Session | null>;
+    createSession: (title?: string, directoryOverride?: string | null, parentID?: string | null) => Promise<Session | null>;
     deleteSession: (id: string, options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; remoteName?: string }) => Promise<boolean>;
     deleteSessions: (ids: string[], options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; remoteName?: string }) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
     updateSessionTitle: (id: string, title: string) => Promise<void>;
@@ -449,7 +449,7 @@ export const useSessionStore = create<SessionStore>()(
                     }
                 },
 
-                createSession: async (title?: string, directoryOverride?: string | null) => {
+                createSession: async (title?: string, directoryOverride?: string | null, parentID?: string | null) => {
                     set({ error: null });
                     const directoryStore = useDirectoryStore.getState();
                     const fallbackDirectory = normalizePath(directoryStore.currentDirectory);
@@ -461,7 +461,7 @@ export const useSessionStore = create<SessionStore>()(
                     const optimisticSession: Session = {
                         id: tempId,
                         title: title || "New session",
-                        parentID: undefined,
+                        parentID: parentID ?? undefined,
                         directory: targetDirectory ?? null,
                         projectID: (previousState.sessions[0] as { projectID?: string })?.projectID ?? "",
                         version: "0.0.0",
@@ -529,7 +529,7 @@ export const useSessionStore = create<SessionStore>()(
                     };
 
                     try {
-                        const createRequest = () => opencodeClient.createSession({ title });
+                        const createRequest = () => opencodeClient.createSession({ title, parentID: parentID ?? undefined });
                         let session: Session | null = null;
 
                         try {
