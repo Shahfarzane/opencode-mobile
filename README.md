@@ -8,6 +8,21 @@ It was entirely built with OpenCode tool - first with the TUI version, then with
 
 The whole project was built entirely with AI coding agents under my supervision. It started as a hobby project and proof of concept that AI agents can create genuinely usable software.
 
+![OpenChamber Chat](docs/references/chat_example.png)
+
+<details>
+<summary>More screenshots</summary>
+
+![Tool Output](docs/references/tool_output_example.png)
+![Settings](docs/references/settings_example.png)
+![Web Version](docs/references/web_version_example.png)
+<p>
+<img src="docs/references/pwa_chat_example.png" width="45%" alt="PWA Chat">
+<img src="docs/references/pwa_terminal_example.png" width="45%" alt="PWA Terminal">
+</p>
+
+</details>
+
 ## Why use OpenChamber?
 
 - **Cross-device continuity**: Start in TUI, continue on tablet/phone, return to terminal - same session
