@@ -78,6 +78,31 @@ const createEmptyDirectoryState = (): DirectoryGitState => ({
   logMaxCount: 25,
 });
 
+const haveDiffStatsChanged = (
+  previous?: GitStatus['diffStats'],
+  next?: GitStatus['diffStats']
+): boolean => {
+  if (!previous && !next) return false;
+  if (!previous || !next) return true;
+
+  const paths = new Set([...Object.keys(previous), ...Object.keys(next)]);
+  for (const path of paths) {
+    const prevEntry = previous[path];
+    const nextEntry = next[path];
+
+    if (!prevEntry && !nextEntry) continue;
+    if (!prevEntry || !nextEntry) return true;
+    if (
+      prevEntry.insertions !== nextEntry.insertions ||
+      prevEntry.deletions !== nextEntry.deletions
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const hasStatusChanged = (oldStatus: GitStatus | null, newStatus: GitStatus | null): boolean => {
   if (!oldStatus && !newStatus) return false;
   if (!oldStatus || !newStatus) return true;
@@ -89,6 +114,8 @@ const hasStatusChanged = (oldStatus: GitStatus | null, newStatus: GitStatus | nu
   if (oldStatus.ahead !== newStatus.ahead) return true;
   if (oldStatus.behind !== newStatus.behind) return true;
   if (oldStatus.current !== newStatus.current) return true;
+  if (oldStatus.tracking !== newStatus.tracking) return true;
+  if (oldStatus.isClean !== newStatus.isClean) return true;
 
   const oldPaths = new Set(oldFiles.map(f => `${f.path}:${f.index}:${f.working_dir}`));
   for (const file of newFiles) {
@@ -96,6 +123,8 @@ const hasStatusChanged = (oldStatus: GitStatus | null, newStatus: GitStatus | nu
       return true;
     }
   }
+
+  if (haveDiffStatsChanged(oldStatus.diffStats, newStatus.diffStats)) return true;
 
   return false;
 };
