@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
+## [1.0.9] - 2025-12-08
+
+- Added directory picker on first launch to reduce macOS permission prompts
+- Show changelog in update dialog from current to new version
+- Improved update dialog UI with inline version display
+- Added macOS folder access usage descriptions
+
+
 ## [1.0.8] - 2025-12-08
 
 - Added fallback detection for OpenCode CLI in ~/.opencode/bin

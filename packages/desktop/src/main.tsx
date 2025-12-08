@@ -260,15 +260,6 @@ interface ServerInfo {
   has_last_directory: boolean;
 }
 
-const checkRuntimeReady = async (): Promise<boolean> => {
-  try {
-    const info = await invoke<ServerInfo>('desktop_server_info');
-    return info.cli_available && info.opencode_port !== null;
-  } catch {
-    return false;
-  }
-};
-
 // Check if we need to prompt for directory selection first
 const promptForDirectoryIfNeeded = async (): Promise<void> => {
   try {
