@@ -47,14 +47,14 @@ export interface SessionContextUsage {
 }
 
 export const MEMORY_LIMITS = {
-    MAX_SESSIONS: 2,
-    VIEWPORT_MESSAGES: 60,
+    MAX_SESSIONS: 3,
+    VIEWPORT_MESSAGES: 120,
     STREAMING_BUFFER: Infinity,
-    BACKGROUND_STREAMING_BUFFER: 100,
+    BACKGROUND_STREAMING_BUFFER: 120,
     ZOMBIE_TIMEOUT: 10 * 60 * 1000,
 } as const;
 
-export const ACTIVE_SESSION_WINDOW = 120;
+export const ACTIVE_SESSION_WINDOW = 180;
 
 export interface SessionStore {
 
