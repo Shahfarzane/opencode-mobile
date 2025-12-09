@@ -327,6 +327,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         return parts.some((part) => part.type === 'step-finish' && (part as { reason?: string | null | undefined }).reason === 'stop');
     }, [parts]);
 
+
     const hasTools = toolParts.length > 0;
 
     const hasPendingTools = React.useMemo(() => {
@@ -961,13 +962,74 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
     const summaryBody = summaryBodyRef.current;
 
     const showSummaryBody =
-        turnGroupingContext?.isFirstAssistantInTurn &&
+        turnGroupingContext?.isLastAssistantInTurn &&
         summaryBody &&
         summaryBody.trim().length > 0;
 
     const shouldShowFooter = hasTextContent && assistantTextParts.length > 0 && hasStopFinish && isLastAssistantInTurn;
+    const [isSummaryHovered, setIsSummaryHovered] = React.useState(false);
 
-    return (
+    const footerButtons = (
+         <>
+             {onCopyMessage && (
+                 <Tooltip delayDuration={1000}>
+                     <TooltipTrigger asChild>
+                         <Button
+                             type="button"
+                             variant="ghost"
+                             size="icon"
+                             data-visible={copyHintVisible || isMessageCopied ? 'true' : undefined}
+                             className={cn(
+                                 'h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50',
+                                 !hasCopyableText && 'opacity-50',
+                                 (copyHintVisible || isMessageCopied) && 'text-primary'
+                             )}
+                             disabled={!hasCopyableText}
+                             aria-label="Copy message text"
+                             aria-hidden={!hasCopyableText}
+                             onPointerDown={(event) => event.stopPropagation()}
+                             onClick={handleCopyButtonClick}
+                             onFocus={() => {
+                                 if (hasCopyableText) {
+                                     setCopyHintVisible(true);
+                                 }
+                             }}
+                             onBlur={() => {
+                                 if (!isMessageCopied) {
+                                     setCopyHintVisible(false);
+                                 }
+                             }}
+                         >
+                             {isMessageCopied ? (
+                                 <RiCheckLine className="h-3.5 w-3.5 text-[color:var(--status-success)]" />
+                             ) : (
+                                 <RiFileCopyLine className="h-3.5 w-3.5" />
+                             )}
+                         </Button>
+                     </TooltipTrigger>
+                     <TooltipContent sideOffset={6}>Copy answer</TooltipContent>
+                 </Tooltip>
+             )}
+             <Tooltip delayDuration={1000}>
+                 <TooltipTrigger asChild>
+                     <Button
+                         type="button"
+                         size="icon"
+                         variant="ghost"
+                         className="h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50"
+                         onPointerDown={(event) => event.stopPropagation()}
+                         onClick={handleForkClick}
+                     >
+                         <RiChatNewLine className="h-4 w-4" />
+                     </Button>
+                 </TooltipTrigger>
+                 <TooltipContent sideOffset={6}>Start new session from this answer</TooltipContent>
+             </Tooltip>
+         </>
+     );
+ 
+     return (
+
         <div
             className={cn(
                 'relative w-full group/message'
@@ -978,78 +1040,42 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
             }}
             onTouchStart={isTouchContext && canCopyMessage && hasCopyableText ? revealCopyHint : undefined}
         >
-            <div className="px-3">
-                <div className="leading-normal overflow-hidden text-foreground/90 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0">
+            <div
+                className="px-3"
+            >
+                <div
+                    className="leading-normal overflow-hidden text-foreground/90 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0"
+                >
                     {renderedParts}
                     {showSummaryBody && (
                         <FadeInOnReveal key="summary-body">
-                            <div className="group/assistant-text relative break-words">
-                                <SimpleMarkdownRenderer
-                                    content={summaryBody}
-                                />
+                            <div
+                                className="group/assistant-text relative break-words"
+                                onMouseEnter={() => setIsSummaryHovered(true)}
+                                onMouseLeave={() => setIsSummaryHovered(false)}
+                            >
+                                <SimpleMarkdownRenderer content={summaryBody} />
+                                {shouldShowFooter && (
+                                    <div
+                                        className={cn(
+                                            "mt-2 mb-1 flex items-center justify-end gap-2 opacity-0 pointer-events-none transition-opacity duration-150 focus-within:opacity-100 focus-within:pointer-events-auto",
+                                            isSummaryHovered && "opacity-100 pointer-events-auto",
+                                        )}
+                                    >
+                                        {footerButtons}
+                                    </div>
+                                )}
                             </div>
                         </FadeInOnReveal>
                     )}
                 </div>
                 <MessageFilesDisplay files={parts} onShowPopup={onShowPopup} />
-                {shouldShowFooter && (
-                    <div className="mt-2 mb-1 flex items-center justify-end gap-2">
-                        {onCopyMessage && (
-                            <Tooltip delayDuration={1000}>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        data-visible={copyHintVisible || isMessageCopied ? 'true' : undefined}
-                                        className={cn(
-                                            'h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50',
-                                            !hasCopyableText && 'opacity-50',
-                                            (copyHintVisible || isMessageCopied) && 'text-primary'
-                                        )}
-                                        disabled={!hasCopyableText}
-                                        aria-label="Copy message text"
-                                        aria-hidden={!hasCopyableText}
-                                        onPointerDown={(event) => event.stopPropagation()}
-                                        onClick={handleCopyButtonClick}
-                                        onFocus={() => {
-                                            if (hasCopyableText) {
-                                                setCopyHintVisible(true);
-                                            }
-                                        }}
-                                        onBlur={() => {
-                                            if (!isMessageCopied) {
-                                                setCopyHintVisible(false);
-                                            }
-                                        }}
-                                    >
-                                        {isMessageCopied ? (
-                                            <RiCheckLine className="h-3.5 w-3.5 text-[color:var(--status-success)]" />
-                                        ) : (
-                                            <RiFileCopyLine className="h-3.5 w-3.5" />
-                                        )}
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent sideOffset={6}>Copy answer</TooltipContent>
-                            </Tooltip>
-                        )}
-                        <Tooltip delayDuration={1000}>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50"
-                                    onPointerDown={(event) => event.stopPropagation()}
-                                    onClick={handleForkClick}
-                                >
-                                    <RiChatNewLine className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent sideOffset={6}>Start new session from this answer</TooltipContent>
-                        </Tooltip>
+                {!showSummaryBody && shouldShowFooter && (
+                    <div className="mt-2 mb-1 flex items-center justify-end gap-2 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/message:opacity-100 group-hover/message:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
+                        {footerButtons}
                     </div>
                 )}
+
             </div>
         </div>
     );
