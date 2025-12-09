@@ -231,3 +231,41 @@ export async function closeTerminal(sessionId: string): Promise<void> {
     throw new Error(error.error || 'Failed to close terminal');
   }
 }
+
+export async function restartTerminalSession(
+  currentSessionId: string,
+  options: { cwd: string; cols?: number; rows?: number }
+): Promise<TerminalSession> {
+  const response = await fetch(`/api/terminal/${currentSessionId}/restart`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cwd: options.cwd,
+      cols: options.cols ?? 80,
+      rows: options.rows ?? 24,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to restart terminal' }));
+    throw new Error(error.error || 'Failed to restart terminal');
+  }
+
+  return response.json();
+}
+
+export async function forceKillTerminal(options: {
+  sessionId?: string;
+  cwd?: string;
+}): Promise<void> {
+  const response = await fetch('/api/terminal/force-kill', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to force kill terminal' }));
+    throw new Error(error.error || 'Failed to force kill terminal');
+  }
+}

@@ -7,9 +7,8 @@ export interface TerminalChunk {
 }
 
 interface TerminalSessionState {
-  sessionId: string;
-  terminalSessionId: string | null;
   directory: string;
+  terminalSessionId: string | null;
   isConnecting: boolean;
   buffer: string;
   bufferChunks: TerminalChunk[];
@@ -21,22 +20,29 @@ interface TerminalStore {
   sessions: Map<string, TerminalSessionState>;
   nextChunkId: number;
 
-  getTerminalSession: (sessionId: string) => TerminalSessionState | undefined;
-  setTerminalSession: (sessionId: string, terminalSession: TerminalSession, directory: string) => void;
-  setConnecting: (sessionId: string, isConnecting: boolean) => void;
-  appendToBuffer: (sessionId: string, chunk: string) => void;
-  clearTerminalSession: (sessionId: string) => void;
-  clearBuffer: (sessionId: string) => void;
-  removeTerminalSession: (sessionId: string) => void;
+  getTerminalSession: (directory: string) => TerminalSessionState | undefined;
+  setTerminalSession: (directory: string, terminalSession: TerminalSession) => void;
+  setConnecting: (directory: string, isConnecting: boolean) => void;
+  appendToBuffer: (directory: string, chunk: string) => void;
+  clearTerminalSession: (directory: string) => void;
+  clearBuffer: (directory: string) => void;
+  removeTerminalSession: (directory: string) => void;
   clearAllTerminalSessions: () => void;
 }
 
-const TERMINAL_BUFFER_LIMIT = 60_000;
+const TERMINAL_BUFFER_LIMIT = 256_000;
 
-const createEmptySessionState = (sessionId: string): TerminalSessionState => ({
-  sessionId,
+function normalizeDirectory(dir: string): string {
+  let normalized = dir.trim();
+  while (normalized.length > 1 && normalized.endsWith('/')) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+}
+
+const createEmptySessionState = (directory: string): TerminalSessionState => ({
+  directory,
   terminalSessionId: null,
-  directory: '',
   isConnecting: false,
   buffer: '',
   bufferChunks: [],
@@ -48,27 +54,28 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
   sessions: new Map(),
   nextChunkId: 1,
 
-  getTerminalSession: (sessionId: string) => {
-    return get().sessions.get(sessionId);
+  getTerminalSession: (directory: string) => {
+    const key = normalizeDirectory(directory);
+    return get().sessions.get(key);
   },
 
-  setTerminalSession: (sessionId: string, terminalSession: TerminalSession, directory: string) => {
+  setTerminalSession: (directory: string, terminalSession: TerminalSession) => {
+    const key = normalizeDirectory(directory);
     set((state) => {
       const newSessions = new Map(state.sessions);
-      const existing = newSessions.get(sessionId);
+      const existing = newSessions.get(key);
       const shouldResetBuffer =
         !existing ||
-        existing.terminalSessionId !== terminalSession.sessionId ||
-        existing.directory !== directory;
+        existing.terminalSessionId !== terminalSession.sessionId;
 
       const baseState = shouldResetBuffer
-        ? createEmptySessionState(sessionId)
-        : existing ?? createEmptySessionState(sessionId);
+        ? createEmptySessionState(key)
+        : existing ?? createEmptySessionState(key);
 
-      newSessions.set(sessionId, {
+      newSessions.set(key, {
         ...baseState,
         terminalSessionId: terminalSession.sessionId,
-        directory,
+        directory: key,
         isConnecting: false,
         updatedAt: Date.now(),
       });
@@ -77,11 +84,12 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     });
   },
 
-  setConnecting: (sessionId: string, isConnecting: boolean) => {
+  setConnecting: (directory: string, isConnecting: boolean) => {
+    const key = normalizeDirectory(directory);
     set((state) => {
       const newSessions = new Map(state.sessions);
-      const existing = newSessions.get(sessionId) ?? createEmptySessionState(sessionId);
-      newSessions.set(sessionId, {
+      const existing = newSessions.get(key) ?? createEmptySessionState(key);
+      newSessions.set(key, {
         ...existing,
         isConnecting,
         updatedAt: Date.now(),
@@ -90,14 +98,15 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     });
   },
 
-  appendToBuffer: (sessionId: string, chunk: string) => {
+  appendToBuffer: (directory: string, chunk: string) => {
     if (!chunk) {
       return;
     }
 
+    const key = normalizeDirectory(directory);
     set((state) => {
       const newSessions = new Map(state.sessions);
-      const existing = newSessions.get(sessionId) ?? createEmptySessionState(sessionId);
+      const existing = newSessions.get(key) ?? createEmptySessionState(key);
 
       const chunkId = state.nextChunkId;
       const chunkEntry: TerminalChunk = { id: chunkId, data: chunk };
@@ -115,7 +124,7 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
 
       const buffer = bufferChunks.map((entry) => entry.data).join('');
 
-      newSessions.set(sessionId, {
+      newSessions.set(key, {
         ...existing,
         buffer,
         bufferChunks,
@@ -127,12 +136,13 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     });
   },
 
-  clearTerminalSession: (sessionId: string) => {
+  clearTerminalSession: (directory: string) => {
+    const key = normalizeDirectory(directory);
     set((state) => {
       const newSessions = new Map(state.sessions);
-      const existing = newSessions.get(sessionId);
+      const existing = newSessions.get(key);
       if (existing) {
-        newSessions.set(sessionId, {
+        newSessions.set(key, {
           ...existing,
           terminalSessionId: null,
           isConnecting: false,
@@ -143,14 +153,15 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     });
   },
 
-  clearBuffer: (sessionId: string) => {
+  clearBuffer: (directory: string) => {
+    const key = normalizeDirectory(directory);
     set((state) => {
       const newSessions = new Map(state.sessions);
-      const existing = newSessions.get(sessionId);
+      const existing = newSessions.get(key);
       if (!existing) {
         return state;
       }
-      newSessions.set(sessionId, {
+      newSessions.set(key, {
         ...existing,
         buffer: '',
         bufferChunks: [],
@@ -161,10 +172,11 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     });
   },
 
-  removeTerminalSession: (sessionId: string) => {
+  removeTerminalSession: (directory: string) => {
+    const key = normalizeDirectory(directory);
     set((state) => {
       const newSessions = new Map(state.sessions);
-      newSessions.delete(sessionId);
+      newSessions.delete(key);
       return { sessions: newSessions };
     });
   },

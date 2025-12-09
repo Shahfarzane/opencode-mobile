@@ -2929,6 +2929,111 @@ async function main(options = {}) {
     }
   });
 
+  app.post('/api/terminal/:sessionId/restart', async (req, res) => {
+    const { sessionId } = req.params;
+    const { cwd, cols, rows } = req.body;
+
+    if (!cwd) {
+      return res.status(400).json({ error: 'cwd is required' });
+    }
+
+    const existingSession = terminalSessions.get(sessionId);
+    if (existingSession) {
+      try {
+        existingSession.ptyProcess.kill();
+      } catch (error) {
+      }
+      terminalSessions.delete(sessionId);
+    }
+
+    try {
+      if (!fs.existsSync(cwd)) {
+        return res.status(400).json({ error: 'Invalid working directory' });
+      }
+
+      const pty = await getPtyLib();
+      const shell = process.env.SHELL || (process.platform === 'win32' ? 'powershell.exe' : '/bin/zsh');
+
+      const newSessionId = Math.random().toString(36).substring(2, 15) +
+                          Math.random().toString(36).substring(2, 15);
+
+      const envPath = buildAugmentedPath();
+      const resolvedEnv = { ...process.env, PATH: envPath };
+
+      const ptyProcess = pty.spawn(shell, [], {
+        name: 'xterm-256color',
+        cols: cols || 80,
+        rows: rows || 24,
+        cwd: cwd,
+        env: {
+          ...resolvedEnv,
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor',
+        },
+      });
+
+      const session = {
+        ptyProcess,
+        cwd,
+        lastActivity: Date.now(),
+        clients: new Set(),
+      };
+
+      terminalSessions.set(newSessionId, session);
+
+      ptyProcess.onExit(({ exitCode, signal }) => {
+        console.log(`Terminal session ${newSessionId} exited with code ${exitCode}, signal ${signal}`);
+        terminalSessions.delete(newSessionId);
+      });
+
+      console.log(`Restarted terminal session: ${sessionId} -> ${newSessionId} in ${cwd}`);
+      res.json({ sessionId: newSessionId, cols: cols || 80, rows: rows || 24 });
+    } catch (error) {
+      console.error('Failed to restart terminal session:', error);
+      res.status(500).json({ error: error.message || 'Failed to restart terminal session' });
+    }
+  });
+
+  app.post('/api/terminal/force-kill', (req, res) => {
+    const { sessionId, cwd } = req.body;
+    let killedCount = 0;
+
+    if (sessionId) {
+      const session = terminalSessions.get(sessionId);
+      if (session) {
+        try {
+          session.ptyProcess.kill();
+        } catch (error) {
+        }
+        terminalSessions.delete(sessionId);
+        killedCount++;
+      }
+    } else if (cwd) {
+      for (const [id, session] of terminalSessions) {
+        if (session.cwd === cwd) {
+          try {
+            session.ptyProcess.kill();
+          } catch (error) {
+          }
+          terminalSessions.delete(id);
+          killedCount++;
+        }
+      }
+    } else {
+      for (const [id, session] of terminalSessions) {
+        try {
+          session.ptyProcess.kill();
+        } catch (error) {
+        }
+        terminalSessions.delete(id);
+        killedCount++;
+      }
+    }
+
+    console.log(`Force killed ${killedCount} terminal session(s)`);
+    res.json({ success: true, killedCount });
+  });
+
   try {
     if (ENV_CONFIGURED_OPENCODE_PORT) {
       console.log(`Using OpenCode port from environment: ${ENV_CONFIGURED_OPENCODE_PORT}`);

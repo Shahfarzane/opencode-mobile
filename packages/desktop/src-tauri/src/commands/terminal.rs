@@ -176,9 +176,131 @@ pub async fn close_terminal(
     Ok(())
 }
 
+#[derive(Deserialize)]
+pub struct RestartTerminalPayload {
+    pub session_id: String,
+    pub cols: u16,
+    pub rows: u16,
+    pub cwd: String,
+}
+
+#[tauri::command]
+pub async fn restart_terminal_session(
+    payload: RestartTerminalPayload,
+    state: State<'_, TerminalState>,
+    window: Window,
+) -> Result<CreateTerminalResponse, String> {
+    {
+        let mut sessions = state.sessions.lock().unwrap();
+        if let Some(session) = sessions.remove(&payload.session_id) {
+            if let Ok(mut child) = session.child.lock() {
+                let _ = child.kill();
+            }
+        }
+    }
+
+    let pty_system = NativePtySystem::default();
+    let size = PtySize {
+        rows: payload.rows,
+        cols: payload.cols,
+        pixel_width: 0,
+        pixel_height: 0,
+    };
+
+    let working_dir = resolve_working_directory(Some(&payload.cwd))?;
+    let shell_path = resolve_shell();
+
+    let mut cmd = CommandBuilder::new(&shell_path);
+    if shell_accepts_login_flag(&shell_path) {
+        cmd.arg("-l");
+    }
+    if let Some(cwd) = working_dir.to_str() {
+        cmd.cwd(cwd);
+    }
+    apply_terminal_environment(&mut cmd, &shell_path);
+
+    let pair = pty_system.openpty(size).map_err(|e| e.to_string())?;
+    let child = pair
+        .slave
+        .spawn_command(cmd)
+        .map_err(|e| format!("Failed to spawn shell: {e}"))?;
+    drop(pair.slave);
+
+    let reader = pair
+        .master
+        .try_clone_reader()
+        .map_err(|e| format!("Failed to clone PTY reader: {e}"))?;
+    let writer = Arc::new(Mutex::new(
+        pair.master
+            .take_writer()
+            .map_err(|e| format!("Failed to take PTY writer: {e}"))?,
+    ));
+    let master = pair.master;
+    let child = Arc::new(Mutex::new(child));
+
+    let session_id = uuid::Uuid::new_v4().to_string();
+    state.sessions.lock().unwrap().insert(
+        session_id.clone(),
+        TerminalSession {
+            master,
+            writer: writer.clone(),
+            child: child.clone(),
+        },
+    );
+
+    spawn_reader_thread(reader, window.clone(), session_id.clone());
+    spawn_exit_watcher(child, window, state.sessions.clone(), session_id.clone());
+
+    Ok(CreateTerminalResponse { session_id })
+}
+
+#[derive(Deserialize)]
+pub struct ForceKillPayload {
+    pub session_id: Option<String>,
+    pub cwd: Option<String>,
+}
+
+#[tauri::command]
+pub async fn force_kill_terminal(
+    payload: ForceKillPayload,
+    state: State<'_, TerminalState>,
+) -> Result<(), String> {
+    let mut sessions = state.sessions.lock().unwrap();
+
+    if let Some(session_id) = payload.session_id {
+        // Kill by session_id
+        if let Some(session) = sessions.remove(&session_id) {
+            if let Ok(mut child) = session.child.lock() {
+                let _ = child.kill();
+            }
+        }
+    } else if let Some(cwd) = payload.cwd {
+        let ids: Vec<String> = sessions.keys().cloned().collect();
+        for id in ids {
+            if let Some(session) = sessions.remove(&id) {
+                if let Ok(mut child) = session.child.lock() {
+                    let _ = child.kill();
+                }
+            }
+        }
+        let _ = cwd;
+    } else {
+        let ids: Vec<String> = sessions.keys().cloned().collect();
+        for id in ids {
+            if let Some(session) = sessions.remove(&id) {
+                if let Ok(mut child) = session.child.lock() {
+                    let _ = child.kill();
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn spawn_reader_thread(mut reader: Box<dyn Read + Send>, window: Window, session_id: String) {
     thread::spawn(move || {
-        let mut buffer = [0u8; 4096];
+        let mut buffer = [0u8; 16384];
         let event_name = format!("terminal://{}", session_id);
         loop {
             match reader.read(&mut buffer) {

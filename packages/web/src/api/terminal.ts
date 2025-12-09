@@ -4,6 +4,8 @@ import {
   resizeTerminal,
   sendTerminalInput,
   closeTerminal,
+  restartTerminalSession,
+  forceKillTerminal,
 } from '@openchamber/ui/lib/terminalApi';
 import type {
   TerminalAPI,
@@ -12,6 +14,7 @@ import type {
   CreateTerminalOptions,
   ResizeTerminalPayload,
   TerminalSession,
+  ForceKillOptions,
 } from '@openchamber/ui/lib/api/types';
 
 const getRetryPolicy = (options?: TerminalStreamOptions) => {
@@ -52,5 +55,20 @@ export const createWebTerminalAPI = (): TerminalAPI => ({
 
   async close(sessionId: string): Promise<void> {
     await closeTerminal(sessionId);
+  },
+
+  async restartSession(
+    currentSessionId: string,
+    options: CreateTerminalOptions
+  ): Promise<TerminalSession> {
+    return restartTerminalSession(currentSessionId, {
+      cwd: options.cwd ?? '',
+      cols: options.cols,
+      rows: options.rows,
+    });
+  },
+
+  async forceKill(options: ForceKillOptions): Promise<void> {
+    await forceKillTerminal(options);
   },
 });

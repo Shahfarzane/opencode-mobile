@@ -38,7 +38,8 @@ use commands::permissions::{
 use commands::notifications::desktop_notify;
 use commands::settings::{load_settings, restart_opencode, save_settings};
 use commands::terminal::{
-    close_terminal, create_terminal_session, resize_terminal, send_terminal_input, TerminalState,
+    close_terminal, create_terminal_session, force_kill_terminal, resize_terminal,
+    restart_terminal_session, send_terminal_input, TerminalState,
 };
 use futures_util::StreamExt as FuturesStreamExt;
 use log::{error, info, warn};
@@ -412,6 +413,8 @@ fn main() {
             send_terminal_input,
             resize_terminal,
             close_terminal,
+            restart_terminal_session,
+            force_kill_terminal,
             fetch_desktop_logs,
             desktop_notify,
         ])

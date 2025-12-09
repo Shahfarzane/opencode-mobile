@@ -120,4 +120,42 @@ export const createDesktopTerminalAPI = (): TerminalAPI => ({
       session_id: sessionId,
     });
   },
+
+  async restartSession(
+    currentSessionId: string,
+    options: CreateTerminalOptions
+  ): Promise<TerminalSession> {
+    const cols = options.cols ?? 80;
+    const rows = options.rows ?? 24;
+
+    const res = await safeTerminalInvoke<{ session_id: string }>(
+      'restart_terminal_session',
+      {
+        payload: {
+          session_id: currentSessionId,
+          cols,
+          rows,
+          cwd: options.cwd ?? '',
+        },
+      }
+    );
+
+    return {
+      sessionId: res.session_id,
+      cols,
+      rows,
+    };
+  },
+
+  async forceKill(options: {
+    sessionId?: string;
+    cwd?: string;
+  }): Promise<void> {
+    await safeTerminalInvoke('force_kill_terminal', {
+      payload: {
+        session_id: options.sessionId ?? null,
+        cwd: options.cwd ?? null,
+      },
+    });
+  },
 });

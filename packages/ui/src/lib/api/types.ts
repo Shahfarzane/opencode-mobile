@@ -64,12 +64,19 @@ export interface TerminalHandlers {
   onError?: (error: Error, fatal?: boolean) => void;
 }
 
+export interface ForceKillOptions {
+  sessionId?: string;
+  cwd?: string;
+}
+
 export interface TerminalAPI {
   createSession(options: CreateTerminalOptions): Promise<TerminalSession>;
   connect(sessionId: string, handlers: TerminalHandlers, options?: TerminalStreamOptions): Subscription;
   sendInput(sessionId: string, input: string): Promise<void>;
   resize(payload: ResizeTerminalPayload): Promise<void>;
   close(sessionId: string): Promise<void>;
+  restartSession?(currentSessionId: string, options: CreateTerminalOptions): Promise<TerminalSession>;
+  forceKill?(options: ForceKillOptions): Promise<void>;
 }
 
 export interface GitStatusFile {

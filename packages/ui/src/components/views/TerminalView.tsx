@@ -116,9 +116,9 @@ export const TerminalView: React.FC = () => {
     const clearBuffer = terminalStore.clearBuffer;
 
     const terminalState = React.useMemo(() => {
-        if (!currentSessionId) return undefined;
-        return terminalSessions.get(currentSessionId);
-    }, [terminalSessions, currentSessionId]);
+        if (!effectiveDirectory) return undefined;
+        return terminalSessions.get(effectiveDirectory);
+    }, [terminalSessions, effectiveDirectory]);
     const terminalSessionRef = terminalState?.terminalSessionId ?? null;
     const bufferChunks = terminalState?.bufferChunks ?? [];
     const bufferLength = terminalState?.bufferLength ?? 0;
@@ -126,21 +126,18 @@ export const TerminalView: React.FC = () => {
     const terminalSessionId = terminalSessionRef;
 
     const [connectionError, setConnectionError] = React.useState<string | null>(null);
+    const [isFatalError, setIsFatalError] = React.useState(false);
     const [activeModifier, setActiveModifier] = React.useState<Modifier | null>(null);
+    const [isRestarting, setIsRestarting] = React.useState(false);
 
     const streamCleanupRef = React.useRef<(() => void) | null>(null);
     const activeTerminalIdRef = React.useRef<string | null>(null);
-    const sessionIdRef = React.useRef<string | null>(currentSessionId ?? null);
     const terminalIdRef = React.useRef<string | null>(terminalSessionId);
     const directoryRef = React.useRef<string | null>(effectiveDirectory);
     const terminalControllerRef = React.useRef<TerminalController | null>(null);
 
     const activeMainTab = useUIStore((state) => state.activeMainTab);
     const isTerminalActive = activeMainTab === 'terminal';
-
-    React.useEffect(() => {
-        sessionIdRef.current = currentSessionId ?? null;
-    }, [currentSessionId]);
 
     React.useEffect(() => {
         terminalIdRef.current = terminalSessionId;
@@ -188,13 +185,14 @@ export const TerminalView: React.FC = () => {
                 terminalId,
                 {
                     onEvent: (event: TerminalStreamEvent) => {
-                        const sessionId = sessionIdRef.current;
-                        if (!sessionId) return;
+                        const directory = directoryRef.current;
+                        if (!directory) return;
 
                         switch (event.type) {
                             case 'connected': {
-                                setConnecting(sessionId, false);
+                                setConnecting(directory, false);
                                 setConnectionError(null);
+                                setIsFatalError(false);
                                 terminalControllerRef.current?.focus();
                                 break;
                             }
@@ -202,11 +200,12 @@ export const TerminalView: React.FC = () => {
                                 const attempt = event.attempt ?? 0;
                                 const maxAttempts = event.maxAttempts ?? 3;
                                 setConnectionError(`Reconnecting (${attempt}/${maxAttempts})...`);
+                                setIsFatalError(false);
                                 break;
                             }
                             case 'data': {
                                 if (event.data) {
-                                    appendToBuffer(sessionId, event.data);
+                                    appendToBuffer(directory, event.data);
                                 }
                                 break;
                             }
@@ -215,33 +214,35 @@ export const TerminalView: React.FC = () => {
                                     typeof event.exitCode === 'number' ? event.exitCode : null;
                                 const signal = typeof event.signal === 'number' ? event.signal : null;
                                 appendToBuffer(
-                                    sessionId,
+                                    directory,
                                     `\r\n[Process exited${
                                         exitCode !== null ? ` with code ${exitCode}` : ''
                                     }${signal !== null ? ` (signal ${signal})` : ''}]\r\n`
                                 );
-                                clearTerminalSession(sessionId);
-                                setConnecting(sessionId, false);
+                                clearTerminalSession(directory);
+                                setConnecting(directory, false);
                                 setConnectionError('Terminal session ended');
+                                setIsFatalError(false);
                                 disconnectStream();
                                 break;
                             }
                         }
                     },
                     onError: (error, fatal) => {
-                        const sessionId = sessionIdRef.current;
-                        if (!sessionId) return;
+                        const directory = directoryRef.current;
+                        if (!directory) return;
 
                         const errorMsg = fatal
                             ? `Connection failed: ${error.message}`
                             : error.message || 'Terminal stream connection error';
 
                         setConnectionError(errorMsg);
+                        setIsFatalError(!!fatal);
 
                         if (fatal) {
-                            setConnecting(sessionId, false);
+                            setConnecting(directory, false);
                             disconnectStream();
-                            removeTerminalSession(sessionId);
+                            removeTerminalSession(directory);
                         }
                     },
                 },
@@ -259,11 +260,10 @@ export const TerminalView: React.FC = () => {
 
     React.useEffect(() => {
         let cancelled = false;
-        const sessionId = currentSessionId;
 
-        if (!sessionId || !effectiveDirectory) {
+        if (!effectiveDirectory) {
             setConnectionError(
-                sessionId
+                currentSessionId
                     ? 'No working directory available for terminal.'
                     : 'Select a session to open the terminal.'
             );
@@ -272,40 +272,27 @@ export const TerminalView: React.FC = () => {
         }
 
         const ensureSession = async () => {
-            if (!sessionIdRef.current || sessionIdRef.current !== sessionId) return;
-            const currentState = useTerminalStore.getState().sessions.get(sessionId);
-
-            if (
-                currentState?.terminalSessionId &&
-                currentState.directory &&
-                currentState.directory !== effectiveDirectory
-            ) {
-                disconnectStream();
-                try {
-                    if (currentState.terminalSessionId) {
-                        await terminal.close(currentState.terminalSessionId);
-                    }
-                } catch { /* ignored */ }
-                removeTerminalSession(sessionId);
-                return;
-            }
+            const directory = effectiveDirectory;
+            if (!directoryRef.current || directoryRef.current !== directory) return;
+            const currentState = useTerminalStore.getState().getTerminalSession(directory);
 
             let terminalId = currentState?.terminalSessionId ?? null;
 
             if (!terminalId) {
                 setConnectionError(null);
-                setConnecting(sessionId, true);
+                setIsFatalError(false);
+                setConnecting(directory, true);
                 try {
                     const session = await terminal.createSession({
-                        cwd: effectiveDirectory,
+                        cwd: directory,
                     });
                     if (cancelled) {
                         try {
-                        await terminal.close(session.sessionId);
+                            await terminal.close(session.sessionId);
                         } catch { /* ignored */ }
                         return;
                     }
-                    setTerminalSession(sessionId, session, effectiveDirectory);
+                    setTerminalSession(directory, session);
                     terminalId = session.sessionId;
                 } catch (error) {
                     if (!cancelled) {
@@ -314,7 +301,8 @@ export const TerminalView: React.FC = () => {
                                 ? error.message
                                 : 'Failed to start terminal session'
                         );
-                        setConnecting(sessionId, false);
+                        setIsFatalError(true);
+                        setConnecting(directory, false);
                     }
                     return;
                 }
@@ -345,22 +333,86 @@ export const TerminalView: React.FC = () => {
         terminal,
     ]);
 
-    const handleReconnect = React.useCallback(async () => {
-        if (!currentSessionId) return;
+    const handleRestart = React.useCallback(async () => {
+        if (!effectiveDirectory) return;
+        if (isRestarting) return;
+
+        setIsRestarting(true);
         setConnectionError(null);
+        setIsFatalError(false);
         disconnectStream();
-        const terminalId = terminalSessionId;
-        if (terminalId) {
-            try {
-                await terminal.close(terminalId);
-            } catch { /* ignored */ }
+
+        const currentTerminalId = terminalIdRef.current;
+
+        try {
+            if (terminal.restartSession && currentTerminalId) {
+                const newSession = await terminal.restartSession(currentTerminalId, {
+                    cwd: effectiveDirectory,
+                });
+                setTerminalSession(effectiveDirectory, newSession);
+                terminalIdRef.current = newSession.sessionId;
+                startStream(newSession.sessionId);
+            } else {
+                if (currentTerminalId) {
+                    try {
+                        await terminal.close(currentTerminalId);
+                    } catch { /* ignored */ }
+                }
+                removeTerminalSession(effectiveDirectory);
+            }
+        } catch (error) {
+            setConnectionError(
+                error instanceof Error ? error.message : 'Failed to restart terminal'
+            );
+            setIsFatalError(true);
+        } finally {
+            setIsRestarting(false);
         }
-        removeTerminalSession(currentSessionId);
-    }, [currentSessionId, disconnectStream, removeTerminalSession, terminal, terminalSessionId]);
+    }, [effectiveDirectory, isRestarting, disconnectStream, terminal, setTerminalSession, startStream, removeTerminalSession]);
+
+    const handleHardRestart = React.useCallback(async () => {
+        if (!effectiveDirectory) return;
+        if (isRestarting) return;
+
+        setIsRestarting(true);
+        setConnectionError(null);
+        setIsFatalError(false);
+        disconnectStream();
+
+        try {
+            if (terminal.forceKill) {
+                await terminal.forceKill({ cwd: effectiveDirectory });
+            }
+        } catch { /* ignored */ }
+
+        removeTerminalSession(effectiveDirectory);
+        clearBuffer(effectiveDirectory);
+        terminalControllerRef.current?.clear();
+
+        await new Promise(r => setTimeout(r, 100));
+
+        try {
+            setConnecting(effectiveDirectory, true);
+            const session = await terminal.createSession({
+                cwd: effectiveDirectory,
+            });
+            setTerminalSession(effectiveDirectory, session);
+            terminalIdRef.current = session.sessionId;
+            startStream(session.sessionId);
+        } catch (error) {
+            setConnectionError(
+                error instanceof Error ? error.message : 'Failed to create terminal'
+            );
+            setIsFatalError(true);
+            setConnecting(effectiveDirectory, false);
+        } finally {
+            setIsRestarting(false);
+        }
+    }, [effectiveDirectory, isRestarting, disconnectStream, terminal, removeTerminalSession, clearBuffer, setConnecting, setTerminalSession, startStream]);
 
     const handleClear = React.useCallback(() => {
-        if (!currentSessionId) return;
-        clearBuffer(currentSessionId);
+        if (!effectiveDirectory) return;
+        clearBuffer(effectiveDirectory);
         terminalControllerRef.current?.clear();
         terminalControllerRef.current?.focus();
 
@@ -370,7 +422,7 @@ export const TerminalView: React.FC = () => {
                 setConnectionError(error instanceof Error ? error.message : 'Failed to refresh prompt');
             });
         }
-    }, [clearBuffer, currentSessionId, setConnectionError, terminal]);
+    }, [clearBuffer, effectiveDirectory, setConnectionError, terminal]);
 
     const handleViewportInput = React.useCallback(
         (data: string) => {
@@ -544,11 +596,10 @@ export const TerminalView: React.FC = () => {
     const xtermTheme = React.useMemo(() => convertThemeToXterm(currentTheme), [currentTheme]);
 
     const terminalSessionKey = React.useMemo(() => {
-        const sessionPart = currentSessionId ?? 'none';
         const directoryPart = effectiveDirectory ?? 'no-dir';
         const terminalPart = terminalSessionId ?? 'pending';
-        return `${sessionPart}::${directoryPart}::${terminalPart}`;
-    }, [currentSessionId, effectiveDirectory, terminalSessionId]);
+        return `${directoryPart}::${terminalPart}`;
+    }, [effectiveDirectory, terminalSessionId]);
 
     React.useEffect(() => {
         if (!isTerminalActive) {
@@ -573,7 +624,7 @@ export const TerminalView: React.FC = () => {
             };
         }
         fitOnce();
-    }, [isTerminalActive, terminalSessionKey, currentSessionId, terminalSessionId]);
+    }, [isTerminalActive, terminalSessionKey, terminalSessionId]);
 
     const isReconnecting = connectionError?.includes('Reconnecting');
 
@@ -581,9 +632,9 @@ export const TerminalView: React.FC = () => {
         ? isReconnecting
             ? <RiAlertLine size={20} className="text-amber-400" />
             : <RiCloseLine size={20} className="text-destructive" />
-        : terminalSessionId && !isConnecting
+        : terminalSessionId && !isConnecting && !isRestarting
             ? <RiCheckboxCircleLine size={20} className="text-emerald-400" />
-            : isConnecting
+            : isConnecting || isRestarting
                 ? <RiCircleLine size={20} className="text-amber-400 animate-pulse" />
                 : <RiCircleLine size={20} className="text-muted-foreground" />;
 
@@ -600,7 +651,7 @@ export const TerminalView: React.FC = () => {
             <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
                 <p>No working directory available for this session.</p>
                 <button
-                    onClick={handleReconnect}
+                    onClick={handleRestart}
                     className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                 >
                     Retry
@@ -609,7 +660,7 @@ export const TerminalView: React.FC = () => {
         );
     }
 
-    const quickKeysDisabled = !terminalSessionId || isConnecting;
+    const quickKeysDisabled = !terminalSessionId || isConnecting || isRestarting;
 
     return (
         <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -636,11 +687,12 @@ export const TerminalView: React.FC = () => {
                             size="sm"
                             variant="default"
                             className="h-7 px-2 py-0"
-                            onClick={handleReconnect}
+                            onClick={handleRestart}
+                            disabled={isRestarting}
                             title="Restart terminal session"
                             type="button"
                         >
-                            <RiRestartLine size={16} className={cn(isConnecting && 'animate-spin')} />
+                            <RiRestartLine size={16} className={cn((isConnecting || isRestarting) && 'animate-spin')} />
                             Restart
                         </Button>
                     </div>
@@ -774,8 +826,21 @@ export const TerminalView: React.FC = () => {
                     ) : null}
                 </div>
                 {connectionError && (
-                    <div className="absolute inset-x-0 bottom-0 bg-destructive/90 px-3 py-2 text-xs text-destructive-foreground">
-                        {connectionError}
+                    <div className="absolute inset-x-0 bottom-0 bg-destructive/90 px-3 py-2 text-xs text-destructive-foreground flex items-center justify-between gap-2">
+                        <span>{connectionError}</span>
+                        {isFatalError && (
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-6 px-2 py-0 text-xs"
+                                onClick={handleHardRestart}
+                                disabled={isRestarting}
+                                title="Force kill and create fresh session"
+                                type="button"
+                            >
+                                Hard Restart
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>
