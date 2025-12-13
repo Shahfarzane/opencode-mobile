@@ -7,6 +7,15 @@ export const SEMANTIC_TYPOGRAPHY = {
   micro: '0.875rem',
 } as const;
 
+export const VSCODE_TYPOGRAPHY = {
+  markdown: '0.9375rem',
+  code: '0.9375rem',
+  uiHeader: '1rem',
+  uiLabel: '0.9375rem',
+  meta: '0.9375rem',
+  micro: '0.875rem',
+} as const;
+
 export const SEMANTIC_TYPOGRAPHY_CSS = {
   '--text-markdown': SEMANTIC_TYPOGRAPHY.markdown,
   '--text-code': SEMANTIC_TYPOGRAPHY.code,
@@ -247,7 +256,8 @@ export const toolDisplayStyles = {
 
   getCollapsedStyles: () => ({
     ...typography.tool.collapsed,
-    background: 'transparent !important',
+    background: 'transparent',
+    backgroundColor: 'transparent',
     margin: 0,
     padding: toolDisplayStyles.padding.collapsed,
     borderRadius: 0,
@@ -255,7 +265,8 @@ export const toolDisplayStyles = {
 
   getPopupStyles: () => ({
     ...typography.tool.popup,
-    background: 'transparent !important',
+    background: 'transparent',
+    backgroundColor: 'transparent',
     margin: 0,
     padding: toolDisplayStyles.padding.popup,
     borderRadius: '0.75rem',
@@ -263,7 +274,8 @@ export const toolDisplayStyles = {
 
   getPopupContainerStyles: () => ({
     ...typography.tool.popup,
-    background: 'transparent !important',
+    background: 'transparent',
+    backgroundColor: 'transparent',
     margin: 0,
     padding: toolDisplayStyles.padding.popupContainer,
     borderRadius: '0.5rem',
