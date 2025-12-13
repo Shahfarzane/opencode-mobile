@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+
+## [1.1.1] - 2025-12-13
+
 - Adjusted model/agent selection alignment
+- Fixed user message rendering issues
+
 
 ## [1.1.0] - 2025-12-13
 
