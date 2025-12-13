@@ -1,6 +1,25 @@
 import React from 'react';
 import type { ComponentType } from 'react';
 import {
+    RiAiAgentLine,
+    RiArrowDownSLine,
+    RiArrowRightSLine,
+    RiBrainAi3Line,
+    RiCheckboxCircleLine,
+    RiCloseCircleLine,
+    RiFileImageLine,
+    RiFileMusicLine,
+    RiFilePdfLine,
+    RiFileVideoLine,
+    RiPencilAiLine,
+    RiQuestionLine,
+    RiSearchLine,
+    RiText,
+    RiToolsLine,
+} from '@remixicon/react';
+import type { EditPermissionMode } from '@/stores/types/sessionTypes';
+import type { ModelMetadata } from '@/types';
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -10,29 +29,25 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
-import { RiAiAgentLine, RiArrowDownSLine, RiArrowRightSLine, RiBrainAi3Line, RiCheckboxCircleLine, RiCloseCircleLine, RiFileImageLine, RiFileMusicLine, RiFilePdfLine, RiFileVideoLine, RiPencilAiLine, RiQuestionLine, RiSearchLine, RiText, RiToolsLine } from '@remixicon/react';
-import type { ModelMetadata } from '@/types';
-import type { EditPermissionMode } from '@/stores/types/sessionTypes';
+import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
+import { ProviderLogo } from '@/components/ui/ProviderLogo';
+import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsDesktopRuntime, useIsVSCodeRuntime } from '@/hooks/useRuntimeAPIs';
+import { getAgentColor } from '@/lib/agentColors';
+import { useDeviceInfo } from '@/lib/device';
+import { calculateEditPermissionUIState, type BashPermissionSetting } from '@/lib/permissions/editPermissionDefaults';
 import { getEditModeColors } from '@/lib/permissions/editModeColors';
+import { cn } from '@/lib/utils';
+import { useContextStore } from '@/stores/contextStore';
+import { useConfigStore } from '@/stores/useConfigStore';
+import { useSessionStore } from '@/stores/useSessionStore';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type IconComponent = ComponentType<any>;
 
 type ProviderModel = Record<string, unknown> & { id?: string; name?: string };
-
-import { useConfigStore } from '@/stores/useConfigStore';
-import { useSessionStore } from '@/stores/useSessionStore';
-import { useContextStore } from '@/stores/contextStore';
-import { useDeviceInfo } from '@/lib/device';
-import { useIsVSCodeRuntime } from '@/hooks/useRuntimeAPIs';
-import { cn } from '@/lib/utils';
-import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
-import { getAgentColor } from '@/lib/agentColors';
-import { ProviderLogo } from '@/components/ui/ProviderLogo';
-import { calculateEditPermissionUIState, type BashPermissionSetting } from '@/lib/permissions/editPermissionDefaults';
-import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 
 const isPrimaryMode = (mode?: string) => mode === 'primary' || mode === 'all' || mode === undefined || mode === null;
 
@@ -216,6 +231,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
     const contextHydrated = useContextStore((state) => state.hasHydrated);
 
     const { isMobile } = useDeviceInfo();
+    const isDesktopRuntime = useIsDesktopRuntime();
     const isVSCodeRuntime = useIsVSCodeRuntime();
     const isCompact = isMobile || isVSCodeRuntime;
     const [activeMobilePanel, setActiveMobilePanel] = React.useState<'model' | 'agent' | null>(null);
@@ -1456,7 +1472,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                             <DropdownMenuTrigger asChild>
                                 <div
                                     className={cn(
-                                        'model-controls__model-trigger flex items-center gap-1.5 cursor-pointer hover:opacity-70 min-w-0 flex-1',
+                                        'model-controls__model-trigger flex items-center gap-1.5 cursor-pointer hover:opacity-70 min-w-0',
+                                        !isDesktopRuntime && 'flex-1',
                                         buttonHeight
                                     )}
                                 >
@@ -1476,7 +1493,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                         className={cn(
                                             'model-controls__model-label',
                                             controlTextSize,
-                                            'font-medium whitespace-nowrap text-foreground truncate min-w-0 flex-1'
+                                            'font-medium whitespace-nowrap text-foreground truncate min-w-0',
+                                            isDesktopRuntime ? 'max-w-[260px]' : 'flex-1'
                                         )}
                                     >
                                         {getCurrentModelDisplayName()}
@@ -1762,7 +1780,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                             <TooltipTrigger asChild>
                                 <DropdownMenuTrigger asChild>
                                     <div className={cn(
-                                        'flex items-center gap-1.5 transition-opacity cursor-pointer hover:opacity-70',
+                                        'flex items-center gap-1.5 transition-opacity cursor-pointer hover:opacity-70 min-w-0',
                                         buttonHeight
                                     )}>
                                         <RiAiAgentLine
@@ -1775,8 +1793,10 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                         />
                                         <span
                                             className={cn(
+                                                'model-controls__agent-label',
                                                 controlTextSize,
-                                                'font-medium min-w-0 truncate'
+                                                'font-medium min-w-0 truncate',
+                                                isDesktopRuntime ? 'max-w-[220px]' : undefined
                                             )}
                                             style={currentAgentName ? { color: `var(${getAgentColor(currentAgentName).var})` } : undefined}
                                         >
@@ -1946,7 +1966,12 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
     return (
         <>
             <div className={inlineClassName}>
-                <div className={cn('flex items-center min-w-0', !isCompact ? 'flex-1 min-w-0' : undefined)}>
+                <div
+                    className={cn(
+                        'flex items-center min-w-0',
+                        !isCompact ? (isDesktopRuntime ? 'flex-1 min-w-0 justify-end' : 'flex-1 min-w-0') : undefined
+                    )}
+                >
                     {renderModelSelector()}
                 </div>
                 <div className={cn('flex items-center min-w-0', inlineGapClass)}>

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Adjusted model/agent selection alignment
 
 ## [1.1.0] - 2025-12-13
 
