@@ -72,7 +72,7 @@ const UserTextPart: React.FC<UserTextPartProps> = ({ part, messageId, agentMenti
     return (
         <div
             className={cn(
-                "break-words whitespace-pre-wrap",
+                "break-words whitespace-pre-wrap font-sans typography-markdown",
                 !isExpanded && "line-clamp-3",
                 (isTruncated || isExpanded) && "cursor-pointer"
             )}
