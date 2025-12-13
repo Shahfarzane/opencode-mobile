@@ -1,12 +1,12 @@
 # OpenChamber VS Code Extension
 
-AI coding assistant for VS Code powered by the OpenCode API. Embeds the OpenChamber chat interface in VS Code's secondary sidebar.
+AI coding assistant for VS Code powered by the OpenCode API. Embeds the OpenChamber chat interface in VS Code's activity bar.
 
-![VS Code Extension](extension.jpg)
+![VS Code Extension](https://github.com/btriapitsyn/openchamber/raw/HEAD/packages/vscode/extension.jpg)
 
 ## Features
 
-- Chat UI in secondary sidebar
+- Chat UI in activity bar
 - Session management with history
 - File attachments via native VS Code file picker (10MB limit)
 - Auto-start `opencode serve` if not running
@@ -17,10 +17,8 @@ AI coding assistant for VS Code powered by the OpenCode API. Embeds the OpenCham
 
 | Command | Description |
 |---------|-------------|
-| `OpenChamber: New Chat Session` | Create new chat session |
-| `OpenChamber: Focus Chat` | Focus chat panel in secondary sidebar |
+| `OpenChamber: Focus on Chat View` | Focus chat panel |
 | `OpenChamber: Restart API Connection` | Restart OpenCode API process |
-| `OpenChamber: Show in Secondary Side Bar` | Toggle chat panel visibility |
 
 ## Configuration
 
