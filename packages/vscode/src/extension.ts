@@ -21,34 +21,13 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('openchamber.newSession', () => {
-      chatViewProvider?.newSession();
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('openchamber.focusChat', () => {
-      vscode.commands.executeCommand('openchamber.chatView.focus');
-    })
-  );
-
-  context.subscriptions.push(
     vscode.commands.registerCommand('openchamber.restartApi', async () => {
-      await openCodeManager?.restart();
-    })
-  );
-  context.subscriptions.push(
-    vscode.commands.registerCommand('openchamber.showInSecondarySidebar', async () => {
-      const viewId = ChatViewProvider.viewType;
-      const isVisible = chatViewProvider?.isVisible() === true;
-
-      if (isVisible) {
-        await vscode.commands.executeCommand('workbench.action.toggleAuxiliaryBar');
-        return;
+      try {
+        await openCodeManager?.restart();
+        vscode.window.showInformationMessage('OpenChamber: API connection restarted');
+      } catch (e) {
+        vscode.window.showErrorMessage(`OpenChamber: Failed to restart API - ${e}`);
       }
-
-      await vscode.commands.executeCommand('workbench.action.focusAuxiliaryBar');
-      await vscode.commands.executeCommand(`${viewId}.focus`);
     })
   );
 
