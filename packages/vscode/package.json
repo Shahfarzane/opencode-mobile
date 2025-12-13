@@ -35,7 +35,7 @@
   "activationEvents": [],
   "contributes": {
     "viewsContainers": {
-      "secondarySidebar": [
+      "activitybar": [
         {
           "id": "openchamber",
           "title": "OpenChamber",
@@ -54,32 +54,10 @@
     },
     "commands": [
       {
-        "command": "openchamber.newSession",
-        "title": "OpenChamber: New Chat Session"
-      },
-      {
-        "command": "openchamber.focusChat",
-        "title": "OpenChamber: Focus Chat"
-      },
-      {
         "command": "openchamber.restartApi",
         "title": "OpenChamber: Restart API Connection"
-      },
-      {
-        "command": "openchamber.showInSecondarySidebar",
-        "title": "OpenChamber: Show in Secondary Side Bar",
-        "icon": "assets/icon.svg"
       }
     ],
-    "menus": {
-      "editor/title": [
-        {
-          "command": "openchamber.showInSecondarySidebar",
-          "when": "editorIsOpen",
-          "group": "navigation@100"
-        }
-      ]
-    },
     "configuration": {
       "title": "OpenChamber",
       "properties": {
