@@ -8,6 +8,7 @@ import { HelpDialog } from '../ui/HelpDialog';
 import { SessionSidebar } from '@/components/session/SessionSidebar';
 import { SessionDialogs } from '@/components/session/SessionDialogs';
 import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
+import { DiffWorkerProvider } from '@/contexts/DiffWorkerProvider';
 
 import { useUIStore } from '@/stores/useUIStore';
 import { useDeviceInfo } from '@/lib/device';
@@ -58,7 +59,6 @@ export const MainLayout: React.FC = () => {
         let timeoutId: number | undefined;
 
         const handleResize = () => {
-
             if (timeoutId !== undefined) {
                 window.clearTimeout(timeoutId);
             }
@@ -94,19 +94,20 @@ export const MainLayout: React.FC = () => {
     const isChatActive = activeMainTab === 'chat';
 
     return (
-        <div
-            className={cn(
-                'main-content-safe-area h-[100dvh]',
-                isMobile ? 'flex flex-col' : 'flex',
-                isDesktopRuntime ? 'bg-transparent' : 'bg-background'
-            )}
-        >
-            <CommandPalette />
-            <HelpDialog />
-            <SessionDialogs />
-            <SettingsDialog isOpen={isSettingsDialogOpen} onClose={() => setSettingsDialogOpen(false)} />
+        <DiffWorkerProvider>
+            <div
+                className={cn(
+                    'main-content-safe-area h-[100dvh]',
+                    isMobile ? 'flex flex-col' : 'flex',
+                    isDesktopRuntime ? 'bg-transparent' : 'bg-background'
+                )}
+            >
+                <CommandPalette />
+                <HelpDialog />
+                <SessionDialogs />
+                <SettingsDialog isOpen={isSettingsDialogOpen} onClose={() => setSettingsDialogOpen(false)} />
 
-            {isMobile ? (
+                {isMobile ? (
                 <>
                     <Header />
                     <div className="flex flex-1 overflow-hidden bg-background">
@@ -157,5 +158,6 @@ export const MainLayout: React.FC = () => {
 
             <FixedSessionsButton />
         </div>
+    </DiffWorkerProvider>
     );
 };

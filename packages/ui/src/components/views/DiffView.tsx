@@ -1,12 +1,11 @@
 import React from 'react';
-import { RiGitCommitLine, RiLoader4Line } from '@remixicon/react';
+import { RiGitCommitLine, RiLoader4Line, RiTextWrap } from '@remixicon/react';
 
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useGitStore, useGitStatus, useIsGitRepo, useGitFileCount } from '@/stores/useGitStore';
 import type { GitStatus } from '@/lib/api/types';
-import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,15 +14,15 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { RiArrowDownSLine } from '@remixicon/react';
-import { toast } from 'sonner';
 import { getLanguageFromExtension } from '@/lib/toolHelpers';
 import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
 import { DiffViewToggle } from '@/components/chat/message/DiffViewToggle';
 import type { DiffViewMode } from '@/components/chat/message/types';
+import { PierreDiffViewer } from './PierreDiffViewer';
+import { useDeviceInfo } from '@/lib/device';
 
-const LazyMonacoDiffViewer = React.lazy(() =>
-    import('./MonacoDiffViewer').then((mod) => ({ default: mod.MonacoDiffViewer }))
-);
+// Minimum width for side-by-side diff view (px)
+const SIDE_BY_SIDE_MIN_WIDTH = 1100;
 
 type FileEntry = GitStatus['files'][number] & {
     insertions: number;
@@ -31,9 +30,10 @@ type FileEntry = GitStatus['files'][number] & {
     isNew: boolean;
 };
 
+type DiffData = { original: string; modified: string };
+
 const isNewStatusFile = (file: GitStatus['files'][number]): boolean => {
     const { index, working_dir: workingDir } = file;
-
     return index === 'A' || workingDir === 'A' || index === '?' || workingDir === '?';
 };
 
@@ -43,12 +43,8 @@ const formatDiffTotals = (insertions?: number, deletions?: number) => {
     if (!added && !removed) return null;
     return (
         <span className="typography-meta flex flex-shrink-0 items-center gap-1 text-xs whitespace-nowrap">
-            {added ? (
-                <span style={{ color: 'var(--status-success)' }}>+{added}</span>
-            ) : null}
-            {removed ? (
-                <span style={{ color: 'var(--status-error)' }}>-{removed}</span>
-            ) : null}
+            {added ? <span style={{ color: 'var(--status-success)' }}>+{added}</span> : null}
+            {removed ? <span style={{ color: 'var(--status-error)' }}>-{removed}</span> : null}
         </span>
     );
 };
@@ -74,9 +70,7 @@ const FileSelector = React.memo<FileSelectorProps>(({
                 <button className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2 typography-ui-label text-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring">
                     {selectedFileEntry ? (
                         <div className="flex items-center gap-3">
-                            <span className="truncate typography-meta">
-                                {selectedFileEntry.path}
-                            </span>
+                            <span className="truncate typography-meta">{selectedFileEntry.path}</span>
                             {formatDiffTotals(selectedFileEntry.insertions, selectedFileEntry.deletions)}
                         </div>
                     ) : (
@@ -90,9 +84,7 @@ const FileSelector = React.memo<FileSelectorProps>(({
                     {changedFiles.map((file) => (
                         <DropdownMenuRadioItem key={file.path} value={file.path}>
                             <div className="flex w-full items-center justify-between gap-3">
-                                <span className="truncate typography-meta">
-                                    {file.path}
-                                </span>
+                                <span className="truncate typography-meta">{file.path}</span>
                                 {formatDiffTotals(file.insertions, file.deletions)}
                             </div>
                         </DropdownMenuRadioItem>
@@ -103,76 +95,54 @@ const FileSelector = React.memo<FileSelectorProps>(({
     );
 });
 
-interface DiffContentProps {
-    fileDiff: { original: string; modified: string } | null;
-    activeFilePath: string;
-    isDiffLoading: boolean;
-    diffError: string | null;
-    onRetry: () => void;
+// Single diff viewer instance - stays mounted
+interface SingleDiffViewerProps {
+    filePath: string;
+    diff: DiffData;
+    isVisible: boolean;
     renderSideBySide: boolean;
-    allowResponsive: boolean;
+    wrapLines: boolean;
 }
 
-const DiffContent = React.memo<DiffContentProps>(({
-    fileDiff,
-    activeFilePath,
-    isDiffLoading,
-    diffError,
-    onRetry,
+const SingleDiffViewer = React.memo<SingleDiffViewerProps>(({
+    filePath,
+    diff,
+    isVisible,
     renderSideBySide,
-    allowResponsive,
+    wrapLines,
 }) => {
     const language = React.useMemo(
-        () => (activeFilePath ? getLanguageFromExtension(activeFilePath) || 'text' : 'text'),
-        [activeFilePath]
+        () => getLanguageFromExtension(filePath) || 'text',
+        [filePath]
     );
 
-    if (isDiffLoading) {
+    // Use display:none for hidden diffs to exclude from layout calculations during resize
+    // This is faster for resize than visibility:hidden which keeps elements in layout flow
+    if (!isVisible) {
         return (
-            <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-                <RiLoader4Line size={16} className="animate-spin" />
-                Loading diff…
-            </div>
-        );
-    }
-
-    if (diffError) {
-        return (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                <p className="text-sm text-destructive">{diffError}</p>
-                <Button size="sm" onClick={onRetry}>
-                    Retry
-                </Button>
-            </div>
-        );
-    }
-
-    if (!fileDiff || (!fileDiff.original && !fileDiff.modified)) {
-        return (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                No changes detected for this file
+            <div className="absolute inset-0 hidden">
+                <PierreDiffViewer
+                    original={diff.original}
+                    modified={diff.modified}
+                    language={language}
+                    fileName={filePath}
+                    renderSideBySide={renderSideBySide}
+                    wrapLines={wrapLines}
+                />
             </div>
         );
     }
 
     return (
-        <div className="flex h-full w-full">
-            <React.Suspense
-                fallback={(
-                    <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <RiLoader4Line size={16} className="animate-spin" />
-                        Loading diff viewer…
-                    </div>
-                )}
-            >
-                <LazyMonacoDiffViewer
-                    original={fileDiff.original}
-                    modified={fileDiff.modified}
-                    language={language}
-                    renderSideBySide={renderSideBySide}
-                    allowResponsive={allowResponsive}
-                />
-            </React.Suspense>
+        <div className="absolute inset-0" style={{ contain: 'size layout' }}>
+            <PierreDiffViewer
+                original={diff.original}
+                modified={diff.modified}
+                language={language}
+                fileName={filePath}
+                renderSideBySide={renderSideBySide}
+                wrapLines={wrapLines}
+            />
         </div>
     );
 });
@@ -191,6 +161,7 @@ const useEffectiveDirectory = () => {
 export const DiffView: React.FC = () => {
     const { git } = useRuntimeAPIs();
     const effectiveDirectory = useEffectiveDirectory();
+    const { screenWidth } = useDeviceInfo();
 
     const isGitRepo = useIsGitRepo(effectiveDirectory ?? null);
     const status = useGitStatus(effectiveDirectory ?? null);
@@ -198,72 +169,20 @@ export const DiffView: React.FC = () => {
     const { setActiveDirectory, fetchStatus, setDiff } = useGitStore();
 
     const [selectedFile, setSelectedFile] = React.useState<string | null>(null);
-    const selectedFileRef = React.useRef<string | null>(null);
-
-    const [isDiffLoading, setIsDiffLoading] = React.useState(false);
-    const [diffError, setDiffError] = React.useState<string | null>(null);
-    const [fileDiff, setFileDiff] = React.useState<{ original: string; modified: string } | null>(null);
+    const [allDiffs, setAllDiffs] = React.useState<Map<string, DiffData>>(new Map());
+    const [loadingFiles, setLoadingFiles] = React.useState<Set<string>>(new Set());
 
     const pendingDiffFile = useUIStore((state) => state.pendingDiffFile);
     const setPendingDiffFile = useUIStore((state) => state.setPendingDiffFile);
     const diffLayoutPreference = useUIStore((state) => state.diffLayoutPreference);
     const diffFileLayout = useUIStore((state) => state.diffFileLayout);
     const setDiffFileLayout = useUIStore((state) => state.setDiffFileLayout);
+    const diffWrapLines = useUIStore((state) => state.diffWrapLines);
+    const setDiffWrapLines = useUIStore((state) => state.setDiffWrapLines);
     const lastStatusChange = useGitStore(React.useCallback((state) => {
         if (!effectiveDirectory) return 0;
         return state.directories.get(effectiveDirectory)?.lastStatusChange ?? 0;
     }, [effectiveDirectory]));
-
-    const getCachedDiffIfFresh = React.useCallback((directory: string | undefined, filePath: string) => {
-        if (!directory) return null;
-        const dirState = useGitStore.getState().directories.get(directory);
-        if (!dirState) return null;
-        const cached = dirState.diffCache.get(filePath);
-        if (!cached) return null;
-
-        if (cached.fetchedAt < (dirState.lastStatusChange || 0)) {
-            return null;
-        }
-        return cached;
-    }, []);
-
-    const handleSelectFile = React.useCallback((value: string) => {
-        selectedFileRef.current = value;
-        setSelectedFile(value);
-        setDiffError(null);
-
-        const cached = getCachedDiffIfFresh(effectiveDirectory, value);
-        if (cached) {
-            setFileDiff({ original: cached.original, modified: cached.modified });
-            setIsDiffLoading(false);
-        } else {
-            setFileDiff(null);
-            setIsDiffLoading(true);
-        }
-    }, [effectiveDirectory, getCachedDiffIfFresh]);
-
-    React.useEffect(() => {
-        if (effectiveDirectory) {
-            setActiveDirectory(effectiveDirectory);
-
-            const dirState = useGitStore.getState().directories.get(effectiveDirectory);
-            if (!dirState?.status) {
-                fetchStatus(effectiveDirectory, git);
-            }
-        }
-    }, [effectiveDirectory, setActiveDirectory, fetchStatus, git]);
-
-    React.useEffect(() => {
-        if (!pendingDiffFile) return;
-
-        handleSelectFile(pendingDiffFile);
-
-        setPendingDiffFile(null);
-    }, [pendingDiffFile, handleSelectFile, setPendingDiffFile]);
-
-    React.useEffect(() => {
-        selectedFileRef.current = selectedFile;
-    }, [selectedFile]);
 
     const changedFiles: FileEntry[] = React.useMemo(() => {
         if (!status?.files) return [];
@@ -287,81 +206,205 @@ export const DiffView: React.FC = () => {
     const currentLayoutForSelectedFile = React.useMemo<'inline' | 'side-by-side' | null>(() => {
         if (!selectedFileEntry) return null;
 
+        // Per-file override takes priority
         const override = diffFileLayout[selectedFileEntry.path];
         if (override) return override;
 
-        if (diffLayoutPreference === 'inline' || diffLayoutPreference === 'side-by-side') {
-            return diffLayoutPreference;
+        // Explicit user preference - respect it regardless of screen width
+        if (diffLayoutPreference === 'inline') {
+            return 'inline';
         }
 
-        return selectedFileEntry.isNew ? 'inline' : 'side-by-side';
-    }, [selectedFileEntry, diffFileLayout, diffLayoutPreference]);
+        if (diffLayoutPreference === 'side-by-side') {
+            return 'side-by-side';
+        }
 
+        // Dynamic mode: auto-switch based on file type and screen width
+        const isNarrow = screenWidth < SIDE_BY_SIDE_MIN_WIDTH;
+        if (selectedFileEntry.isNew || isNarrow) {
+            return 'inline';
+        }
+
+        return 'side-by-side';
+    }, [selectedFileEntry, diffFileLayout, diffLayoutPreference, screenWidth]);
+
+    // Fetch git status on mount
     React.useEffect(() => {
-        if (!selectedFile && !pendingDiffFile && changedFiles.length > 0) {
-            const nextPath = changedFiles[0].path;
-            handleSelectFile(nextPath);
+        if (effectiveDirectory) {
+            setActiveDirectory(effectiveDirectory);
+            const dirState = useGitStore.getState().directories.get(effectiveDirectory);
+            if (!dirState?.status) {
+                fetchStatus(effectiveDirectory, git);
+            }
         }
-    }, [changedFiles, selectedFile, pendingDiffFile, handleSelectFile]);
+    }, [effectiveDirectory, setActiveDirectory, fetchStatus, git]);
 
+    // Handle pending diff file from external navigation
+    React.useEffect(() => {
+        if (pendingDiffFile) {
+            setSelectedFile(pendingDiffFile);
+            setPendingDiffFile(null);
+        }
+    }, [pendingDiffFile, setPendingDiffFile]);
+
+    // Auto-select first file
+    React.useEffect(() => {
+        if (!selectedFile && changedFiles.length > 0) {
+            setSelectedFile(changedFiles[0].path);
+        }
+    }, [changedFiles, selectedFile]);
+
+    // Clear selection if file no longer exists
     React.useEffect(() => {
         if (selectedFile && changedFiles.length > 0) {
             const stillExists = changedFiles.some((f) => f.path === selectedFile);
             if (!stillExists) {
-                setSelectedFile(null);
-                selectedFileRef.current = null;
-                setFileDiff(null);
-                setDiffError(null);
+                setSelectedFile(changedFiles[0]?.path ?? null);
             }
         }
     }, [changedFiles, selectedFile]);
 
-    const loadDiff = React.useCallback(async () => {
-        if (!effectiveDirectory || !selectedFileEntry) {
-            setFileDiff(null);
-            setDiffError(null);
-            setIsDiffLoading(false);
-            return;
-        }
+    // PRE-FETCH ALL DIFFS when changedFiles changes
+    React.useEffect(() => {
+        if (!effectiveDirectory || changedFiles.length === 0) return;
 
-        const cacheKey = selectedFileEntry.path;
+        const fetchAllDiffs = async () => {
+            const filesToFetch = changedFiles.filter((file) => !allDiffs.has(file.path));
+            if (filesToFetch.length === 0) return;
 
-        const cached = getCachedDiffIfFresh(effectiveDirectory, cacheKey);
-        if (cached) {
-            setFileDiff({ original: cached.original, modified: cached.modified });
-            setDiffError(null);
-            setIsDiffLoading(false);
-            return;
-        }
-
-        setIsDiffLoading(true);
-        setDiffError(null);
-
-        try {
-            const response = await git.getGitFileDiff(effectiveDirectory, {
-                path: selectedFileEntry.path,
+            // Mark all as loading
+            setLoadingFiles((prev) => {
+                const next = new Set(prev);
+                filesToFetch.forEach((f) => next.add(f.path));
+                return next;
             });
 
-            const diff = {
-                original: response.original ?? '',
-                modified: response.modified ?? '',
-            };
-            setDiff(effectiveDirectory, cacheKey, diff);
-            setFileDiff(diff);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to load diff';
-            setDiffError(message);
-            toast.error(message);
-        } finally {
-            setIsDiffLoading(false);
-        }
-    }, [effectiveDirectory, git, selectedFileEntry, getCachedDiffIfFresh, setDiff, lastStatusChange]);
+            // Fetch all in parallel
+            const results = await Promise.allSettled(
+                filesToFetch.map(async (file) => {
+                    const dirState = useGitStore.getState().directories.get(effectiveDirectory);
+                    const cached = dirState?.diffCache.get(file.path);
+                    if (cached && cached.fetchedAt >= (dirState?.lastStatusChange || 0)) {
+                        return { path: file.path, diff: { original: cached.original, modified: cached.modified } };
+                    }
 
+                    const response = await git.getGitFileDiff(effectiveDirectory, { path: file.path });
+                    const diff = { original: response.original ?? '', modified: response.modified ?? '' };
+                    setDiff(effectiveDirectory, file.path, diff);
+                    return { path: file.path, diff };
+                })
+            );
+
+            // Update state with all fetched diffs
+            setAllDiffs((prev) => {
+                const next = new Map(prev);
+                results.forEach((result) => {
+                    if (result.status === 'fulfilled') {
+                        next.set(result.value.path, result.value.diff);
+                    }
+                });
+                return next;
+            });
+
+            // Clear loading state
+            setLoadingFiles((prev) => {
+                const next = new Set(prev);
+                filesToFetch.forEach((f) => next.delete(f.path));
+                return next;
+            });
+        };
+
+        fetchAllDiffs();
+    }, [effectiveDirectory, changedFiles, git, setDiff]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Clear all diffs when directory changes
     React.useEffect(() => {
-        loadDiff();
-    }, [loadDiff]);
+        setAllDiffs(new Map());
+        setLoadingFiles(new Set());
+    }, [effectiveDirectory]);
 
-    const activeFilePath = selectedFileEntry?.path ?? '';
+    // Re-fetch stale diffs when status changes (don't clear - keep old ones visible while fetching)
+    React.useEffect(() => {
+        if (!effectiveDirectory || !lastStatusChange || changedFiles.length === 0) return;
+
+        const refetchStaleDiffs = async () => {
+            const dirState = useGitStore.getState().directories.get(effectiveDirectory);
+            if (!dirState) return;
+
+            // Find files that need refetching (stale cache or no cache)
+            const staleFiles = changedFiles.filter((file) => {
+                const cached = dirState.diffCache.get(file.path);
+                return !cached || cached.fetchedAt < lastStatusChange;
+            });
+
+            if (staleFiles.length === 0) return;
+
+            // Mark as loading
+            setLoadingFiles((prev) => {
+                const next = new Set(prev);
+                staleFiles.forEach((f) => next.add(f.path));
+                return next;
+            });
+
+            // Fetch in parallel
+            const results = await Promise.allSettled(
+                staleFiles.map(async (file) => {
+                    const response = await git.getGitFileDiff(effectiveDirectory, { path: file.path });
+                    const diff = { original: response.original ?? '', modified: response.modified ?? '' };
+                    setDiff(effectiveDirectory, file.path, diff);
+                    return { path: file.path, diff };
+                })
+            );
+
+            // Update diffs in place (don't clear old ones first)
+            setAllDiffs((prev) => {
+                const next = new Map(prev);
+                results.forEach((result) => {
+                    if (result.status === 'fulfilled') {
+                        next.set(result.value.path, result.value.diff);
+                    }
+                });
+                // Remove diffs for files that no longer exist in changedFiles
+                for (const [filePath] of prev) {
+                    if (!changedFiles.some((f) => f.path === filePath)) {
+                        next.delete(filePath);
+                    }
+                }
+                return next;
+            });
+
+            // Clear loading state
+            setLoadingFiles((prev) => {
+                const next = new Set(prev);
+                staleFiles.forEach((f) => next.delete(f.path));
+                return next;
+            });
+        };
+
+        refetchStaleDiffs();
+    }, [effectiveDirectory, lastStatusChange, changedFiles, git, setDiff]);
+
+    const handleSelectFile = React.useCallback((value: string) => {
+        setSelectedFile(value);
+    }, []);
+
+    const renderSideBySide = (currentLayoutForSelectedFile ?? 'side-by-side') === 'side-by-side';
+
+    // Render all diff viewers - they stay mounted
+    const renderAllDiffViewers = () => {
+        if (allDiffs.size === 0) return null;
+
+        return Array.from(allDiffs.entries()).map(([filePath, diff]) => (
+            <SingleDiffViewer
+                key={filePath}
+                filePath={filePath}
+                diff={diff}
+                isVisible={filePath === selectedFile}
+                renderSideBySide={renderSideBySide}
+                wrapLines={diffWrapLines}
+            />
+        ));
+    };
 
     const renderContent = () => {
         if (!effectiveDirectory) {
@@ -397,31 +440,18 @@ export const DiffView: React.FC = () => {
             );
         }
 
-        if (!selectedFileEntry) {
-            return (
-                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                    Select a file to inspect its diff
-                </div>
-            );
-        }
-
-        const effectiveLayout = currentLayoutForSelectedFile ?? 'side-by-side';
-        const renderSideBySide = effectiveLayout === 'side-by-side';
-        const hasFileOverride = !!diffFileLayout[selectedFileEntry.path];
-        const allowResponsive =
-            diffLayoutPreference === 'dynamic' && !hasFileOverride;
+        const isCurrentFileLoading = selectedFile && loadingFiles.has(selectedFile);
+        const hasCurrentDiff = selectedFile && allDiffs.has(selectedFile);
 
         return (
-            <div className="flex flex-1 min-h-0 px-3 py-3">
-                <DiffContent
-                    fileDiff={fileDiff}
-                    activeFilePath={activeFilePath}
-                    isDiffLoading={isDiffLoading}
-                    diffError={diffError}
-                    onRetry={loadDiff}
-                    renderSideBySide={renderSideBySide}
-                    allowResponsive={allowResponsive}
-                />
+            <div className="flex flex-1 min-h-0 overflow-hidden px-3 py-3 relative">
+                {renderAllDiffViewers()}
+                {isCurrentFileLoading && !hasCurrentDiff && (
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <RiLoader4Line size={16} className="animate-spin" />
+                        Loading diff…
+                    </div>
+                )}
             </div>
         );
     };
@@ -444,6 +474,20 @@ export const DiffView: React.FC = () => {
                     onSelectFile={handleSelectFile}
                 />
                 <div className="flex-1" />
+                {selectedFileEntry && (
+                    <button
+                        type="button"
+                        onClick={() => setDiffWrapLines(!diffWrapLines)}
+                        className={`flex items-center justify-center size-5 rounded-sm transition-opacity ${
+                            diffWrapLines
+                                ? 'text-foreground opacity-100'
+                                : 'text-muted-foreground opacity-60 hover:opacity-100'
+                        }`}
+                        title={diffWrapLines ? 'Disable line wrap' : 'Enable line wrap'}
+                    >
+                        <RiTextWrap className="size-4" />
+                    </button>
+                )}
                 {selectedFileEntry && currentLayoutForSelectedFile && (
                     <DiffViewToggle
                         mode={currentLayoutForSelectedFile === 'side-by-side' ? 'side-by-side' : 'unified'}

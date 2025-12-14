@@ -706,49 +706,34 @@ html:not(.dark) .chat-scroll {
   margin: 0;
 }
 
-/* Monaco diff editor scrollbar styling (match overlay look) */
-.monaco-diff-wrapper {
-  --vscode-scrollbarSlider-background: var(--oc-scrollbar-thumb);
-  --vscode-scrollbarSlider-hoverBackground: var(--oc-scrollbar-thumb-hover);
-  --vscode-scrollbarSlider-activeBackground: var(--oc-scrollbar-thumb-hover);
-  --vscode-scrollbar-background: transparent;
-  --vscode-scrollbar-shadow: transparent;
+/* Pierre diff viewer styling */
+.pierre-diff-wrapper {
+  --diffs-font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  --diffs-font-size: var(--text-code, 13px);
+  --diffs-line-height: 1.5;
+  --diffs-tab-size: 2;
+  --diffs-header-font-family: var(--font-sans, 'IBM Plex Sans', sans-serif);
+  --diffs-min-number-column-width: 4ch;
+  --diffs-gap-inline: 0;
+  --diffs-gap-block: 0;
 }
 
-.monaco-diff-wrapper .monaco-scrollable-element > .scrollbar {
-  background: transparent;
+/* WebKit scroll rendering optimizations */
+/* Note: avoid will-change and contain as they break resize behavior */
+.pierre-diff-wrapper,
+.pierre-diff-wrapper diffs-container {
+  /* Force GPU compositing layer */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+
+  /* WebKit touch scroll optimization */
+  -webkit-overflow-scrolling: touch;
 }
 
-.monaco-diff-wrapper .monaco-scrollable-element > .scrollbar > .slider {
-  border-radius: 9999px;
-}
-
-.monaco-diff-wrapper .monaco-scrollable-element > .scrollbar.vertical {
-  width: 6px !important;
-}
-
-.monaco-diff-wrapper .monaco-scrollable-element > .scrollbar.horizontal {
-  height: 6px !important;
-}
-
-.monaco-diff-wrapper .monaco-scrollable-element > .scrollbar.vertical > .slider {
-  width: 6px !important;
-}
-
-.monaco-diff-wrapper .monaco-scrollable-element > .scrollbar.horizontal > .slider {
-  height: 6px !important;
-}
-
-/* Overview ruler (change/minimap lane) width and padding */
-.monaco-diff-wrapper .decorationsOverviewRuler {
-  width: 6px !important;
-  right: 2px !important; /* small gap from editor edge */
-}
-
-/* Hide Monaco hover widgets globally (tooltips over buttons, etc.) */
-.monaco-hover,
-.monaco-editor .hoverWidget {
-  display: none !important;
+.pierre-diff-wrapper diffs-container {
+  display: block;
 }
 
 /* Agent color system using theme variables */

@@ -16,6 +16,7 @@ The whole project was built entirely with AI coding agents under my supervision.
 ![Tool Output](docs/references/tool_output_example.png)
 ![Settings](docs/references/settings_example.png)
 ![Web Version](docs/references/web_version_example.png)
+![Diff View](docs/references/diff_example.png)
 ![VS Code Extension](docs/references/vscode_extension.png)
 <p>
 <img src="docs/references/pwa_chat_example.png" width="45%" alt="PWA Chat">
@@ -41,7 +42,7 @@ The whole project was built entirely with AI coding agents under my supervision.
 - Rich permission cards with syntax-highlighted operation previews
 - Smart tool visualization (inline diffs, file trees, results highlighting)
 - Per-agent permission mode control (ask, allow, full) adjustable per-session
-- Familiar diff viewer like you're used to in VSCode
+- Beautiful diff viewer with syntax highlighting, line wrap, and responsive layout
 - Built-in OpenCode agent/command management
 
 ## Installation
@@ -97,6 +98,7 @@ Independent project, not affiliated with OpenCode team.
 
 - [OpenCode](https://opencode.ai) - For the excellent API and extensible architecture
 - [Flexoki](https://github.com/kepano/flexoki) - Beautiful color scheme by [Steph Ango](https://stephango.com/flexoki)
+- [Pierre](https://pierrejs-docs.vercel.app/) - Fast, beautiful diff viewer with syntax highlighting
 - [Tauri](https://github.com/tauri-apps/tauri) - Desktop application framework
 - [David Hill](https://x.com/iamdavidhill) - who inspired me to release this without [overthinking](https://x.com/iamdavidhill/status/1993648326450020746?s=20)
 - My wife, who created a beautiful firework animation for the app while testing it for the first time
