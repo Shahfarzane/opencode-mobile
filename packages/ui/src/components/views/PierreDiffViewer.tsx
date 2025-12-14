@@ -1,0 +1,123 @@
+import React, { useMemo, useRef } from 'react';
+import { FileDiff } from '@pierre/diffs/react';
+import { parseDiffFromFile, type FileContents, type FileDiffMetadata } from '@pierre/diffs';
+
+import { useOptionalThemeSystem } from '@/contexts/useThemeSystem';
+import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+
+interface PierreDiffViewerProps {
+  original: string;
+  modified: string;
+  language: string;
+  fileName?: string;
+  renderSideBySide: boolean;
+  wrapLines?: boolean;
+}
+
+// CSS injected into Pierre's Shadow DOM for WebKit scroll optimization
+// Note: avoid will-change and contain:paint as they break resize behavior
+const WEBKIT_SCROLL_FIX_CSS = `
+  :host, pre, [data-diffs], [data-code] {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  [data-code] {
+    -webkit-overflow-scrolling: touch;
+  }
+`;
+
+// Fast cache key - use length + samples instead of full hash
+function getCacheKey(fileName: string, original: string, modified: string): string {
+  // Sample a few characters instead of hashing entire content
+  const sampleOriginal = original.length > 100
+    ? `${original.slice(0, 50)}${original.slice(-50)}`
+    : original;
+  const sampleModified = modified.length > 100
+    ? `${modified.slice(0, 50)}${modified.slice(-50)}`
+    : modified;
+  return `${fileName}:${original.length}:${modified.length}:${sampleOriginal.length}:${sampleModified.length}`;
+}
+
+export const PierreDiffViewer: React.FC<PierreDiffViewerProps> = ({
+  original,
+  modified,
+  language,
+  fileName = 'file',
+  renderSideBySide,
+  wrapLines = false,
+}) => {
+  const themeSystem = useOptionalThemeSystem();
+  const isDark = themeSystem?.currentTheme?.metadata?.variant === 'dark';
+
+  // Cache the last computed diff to avoid recomputing on every render
+  const diffCacheRef = useRef<{
+    key: string;
+    fileDiff: FileDiffMetadata;
+  } | null>(null);
+
+  // Pre-parse the diff with cacheKey for worker pool caching
+  const fileDiff = useMemo(() => {
+    const cacheKey = getCacheKey(fileName, original, modified);
+
+    // Return cached diff if inputs haven't changed
+    if (diffCacheRef.current?.key === cacheKey) {
+      return diffCacheRef.current.fileDiff;
+    }
+
+    const oldFile: FileContents = {
+      name: fileName,
+      contents: original,
+      lang: language as FileContents['lang'],
+      cacheKey: `old-${cacheKey}`,
+    };
+
+    const newFile: FileContents = {
+      name: fileName,
+      contents: modified,
+      lang: language as FileContents['lang'],
+      cacheKey: `new-${cacheKey}`,
+    };
+
+    const diff = parseDiffFromFile(oldFile, newFile);
+
+    // Cache the result
+    diffCacheRef.current = { key: cacheKey, fileDiff: diff };
+
+    return diff;
+  }, [fileName, original, modified, language]);
+
+  const options = useMemo(() => ({
+    theme: {
+      dark: 'vitesse-dark' as const,
+      light: 'vitesse-light' as const,
+    },
+    themeType: isDark ? ('dark' as const) : ('light' as const),
+    diffStyle: renderSideBySide ? ('split' as const) : ('unified' as const),
+    diffIndicators: 'none' as const,
+    hunkSeparators: 'line-info' as const,
+    lineDiffType: 'word-alt' as const,
+    overflow: wrapLines ? ('wrap' as const) : ('scroll' as const),
+    disableFileHeader: true,
+    enableLineSelection: false,
+    enableHoverUtility: false,
+    unsafeCSS: WEBKIT_SCROLL_FIX_CSS,
+  }), [isDark, renderSideBySide, wrapLines]);
+
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return (
+    <ScrollableOverlay
+      outerClassName="pierre-diff-wrapper size-full"
+      disableHorizontal={false}
+    >
+      <FileDiff
+        fileDiff={fileDiff}
+        options={options}
+      />
+    </ScrollableOverlay>
+  );
+};

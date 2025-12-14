@@ -34,6 +34,7 @@ interface UIStore {
 
   diffLayoutPreference: 'dynamic' | 'inline' | 'side-by-side';
   diffFileLayout: Record<string, 'inline' | 'side-by-side'>;
+  diffWrapLines: boolean;
 
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   toggleSidebar: () => void;
@@ -58,6 +59,7 @@ interface UIStore {
   updateProportionalSidebarWidths: () => void;
   setDiffLayoutPreference: (mode: 'dynamic' | 'inline' | 'side-by-side') => void;
   setDiffFileLayout: (filePath: string, mode: 'inline' | 'side-by-side') => void;
+  setDiffWrapLines: (wrap: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -83,6 +85,7 @@ export const useUIStore = create<UIStore>()(
         showReasoningTraces: false,
         diffLayoutPreference: 'dynamic',
         diffFileLayout: {},
+        diffWrapLines: false,
 
         setTheme: (theme) => {
           set({ theme });
@@ -204,6 +207,10 @@ export const useUIStore = create<UIStore>()(
           }));
         },
 
+        setDiffWrapLines: (wrap) => {
+          set({ diffWrapLines: wrap });
+        },
+
         updateProportionalSidebarWidths: () => {
           if (typeof window === 'undefined') {
             return;
@@ -248,6 +255,7 @@ export const useUIStore = create<UIStore>()(
           isSettingsDialogOpen: state.isSettingsDialogOpen,
           showReasoningTraces: state.showReasoningTraces,
           diffLayoutPreference: state.diffLayoutPreference,
+          diffWrapLines: state.diffWrapLines,
         })
       }
     ),
