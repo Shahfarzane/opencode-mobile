@@ -5,7 +5,9 @@ import type { Part } from '@opencode-ai/sdk';
 import { cn } from '@/lib/utils';
 import { RiFileCopyLine, RiCheckLine, RiDownloadLine } from '@remixicon/react';
 
-const SHIKI_THEMES = ['vitesse-light', 'vitesse-dark'] as const;
+import { flexokiStreamdownThemes } from '@/lib/shiki/flexokiThemes';
+
+const SHIKI_THEMES = flexokiStreamdownThemes;
 
 // Table utility functions
 const extractTableData = (tableEl: HTMLTableElement): { headers: string[]; rows: string[][] } => {
@@ -243,6 +245,50 @@ const CodeBlockWrapper: React.FC<CodeBlockWrapperProps> = ({ children, className
   const [copied, setCopied] = React.useState(false);
   const codeRef = React.useRef<HTMLDivElement>(null);
 
+  const normalizedStyle = React.useMemo<React.CSSProperties | undefined>(() => {
+    if (!style) return style;
+
+    const next: React.CSSProperties = { ...style };
+
+    const normalizeDeclarationString = (
+      raw: unknown
+    ): { value?: string; vars: Record<string, string> } => {
+      if (typeof raw !== 'string') return { value: undefined, vars: {} };
+
+      const [valuePart, ...rest] = raw.split(';').map((p) => p.trim()).filter(Boolean);
+      const vars: Record<string, string> = {};
+      for (const decl of rest) {
+        const idx = decl.indexOf(':');
+        if (idx === -1) continue;
+        const prop = decl.slice(0, idx).trim();
+        const value = decl.slice(idx + 1).trim();
+        if (!prop.startsWith('--') || value.length === 0) continue;
+        vars[prop] = value;
+      }
+      return { value: valuePart, vars };
+    };
+
+    const bg = normalizeDeclarationString((style as React.CSSProperties).backgroundColor);
+    if (bg.value) {
+      next.backgroundColor = bg.value;
+      (next as Record<string, string>)['--shiki-light-bg'] = bg.value;
+    }
+    for (const [k, v] of Object.entries(bg.vars)) {
+      (next as Record<string, string>)[k] = v;
+    }
+
+    const fg = normalizeDeclarationString((style as React.CSSProperties).color);
+    if (fg.value) {
+      next.color = fg.value;
+      (next as Record<string, string>)['--shiki-light'] = fg.value;
+    }
+    for (const [k, v] of Object.entries(fg.vars)) {
+      (next as Record<string, string>)[k] = v;
+    }
+
+    return next;
+  }, [style]);
+
   const getCodeContent = (): string => {
     if (!codeRef.current) return '';
     const codeEl = codeRef.current.querySelector('code');
@@ -267,11 +313,7 @@ const CodeBlockWrapper: React.FC<CodeBlockWrapperProps> = ({ children, className
       <pre
         {...props}
         className={cn(className)}
-        style={{
-          ...style,
-          background: 'transparent',
-          backgroundColor: 'transparent',
-        }}
+        style={normalizedStyle}
       >
         {children}
       </pre>

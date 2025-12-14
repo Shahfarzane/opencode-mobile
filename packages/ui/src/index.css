@@ -1301,6 +1301,21 @@ html:not(.dark) .chat-scroll {
   font-family: var(--font-mono);
 }
 
+/* Streamdown code blocks: ensure light/dark Shiki vars work even when Tailwind doesn't scan Streamdown's internal class names. */
+.streamdown-content [data-streamdown="code-block-body"] {
+  background-color: var(--shiki-light-bg, transparent);
+  color: var(--shiki-light, inherit);
+}
+
+.dark .streamdown-content [data-streamdown="code-block-body"] {
+  background-color: var(--shiki-dark-bg, var(--shiki-light-bg, transparent));
+  color: var(--shiki-dark, var(--shiki-light, inherit));
+}
+
+.dark .streamdown-content [data-streamdown="code-block-body"] span[style*="--shiki-dark"] {
+  color: var(--shiki-dark) !important;
+}
+
 /* Fix list styling - override Tailwind reset */
 .streamdown-content ul {
   list-style-type: disc;

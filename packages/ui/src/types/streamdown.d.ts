@@ -6,7 +6,7 @@ declare module 'streamdown' {
     mode?: 'streaming' | 'static';
     className?: string;
 
-    shikiTheme?: readonly [string, string] | [string, string];
+    shikiTheme?: readonly [string | object, string | object];
 
     controls?: boolean | {
       code?: boolean;
