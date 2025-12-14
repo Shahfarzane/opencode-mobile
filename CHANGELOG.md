@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
+## [1.1.3] - 2025-12-14
+
+- Replaced Monaco diff editor with Pierre/diffs for better performance
+- Added line wrap toggle in diff view with dynamic layout switching (auto-inline when narrow)
+
+
 ## [1.1.2] - 2025-12-13
 
 - Moved VS Code extension to activity bar (left sidebar)
