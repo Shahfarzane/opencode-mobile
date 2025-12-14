@@ -1337,3 +1337,9 @@ html:not(.dark) .chat-scroll {
 [data-streamdown="code-block-header"] {
   padding: 0.375rem 0.75rem;
 }
+
+/* Disable Streamdown's code block virtualization (content-visibility) to avoid late height changes that break scroll-to-bottom. */
+.streamdown-content [data-streamdown="code-block"] {
+  content-visibility: visible !important;
+  contain-intrinsic-size: none !important;
+}
