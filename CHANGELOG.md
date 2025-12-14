@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Flexoki themes for Shiki syntax highlighting for consistency with the app color schema.
+
 
 ## [1.1.3] - 2025-12-14
 
