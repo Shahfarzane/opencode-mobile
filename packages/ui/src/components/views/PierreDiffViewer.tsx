@@ -28,6 +28,14 @@ const WEBKIT_SCROLL_FIX_CSS = `
   [data-code] {
     -webkit-overflow-scrolling: touch;
   }
+  /* Reduce hunk separator height */
+  [data-separator-content] {
+    height: 24px !important;
+  }
+  [data-expand-button] {
+    height: 24px !important;
+    width: 24px !important;
+  }
 `;
 
 // Fast cache key - use length + samples instead of full hash
