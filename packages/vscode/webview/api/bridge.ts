@@ -97,7 +97,13 @@ window.addEventListener('message', (event: MessageEvent) => {
   }
 });
 
-type ThemeChangePayload = 'light' | 'dark' | { kind?: 'light' | 'dark' | 'high-contrast' };
+type ThemeChangePayload =
+  | 'light'
+  | 'dark'
+  | {
+      kind?: 'light' | 'dark' | 'high-contrast';
+      shikiThemes?: { light?: Record<string, unknown>; dark?: Record<string, unknown> } | null;
+    };
 type ThemeChangeHandler = (theme: ThemeChangePayload) => void;
 let themeChangeHandler: ThemeChangeHandler | null = null;
 
