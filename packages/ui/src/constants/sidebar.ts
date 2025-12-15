@@ -1,4 +1,4 @@
-import { RiBrainAi3Line, RiChatAi3Line, RiCommandLine, RiGitBranchLine, RiPaintBrushLine } from '@remixicon/react';
+import { RiBrainAi3Line, RiChatAi3Line, RiCommandLine, RiGitBranchLine, RiPaintBrushLine, RiStackLine } from '@remixicon/react';
 import type { ComponentType } from 'react';
 
 export type SidebarSection = 'sessions' | 'agents' | 'commands' | 'providers' | 'git-identities' | 'settings';
@@ -32,7 +32,12 @@ export const SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
         description: 'Create and maintain custom slash commands for OpenCode.',
         icon: RiCommandLine,
     },
-
+    {
+        id: 'providers',
+        label: 'Providers',
+        description: 'Configure AI model providers and API credentials.',
+        icon: RiStackLine,
+    },
     {
         id: 'git-identities',
         label: 'Git Identities',

@@ -11,6 +11,7 @@
   --ui-regular-font-weight: 400;
   --oc-scrollbar-thumb: oklch(0.32 0.03 50 / 0.4);
   --oc-scrollbar-thumb-hover: oklch(0.32 0.03 50 / 0.6);
+  --padding-scale: 1;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -224,13 +225,29 @@ svg.animate-spin {
   .chat-column {
     width: min(100%, 56rem);
     margin-inline: auto;
-    padding-inline: clamp(1rem, 3vw, 1.5rem);
+    padding-inline: calc(clamp(1rem, 3vw, 1.5rem) * var(--padding-scale, 1));
   }
 
   @media (min-width: 1024px) {
     .chat-column {
-      padding-inline: clamp(1.25rem, 2.5vw, 2rem);
+      padding-inline: calc(clamp(1.25rem, 2.5vw, 2rem) * var(--padding-scale, 1));
     }
+  }
+
+  /* Enhanced focus indicators for small interactive elements */
+  .model-favorite-button {
+    position: relative;
+    transition: transform 0.1s ease;
+  }
+
+  .model-favorite-button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  .model-favorite-button:active {
+    transform: scale(0.95);
   }
 
   /* FadeInOnReveal handles all animations - no custom CSS needed */
@@ -410,6 +427,43 @@ body {
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Override Tailwind spacing scale with custom properties that respect --padding-scale */
+  --spacing-0: 0;
+  --spacing-0\.5: calc(0.125rem * var(--padding-scale, 1));
+  --spacing-1: calc(0.25rem * var(--padding-scale, 1));
+  --spacing-1\.5: calc(0.375rem * var(--padding-scale, 1));
+  --spacing-2: calc(0.5rem * var(--padding-scale, 1));
+  --spacing-2\.5: calc(0.625rem * var(--padding-scale, 1));
+  --spacing-3: calc(0.75rem * var(--padding-scale, 1));
+  --spacing-3\.5: calc(0.875rem * var(--padding-scale, 1));
+  --spacing-4: calc(1rem * var(--padding-scale, 1));
+  --spacing-5: calc(1.25rem * var(--padding-scale, 1));
+  --spacing-6: calc(1.5rem * var(--padding-scale, 1));
+  --spacing-7: calc(1.75rem * var(--padding-scale, 1));
+  --spacing-8: calc(2rem * var(--padding-scale, 1));
+  --spacing-9: calc(2.25rem * var(--padding-scale, 1));
+  --spacing-10: calc(2.5rem * var(--padding-scale, 1));
+  --spacing-11: calc(2.75rem * var(--padding-scale, 1));
+  --spacing-12: calc(3rem * var(--padding-scale, 1));
+  --spacing-14: calc(3.5rem * var(--padding-scale, 1));
+  --spacing-16: calc(4rem * var(--padding-scale, 1));
+  --spacing-20: calc(5rem * var(--padding-scale, 1));
+  --spacing-24: calc(6rem * var(--padding-scale, 1));
+  --spacing-28: calc(7rem * var(--padding-scale, 1));
+  --spacing-32: calc(8rem * var(--padding-scale, 1));
+  --spacing-36: calc(9rem * var(--padding-scale, 1));
+  --spacing-40: calc(10rem * var(--padding-scale, 1));
+  --spacing-44: calc(11rem * var(--padding-scale, 1));
+  --spacing-48: calc(12rem * var(--padding-scale, 1));
+  --spacing-52: calc(13rem * var(--padding-scale, 1));
+  --spacing-56: calc(14rem * var(--padding-scale, 1));
+  --spacing-60: calc(15rem * var(--padding-scale, 1));
+  --spacing-64: calc(16rem * var(--padding-scale, 1));
+  --spacing-72: calc(18rem * var(--padding-scale, 1));
+  --spacing-80: calc(20rem * var(--padding-scale, 1));
+  --spacing-96: calc(24rem * var(--padding-scale, 1));
+  
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

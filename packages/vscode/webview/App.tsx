@@ -263,7 +263,13 @@ export function VSCodeApp() {
     <div className="flex flex-col h-full bg-background text-foreground">
       <ConnectionStatusBanner status={status} error={error} onRetry={connect} />
       <div className="flex-1 min-h-0">
-        {currentView === 'sessions' ? <SessionsList /> : <ChatPanel />}
+        {currentView === 'sessions' ? (
+          <SessionsList />
+        ) : currentView === 'settings' ? (
+          <SettingsView />
+        ) : (
+          <ChatPanel />
+        )}
       </div>
     </div>
   );
