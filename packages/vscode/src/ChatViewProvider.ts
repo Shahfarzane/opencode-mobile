@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { handleBridgeMessage, type BridgeRequest } from './bridge';
 import { getThemeKindName } from './theme';
 import type { OpenCodeManager, ConnectionStatus } from './opencode';
+import { getWebviewShikiThemes } from './shikiThemes';
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'openchamber.chatView';
@@ -27,6 +28,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     };
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+    // Send theme payload (including optional Shiki theme JSON) after the webview is set up.
+    void this.updateTheme(vscode.window.activeColorTheme.kind);
 
     webviewView.webview.onDidReceiveMessage(async (message: BridgeRequest) => {
       if (message.type === 'restartApi') {
@@ -44,9 +47,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   public updateTheme(kind: vscode.ColorThemeKind) {
     if (this._view) {
       const themeKind = getThemeKindName(kind);
-      this._view.webview.postMessage({
-        type: 'themeChange',
-        theme: { kind: themeKind },
+      void getWebviewShikiThemes().then((shikiThemes) => {
+        this._view?.webview.postMessage({
+          type: 'themeChange',
+          theme: { kind: themeKind, shikiThemes },
+        });
       });
     }
   }

@@ -6,8 +6,83 @@ import { cn } from '@/lib/utils';
 import { RiFileCopyLine, RiCheckLine, RiDownloadLine } from '@remixicon/react';
 
 import { flexokiStreamdownThemes } from '@/lib/shiki/flexokiThemes';
+import { isVSCodeRuntime } from '@/lib/desktop';
 
-const SHIKI_THEMES = flexokiStreamdownThemes;
+const withStableStringId = <T extends object>(value: T, id: string): T => {
+  const existingPrimitive = (value as Record<symbol, unknown>)[Symbol.toPrimitive];
+  if (typeof existingPrimitive === 'function') {
+    try {
+      if ((existingPrimitive as () => unknown)() === id) {
+        return value;
+      }
+    } catch {
+      // Ignore and attempt to define below.
+    }
+  }
+
+  try {
+    Object.defineProperty(value, 'toString', {
+      value: () => id,
+      enumerable: false,
+      configurable: true,
+    });
+  } catch {
+    // Ignore if non-configurable or frozen.
+  }
+
+  try {
+    Object.defineProperty(value, Symbol.toPrimitive, {
+      value: () => id,
+      enumerable: false,
+      configurable: true,
+    });
+  } catch {
+    // Ignore if non-configurable or frozen.
+  }
+
+  return value;
+};
+
+const getMarkdownShikiThemes = (): readonly [string | object, string | object] => {
+  if (!isVSCodeRuntime() || typeof window === 'undefined') {
+    return flexokiStreamdownThemes;
+  }
+
+  const provided = window.__OPENCHAMBER_VSCODE_SHIKI_THEMES__;
+  if (provided?.light && provided?.dark) {
+    const light = withStableStringId(
+      { ...(provided.light as Record<string, unknown>) },
+      `vscode-shiki-light:${String((provided.light as { name?: unknown })?.name ?? 'theme')}`,
+    );
+    const dark = withStableStringId(
+      { ...(provided.dark as Record<string, unknown>) },
+      `vscode-shiki-dark:${String((provided.dark as { name?: unknown })?.name ?? 'theme')}`,
+    );
+    return [light, dark] as const;
+  }
+
+  return flexokiStreamdownThemes;
+};
+
+const useMarkdownShikiThemes = (): readonly [string | object, string | object] => {
+  const [themes, setThemes] = React.useState(getMarkdownShikiThemes);
+
+  React.useEffect(() => {
+    if (!isVSCodeRuntime() || typeof window === 'undefined') return;
+
+    const handler = (event: Event) => {
+      // Rely on the canonical `window.__OPENCHAMBER_VSCODE_SHIKI_THEMES__` that the webview updates
+      // before dispatching this event, so we always apply stable cache keys and avoid stale token reuse.
+      void event;
+      setThemes(getMarkdownShikiThemes());
+    };
+
+    window.addEventListener('openchamber:vscode-shiki-themes', handler as EventListener);
+    return () => window.removeEventListener('openchamber:vscode-shiki-themes', handler as EventListener);
+  }, []);
+
+  return themes;
+};
 
 // Table utility functions
 const extractTableData = (tableEl: HTMLTableElement): { headers: string[]; rows: string[][] } => {
@@ -352,6 +427,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   className,
   isStreaming = false,
 }) => {
+  const shikiThemes = useMarkdownShikiThemes();
   const componentKey = React.useMemo(() => {
     const signature = part?.id ? `part-${part.id}` : `message-${messageId}`;
     return `markdown-${signature}`;
@@ -361,7 +437,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     <div className={cn('break-words', className)}>
       <Streamdown
         mode={isStreaming ? 'streaming' : 'static'}
-        shikiTheme={SHIKI_THEMES}
+        shikiTheme={shikiThemes}
         className="streamdown-content"
         controls={{ code: false, table: false }}
         components={streamdownComponents}
@@ -386,11 +462,12 @@ export const SimpleMarkdownRenderer: React.FC<{
   content: string;
   className?: string;
 }> = ({ content, className }) => {
+  const shikiThemes = useMarkdownShikiThemes();
   return (
     <div className={cn('break-words', className)}>
       <Streamdown
         mode="static"
-        shikiTheme={SHIKI_THEMES}
+        shikiTheme={shikiThemes}
         className="streamdown-content"
         controls={{ code: false, table: false }}
         components={streamdownComponents}

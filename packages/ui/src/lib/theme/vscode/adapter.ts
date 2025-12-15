@@ -12,6 +12,10 @@ export type VSCodeThemeColorToken =
   | 'editor.lineHighlightBackground'
   | 'editorCursor.foreground'
   | 'focusBorder'
+  | 'diffEditor.insertedTextBackground'
+  | 'diffEditor.insertedTextBorder'
+  | 'diffEditor.insertedLineBackground'
+  | 'gitDecoration.addedResourceForeground'
   | 'sideBar.background'
   | 'sideBar.foreground'
   | 'panel.background'
@@ -65,6 +69,10 @@ const VARIABLE_MAP: Record<VSCodeThemeColorToken, string> = {
   'editor.lineHighlightBackground': '--vscode-editor-lineHighlightBackground',
   'editorCursor.foreground': '--vscode-editorCursor-foreground',
   focusBorder: '--vscode-focusBorder',
+  'diffEditor.insertedTextBackground': '--vscode-diffEditor-insertedTextBackground',
+  'diffEditor.insertedTextBorder': '--vscode-diffEditor-insertedTextBorder',
+  'diffEditor.insertedLineBackground': '--vscode-diffEditor-insertedLineBackground',
+  'gitDecoration.addedResourceForeground': '--vscode-gitDecoration-addedResourceForeground',
   'sideBar.background': '--vscode-sideBar-background',
   'sideBar.foreground': '--vscode-sideBar-foreground',
   'panel.background': '--vscode-panel-background',
@@ -107,6 +115,43 @@ const normalizeColor = (value?: string | null): string | undefined => {
   return trimmed;
 };
 
+const applyAlpha = (color: string, opacity: number): string => {
+  const normalized = color.trim();
+  if (!normalized) return color;
+
+  // rgba()/rgb()
+  const rgbMatch = normalized.match(
+    /^rgba?\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})(?:\s*,\s*([0-9.]+))?\s*\)$/i,
+  );
+  if (rgbMatch) {
+    const r = Math.min(255, Math.max(0, Number(rgbMatch[1])));
+    const g = Math.min(255, Math.max(0, Number(rgbMatch[2])));
+    const b = Math.min(255, Math.max(0, Number(rgbMatch[3])));
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+
+  // #RGB / #RRGGBB / #RRGGBBAA
+  const hex = normalized.replace(/^#/, '');
+  if (hex.length === 3 || hex.length === 6 || hex.length === 8) {
+    const expanded = hex.length === 3
+      ? hex.split('').map((c) => `${c}${c}`).join('')
+      : hex.length === 8
+        ? hex.slice(0, 6)
+        : hex;
+
+    const r = parseInt(expanded.slice(0, 2), 16);
+    const g = parseInt(expanded.slice(2, 4), 16);
+    const b = parseInt(expanded.slice(4, 6), 16);
+    if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b)) {
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+  }
+
+  return color;
+};
+
+const forceOpaque = (color: string): string => applyAlpha(color, 1);
+
 const readKind = (preferred?: VSCodeThemeKind): VSCodeThemeKind => {
   if (preferred === 'light' || preferred === 'dark' || preferred === 'high-contrast') {
     return preferred;
@@ -129,12 +174,14 @@ export const readVSCodeThemePalette = (
     return null;
   }
 
-  const styles = getComputedStyle(document.documentElement);
+  const rootStyles = getComputedStyle(document.documentElement);
+  const bodyStyles = document.body ? getComputedStyle(document.body) : null;
   const colors: Partial<Record<VSCodeThemeColorToken, string>> = {};
 
   (Object.keys(VARIABLE_MAP) as VSCodeThemeColorToken[]).forEach((token) => {
     const cssVar = VARIABLE_MAP[token];
-    const value = normalizeColor(styles.getPropertyValue(cssVar));
+    const value = normalizeColor(rootStyles.getPropertyValue(cssVar))
+      ?? (bodyStyles ? normalizeColor(bodyStyles.getPropertyValue(cssVar)) : undefined);
     if (value) {
       colors[token] = value;
     }
@@ -158,17 +205,32 @@ export const buildVSCodeThemeFromPalette = (palette: VSCodeThemePalette): Theme 
   const panelFg = read('panel.foreground', read('editor.foreground', base.colors.surface.foreground));
   const background = sidebarBg;
   const foreground = read('editor.foreground', base.colors.surface.foreground);
-  const accent = read('textLink.foreground', read('button.background', base.colors.primary.base));
+  // Prefer VS Code's "added diff" color as our primary accent when available (users expect this to match their theme).
+  const diffInserted = palette.colors['diffEditor.insertedTextBorder']
+    ?? palette.colors['diffEditor.insertedLineBackground']
+    ?? palette.colors['diffEditor.insertedTextBackground']
+    ?? palette.colors['gitDecoration.addedResourceForeground'];
+  const accent = diffInserted
+    ? forceOpaque(diffInserted)
+    : read('button.background', read('textLink.foreground', base.colors.primary.base));
   const accentFg = read('button.foreground', base.colors.primary.foreground || base.colors.surface.background);
   const hoverBg = read('list.hoverBackground', read('editor.selectionBackground', base.colors.interactive.hover));
   const activeBg = read('list.activeSelectionBackground', hoverBg);
   const selection = read('editor.selectionBackground', activeBg);
   const selectionFg = read('editor.selectionForeground', foreground);
-  const focus = read('focusBorder', selection);
-  const border = read('input.border', read('panel.border', base.colors.interactive.border));
+  const focus = read('focusBorder', accent);
+  // Prefer panel border for a less prominent, more consistent border color in webviews.
+  const border = read('panel.border', read('input.border', base.colors.interactive.border));
+  const focusRing = applyAlpha(focus, palette.kind === 'light' ? 0.35 : 0.45);
   const cursor = read('editorCursor.foreground', base.colors.interactive.cursor);
   const badgeBg = read('badge.background', accent);
   const badgeFg = read('badge.foreground', foreground);
+
+  const success = diffInserted
+    ? forceOpaque(diffInserted)
+    : read('testing.iconPassed', base.colors.status.success);
+  const successBg = applyAlpha(success, palette.kind === 'light' ? 0.12 : 0.16);
+  const successBorder = applyAlpha(success, palette.kind === 'light' ? 0.35 : 0.45);
 
   const inlineCode = read('textPreformat.foreground', read('terminal.ansiGreen', base.colors.syntax.base.string));
   // Tailwind's `--accent` drives hovered/selected menu items in Radix/shadcn; prefer VS Code list hover/selection.
@@ -215,7 +277,7 @@ export const buildVSCodeThemeFromPalette = (palette: VSCodeThemePalette): Theme 
         selection,
         selectionForeground: selectionFg,
         focus,
-        focusRing: focus,
+        focusRing,
         cursor,
         hover: hoverBg,
         active: activeBg,
@@ -230,10 +292,10 @@ export const buildVSCodeThemeFromPalette = (palette: VSCodeThemePalette): Theme 
         warningForeground: read('editorWarning.foreground', base.colors.status.warningForeground),
         warningBackground: read('editorWarning.background', base.colors.status.warningBackground),
         warningBorder: read('editorWarning.foreground', base.colors.status.warningBorder),
-        success: read('testing.iconPassed', base.colors.status.success),
-        successForeground: read('testing.iconPassed', base.colors.status.successForeground),
-        successBackground: read('testing.iconPassed', base.colors.status.successBackground),
-        successBorder: read('testing.iconPassed', base.colors.status.successBorder),
+        success,
+        successForeground: success,
+        successBackground: successBg,
+        successBorder,
         info: read('editorInfo.foreground', base.colors.status.info),
         infoForeground: read('editorInfo.foreground', base.colors.status.infoForeground),
         infoBackground: read('editorInfo.background', base.colors.status.infoBackground),

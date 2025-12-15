@@ -32,11 +32,13 @@ function withStableStringId<T extends object>(value: T, id: string): T {
   Object.defineProperty(value, 'toString', {
     value: () => id,
     enumerable: false,
+    configurable: true,
   });
 
   Object.defineProperty(value, Symbol.toPrimitive, {
     value: () => id,
     enumerable: false,
+    configurable: true,
   });
 
   return value;

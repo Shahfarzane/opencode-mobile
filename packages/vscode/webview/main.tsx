@@ -20,6 +20,7 @@ declare global {
       connectionStatus: string;
     };
     __OPENCHAMBER_VSCODE_THEME__?: VSCodeThemePayload['theme'];
+    __OPENCHAMBER_VSCODE_SHIKI_THEMES__?: { light?: Record<string, unknown>; dark?: Record<string, unknown> } | null;
     __OPENCHAMBER_CONNECTION__?: { status: ConnectionStatus; error?: string };
   }
 }
@@ -83,13 +84,32 @@ const emitVSCodeTheme = (preferredKind?: VSCodeThemeKind) => {
 
 emitVSCodeTheme(window.__VSCODE_CONFIG__?.theme as VSCodeThemeKind | undefined);
 
+const scheduleThemeRecompute = (kind?: VSCodeThemeKind) => {
+  // VS Code updates webview CSS variables asynchronously around theme changes.
+  // Re-read on the next frames so we don't snapshot the old palette.
+  requestAnimationFrame(() => {
+    emitVSCodeTheme(kind);
+    requestAnimationFrame(() => emitVSCodeTheme(kind));
+  });
+};
+
 onThemeChange((payload) => {
   const kind = (typeof payload === 'string'
     ? payload
     : typeof payload === 'object' && payload
       ? payload.kind
       : undefined) as VSCodeThemeKind | undefined;
-  emitVSCodeTheme(kind);
+
+  if (typeof payload === 'object' && payload?.shikiThemes !== undefined) {
+    window.__OPENCHAMBER_VSCODE_SHIKI_THEMES__ = payload.shikiThemes;
+    window.dispatchEvent(
+      new CustomEvent('openchamber:vscode-shiki-themes', {
+        detail: { shikiThemes: payload.shikiThemes },
+      }),
+    );
+  }
+
+  scheduleThemeRecompute(kind);
 });
 
 const workspaceFolder = window.__VSCODE_CONFIG__?.workspaceFolder;

@@ -37,6 +37,21 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Theme changes can update the `workbench.colorTheme` setting slightly after the
+  // `activeColorTheme` event. Listen for config changes too so we can re-resolve
+  // the contributed theme JSON and update Shiki themes in the webview.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (
+        event.affectsConfiguration('workbench.colorTheme') ||
+        event.affectsConfiguration('workbench.preferredLightColorTheme') ||
+        event.affectsConfiguration('workbench.preferredDarkColorTheme')
+      ) {
+        chatViewProvider?.updateTheme(vscode.window.activeColorTheme.kind);
+      }
+    })
+  );
+
   // Subscribe to status changes
   context.subscriptions.push(
     openCodeManager.onStatusChange((status, error) => {

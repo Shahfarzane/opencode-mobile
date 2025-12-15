@@ -19,6 +19,7 @@ import { useAssistantStatus } from '@/hooks/useAssistantStatus';
 import { toast } from 'sonner';
 import { useFileStore } from '@/stores/fileStore';
 import { calculateEditPermissionUIState, type BashPermissionSetting } from '@/lib/permissions/editPermissionDefaults';
+import { isVSCodeRuntime } from '@/lib/desktop';
 
 const MAX_VISIBLE_TEXTAREA_LINES = 8;
 
@@ -118,15 +119,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
 
     const chatInputAccent = React.useMemo(() => getEditModeColors(effectiveEditPermission), [effectiveEditPermission]);
 
+    // VS Code webviews tend to have stronger status border colors; in web/desktop themes the same
+    // border tokens can already be subtle, so avoid double-softening there.
+    const softenBorderColor = React.useCallback((color: string) => (
+        isVSCodeRuntime()
+            ? `color-mix(in srgb, ${color} 55%, transparent)`
+            : color
+    ), []);
+
     const chatInputWrapperStyle = React.useMemo<React.CSSProperties | undefined>(() => {
+        // Keep border width stable so toggling modes doesn't shift layout.
+        const baseBorderWidth = isVSCodeRuntime() ? 1 : 2;
+
         if (!chatInputAccent) {
-            return undefined;
+            return { borderWidth: baseBorderWidth };
         }
+
+        const borderColor = chatInputAccent.border ?? chatInputAccent.text;
         return {
-            borderColor: chatInputAccent.border ?? chatInputAccent.text,
-            borderWidth: chatInputAccent.borderWidth ?? 1,
+            borderColor: softenBorderColor(borderColor),
+            borderWidth: baseBorderWidth,
         };
-    }, [chatInputAccent]);
+    }, [chatInputAccent, softenBorderColor]);
 
     const hasContent = message.trim() || attachedFiles.length > 0;
 
@@ -789,7 +803,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                 <AttachedFilesList />
                 <div
                     className={cn(
-                        "rounded-xl border border-border/20 bg-input/10 dark:bg-input/30",
+                        "rounded-xl border border-border/80 bg-input/10 dark:bg-input/30",
                         "flex flex-col relative overflow-visible"
                     )}
                     style={chatInputWrapperStyle}
