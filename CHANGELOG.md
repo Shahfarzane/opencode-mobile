@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-12-15
+
+- Favorite & recent models for quick access in model selection
+- Tool call expansion settings: collapsed, activity, or detailed modes
+- Font size & spacing controls (50-200% scaling) in Appearance Settings
+- Settings page access within VSCode extension
+Thanks to @theblazehen for contributing these features!
+
 
 ## [1.1.6] - 2025-12-15
 
