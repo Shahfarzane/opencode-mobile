@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Optimized diff view layout with smaller fonts and compact hunk separators
+- Improved mobile experience: simplified header, better diff file selector
+- Redesigned password-protected session unlock screen
+
 
 ## [1.1.5] - 2025-12-15
 
