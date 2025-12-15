@@ -107,6 +107,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
     const providers = useConfigStore((state) => state.providers);
     const showReasoningTraces = useUIStore((state) => state.showReasoningTraces);
+    const toolCallExpansion = useUIStore((state) => state.toolCallExpansion);
 
     React.useEffect(() => {
         if (currentSessionId) {
@@ -302,8 +303,50 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         if (isUser) {
             return [];
         }
-        return visibleParts.filter((part) => part.type === 'tool');
+        const filtered = visibleParts.filter((part) => part.type === 'tool');
+        return filtered;
     }, [isUser, visibleParts]);
+
+    const effectiveExpandedTools = React.useMemo(() => {
+        // 'collapsed': Activity and tools start collapsed
+        // 'activity': Activity expanded, tools collapsed  
+        // 'detailed': Activity and tools expanded
+        
+        if (toolCallExpansion === 'collapsed' || toolCallExpansion === 'activity') {
+            // Tools default collapsed: expandedTools contains IDs of tools that ARE expanded
+            return expandedTools;
+        }
+        
+        // 'detailed': Tools default expanded
+        // Collect all relevant tool IDs (from this message and the entire turn if we're rendering a progressive group)
+        const allToolIds = new Set<string>();
+        
+        // 1. Add tools from this message
+        for (const part of toolParts) {
+            if (part.id) {
+                allToolIds.add(part.id);
+            }
+        }
+        
+        // 2. If we're rendering a progressive group for the turn, include all turn tools
+        if (turnGroupingContext?.isFirstAssistantInTurn) {
+            for (const activity of turnGroupingContext.activityParts) {
+                if (activity.kind === 'tool' && activity.part.id) {
+                    allToolIds.add(activity.part.id);
+                }
+            }
+        }
+        
+        // expandedTools contains IDs of tools that ARE collapsed (inverted)
+        // Return a set of all tool IDs EXCEPT those in expandedTools
+        const effective = new Set<string>();
+        for (const id of allToolIds) {
+            if (!expandedTools.has(id)) {
+                effective.add(id);
+            }
+        }
+        return effective;
+    }, [toolCallExpansion, expandedTools, toolParts, turnGroupingContext]);
 
     const agentMention = React.useMemo(() => {
         if (!isUser) {
@@ -707,7 +750,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 hasTouchInput={hasTouchInput}
                                 copiedCode={copiedCode}
                                 onCopyCode={handleCopyCode}
-                                expandedTools={expandedTools}
+                                expandedTools={effectiveExpandedTools}
                                 onToggleTool={handleToggleTool}
                                 onShowPopup={handleShowPopup}
                                 streamPhase={streamPhase}

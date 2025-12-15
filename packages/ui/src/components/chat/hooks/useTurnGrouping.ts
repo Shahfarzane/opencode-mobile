@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Message, Part } from '@opencode-ai/sdk';
 import { useCurrentSessionActivity } from '@/hooks/useSessionActivity';
+import { useUIStore } from '@/stores/useUIStore';
 
 export interface ChatMessageEntry {
     info: Message;
@@ -302,30 +303,34 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
         () => new Map()
     );
 
+    const toolCallExpansion = useUIStore((state) => state.toolCallExpansion);
+    // Activity group is expanded for 'activity' and 'detailed', collapsed for 'collapsed'
+    const defaultActivityExpanded = toolCallExpansion === 'activity' || toolCallExpansion === 'detailed';
+    
     const getOrCreateTurnState = React.useCallback(
         (turnId: string): TurnUiState => {
             const existing = turnUiStates.get(turnId);
             if (existing) return existing;
-            return { isExpanded: false, previewedPartIds: new Set<string>() };
+            return { isExpanded: defaultActivityExpanded, previewedPartIds: new Set<string>() };
         },
-        [turnUiStates]
+        [turnUiStates, defaultActivityExpanded]
     );
 
     const toggleGroup = React.useCallback((turnId: string) => {
         setTurnUiStates((prev) => {
             const next = new Map(prev);
-            const current = next.get(turnId) ?? { isExpanded: false, previewedPartIds: new Set<string>() };
+            const current = next.get(turnId) ?? { isExpanded: defaultActivityExpanded, previewedPartIds: new Set<string>() };
             next.set(turnId, { ...current, isExpanded: !current.isExpanded });
             return next;
         });
-    }, []);
+    }, [defaultActivityExpanded]);
 
     const markPartsPreviewedInternal = React.useCallback((turnId: string, partIds: string[]) => {
         if (partIds.length === 0) return;
 
         setTurnUiStates((prev) => {
             const next = new Map(prev);
-            const state = next.get(turnId) ?? { isExpanded: false, previewedPartIds: new Set<string>() };
+            const state = next.get(turnId) ?? { isExpanded: defaultActivityExpanded, previewedPartIds: new Set<string>() };
             const newPreviewed = new Set(state.previewedPartIds);
             partIds.forEach((id) => {
                 if (id && id.trim().length > 0) {

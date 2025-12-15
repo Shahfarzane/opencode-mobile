@@ -5,10 +5,11 @@ import { ChatView } from '@/components/views';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { ContextUsageDisplay } from '@/components/ui/ContextUsageDisplay';
-import { RiAddLine, RiArrowLeftLine } from '@remixicon/react';
+import { RiAddLine, RiArrowLeftLine, RiSettings3Line } from '@remixicon/react';
 import { RiLoader4Line } from '@remixicon/react';
+import { SettingsPage } from '@/components/sections/settings/SettingsPage';
 
-type VSCodeView = 'sessions' | 'chat';
+type VSCodeView = 'sessions' | 'chat' | 'settings';
 
 export const VSCodeLayout: React.FC = () => {
   const [currentView, setCurrentView] = React.useState<VSCodeView>('sessions');
@@ -200,7 +201,11 @@ export const VSCodeLayout: React.FC = () => {
     <div className="h-full w-full bg-background text-foreground flex flex-col">
       {currentView === 'sessions' ? (
         <div className="flex flex-col h-full">
-          <VSCodeHeader title="Sessions" onNewSession={handleNewSession} />
+          <VSCodeHeader 
+            title="Sessions" 
+            onNewSession={handleNewSession}
+            onSettings={() => setCurrentView('settings')}
+          />
           <div className="flex-1 overflow-hidden">
             <SessionSidebar
               mobileVariant
@@ -208,6 +213,17 @@ export const VSCodeLayout: React.FC = () => {
               onSessionSelected={() => setCurrentView('chat')}
               hideDirectoryControls
             />
+          </div>
+        </div>
+      ) : currentView === 'settings' ? (
+        <div className="flex flex-col h-full">
+          <VSCodeHeader
+            title="Settings"
+            showBack
+            onBack={handleBackToSessions}
+          />
+          <div className="flex-1 overflow-y-auto">
+            <VSCodeSettingsView />
           </div>
         </div>
       ) : (
@@ -249,10 +265,11 @@ interface VSCodeHeaderProps {
   showBack?: boolean;
   onBack?: () => void;
   onNewSession?: () => void;
+  onSettings?: () => void;
   showContextUsage?: boolean;
 }
 
-const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, onNewSession, showContextUsage }) => {
+const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, onNewSession, onSettings, showContextUsage }) => {
   const { getCurrentModel } = useConfigStore();
   const getContextUsage = useSessionStore((state) => state.getContextUsage);
 
@@ -285,6 +302,15 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
           <RiAddLine className="h-5 w-5" />
         </button>
       )}
+      {onSettings && (
+        <button
+          onClick={onSettings}
+          className="p-1 rounded hover:bg-muted transition-colors"
+          aria-label="Settings"
+        >
+          <RiSettings3Line className="h-5 w-5" />
+        </button>
+      )}
       {showContextUsage && contextUsage && contextUsage.totalTokens > 0 && (
         <ContextUsageDisplay
           totalTokens={contextUsage.totalTokens}
@@ -294,6 +320,17 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
           size="compact"
         />
       )}
+    </div>
+  );
+};
+
+const VSCodeSettingsView: React.FC = () => {
+  return (
+    <div className="flex flex-col h-full">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <SettingsPage />
+      </div>
     </div>
   );
 };
