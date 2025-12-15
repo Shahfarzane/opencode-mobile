@@ -718,6 +718,11 @@ html:not(.dark) .chat-scroll {
   --diffs-gap-block: 0;
 }
 
+/* Desktop: slightly smaller diff code text */
+:root:not(.mobile-pointer) .pierre-diff-wrapper {
+  --diffs-font-size: 0.8125rem;
+}
+
 /* WebKit scroll rendering optimizations */
 /* Note: avoid will-change and contain as they break resize behavior */
 .pierre-diff-wrapper,
