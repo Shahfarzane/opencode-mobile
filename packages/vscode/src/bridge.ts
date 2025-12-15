@@ -74,30 +74,141 @@ const listDirectoryEntries = async (dirPath: string) => {
   }));
 };
 
+const FILE_SEARCH_EXCLUDED_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '.next',
+  '.turbo',
+  '.cache',
+  'coverage',
+  'tmp',
+  'logs',
+]);
+
+const shouldSkipSearchDirectory = (name: string) => {
+  if (!name) {
+    return false;
+  }
+  if (name.startsWith('.')) {
+    return true;
+  }
+  return FILE_SEARCH_EXCLUDED_DIRS.has(name.toLowerCase());
+};
+
+const searchFilesystemFiles = async (rootPath: string, query: string, limit: number) => {
+  const normalizedQuery = (query || '').trim().toLowerCase();
+  const matchAll = normalizedQuery.length === 0;
+
+  const rootUri = vscode.Uri.file(rootPath);
+  const queue: vscode.Uri[] = [rootUri];
+  const visited = new Set<string>([normalizeFsPath(rootUri.fsPath)]);
+  const results: Array<{ name: string; path: string; relativePath: string; extension?: string }> = [];
+  const MAX_CONCURRENCY = 5;
+
+  while (queue.length > 0 && results.length < limit) {
+    const batch = queue.splice(0, MAX_CONCURRENCY);
+    const dirLists = await Promise.all(
+      batch.map((dir) => Promise.resolve(vscode.workspace.fs.readDirectory(dir)).catch(() => [] as [string, vscode.FileType][]))
+    );
+
+    for (let index = 0; index < batch.length; index += 1) {
+      const currentDir = batch[index];
+      const dirents = dirLists[index];
+
+      for (const [entryName, entryType] of dirents) {
+        if (!entryName || entryName.startsWith('.')) {
+          continue;
+        }
+
+        const entryUri = vscode.Uri.joinPath(currentDir, entryName);
+        const absolute = normalizeFsPath(entryUri.fsPath);
+
+        if (entryType === vscode.FileType.Directory) {
+          if (shouldSkipSearchDirectory(entryName)) {
+            continue;
+          }
+          if (!visited.has(absolute)) {
+            visited.add(absolute);
+            queue.push(entryUri);
+          }
+          continue;
+        }
+
+        if (entryType !== vscode.FileType.File) {
+          continue;
+        }
+
+        const relativePath = normalizeFsPath(path.relative(rootPath, absolute) || path.basename(absolute));
+        if (!matchAll) {
+          const lowercaseName = entryName.toLowerCase();
+          const lowercasePath = relativePath.toLowerCase();
+          if (!lowercaseName.includes(normalizedQuery) && !lowercasePath.includes(normalizedQuery)) {
+            continue;
+          }
+        }
+
+        results.push({
+          name: entryName,
+          path: absolute,
+          relativePath,
+          extension: entryName.includes('.') ? entryName.split('.').pop()?.toLowerCase() : undefined,
+        });
+
+        if (results.length >= limit) {
+          queue.length = 0;
+          break;
+        }
+      }
+
+      if (results.length >= limit) {
+        break;
+      }
+    }
+  }
+
+  return results;
+};
+
 const searchDirectory = async (directory: string, query: string, limit = 60) => {
   const rootPath = directory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   if (!rootPath) return [];
 
   const sanitizedQuery = query?.trim() || '';
-  const pattern = sanitizedQuery ? `**/*${sanitizedQuery}*` : '**/*';
-  const exclude = '**/{node_modules,.git,dist,build,.next,.turbo,.cache,coverage,tmp,logs}/**';
-  const results = await vscode.workspace.findFiles(
-    new vscode.RelativePattern(vscode.Uri.file(rootPath), pattern),
-    exclude,
-    limit,
-  );
+  if (!sanitizedQuery) {
+    return searchFilesystemFiles(rootPath, '', limit);
+  }
 
-  return results.map((file) => {
-    const absolute = normalizeFsPath(file.fsPath);
-    const relative = normalizeFsPath(path.relative(rootPath, absolute));
-    const name = path.basename(absolute);
-    return {
-      name,
-      path: absolute,
-      relativePath: relative || name,
-      extension: name.includes('.') ? name.split('.').pop()?.toLowerCase() : undefined,
-    };
-  });
+  // Fast-path via VS Code's file index (may be case-sensitive depending on platform/workspace).
+  try {
+    const pattern = `**/*${sanitizedQuery}*`;
+    const exclude = '**/{node_modules,.git,dist,build,.next,.turbo,.cache,coverage,tmp,logs}/**';
+    const results = await vscode.workspace.findFiles(
+      new vscode.RelativePattern(vscode.Uri.file(rootPath), pattern),
+      exclude,
+      limit,
+    );
+
+    if (Array.isArray(results) && results.length > 0) {
+      return results.map((file) => {
+        const absolute = normalizeFsPath(file.fsPath);
+        const relative = normalizeFsPath(path.relative(rootPath, absolute));
+        const name = path.basename(absolute);
+        return {
+          name,
+          path: absolute,
+          relativePath: relative || name,
+          extension: name.includes('.') ? name.split('.').pop()?.toLowerCase() : undefined,
+        };
+      });
+    }
+  } catch {
+    // Fall through to filesystem traversal.
+  }
+
+  // Fallback: deterministic, case-insensitive traversal with early-exit at limit.
+  return searchFilesystemFiles(rootPath, sanitizedQuery, limit);
 };
 
 const fetchModelsMetadata = async () => {
