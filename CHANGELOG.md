@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
+## [1.1.5] - 2025-12-15
+
+- Enhanced file attachment features performance
+- Added fuzzy search feature for file mentioning with @ in chat
+- Optimized input area layout
+
+
 ## [1.1.4] - 2025-12-15
 
 - Flexoki themes for Shiki syntax highlighting for consistency with the app color schema.
