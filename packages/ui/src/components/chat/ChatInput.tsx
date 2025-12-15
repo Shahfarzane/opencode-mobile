@@ -870,9 +870,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                                 <div className="flex items-center flex-shrink-0 gap-x-1">
                                     {attachmentsControls}
                                 </div>
-                                <div className="flex-1" />
-                                <div className="flex items-center gap-x-1 min-w-0">
-                                    <ModelControls className={cn('flex items-center justify-end min-w-0')} />
+                                <div className="flex flex-1 items-center justify-end gap-x-1 min-w-0">
+                                    <div className="flex flex-1 min-w-0 justify-end overflow-hidden">
+                                        <ModelControls className={cn('w-full flex items-center justify-end min-w-0')} />
+                                    </div>
                                     {actionButton}
                                 </div>
                             </div>
