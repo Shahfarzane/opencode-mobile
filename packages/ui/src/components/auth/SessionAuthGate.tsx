@@ -1,7 +1,7 @@
 import React from 'react';
+import { RiLockLine, RiLockUnlockLine, RiLoader4Line } from '@remixicon/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { OpenCodeIcon } from '@/components/ui/OpenCodeIcon';
 import { isDesktopRuntime, isVSCodeRuntime } from '@/lib/desktop';
 import { syncDesktopSettings, initializeAppearancePreferences } from '@/lib/persistence';
 import { applyPersistedDirectoryPreferences } from '@/lib/directoryPersistence';
@@ -64,19 +64,16 @@ const LoadingScreen: React.FC<{ message?: string }> = ({ message = 'Preparing wo
 
 const ErrorScreen: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
   <AuthShell>
-    <div className="w-full max-w-sm rounded-3xl border border-destructive/30 bg-card/90 p-6 shadow-none backdrop-blur">
-      <div className="space-y-3 text-center">
-        <div className="flex justify-center">
-          <OpenCodeIcon width={28} height={28} className="text-destructive" />
-        </div>
+    <div className="flex flex-col items-center gap-6 text-center">
+      <div className="space-y-2">
         <h1 className="typography-ui-header font-semibold text-destructive">Unable to reach server</h1>
-        <p className="typography-meta text-muted-foreground">
+        <p className="typography-meta text-muted-foreground max-w-xs">
           We couldn't verify the UI session. Check that the service is running and try again.
         </p>
-        <Button type="button" onClick={onRetry} className="w-full">
-          Retry
-        </Button>
       </div>
+      <Button type="button" onClick={onRetry} className="w-full max-w-xs">
+        Retry
+      </Button>
     </div>
   </AuthShell>
 );
@@ -202,54 +199,57 @@ export const SessionAuthGate: React.FC<SessionAuthGateProps> = ({ children }) =>
   if (state === 'locked') {
     return (
       <AuthShell>
-        <div className="w-full max-w-sm rounded-3xl border border-border/40 bg-card/95 p-8 shadow-none backdrop-blur">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-              <OpenCodeIcon width={24} height={24} className="opacity-80" />
-            </div>
-            <div className="space-y-1">
-              <h1 className="typography-ui-header font-semibold text-foreground">Unlock OpenChamber</h1>
-              <p className="typography-meta text-muted-foreground">
-                Enter the password configured for this web session.
-              </p>
-            </div>
+        <div className="flex flex-col items-center gap-6 w-full max-w-xs">
+          <div className="flex flex-col items-center gap-1 text-center">
+            <h1 className="text-xl font-semibold text-foreground">
+              Unlock OpenChamber
+            </h1>
+            <p className="typography-meta text-muted-foreground">
+              This session is password-protected.
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <label
-                htmlFor="openchamber-ui-password"
-                className="typography-ui-label text-left font-medium text-foreground"
+          <form onSubmit={handleSubmit} className="w-full space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <RiLockLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                <Input
+                  id="openchamber-ui-password"
+                  ref={passwordInputRef}
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (errorMessage) {
+                      setErrorMessage('');
+                    }
+                  }}
+                  className="pl-10"
+                  aria-invalid={Boolean(errorMessage) || undefined}
+                  aria-describedby={errorMessage ? 'oc-ui-auth-error' : undefined}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!password || isSubmitting}
+                aria-label={isSubmitting ? 'Unlocking' : 'Unlock'}
               >
-                Password
-              </label>
-              <Input
-                id="openchamber-ui-password"
-                ref={passwordInputRef}
-                type="password"
-                autoComplete="current-password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  if (errorMessage) {
-                    setErrorMessage('');
-                  }
-                }}
-                aria-invalid={Boolean(errorMessage) || undefined}
-                aria-describedby={errorMessage ? 'oc-ui-auth-error' : undefined}
-                disabled={isSubmitting}
-              />
-              {errorMessage && (
-                <p id="oc-ui-auth-error" className="typography-meta text-destructive">
-                  {errorMessage}
-                </p>
-              )}
+                {isSubmitting ? (
+                  <RiLoader4Line className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RiLockUnlockLine className="h-4 w-4" />
+                )}
+              </Button>
             </div>
-
-            <Button type="submit" className="w-full" disabled={!password || isSubmitting}>
-              {isSubmitting ? 'Unlocking…' : 'Unlock'}
-            </Button>
+            {errorMessage && (
+              <p id="oc-ui-auth-error" className="typography-meta text-destructive">
+                {errorMessage}
+              </p>
+            )}
           </form>
         </div>
       </AuthShell>
