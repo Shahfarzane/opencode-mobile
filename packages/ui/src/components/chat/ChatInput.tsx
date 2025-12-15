@@ -1,12 +1,19 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { RiAiAgentLine, RiCloseCircleLine, RiFileUploadLine, RiSendPlane2Line } from '@remixicon/react';
+import {
+    RiAddCircleLine,
+    RiAiAgentLine,
+    RiAttachment2,
+    RiCloseCircleLine,
+    RiFileUploadLine,
+    RiSendPlane2Line,
+} from '@remixicon/react';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useUIStore } from '@/stores/useUIStore';
 import type { EditPermissionMode } from '@/stores/types/sessionTypes';
 import { getEditModeColors } from '@/lib/permissions/editModeColors';
-import { FileAttachmentButton, AttachedFilesList } from './FileAttachment';
+import { AttachedFilesList } from './FileAttachment';
 import { FileMentionAutocomplete, type FileMentionHandle } from './FileMentionAutocomplete';
 import { CommandAutocomplete, type CommandAutocompleteHandle } from './CommandAutocomplete';
 import { AgentMentionAutocomplete, type AgentMentionAutocompleteHandle } from './AgentMentionAutocomplete';
@@ -20,6 +27,12 @@ import { toast } from 'sonner';
 import { useFileStore } from '@/stores/fileStore';
 import { calculateEditPermissionUIState, type BashPermissionSetting } from '@/lib/permissions/editPermissionDefaults';
 import { isVSCodeRuntime } from '@/lib/desktop';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const MAX_VISIBLE_TEXTAREA_LINES = 8;
 
@@ -643,10 +656,96 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         }
     }, [addServerFile]);
 
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [projectFilePickerOpen, setProjectFilePickerOpen] = React.useState(false);
+
+    const attachFiles = React.useCallback(async (files: FileList | File[]) => {
+        let attachedCount = 0;
+        const list = Array.isArray(files) ? files : Array.from(files);
+
+        for (const file of list) {
+            const sizeBefore = useSessionStore.getState().attachedFiles.length;
+            try {
+                await addAttachedFile(file);
+                const sizeAfter = useSessionStore.getState().attachedFiles.length;
+                if (sizeAfter > sizeBefore) {
+                    attachedCount += 1;
+                }
+            } catch (error) {
+                console.error('File attach failed', error);
+                toast.error(error instanceof Error ? error.message : 'Failed to attach file');
+            }
+        }
+
+        if (attachedCount > 0) {
+            toast.success(`Attached ${attachedCount} file${attachedCount > 1 ? 's' : ''}`);
+        }
+    }, [addAttachedFile]);
+
+    const handleVSCodePickFiles = React.useCallback(async () => {
+        try {
+            const response = await fetch('/api/vscode/pick-files');
+            const data = await response.json();
+            const picked = Array.isArray(data?.files) ? data.files : [];
+            const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+
+            if (skipped.length > 0) {
+                const summary = skipped
+                    .map((s: { name?: string; reason?: string }) => `${s?.name || 'file'}: ${s?.reason || 'skipped'}`)
+                    .join('\n');
+                toast.error(`Some files were skipped:\n${summary}`);
+            }
+
+            const asFiles = picked
+                .map((file: { name: string; mimeType?: string; dataUrl?: string }) => {
+                    if (!file?.dataUrl) return null;
+                    try {
+                        const [meta, base64] = file.dataUrl.split(',');
+                        const mime = file.mimeType || (meta?.match(/data:(.*);base64/)?.[1] || 'application/octet-stream');
+                        if (!base64) return null;
+                        const binary = atob(base64);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) {
+                            bytes[i] = binary.charCodeAt(i);
+                        }
+                        const blob = new Blob([bytes], { type: mime });
+                        return new File([blob], file.name || 'file', { type: mime });
+                    } catch (err) {
+                        console.error('Failed to decode VS Code picked file', err);
+                        return null;
+                    }
+                })
+                .filter(Boolean) as File[];
+
+            if (asFiles.length > 0) {
+                await attachFiles(asFiles);
+            }
+        } catch (error) {
+            console.error('VS Code file pick failed', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to pick files in VS Code');
+        }
+    }, [attachFiles]);
+
+    const handlePickLocalFiles = React.useCallback(() => {
+        if (isVSCodeRuntime()) {
+            void handleVSCodePickFiles();
+            return;
+        }
+        fileInputRef.current?.click();
+    }, [handleVSCodePickFiles]);
+
+    const handleLocalFileSelect = React.useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files) return;
+        await attachFiles(files);
+        event.target.value = '';
+    }, [attachFiles]);
+
     const footerGapClass = 'gap-x-1.5 gap-y-0';
-    const footerPaddingClass = isMobile ? 'px-1.5 py-1.5' : 'px-2.5 py-1.5';
-    const footerHeightClass = isMobile ? 'h-9 w-9' : 'h-7 w-7';
-    const iconSizeClass = isMobile ? 'h-5 w-5' : 'h-[18px] w-[18px]';
+    const isVSCode = isVSCodeRuntime();
+    const footerPaddingClass = isMobile ? 'px-1.5 py-1.5' : (isVSCode ? 'px-1.5 py-1' : 'px-2.5 py-1.5');
+    const footerHeightClass = isMobile ? 'h-9 w-9' : (isVSCode ? 'h-[22px] w-[22px]' : 'h-7 w-7');
+    const iconSizeClass = isMobile ? 'h-5 w-5' : (isVSCode ? 'h-4 w-4' : 'h-[18px] w-[18px]');
 
     const iconButtonBaseClass = cn(
         footerHeightClass,
@@ -669,17 +768,69 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         </button>
     );
 
-    const projectFileButton = (
-        <ServerFilePicker onFilesSelected={handleServerFilesSelected} multiSelect>
-            <button
-                type='button'
-                className={iconButtonBaseClass}
-                title='Attach files from project'
-                aria-label='Attach files from project'
-             >
-                <RiFileUploadLine className={cn(iconSizeClass, 'text-current')} />
-            </button>
-        </ServerFilePicker>
+    const attachmentMenu = (
+        <>
+            <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleLocalFileSelect}
+                accept="*/*"
+            />
+
+            <div className="relative inline-flex">
+                <ServerFilePicker
+                    onFilesSelected={handleServerFilesSelected}
+                    multiSelect
+                    presentation={isMobile || isVSCode ? 'modal' : 'dropdown'}
+                    open={projectFilePickerOpen}
+                    onOpenChange={setProjectFilePickerOpen}
+                >
+                    {isMobile || isVSCode ? null : (
+                        <button
+                            type="button"
+                            tabIndex={-1}
+                            aria-hidden="true"
+                            className="absolute inset-0 opacity-0 pointer-events-none"
+                        />
+                    )}
+                </ServerFilePicker>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            className={iconButtonBaseClass}
+                            title="Add attachment"
+                            aria-label="Add attachment"
+                        >
+                            <RiAddCircleLine className={cn(iconSizeClass, 'text-current')} />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        <DropdownMenuItem
+                            onSelect={() => {
+                                requestAnimationFrame(() => handlePickLocalFiles());
+                            }}
+                        >
+                            <RiAttachment2 />
+                            Attach files
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onSelect={() => {
+                                requestAnimationFrame(() => {
+                                    setProjectFilePickerOpen(true);
+                                });
+                            }}
+                        >
+                            <RiFileUploadLine />
+                            Attach from project
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </>
     );
 
     const settingsButton = onOpenSettings ? (
@@ -696,8 +847,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
 
     const attachmentsControls = (
         <>
-            <FileAttachmentButton />
-            {projectFileButton}
+            {attachmentMenu}
             {settingsButton}
         </>
     );
@@ -795,7 +945,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                 {isDragging && (
                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl">
                         <div className="text-center">
-                            <FileAttachmentButton />
+                            <div className="inline-flex justify-center">
+                                <button
+                                    type="button"
+                                    className={iconButtonBaseClass}
+                                    onClick={() => handlePickLocalFiles()}
+                                    title="Attach files"
+                                    aria-label="Attach files"
+                                >
+                                    <RiAttachment2 className={cn(iconSizeClass, 'text-current')} />
+                                </button>
+                            </div>
                             <p className="mt-2 typography-ui-label text-muted-foreground">Drop files here to attach</p>
                         </div>
                     </div>

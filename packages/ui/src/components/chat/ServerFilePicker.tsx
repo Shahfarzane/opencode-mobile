@@ -32,78 +32,140 @@ interface ServerFilePickerProps {
   onFilesSelected: (files: FileInfo[]) => void;
   multiSelect?: boolean;
   children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  presentation?: 'dropdown' | 'modal';
 }
 
 export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
   onFilesSelected,
   multiSelect = false,
-  children
+  children,
+  open: controlledOpen,
+  onOpenChange,
+  presentation = 'dropdown',
 }) => {
   const { isMobile } = useDeviceInfo();
   const isVSCodeRuntime = useIsVSCodeRuntime();
   const isCompact = isMobile || isVSCodeRuntime;
   const { currentDirectory } = useDirectoryStore();
   const searchFiles = useFileSearchStore((state) => state.searchFiles);
-  const [open, setOpen] = React.useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 200);
   const [selectedFiles, setSelectedFiles] = React.useState<Set<string>>(new Set());
   const [expandedDirs, setExpandedDirs] = React.useState<Set<string>>(new Set());
-  const [fileTree, setFileTree] = React.useState<FileInfo[]>([]);
+  const [childrenByDir, setChildrenByDir] = React.useState<Record<string, FileInfo[]>>({});
+  const loadedDirsRef = React.useRef<Set<string>>(new Set());
+  const inFlightDirsRef = React.useRef<Set<string>>(new Set());
   const [searchResults, setSearchResults] = React.useState<FileInfo[]>([]);
   const [searching, setSearching] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [attaching, setAttaching] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
+
+  const sortDirectoryItems = React.useCallback((items: FileInfo[]) => (
+    items.slice().sort((a, b) => {
+      if (a.type !== b.type) {
+        return a.type === 'directory' ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    })
+  ), []);
+
+  const mapFilesystemEntries = React.useCallback((dirPath: string, entries: Array<{ name: string; path: string; isDirectory: boolean }>): FileInfo[] => (
+    sortDirectoryItems(entries
+      .filter((item) => !item.name.startsWith('.'))
+      .map((item) => {
+        const name = item.name;
+        const extension = !item.isDirectory && name.includes('.')
+          ? name.split('.').pop()?.toLowerCase()
+          : undefined;
+        return {
+          name,
+          path: item.path || `${dirPath}/${name}`,
+          type: item.isDirectory ? 'directory' : 'file',
+          size: 0,
+          extension,
+        };
+      }))
+  ), [sortDirectoryItems]);
+
   const loadDirectory = React.useCallback(async (dirPath: string) => {
     setLoading(true);
     setError(null);
     try {
-      const tempClient = opencodeClient.getApiClient();
-      const response = await tempClient.file.list({
-        query: {
-          path: '.',
-          directory: dirPath
-        }
-      });
+      const entries = await opencodeClient.listLocalDirectory(dirPath);
+      const items = mapFilesystemEntries(dirPath, entries.map((entry) => ({
+        name: entry.name,
+        path: entry.path,
+        isDirectory: entry.isDirectory,
+      })));
 
-      if (!response.data) {
-        setFileTree([]);
-        return;
-      }
-
-      const items = response.data
-        .filter((item: { name: string; type: string; size?: number; absolute?: string }) => !item.name.startsWith('.'))
-        .map((item: { name: string; type: string; size?: number; absolute?: string }) => {
-          const extension = item.type === 'file'
-            ? item.name.split('.').pop()?.toLowerCase()
-            : undefined;
-
-          return {
-            name: item.name,
-            path: item.absolute || `${dirPath}/${item.name}`,
-            type: item.type as 'file' | 'directory',
-            size: item.size || 0,
-            extension
-          };
-        })
-        .sort((a: FileInfo, b: FileInfo) => {
-          if (a.type !== b.type) {
-            return a.type === 'directory' ? -1 : 1;
-          }
-          return a.name.localeCompare(b.name);
-        });
-
-      setFileTree(items);
+      loadedDirsRef.current = new Set([dirPath]);
+      inFlightDirsRef.current = new Set();
+      setChildrenByDir({ [dirPath]: items });
+      setExpandedDirs(new Set());
     } catch {
       setError('Failed to load directory contents');
-      setFileTree([]);
+      loadedDirsRef.current = new Set([dirPath]);
+      inFlightDirsRef.current = new Set();
+      setChildrenByDir({ [dirPath]: [] });
+      setExpandedDirs(new Set());
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mapFilesystemEntries]);
+
+  const loadDirectoryChildren = React.useCallback(async (dirPath: string) => {
+    const normalizedDir = dirPath.trim();
+    if (!normalizedDir) {
+      return;
+    }
+    if (loadedDirsRef.current.has(normalizedDir)) {
+      return;
+    }
+    if (inFlightDirsRef.current.has(normalizedDir)) {
+      return;
+    }
+
+    inFlightDirsRef.current = new Set(inFlightDirsRef.current);
+    inFlightDirsRef.current.add(normalizedDir);
+
+    try {
+      const entries = await opencodeClient.listLocalDirectory(normalizedDir);
+      const items = mapFilesystemEntries(normalizedDir, entries.map((entry) => ({
+        name: entry.name,
+        path: entry.path,
+        isDirectory: entry.isDirectory,
+      })));
+
+      loadedDirsRef.current = new Set(loadedDirsRef.current);
+      loadedDirsRef.current.add(normalizedDir);
+      setChildrenByDir((prev) => ({
+        ...prev,
+        [normalizedDir]: items,
+      }));
+    } catch {
+      // Keep it unloadded so the user can retry expanding the directory.
+      setChildrenByDir((prev) => {
+        if (prev[normalizedDir]) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [normalizedDir]: [],
+        };
+      });
+    } finally {
+      inFlightDirsRef.current = new Set(inFlightDirsRef.current);
+      inFlightDirsRef.current.delete(normalizedDir);
+    }
+  }, [mapFilesystemEntries]);
 
   React.useEffect(() => {
     if ((open || mobileOpen) && currentDirectory) {
@@ -214,50 +276,13 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
         return next;
       });
     } else {
-      setExpandedDirs(prev => {
+      setExpandedDirs((prev) => {
         const next = new Set(prev);
         next.add(dirPath);
         return next;
       });
 
-      try {
-        const tempClient = opencodeClient.getApiClient();
-        const response = await tempClient.file.list({
-          query: {
-            path: '.',
-            directory: dirPath
-          }
-        });
-
-        if (response.data) {
-          const subItems = response.data
-            .filter((item: { name: string; type: string; size?: number; absolute?: string }) => !item.name.startsWith('.'))
-            .map((item: { name: string; type: string; size?: number; absolute?: string }) => {
-              const extension = item.type === 'file'
-                ? item.name.split('.').pop()?.toLowerCase()
-                : undefined;
-
-              return {
-                name: item.name,
-                path: item.absolute || `${dirPath}/${item.name}`,
-                type: item.type as 'file' | 'directory',
-          size: 0,
-                extension
-              };
-            });
-
-          setFileTree(prev => {
-            const filtered = prev.filter(item => !item.path.startsWith(dirPath + '/'));
-            return [...filtered, ...subItems].sort((a, b) => {
-              const aDepth = a.path.split('/').length;
-              const bDepth = b.path.split('/').length;
-              if (aDepth !== bDepth) return aDepth - bDepth;
-              if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
-              return a.name.localeCompare(b.name);
-            });
-          });
-        }
-      } catch { /* ignored */ }
+      await loadDirectoryChildren(dirPath);
     }
   };
 
@@ -278,11 +303,14 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
   };
 
   const handleConfirm = async () => {
-    const treeFileMap = new Map(
-      fileTree
-        .filter((file) => file.type === 'file')
-        .map((file) => [file.path, file])
-    );
+    const treeFileMap = new Map<string, FileInfo>();
+    Object.values(childrenByDir).forEach((items) => {
+      items.forEach((file) => {
+        if (file.type === 'file') {
+          treeFileMap.set(file.path, file);
+        }
+      });
+    });
     const searchFileMap = new Map(searchResults.map((file) => [file.path, file]));
 
     const selected = Array.from(selectedFiles)
@@ -304,20 +332,13 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
     if (!currentDirectory) {
       return [];
     }
-
-    return fileTree.filter((item) => {
-      const itemDir = item.path.substring(0, item.path.lastIndexOf('/'));
-      return itemDir === currentDirectory;
-    });
-  }, [fileTree, currentDirectory]);
+    return childrenByDir[currentDirectory] ?? [];
+  }, [childrenByDir, currentDirectory]);
 
   const isSearchActive = searchQuery.trim().length > 0;
 
   const getChildItems = (parentPath: string) => {
-    return fileTree.filter(item => {
-      const itemDir = item.path.substring(0, item.path.lastIndexOf('/'));
-      return itemDir === parentPath;
-    });
+    return childrenByDir[parentPath] ?? [];
   };
 
   const getRelativePath = (fullPath: string) => {
@@ -384,6 +405,7 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
     const isDirectory = file.type === 'directory';
     const children = isDirectory ? getChildItems(file.path) : [];
     const isExpanded = expandedDirs.has(file.path);
+    const isLoadingChildren = isDirectory && isExpanded && inFlightDirsRef.current.has(file.path) && children.length === 0;
 
     return (
       <div key={file.path}>
@@ -398,7 +420,7 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
             e.preventDefault();
             e.stopPropagation();
             if (isDirectory) {
-              toggleDirectory(file.path);
+              void toggleDirectory(file.path);
             } else {
               toggleFileSelection(file.path);
             }
@@ -416,6 +438,15 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
         {isDirectory && isExpanded && children.length > 0 && (
           <div>
             {children.map((child) => renderFileTree(child, level + 1))}
+          </div>
+        )}
+
+        {isDirectory && isExpanded && isLoadingChildren && (
+          <div
+            className="px-2 py-1.5 typography-ui-label text-muted-foreground"
+            style={{ paddingLeft: `${(level + 1) * 12}px` }}
+          >
+            Loading…
           </div>
         )}
       </div>
@@ -527,6 +558,34 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
     </span>
   );
 
+  if (presentation === 'modal') {
+    return (
+      <>
+        {children ? (
+          <span
+            className="inline-flex cursor-pointer"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setOpen(true);
+            }}
+          >
+            {children}
+          </span>
+        ) : null}
+
+        <MobileOverlayPanel
+          open={open}
+          onClose={() => setOpen(false)}
+          title="Select Project Files"
+          footer={summarySection}
+        >
+          <div className="flex flex-col gap-0">{pickerBody}</div>
+        </MobileOverlayPanel>
+      </>
+    );
+  }
+
   if (isCompact) {
     return (
       <>
@@ -549,9 +608,13 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
         {children}
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-[520px] p-0 overflow-hidden flex flex-col ml-16"
-        align="center"
+        className={cn(
+          'p-0 overflow-hidden flex flex-col',
+          'w-[min(520px,calc(100vw-24px))]'
+        )}
+        align="start"
         sideOffset={5}
+        collisionPadding={12}
       >
         {pickerBody}
         <DropdownMenuSeparator />

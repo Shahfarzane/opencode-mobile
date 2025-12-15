@@ -37,6 +37,56 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
 
+  const fuzzyScore = React.useCallback((query: string, candidate: string): number | null => {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      return 0;
+    }
+
+    const c = candidate.toLowerCase();
+    let score = 0;
+    let lastIndex = -1;
+    let consecutive = 0;
+
+    for (let i = 0; i < q.length; i += 1) {
+      const ch = q[i];
+      if (!ch || ch === ' ') {
+        continue;
+      }
+
+      const idx = c.indexOf(ch, lastIndex + 1);
+      if (idx === -1) {
+        return null;
+      }
+
+      const gap = idx - lastIndex - 1;
+      if (gap === 0) {
+        consecutive += 1;
+      } else {
+        consecutive = 0;
+      }
+
+      score += 10;
+      score += Math.max(0, 18 - idx);
+      score -= Math.max(0, gap);
+
+      if (idx === 0) {
+        score += 12;
+      } else {
+        const prev = c[idx - 1];
+        if (prev === '/' || prev === '_' || prev === '-' || prev === '.' || prev === ' ') {
+          score += 10;
+        }
+      }
+
+      score += consecutive > 0 ? 12 : 0;
+      lastIndex = idx;
+    }
+
+    score += Math.max(0, 24 - Math.round(c.length / 3));
+    return score;
+  }, []);
+
   React.useEffect(() => {
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
@@ -61,15 +111,35 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
       return;
     }
 
+    const normalizedQuery = (debouncedQuery ?? '').trim();
+    const normalizedQueryLower = normalizedQuery.toLowerCase();
+
     let cancelled = false;
     setLoading(true);
 
-    searchFiles(currentDirectory, debouncedQuery ?? '', 40)
+    searchFiles(currentDirectory, normalizedQueryLower, 80)
       .then((hits) => {
         if (cancelled) {
           return;
         }
-        setFiles(hits.slice(0, 15));
+
+        const ranked = normalizedQueryLower
+          ? hits
+            .map((file) => {
+              const label = file.relativePath || file.name || file.path;
+              const score = fuzzyScore(normalizedQueryLower, label);
+              return score === null ? null : { file, score, labelLength: label.length };
+            })
+            .filter(Boolean) as Array<{ file: FileInfo; score: number; labelLength: number }>
+          : hits.map((file) => ({ file, score: 0, labelLength: (file.relativePath || file.name || file.path).length }));
+
+        ranked.sort((a, b) => (
+          b.score - a.score
+          || a.labelLength - b.labelLength
+          || a.file.path.localeCompare(b.file.path)
+        ));
+
+        setFiles(ranked.slice(0, 15).map((entry) => entry.file));
       })
       .catch(() => {
         if (!cancelled) {
@@ -85,7 +155,7 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
     return () => {
       cancelled = true;
     };
-  }, [currentDirectory, debouncedQuery, searchFiles]);
+  }, [currentDirectory, debouncedQuery, fuzzyScore, searchFiles]);
 
   React.useEffect(() => {
     setSelectedIndex(0);

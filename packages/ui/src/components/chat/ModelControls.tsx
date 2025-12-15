@@ -345,11 +345,12 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
         }
     }, [editToggleDisabled]);
 
-    const buttonHeight = isCompact ? 'h-9' : 'h-8';
-    const editToggleIconClass = isCompact ? 'h-5 w-5' : 'h-4 w-4';
-    const controlIconSize = isCompact ? 'h-5 w-5' : 'h-4 w-4';
+    const sizeVariant: 'mobile' | 'vscode' | 'default' = isMobile ? 'mobile' : isVSCodeRuntime ? 'vscode' : 'default';
+    const buttonHeight = sizeVariant === 'mobile' ? 'h-9' : sizeVariant === 'vscode' ? 'h-6' : 'h-8';
+    const editToggleIconClass = sizeVariant === 'mobile' ? 'h-5 w-5' : sizeVariant === 'vscode' ? 'h-4 w-4' : 'h-4 w-4';
+    const controlIconSize = sizeVariant === 'mobile' ? 'h-5 w-5' : sizeVariant === 'vscode' ? 'h-4 w-4' : 'h-4 w-4';
     const controlTextSize = isCompact ? 'typography-micro' : 'typography-meta';
-    const inlineGapClass = isCompact ? 'gap-x-2' : 'gap-x-3';
+    const inlineGapClass = sizeVariant === 'mobile' ? 'gap-x-2' : sizeVariant === 'vscode' ? 'gap-x-1' : 'gap-x-3';
     const editPermissionMenuLabel = editModeShortLabels[effectiveEditMode];
 
     const renderEditModeIcon = React.useCallback((mode: EditPermissionMode, iconClass = editToggleIconClass) => {
