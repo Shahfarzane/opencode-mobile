@@ -60,6 +60,6 @@ console.log(`  ${CARGO_TOML}: ${oldCargoVersion} -> ${newVersion}`);
 console.log(`\nVersion bumped to ${newVersion}`);
 console.log('\nNext steps:');
 console.log(`  git add -A`);
-console.log(`  git commit -m "chore: release v${newVersion}"`);
+console.log(`  git commit -m "release v${newVersion}"`);
 console.log(`  git tag v${newVersion}`);
 console.log(`  git push origin main --tags`);
