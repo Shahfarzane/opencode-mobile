@@ -1266,15 +1266,28 @@ html:not(.dark) .chat-scroll {
   font-size: inherit !important;
 }
 
-/* Model/agent controls: collapse labels in narrow containers (mobile + VSCode side panel). */
-@container model-controls (max-width: 15rem) {
+/* Model/agent controls: agent label hides before model label. */
+@container model-controls (max-width: 11rem) {
   .model-controls__agent-label {
     display: none;
   }
 }
 
-@container model-controls (max-width: 12rem) {
+@container model-controls (max-width: 9rem) {
   .model-controls__model-label {
+    display: none;
+  }
+}
+
+/* VS Code side panel: collapse earlier to save horizontal space. */
+@container model-controls (max-width: 9rem) {
+  :root.vscode-runtime .model-controls__agent-label {
+    display: none;
+  }
+}
+
+@container model-controls (max-width: 10rem) {
+  :root.vscode-runtime .model-controls__model-label {
     display: none;
   }
 }
