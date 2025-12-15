@@ -64,13 +64,13 @@ const FileSelector = React.memo<FileSelectorProps>(({
     onSelectFile,
     isMobile,
 }) => {
-    if (changedFiles.length === 0) return null;
-
     const getLabel = React.useCallback((path: string) => {
         if (!isMobile) return path;
         const lastSlash = path.lastIndexOf('/');
         return lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
     }, [isMobile]);
+
+    if (changedFiles.length === 0) return null;
 
     return (
         <DropdownMenu>
