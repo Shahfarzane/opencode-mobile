@@ -75,9 +75,19 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
             >
               <div className="text-sm text-muted-foreground whitespace-pre-wrap pr-3">
                 {info.body
-                  .replace(/^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}\s*/gm, '— v$1 —\n')
-                  .replace(/^- /gm, '• ')
-                  .trim()}
+                  .split(/^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}\s*/gm)
+                  .filter(Boolean)
+                  .map((part, index) => {
+                    if (/^\d+\.\d+\.\d+$/.test(part.trim())) {
+                      return (
+                        <span key={index} className="font-semibold text-foreground">
+                          v{part.trim()}
+                          {'\n'}
+                        </span>
+                      );
+                    }
+                    return part.replace(/^- /gm, '• ').trim() + '\n\n';
+                  })}
               </div>
             </ScrollableOverlay>
           )}
