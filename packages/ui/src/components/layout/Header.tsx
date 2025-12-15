@@ -5,7 +5,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { RiArrowDownSLine, RiArrowUpSLine, RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
+import { RiArrowDownSLine, RiArrowUpSLine, RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
 import { useUIStore, type MainTab } from '@/stores/useUIStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -234,10 +234,15 @@ export const Header: React.FC = () => {
 
   const tabs: TabConfig[] = React.useMemo(() => [
     { id: 'chat', label: 'Chat', icon: RiChat4Line },
-    { id: 'diff', label: 'Diff', icon: RiCodeLine, badge: diffFileCount > 0 ? diffFileCount : undefined },
+    {
+      id: 'diff',
+      label: 'Diff',
+      icon: RiCodeLine,
+      badge: !isMobile && diffFileCount > 0 ? diffFileCount : undefined,
+    },
     { id: 'terminal', label: 'Terminal', icon: RiTerminalBoxLine },
     { id: 'git', label: 'Git', icon: RiGitBranchLine },
-  ], [diffFileCount]);
+  ], [diffFileCount, isMobile]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -371,7 +376,7 @@ export const Header: React.FC = () => {
             className="app-region-no-drag h-9 w-9 p-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Open sessions"
           >
-            <RiLayoutLeftLine className="h-5 w-5" />
+            <RiPlayListAddLine className="h-5 w-5" />
           </button>
           {contextUsage && contextUsage.totalTokens > 0 && activeMainTab === 'chat' && (
             <ContextUsageDisplay

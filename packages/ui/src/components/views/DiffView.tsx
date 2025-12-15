@@ -54,6 +54,7 @@ interface FileSelectorProps {
     selectedFile: string | null;
     selectedFileEntry: FileEntry | null;
     onSelectFile: (path: string) => void;
+    isMobile: boolean;
 }
 
 const FileSelector = React.memo<FileSelectorProps>(({
@@ -61,16 +62,25 @@ const FileSelector = React.memo<FileSelectorProps>(({
     selectedFile,
     selectedFileEntry,
     onSelectFile,
+    isMobile,
 }) => {
     if (changedFiles.length === 0) return null;
+
+    const getLabel = React.useCallback((path: string) => {
+        if (!isMobile) return path;
+        const lastSlash = path.lastIndexOf('/');
+        return lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
+    }, [isMobile]);
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <button className="flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-2 typography-ui-label text-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring">
                     {selectedFileEntry ? (
-                        <div className="flex items-center gap-3">
-                            <span className="truncate typography-meta">{selectedFileEntry.path}</span>
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="min-w-0 flex-1 truncate typography-meta">
+                                {getLabel(selectedFileEntry.path)}
+                            </span>
                             {formatDiffTotals(selectedFileEntry.insertions, selectedFileEntry.deletions)}
                         </div>
                     ) : (
@@ -83,9 +93,13 @@ const FileSelector = React.memo<FileSelectorProps>(({
                 <DropdownMenuRadioGroup value={selectedFile ?? ''} onValueChange={onSelectFile}>
                     {changedFiles.map((file) => (
                         <DropdownMenuRadioItem key={file.path} value={file.path}>
-                            <div className="flex w-full items-center justify-between gap-3">
-                                <span className="truncate typography-meta">{file.path}</span>
-                                {formatDiffTotals(file.insertions, file.deletions)}
+                            <div className="flex w-full min-w-0 items-center gap-3">
+                                <span className="min-w-0 flex-1 truncate typography-meta">
+                                    {getLabel(file.path)}
+                                </span>
+                                <span className="ml-auto">
+                                    {formatDiffTotals(file.insertions, file.deletions)}
+                                </span>
                             </div>
                         </DropdownMenuRadioItem>
                     ))}
@@ -161,7 +175,7 @@ const useEffectiveDirectory = () => {
 export const DiffView: React.FC = () => {
     const { git } = useRuntimeAPIs();
     const effectiveDirectory = useEffectiveDirectory();
-    const { screenWidth } = useDeviceInfo();
+    const { screenWidth, isMobile } = useDeviceInfo();
 
     const isGitRepo = useIsGitRepo(effectiveDirectory ?? null);
     const status = useGitStatus(effectiveDirectory ?? null);
@@ -459,19 +473,22 @@ export const DiffView: React.FC = () => {
     return (
         <div className="flex h-full flex-col overflow-hidden bg-background">
             <div className="flex items-center gap-3 px-3 py-2 bg-background">
-                <div className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground shrink-0">
-                    <RiGitCommitLine size={16} />
-                    <span className="typography-ui-label font-semibold text-foreground">
-                        {isLoadingStatus && !status
-                            ? 'Loading changes…'
-                            : `${changedFiles.length} ${changedFiles.length === 1 ? 'file' : 'files'} changed`}
-                    </span>
-                </div>
+                {!isMobile && (
+                    <div className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground shrink-0">
+                        <RiGitCommitLine size={16} />
+                        <span className="typography-ui-label font-semibold text-foreground">
+                            {isLoadingStatus && !status
+                                ? 'Loading changes…'
+                                : `${changedFiles.length} ${changedFiles.length === 1 ? 'file' : 'files'} changed`}
+                        </span>
+                    </div>
+                )}
                 <FileSelector
                     changedFiles={changedFiles}
                     selectedFile={selectedFile}
                     selectedFileEntry={selectedFileEntry}
                     onSelectFile={handleSelectFile}
+                    isMobile={isMobile || screenWidth <= 768}
                 />
                 <div className="flex-1" />
                 {selectedFileEntry && (
