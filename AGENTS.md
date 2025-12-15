@@ -23,16 +23,22 @@ Workspaces:
 - `packages/ui` - Shared UI components and stores
 - `packages/web` - Web runtime, Express server, CLI
 - `packages/desktop` - Tauri desktop app with native APIs
+- `packages/vscode` - VS Code extension with webview UI
 
 ### Core Components (UI)
-In `packages/ui/src/components/`: ChatContainer, MessageList, ChatMessage, StreamingAnimatedText, ChatInput, FileAttachment, ModelControls, PermissionCard, SessionList, SessionSwitcherDialog, DirectoryTree, DirectoryExplorerDialog, MainLayout, Header, Sidebar, SettingsDialog, AgentsPage, CommandsPage, GitIdentitiesPage, ProvidersPage, SessionsPage, SettingsPage, CommandPalette, HelpDialog, ConfigUpdateOverlay, ContextUsageDisplay, ErrorBoundary, MemoryDebugPanel, MobileOverlayPanel, ThemeDemo, ThemeSwitcher.
-
-In `packages/ui/src/components/views/`: ChatView, GitView, DiffView, TerminalView.
-
+In `packages/ui/src/components/chat/`: ChatContainer, ChatEmptyState, ChatErrorBoundary, ChatInput, ChatMessage, FileAttachment, MarkdownRenderer, MessageList, ModelControls, PermissionCard, PermissionRequest, ServerFilePicker, StreamingTextDiff, AgentMentionAutocomplete, CommandAutocomplete, FileMentionAutocomplete.
+In `packages/ui/src/components/chat/message/`: MessageBody, MessageHeader, ToolOutputDialog, DiffViewToggle, FadeInOnReveal; parts/ (AssistantTextPart, ReasoningPart, ToolPart, UserTextPart, etc.)
+In `packages/ui/src/components/layout/`: MainLayout, Header, Sidebar, SidebarContextSummary, SettingsDialog, VSCodeLayout.
+In `packages/ui/src/components/sections/`: AgentsPage, CommandsPage, GitIdentitiesPage, ProvidersPage, SettingsPage (with subsections for agents/, commands/, git-identities/, providers/, settings/).
+In `packages/ui/src/components/session/`: DirectoryTree, DirectoryExplorerDialog, SessionDialogs, SessionSidebar.
+In `packages/ui/src/components/ui/`: CommandPalette, HelpDialog, ConfigUpdateOverlay, ContextUsageDisplay, ErrorBoundary, MemoryDebugPanel, MobileOverlayPanel, FireworksAnimation, OpenChamberLogo, OpenCodeIcon, ProviderLogo, ScrollShadow, OverlayScrollbar, plus Radix-based primitives (button, dialog, input, select, etc.)
+In `packages/ui/src/components/views/`: ChatView, GitView, DiffView, PierreDiffViewer, TerminalView.
 In `packages/ui/src/components/terminal/`: TerminalViewport
+In `packages/ui/src/components/onboarding/`: OnboardingScreen
+In `packages/ui/src/components/providers/`: ThemeProvider
 
 ### State Management (UI)
-In `packages/ui/src/stores/`: ConfigStore, SessionStore, DirectoryStore, UIStore, FileStore, MessageStore, ContextStore, PermissionStore, AgentsStore, CommandsStore, GitIdentitiesStore, TerminalStore
+In `packages/ui/src/stores/`: contextStore, fileStore, messageStore, permissionStore, sessionStore, useAgentsStore, useCommandsStore, useConfigStore, useDirectoryStore, useFileSearchStore, useGitIdentitiesStore, useGitStore, useSessionStore, useTerminalStore, useUIStore
 
 ### OpenCode SDK Integration (UI)
 In `packages/ui/src/lib/opencode/`: client.ts wrapper around `@opencode-ai/sdk` with directory-aware API calls, SDK methods (session.*, message.*, agent.*, provider.*, config.*, project.*, path.*), AsyncGenerator SSE streaming (2 retry attempts, 500ms->8s backoff), automatic directory parameter injection.
@@ -43,12 +49,15 @@ In `packages/ui/src/hooks/`: useEventStream.ts for real-time SSE connection mana
 Express server and CLI in `packages/web`: API adapters in `packages/web/src/api`, server in `packages/web/server/index.js` (git/terminal/config), UI bundle imported from `@openchamber/ui`.
 
 ### Desktop Runtime (Tauri)
-Native desktop app in `packages/desktop`: Tauri backend in `src-tauri/` (Rust), frontend API adapters in `src/api/` (settings, permissions, diagnostics, files, git, terminal, notifications, tools), bridge layer in `src/lib/` for Tauri IPC communication.
+Native desktop app in `packages/desktop`: Tauri backend in `src-tauri/` (Rust), frontend API adapters in `src/api/` (settings, permissions, diagnostics, files, git, terminal, notifications, tools, updater), bridge layer in `src/lib/` for Tauri IPC communication.
+
+### VS Code Extension Runtime
+Extension in `packages/vscode`: Extension entry in `src/` (ChatViewProvider, bridge, theme), webview API adapters in `webview/api/` (bridge, editor, files, permissions, settings, tools), webview components in `webview/components/` (ChatPanel, SessionsListView, VSCodeLayout).
 
 ## Development Commands
 
 ### Code Validation
-Always validate changes before committing:
+Always validate changes:
 
 ```bash
 pnpm -r type-check   # TypeScript validation
@@ -60,6 +69,7 @@ pnpm -r build        # Production build
 ```bash
 pnpm run build                 # Build all packages
 pnpm run desktop:build         # Build desktop app
+pnpm vscode:build              # Build VS Code extension
 ```
 
 ## Key Patterns
@@ -77,7 +87,7 @@ In `packages/ui/src/lib/theme/`: TypeScript-based themes (Flexoki Light and Dark
 In `packages/ui/src/lib/`: Semantic typography with 6 CSS variables, theme-independent scales. **CRITICAL**: Always use semantic typography classes, never hardcoded font sizes.
 
 ### Streaming Architecture
-SDK-managed SSE with AsyncGenerator, temp->real ID swap, pending-user guards, empty-response detection via `window.__opencodeDebug`.
+SDK-managed SSE with AsyncGenerator, temp->real session ID swap (optimistic UI), pendingAssistantParts buffering, empty-response detection via `window.__opencodeDebug`.
 
 ## Development Guidelines
 
