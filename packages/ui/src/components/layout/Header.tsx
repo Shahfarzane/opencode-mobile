@@ -4,8 +4,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
-import { RiArrowDownSLine, RiArrowUpSLine, RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
+
+import { RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
 import { useUIStore, type MainTab } from '@/stores/useUIStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -121,7 +121,6 @@ export const Header: React.FC = () => {
   const contextLimit = (limit && typeof limit.context === 'number' ? limit.context : 0);
   const outputLimit = (limit && typeof limit.output === 'number' ? limit.output : 0);
   const contextUsage = getContextUsage(contextLimit, outputLimit);
-  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = React.useState(false);
   const isSessionSwitcherOpen = useUIStore((state) => state.isSessionSwitcherOpen);
 
   const handleOpenSessionSwitcher = React.useCallback(() => {
@@ -182,17 +181,7 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     updateHeaderHeight();
-  }, [updateHeaderHeight, isMobile, isMobileDetailsOpen]);
-
-  const formatTokenValue = React.useCallback((tokens: number) => {
-    if (tokens >= 1_000_000) {
-      return `${(tokens / 1_000_000).toFixed(1)}M`;
-    }
-    if (tokens >= 1_000) {
-      return `${(tokens / 1_000).toFixed(1)}K`;
-    }
-    return tokens.toFixed(1).replace(/\.0$/, '');
-  }, []);
+  }, [updateHeaderHeight, isMobile]);
 
   const handleDragStart = React.useCallback(async (e: React.MouseEvent) => {
 
@@ -368,101 +357,62 @@ export const Header: React.FC = () => {
   );
 
   const renderMobile = () => (
-    <div className="app-region-drag relative flex flex-col gap-1 px-3 py-2 select-none">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleOpenSessionSwitcher}
-            className="app-region-no-drag h-9 w-9 p-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            aria-label="Open sessions"
-          >
-            <RiPlayListAddLine className="h-5 w-5" />
-          </button>
-          {contextUsage && contextUsage.totalTokens > 0 && activeMainTab === 'chat' && (
-            <ContextUsageDisplay
-              totalTokens={contextUsage.totalTokens}
-              percentage={contextUsage.percentage}
-              contextLimit={contextUsage.contextLimit}
-              outputLimit={contextUsage.outputLimit ?? 0}
-              size="compact"
-            />
-          )}
-        </div>
-
-        <div className="app-region-no-drag flex items-center gap-1.5">
-          {}
-          <div className="flex items-center" role="tablist" aria-label="Main navigation">
-            {tabs.map((tab) => {
-              const isActive = activeMainTab === tab.id;
-              const Icon = tab.icon;
-              return (
-                <Tooltip key={tab.id} delayDuration={500}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => setActiveMainTab(tab.id)}
-                      aria-label={tab.label}
-                      aria-selected={isActive}
-                      role="tab"
-                      className={cn(
-                        headerIconButtonClass,
-                        isActive && 'text-foreground'
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-                      {tab.badge !== undefined && tab.badge > 0 && (
-                        <span className="absolute -top-1 -right-1 text-[10px] font-semibold text-primary">
-                          {tab.badge}
-                        </span>
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{tab.label}</p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-expanded={isMobileDetailsOpen}
-            aria-controls="mobile-header-details"
-            onClick={() => setIsMobileDetailsOpen((prev) => !prev)}
-            className="app-region-no-drag h-8 w-8"
-          >
-            {isMobileDetailsOpen ? <RiArrowUpSLine className="h-4 w-4" /> : <RiArrowDownSLine className="h-4 w-4" />}
-          </Button>
-        </div>
+    <div className="app-region-drag relative flex items-center justify-between gap-2 px-3 py-2 select-none">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleOpenSessionSwitcher}
+          className="app-region-no-drag h-9 w-9 p-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="Open sessions"
+        >
+          <RiPlayListAddLine className="h-5 w-5" />
+        </button>
+        {contextUsage && contextUsage.totalTokens > 0 && activeMainTab === 'chat' && (
+          <ContextUsageDisplay
+            totalTokens={contextUsage.totalTokens}
+            percentage={contextUsage.percentage}
+            contextLimit={contextUsage.contextLimit}
+            outputLimit={contextUsage.outputLimit ?? 0}
+            size="compact"
+            isMobile={true}
+          />
+        )}
       </div>
 
-      {isMobileDetailsOpen && (
-        <div
-          id="mobile-header-details"
-          className="app-region-no-drag absolute left-0 right-0 top-full z-40 translate-y-2 px-3"
-        >
-          <div className="flex flex-col gap-4 rounded-xl border border-border/40 bg-background/95 px-3 py-3 shadow-none">
-            {contextUsage && contextUsage.totalTokens > 0 && (
-              <div className="flex flex-col gap-1">
-                <span className="typography-micro text-muted-foreground">Context usage</span>
-                <div className="rounded-lg border border-border/40 bg-muted/10 px-3 py-2 space-y-0.5">
-                  <p className="typography-meta">
-                    Used tokens: <span className="font-semibold text-foreground">{formatTokenValue(contextUsage.totalTokens)}</span>
-                  </p>
-                  <p className="typography-meta">
-                    Context limit: <span className="font-semibold text-foreground">{formatTokenValue(contextUsage.contextLimit)}</span>
-                  </p>
-                  <p className="typography-meta">
-                    Output limit: <span className="font-semibold text-foreground">{formatTokenValue(contextUsage.outputLimit ?? 0)}</span>
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+      <div className="app-region-no-drag flex items-center gap-1.5">
+        <div className="flex items-center" role="tablist" aria-label="Main navigation">
+          {tabs.map((tab) => {
+            const isActive = activeMainTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <Tooltip key={tab.id} delayDuration={500}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setActiveMainTab(tab.id)}
+                    aria-label={tab.label}
+                    aria-selected={isActive}
+                    role="tab"
+                    className={cn(
+                      headerIconButtonClass,
+                      isActive && 'text-foreground'
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {tab.badge !== undefined && tab.badge > 0 && (
+                      <span className="absolute -top-1 -right-1 text-[10px] font-semibold text-primary">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tab.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 
