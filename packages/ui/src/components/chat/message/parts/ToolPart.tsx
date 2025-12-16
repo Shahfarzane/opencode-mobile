@@ -2,8 +2,8 @@
 import React from 'react';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import { RiArrowDownSLine, RiArrowRightSLine, RiFileEditLine, RiFileSearchLine, RiFileTextLine, RiFolder6Line, RiGitBranchLine, RiGlobalLine, RiListCheck3, RiMenuSearchLine, RiPencilLine, RiTerminalBoxLine, RiToolsLine } from '@remixicon/react';
-import { Streamdown } from 'streamdown';
 import { cn } from '@/lib/utils';
+import { SimpleMarkdownRenderer } from '../../MarkdownRenderer';
 import { getToolMetadata, getLanguageFromExtension } from '@/lib/toolHelpers';
 import type { ToolPart as ToolPartType, ToolState as ToolStateUnion } from '@opencode-ai/sdk';
 import { toolDisplayStyles } from '@/lib/typography';
@@ -88,12 +88,28 @@ export const getToolIcon = (toolName: string) => {
     return <RiToolsLine className={iconClass} />;
 };
 
-const formatDuration = (start: number, end?: number) => {
-    const duration = end ? end - start : Date.now() - start;
+const formatDuration = (start: number, end?: number, now: number = Date.now()) => {
+    const duration = end ? end - start : now - start;
     const seconds = duration / 1000;
 
     const displaySeconds = seconds < 0.05 && end !== undefined ? 0.1 : seconds;
     return `${displaySeconds.toFixed(1)}s`;
+};
+
+const LiveDuration: React.FC<{ start: number; end?: number; active: boolean }> = ({ start, end, active }) => {
+    const [now, setNow] = React.useState(() => Date.now());
+
+    React.useEffect(() => {
+        if (!active) {
+            return;
+        }
+        const timer = window.setInterval(() => {
+            setNow(Date.now());
+        }, 100);
+        return () => window.clearInterval(timer);
+    }, [active]);
+
+    return <>{formatDuration(start, end, now)}</>;
 };
 
 const parseDiffStats = (metadata?: Record<string, unknown>): { added: number; removed: number } | null => {
@@ -184,6 +200,123 @@ const ToolScrollableSection: React.FC<ToolScrollableSectionProps> = ({
         </div>
     </ScrollableOverlay>
 );
+
+type TaskToolSummaryEntry = {
+    id?: string;
+    tool?: string;
+    state?: {
+        status?: string;
+        title?: string;
+    };
+};
+
+const getTaskSummaryLabel = (entry: TaskToolSummaryEntry): string => {
+    const title = entry.state?.title;
+    if (typeof title === 'string' && title.trim().length > 0) {
+        return title;
+    }
+    if (typeof entry.tool === 'string' && entry.tool.trim().length > 0) {
+        return entry.tool;
+    }
+    return 'tool';
+};
+
+const stripTaskMetadataFromOutput = (output: string): string => {
+    // OpenCode appends a non-user-facing session marker for task tools.
+    // Strip only a trailing <task_metadata>...</task_metadata> block.
+    return output.replace(/\n*<task_metadata>[\s\S]*?<\/task_metadata>\s*$/i, '').trimEnd();
+};
+
+const TaskToolSummary: React.FC<{
+    entries: TaskToolSummaryEntry[];
+    isExpanded: boolean;
+    hasPrevTool: boolean;
+    hasNextTool: boolean;
+    output?: string;
+}> = ({ entries, isExpanded, hasPrevTool, hasNextTool, output }) => {
+    const completedEntries = React.useMemo(() => {
+        return entries.filter((entry) => entry.state?.status === 'completed');
+    }, [entries]);
+
+    const trimmedOutput = typeof output === 'string'
+        ? stripTaskMetadataFromOutput(output)
+        : '';
+    const hasOutput = trimmedOutput.length > 0;
+    const [isOutputExpanded, setIsOutputExpanded] = React.useState(false);
+
+    if (completedEntries.length === 0 && !hasOutput) {
+        return null;
+    }
+
+    const visibleEntries = isExpanded ? completedEntries : completedEntries.slice(-6);
+    const hiddenCount = Math.max(0, completedEntries.length - visibleEntries.length);
+
+    return (
+        <div
+            className={cn(
+                'relative pr-2 pb-2 pt-2 space-y-2 pl-[1.4375rem]',
+                'before:absolute before:left-[0.4375rem] before:w-px before:bg-border/80 before:content-[""]',
+                hasPrevTool ? 'before:top-[-0.45rem]' : 'before:top-[-0.25rem]',
+                hasNextTool ? 'before:bottom-[-0.6rem]' : 'before:bottom-0'
+            )}
+        >
+            {completedEntries.length > 0 ? (
+                <ToolScrollableSection maxHeightClass={isExpanded ? 'max-h-[40vh]' : 'max-h-56'} disableHorizontal>
+                    <div className="w-full min-w-0 space-y-1">
+                        {hiddenCount > 0 ? (
+                            <div className="typography-micro text-muted-foreground/70">+{hiddenCount} more…</div>
+                        ) : null}
+
+                        {visibleEntries.map((entry, idx) => {
+                            const toolName = typeof entry.tool === 'string' && entry.tool.trim().length > 0 ? entry.tool : 'tool';
+                            const label = getTaskSummaryLabel(entry);
+
+                            const displayName = getToolMetadata(toolName).displayName;
+
+                            return (
+                                <div key={entry.id ?? `${toolName}-${idx}`} className="flex items-center gap-2 min-w-0">
+                                    <span className="flex-shrink-0 text-foreground/80">{getToolIcon(toolName)}</span>
+                                    <span className="typography-meta text-foreground/80 flex-shrink-0">{displayName}</span>
+                                    <span className="typography-meta text-muted-foreground/70 truncate">{label}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </ToolScrollableSection>
+            ) : null}
+
+            {hasOutput ? (
+                <div className={cn('space-y-1', completedEntries.length > 0 && 'pt-1')}
+                >
+                    <button
+                        type="button"
+                        className="flex items-center gap-2 typography-meta text-foreground/80 hover:text-foreground w-full"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setIsOutputExpanded((prev) => !prev);
+                        }}
+                    >
+                        {isOutputExpanded ? (
+                            <RiArrowDownSLine className="h-3.5 w-3.5 flex-shrink-0" />
+                        ) : (
+                            <RiArrowRightSLine className="h-3.5 w-3.5 flex-shrink-0" />
+                        )}
+                        <span className="typography-meta text-foreground/80 font-medium">Output</span>
+                    </button>
+
+                    {isOutputExpanded ? (
+                        <ToolScrollableSection maxHeightClass="max-h-[50vh]">
+                            <div className="w-full min-w-0">
+                                <SimpleMarkdownRenderer content={trimmedOutput} variant="tool" />
+                            </div>
+                        </ToolScrollableSection>
+                    ) : null}
+                </div>
+            ) : null}
+        </div>
+    );
+};
 
 interface DiffPreviewProps {
     diff: string;
@@ -455,10 +588,8 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = ({
 
         if (part.tool === 'task' && hasStringOutput) {
             return renderScrollableBlock(
-                <div className="w-full min-w-0" style={{ fontSize: 'var(--text-code)' }}>
-                    <Streamdown mode="static" className="streamdown-content streamdown-tool">
-                        {outputString}
-                    </Streamdown>
+                <div className="w-full min-w-0">
+                    <SimpleMarkdownRenderer content={outputString} variant="tool" />
                 </div>
             );
         }
@@ -476,10 +607,8 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = ({
 
         if (part.tool === 'codesearch' && hasStringOutput) {
             return renderScrollableBlock(
-                <div className="w-full min-w-0" style={{ fontSize: 'var(--text-code)' }}>
-                    <Streamdown mode="static" className="streamdown-content streamdown-tool">
-                        {outputString}
-                    </Streamdown>
+                <div className="w-full min-w-0">
+                    <SimpleMarkdownRenderer content={outputString} variant="tool" />
                 </div>
             );
         }
@@ -648,25 +777,18 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
     const state = part.state;
     const currentDirectory = useDirectoryStore((s) => s.currentDirectory);
 
+    const isTaskTool = part.tool.toLowerCase() === 'task';
+
     const isFinalized = state.status === 'completed' || state.status === 'error';
-    const isRunning = state.status === 'running';
+    const isActive = state.status === 'running' || state.status === 'pending';
     const isError = state.status === 'error';
 
-    const [currentTime, setCurrentTime] = React.useState(Date.now());
 
-    React.useEffect(() => {
-        if (isRunning) {
-            const timer = setInterval(() => {
-                setCurrentTime(Date.now());
-            }, 100);
-            return () => clearInterval(timer);
-        }
-    }, [isRunning]);
 
     const previousExpandedRef = React.useRef<boolean | undefined>(isExpanded);
 
     React.useEffect(() => {
-        if (!isFinalized) {
+        if (!isFinalized && !isTaskTool) {
             return;
         }
         if (previousExpandedRef.current === isExpanded) {
@@ -676,11 +798,61 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
         if (typeof isExpanded === 'boolean') {
             onContentChange?.('structural');
         }
-    }, [isExpanded, isFinalized, onContentChange]);
+    }, [isExpanded, isFinalized, isTaskTool, onContentChange]);
 
     const stateWithData = state as ToolStateWithMetadata;
     const metadata = stateWithData.metadata;
     const input = stateWithData.input;
+    const time = stateWithData.time;
+
+    // Pin start/end so a server-side time reset doesn't reset UI duration.
+    const pinnedTaskTimeRef = React.useRef<{ start?: number; end?: number }>({});
+    const lastPinnedTaskIdRef = React.useRef<string>(part.id);
+
+    if (lastPinnedTaskIdRef.current !== part.id) {
+        lastPinnedTaskIdRef.current = part.id;
+        pinnedTaskTimeRef.current = {};
+    }
+
+    if (isTaskTool) {
+        if (typeof time?.start === 'number') {
+            const pinnedStart = pinnedTaskTimeRef.current.start;
+            if (typeof pinnedStart !== 'number' || time.start < pinnedStart) {
+                pinnedTaskTimeRef.current.start = time.start;
+            }
+        }
+        if (typeof time?.end === 'number') {
+            pinnedTaskTimeRef.current.end = time.end;
+        }
+    }
+
+    const effectiveTimeStart = isTaskTool ? (pinnedTaskTimeRef.current.start ?? time?.start) : time?.start;
+    const effectiveTimeEnd = isTaskTool ? (pinnedTaskTimeRef.current.end ?? time?.end) : time?.end;
+
+    const taskSummaryEntries = React.useMemo<TaskToolSummaryEntry[]>(() => {
+        if (!isTaskTool) {
+            return [];
+        }
+        const candidate = (metadata as { summary?: unknown } | undefined)?.summary;
+        if (!Array.isArray(candidate)) {
+            return [];
+        }
+        return candidate.filter((entry): entry is TaskToolSummaryEntry => typeof entry === 'object' && entry !== null) as TaskToolSummaryEntry[];
+    }, [isTaskTool, metadata]);
+
+
+    const taskSummaryLenRef = React.useRef<number>(taskSummaryEntries.length);
+    React.useEffect(() => {
+        if (!isTaskTool) {
+            return;
+        }
+        if (taskSummaryLenRef.current === taskSummaryEntries.length) {
+            return;
+        }
+        taskSummaryLenRef.current = taskSummaryEntries.length;
+        onContentChange?.('structural');
+    }, [isTaskTool, onContentChange, taskSummaryEntries.length]);
+
     const diffStats = (part.tool === 'edit' || part.tool === 'multiedit') ? parseDiffStats(metadata) : null;
     const description = getToolDescription(part, state, isMobile, currentDirectory);
     const displayName = getToolMetadata(part.tool).displayName;
@@ -688,7 +860,7 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
     const runtime = React.useContext(RuntimeAPIContext);
 
     const handleMainClick = (e: React.MouseEvent) => {
-        if (!runtime?.editor) {
+        if (isTaskTool || !runtime?.editor) {
             onToggle(part.id);
             return;
         }
@@ -712,7 +884,7 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
         }
     };
 
-    if (!isFinalized) {
+    if (!isFinalized && !isTaskTool) {
         return null;
     }
 
@@ -735,7 +907,7 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
                                 isExpanded && 'opacity-0',
                                 !isExpanded && !isMobile && 'group-hover/tool:opacity-0'
                             )}
-                            style={isError ? { color: 'var(--status-error)' } : {}}
+                            style={!isTaskTool && isError ? { color: 'var(--status-error)' } : {}}
                         >
                             {getToolIcon(part.tool)}
                         </div>
@@ -753,7 +925,7 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
                     </div>
                     <span
                         className="typography-meta font-medium"
-                        style={isError ? { color: 'var(--status-error)' } : {}}
+                        style={!isTaskTool && isError ? { color: 'var(--status-error)' } : {}}
                     >
                         {displayName}
                     </span>
@@ -772,16 +944,30 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
                             <span style={{ color: 'var(--status-error)' }}>-{diffStats.removed}</span>
                         </span>
                     )}
-                    {'time' in state && state.time && (
+                    {typeof effectiveTimeStart === 'number' && (
                         <span className="text-muted-foreground/80 flex-shrink-0">
-                            {formatDuration(state.time.start, isFinalized && 'end' in state.time ? state.time.end : currentTime)}
+                            <LiveDuration
+                                start={effectiveTimeStart}
+                                end={typeof effectiveTimeEnd === 'number' ? effectiveTimeEnd : undefined}
+                                active={Boolean(isTaskTool && isActive && typeof effectiveTimeEnd !== 'number')}
+                            />
                         </span>
                     )}
                 </div>
             </div>
 
             {}
-            {isExpanded && (
+            {isTaskTool && (taskSummaryEntries.length > 0 || isActive || isFinalized) ? (
+                <TaskToolSummary
+                    entries={taskSummaryEntries}
+                    isExpanded={isExpanded}
+                    hasPrevTool={hasPrevTool}
+                    hasNextTool={hasNextTool}
+                    output={typeof stateWithData.output === 'string' ? stateWithData.output : undefined}
+                />
+            ) : null}
+
+            {!isTaskTool && isExpanded ? (
                 <ToolExpandedContent
                     part={part}
                     state={state}
@@ -791,7 +977,7 @@ const ToolPart: React.FC<ToolPartProps> = ({ part, isExpanded, onToggle, syntaxT
                     hasPrevTool={hasPrevTool}
                     hasNextTool={hasNextTool}
                 />
-            )}
+            ) : null}
         </div>
     );
 };

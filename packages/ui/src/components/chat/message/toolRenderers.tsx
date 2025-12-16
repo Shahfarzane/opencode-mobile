@@ -1,9 +1,9 @@
-import { Streamdown } from 'streamdown';
 import { RiCheckLine } from '@remixicon/react';
 
 import { cn } from '@/lib/utils';
 import { typography } from '@/lib/typography';
 import { formatToolInput, detectToolOutputLanguage } from '@/lib/toolHelpers';
+import { SimpleMarkdownRenderer } from '../MarkdownRenderer';
 
 const cleanOutput = (output: string) => {
     let cleaned = output.replace(/^<file>\s*\n?/, '').replace(/\n?<\/file>\s*$/, '');
@@ -352,9 +352,7 @@ export const renderWebSearchOutput = (output: string, _syntaxTheme: { [key: stri
                 )}
                 style={typography.tool.popup}
             >
-                <Streamdown mode="static" className="streamdown-content streamdown-tool">
-                    {output}
-                </Streamdown>
+                <SimpleMarkdownRenderer content={output} variant="tool" />
             </div>
         );
     } catch {

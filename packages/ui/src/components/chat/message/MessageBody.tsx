@@ -542,6 +542,9 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
     const toolConnections = React.useMemo(() => {
         const connections: Record<string, { hasPrev: boolean; hasNext: boolean }> = {};
         const displayableTools = toolParts.filter((toolPart) => {
+            if (toolPart.tool === 'task') {
+                return false;
+            }
             if (shouldHoldTools) {
                 return false;
             }
@@ -577,10 +580,19 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
 
     const visibleActivityPartsForTurn = React.useMemo(() => {
         if (!turnGroupingContext) return [];
-        if (!showReasoningTraces) {
-            return activityPartsForTurn.filter((activity) => activity.kind === 'tool');
-        }
-        return activityPartsForTurn;
+
+        const base = !showReasoningTraces
+            ? activityPartsForTurn.filter((activity) => activity.kind === 'tool')
+            : activityPartsForTurn;
+
+        // Task tool gets its own progressive card (not part of Activity group).
+        return base.filter((activity) => {
+            if (activity.kind !== 'tool') {
+                return true;
+            }
+            const toolName = (activity.part as ToolPartType).tool;
+            return !(typeof toolName === 'string' && toolName.toLowerCase() === 'task');
+        });
     }, [activityPartsForTurn, showReasoningTraces, turnGroupingContext]);
 
     const [hasEverHadMultipleVisibleActivities, setHasEverHadMultipleVisibleActivities] = React.useState(false);
@@ -618,6 +630,9 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
 
             if (activity.kind === 'tool') {
                 const toolPart = part as ToolPartType;
+                if (toolPart.tool === 'task') {
+                    return;
+                }
                 if (shouldHoldTools) return;
                 if (!isToolFinalized(toolPart)) return;
             } else if (activity.kind === 'reasoning') {
@@ -685,6 +700,25 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
             );
         }
 
+        // Task tool: show immediately and update progressively from metadata.
+        const taskTools = toolParts.filter((toolPart) => toolPart.tool === 'task');
+        taskTools.forEach((taskPart) => {
+            rendered.push(
+                <FadeInOnReveal key={`task-${taskPart.id}`}>
+                    <ToolPart
+                        part={taskPart}
+                        isExpanded={expandedTools.has(taskPart.id)}
+                        onToggle={onToggleTool}
+                        syntaxTheme={syntaxTheme}
+                        isMobile={isMobile}
+                        onContentChange={onContentChange}
+                        hasPrevTool={false}
+                        hasNextTool={false}
+                    />
+                </FadeInOnReveal>
+            );
+        });
+
         const partsWithTime: Array<{
             part: Part;
             index: number;
@@ -708,6 +742,11 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
             if (!shouldShowActivityGroup) {
                 if (activity.kind === 'tool') {
                     const toolPart = part as ToolPartType;
+
+                    if (toolPart.tool === 'task') {
+                        return;
+                    }
+
                     const toolState = (toolPart as { state?: { time?: { end?: number | null | undefined } | null | undefined } | null | undefined }).state;
                     const time = toolState?.time;
                     const isFinalized = isToolFinalized(toolPart);
@@ -766,6 +805,11 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
             switch (activity.kind) {
                 case 'tool': {
                     const toolPart = part as ToolPartType;
+
+                    if (toolPart.tool === 'task') {
+                        break;
+                    }
+
                     const toolState = (toolPart as { state?: { time?: { end?: number | null | undefined } | null | undefined } | null | undefined }).state;
                     const time = toolState?.time;
                     const isFinalized = isToolFinalized(toolPart);
@@ -929,6 +973,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         turnGroupingContext,
         visibleActivityPartsForTurn,
         visibleParts,
+        toolParts,
     ]);
 
     const userMessageId = turnGroupingContext?.turnId;

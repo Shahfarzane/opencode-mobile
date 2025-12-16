@@ -1377,6 +1377,37 @@ html:not(.dark) .chat-scroll {
   font-size: inherit !important;
 }
 
+/* Streamdown headers: keep proportional but not oversized */
+.streamdown-content h1 {
+  font-size: 1.125em;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.streamdown-content h2 {
+  font-size: 1.0625em;
+  font-weight: 600;
+  margin-top: 0.875em;
+  margin-bottom: 0.375em;
+}
+
+.streamdown-content h3 {
+  font-size: 1em;
+  font-weight: 600;
+  margin-top: 0.75em;
+  margin-bottom: 0.25em;
+}
+
+.streamdown-content h4,
+.streamdown-content h5,
+.streamdown-content h6 {
+  font-size: 1em;
+  font-weight: 600;
+  margin-top: 0.625em;
+  margin-bottom: 0.25em;
+}
+
 /* Code font: IBM Plex Mono */
 .streamdown-content code,
 .streamdown-content pre {
