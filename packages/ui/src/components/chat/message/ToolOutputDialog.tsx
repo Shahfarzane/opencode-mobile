@@ -2,9 +2,9 @@ import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { RiBrainAi3Line, RiFileImageLine, RiFilePdfLine, RiFileSearchLine, RiFolder6Line, RiGitBranchLine, RiGlobalLine, RiListCheck3, RiPencilAiLine, RiSearchLine, RiTerminalBoxLine, RiToolsLine } from '@remixicon/react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { Streamdown } from 'streamdown';
 
 import { cn } from '@/lib/utils';
+import { SimpleMarkdownRenderer } from '../MarkdownRenderer';
 import { toolDisplayStyles } from '@/lib/typography';
 import { getLanguageFromExtension } from '@/lib/toolHelpers';
 import {
@@ -450,13 +450,8 @@ const ToolOutputDialog: React.FC<ToolOutputDialogProps> = ({ popup, onOpenChange
 
                                 if (tool === 'task' || tool === 'reasoning') {
                                     return (
-                                        <div
-                                            className={tool === 'reasoning' ? "text-muted-foreground/70" : ""}
-                                            style={{ fontSize: tool === 'task' ? 'var(--text-code)' : 'var(--text-meta)' }}
-                                        >
-                                            <Streamdown mode="static" className="streamdown-content streamdown-tool">
-                                                {popup.content}
-                                            </Streamdown>
+                                        <div className={tool === 'reasoning' ? "text-muted-foreground/70" : ""}>
+                                            <SimpleMarkdownRenderer content={popup.content} variant="tool" />
                                         </div>
                                     );
                                 }

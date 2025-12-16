@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Task tool now renders progressively with live duration, completed sub-tools summary, and collapsible output
+- Unified markdown rendering between assistant messages and tool outputs (syntax highlighting, code/table controls)
+- Reduced markdown header sizes for better visual balance
+
 
 ## [1.2.1] - 2025-12-16
 

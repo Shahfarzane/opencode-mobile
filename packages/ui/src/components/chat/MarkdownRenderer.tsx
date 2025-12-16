@@ -410,6 +410,8 @@ const streamdownComponents = {
   table: TableWrapper,
 };
 
+export type MarkdownVariant = 'assistant' | 'tool';
+
 interface MarkdownRendererProps {
   content: string;
   part?: Part;
@@ -417,6 +419,7 @@ interface MarkdownRendererProps {
   isAnimated?: boolean;
   className?: string;
   isStreaming?: boolean;
+  variant?: MarkdownVariant;
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
@@ -426,6 +429,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   isAnimated = true,
   className,
   isStreaming = false,
+  variant = 'assistant',
 }) => {
   const shikiThemes = useMarkdownShikiThemes();
   const componentKey = React.useMemo(() => {
@@ -433,12 +437,16 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     return `markdown-${signature}`;
   }, [messageId, part?.id]);
 
+  const streamdownClassName = variant === 'tool'
+    ? 'streamdown-content streamdown-tool'
+    : 'streamdown-content';
+
   const markdownContent = (
     <div className={cn('break-words', className)}>
       <Streamdown
         mode={isStreaming ? 'streaming' : 'static'}
         shikiTheme={shikiThemes}
-        className="streamdown-content"
+        className={streamdownClassName}
         controls={{ code: false, table: false }}
         components={streamdownComponents}
       >
@@ -461,14 +469,20 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 export const SimpleMarkdownRenderer: React.FC<{
   content: string;
   className?: string;
-}> = ({ content, className }) => {
+  variant?: MarkdownVariant;
+}> = ({ content, className, variant = 'assistant' }) => {
   const shikiThemes = useMarkdownShikiThemes();
+
+  const streamdownClassName = variant === 'tool'
+    ? 'streamdown-content streamdown-tool'
+    : 'streamdown-content';
+
   return (
     <div className={cn('break-words', className)}>
       <Streamdown
         mode="static"
         shikiTheme={shikiThemes}
-        className="streamdown-content"
+        className={streamdownClassName}
         controls={{ code: false, table: false }}
         components={streamdownComponents}
       >
