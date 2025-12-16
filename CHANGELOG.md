@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Todo task tracking: collapsible status row showing AI's current task and progress
+
 ## [1.2.0] - 2025-12-15
 
 - Favorite & recent models for quick access in model selection

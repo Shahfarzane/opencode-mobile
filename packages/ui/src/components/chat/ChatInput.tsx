@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { ServerFilePicker } from './ServerFilePicker';
 import { ModelControls } from './ModelControls';
 import { parseAgentMentions } from '@/lib/messages/agentMentions';
-import { WorkingPlaceholder } from './message/parts/WorkingPlaceholder';
+import { StatusRow } from './StatusRow';
 import { useAssistantStatus } from '@/hooks/useAssistantStatus';
 import { toast } from 'sonner';
 import { useFileStore } from '@/stores/fileStore';
@@ -163,7 +163,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         if (!currentSessionId) return false;
         return abortPromptSessionId === currentSessionId && Boolean(abortPromptExpiresAt);
     }, [abortPromptSessionId, abortPromptExpiresAt, currentSessionId]);
-    const canShowAbortButton = canAbort && (isMobile || isAbortPromptActive);
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -752,7 +751,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         'flex items-center justify-center text-muted-foreground transition-none outline-none focus:outline-none flex-shrink-0'
     );
 
-    const actionButton = (
+    // Desktop and VSCode: show abort button in footer when Esc triggered
+    const showAbortInFooter = !isMobile && isAbortPromptActive && canAbort;
+
+    const actionButton = showAbortInFooter ? (
+        <button
+            type='button'
+            onClick={handleAbort}
+            className={cn(
+                iconButtonBaseClass,
+                'text-[var(--status-error)] hover:text-[var(--status-error)]'
+            )}
+            aria-label='Stop generating'
+        >
+            <RiCloseCircleLine className={cn(iconSizeClass)} />
+        </button>
+    ) : (
         <button
             type='submit'
             disabled={!hasContent || !currentSessionId}
@@ -880,57 +894,24 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         };
     }, []);
 
-    const shouldRenderPlaceholder = !showAbortStatus && (working.wasAborted || !working.abortActive);
+    // For mobile only, show abort in StatusRow; desktop and vscode show in footer (Esc-triggered)
+    const showAbortInStatusRow = isMobile && canAbort;
 
     return (
 
         <form onSubmit={handleSubmit} className="pt-0 pb-4 bottom-safe-area">
-            <div className="chat-column mb-1.5 h-[1.2rem] flex items-center justify-between gap-2 overflow-visible">
-                <div className="flex-1 flex items-center overflow-hidden">
-                    {showAbortStatus ? (
-                        <div className="flex h-full items-center text-[var(--status-error)] pl-[2ch]">
-                            <span className="flex items-center gap-1.5 typography-ui-header">
-                                <RiCloseCircleLine size={18} aria-hidden="true" />
-                                Aborted
-                            </span>
-                        </div>
-                    ) : shouldRenderPlaceholder ? (
-                        <WorkingPlaceholder
-                            key={currentSessionId ?? 'no-session'}
-                            statusText={workingStatusText}
-                            isWaitingForPermission={working.isWaitingForPermission}
-                            wasAborted={working.wasAborted}
-                            completionId={working.lastCompletionId}
-                            isComplete={working.isComplete}
-                        />
-                    ) : null}
-                </div>
-
-                {canShowAbortButton ? (
-                    <div className="flex-shrink-0 pr-[2ch]">
-                        {isMobile ? (
-                            <button
-                                type='button'
-                                onClick={handleAbort}
-                                className='flex items-center justify-center h-[1.2rem] w-[1.2rem] text-[var(--status-error)] transition-opacity hover:opacity-80 focus-visible:outline-none'
-                                aria-label='Stop generating'
-                            >
-                                <RiCloseCircleLine size={18} aria-hidden='true' />
-                            </button>
-                        ) : (
-                            <button
-                                type='button'
-                                onClick={handleAbort}
-                                className='inline-flex h-[1.2rem] items-center gap-0.5 rounded-md bg-[var(--status-error)]/70 px-1 text-[0.65rem] font-medium text-white hover:bg-[var(--status-error)]/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-error)]/40'
-                                aria-label='Stop generating'
-                            >
-                                <RiCloseCircleLine size={11} className='text-white' aria-hidden='true' />
-                                Abort
-                            </button>
-                        )}
-                    </div>
-                ) : null}
-            </div>
+            <StatusRow
+                isWorking={working.isWorking}
+                statusText={workingStatusText}
+                isWaitingForPermission={working.isWaitingForPermission}
+                wasAborted={working.wasAborted}
+                abortActive={working.abortActive}
+                completionId={working.lastCompletionId}
+                isComplete={working.isComplete}
+                showAbort={showAbortInStatusRow}
+                onAbort={handleAbort}
+                showAbortStatus={showAbortStatus}
+            />
             <div
                 ref={dropZoneRef}
                 className={cn(
