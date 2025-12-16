@@ -7,6 +7,7 @@ import { useUIStore, type EventStreamStatus } from '@/stores/useUIStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import type { Part, Session, Message, Permission } from '@opencode-ai/sdk';
 import { streamDebugEnabled } from '@/stores/utils/streamDebug';
+import { handleTodoUpdatedEvent } from '@/stores/useTodoStore';
 
 interface EventData {
   type: string;
@@ -751,6 +752,18 @@ export const useEventStream = () => {
       case 'permission.replied':
 
         break;
+
+      case 'todo.updated': {
+        const sessionId = typeof props.sessionID === 'string' ? props.sessionID : null;
+        const todos = Array.isArray(props.todos) ? props.todos : [];
+        if (sessionId && todos.length > 0) {
+          handleTodoUpdatedEvent(
+            sessionId,
+            todos as Array<{ id: string; content: string; status: string; priority: string }>
+          );
+        }
+        break;
+      }
     }
   }, [
     currentSessionId,

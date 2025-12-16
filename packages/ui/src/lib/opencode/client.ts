@@ -349,6 +349,37 @@ class OpencodeService {
     return response.data || [];
   }
 
+  async getSessionTodos(sessionId: string): Promise<Array<{ id: string; content: string; status: string; priority: string }>> {
+    try {
+      const base = this.baseUrl.replace(/\/$/, "");
+      const url = new URL(`${base}/session/${encodeURIComponent(sessionId)}/todo`);
+
+      if (this.currentDirectory && this.currentDirectory.length > 0) {
+        url.searchParams.set("directory", this.currentDirectory);
+      }
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json().catch(() => null);
+      if (!data || !Array.isArray(data)) {
+        return [];
+      }
+
+      return data as Array<{ id: string; content: string; status: string; priority: string }>;
+    } catch {
+      return [];
+    }
+  }
+
   async sendMessage(params: {
     id: string;
     providerID: string;
