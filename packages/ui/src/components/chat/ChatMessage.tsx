@@ -26,6 +26,11 @@ import type { TurnGroupingContext } from './hooks/useTurnGrouping';
 
 const ToolOutputDialog = React.lazy(() => import('./message/ToolOutputDialog'));
 
+const DETAILED_DEFAULT_TOOLS = new Set(['task', 'edit', 'multiedit', 'write', 'bash']);
+
+const isDetailedDefaultTool = (toolName: unknown): boolean =>
+    typeof toolName === 'string' && DETAILED_DEFAULT_TOOLS.has(toolName.toLowerCase());
+
 function useStickyDisplayValue<T>(value: T | null | undefined): T | null | undefined {
     const ref = React.useRef<{ hasValue: boolean; value: T | null | undefined }>({ hasValue: false, value: undefined as T | null | undefined });
 
@@ -123,6 +128,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         title: '',
         content: '',
     });
+
+    React.useEffect(() => {
+        setExpandedTools(new Set());
+    }, [message.info.id, toolCallExpansion]);
 
     const messageRole = React.useMemo(() => deriveMessageRole(message.info), [message.info]);
     const isUser = messageRole.isUser;
@@ -309,44 +318,48 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
     const effectiveExpandedTools = React.useMemo(() => {
         // 'collapsed': Activity and tools start collapsed
-        // 'activity': Activity expanded, tools collapsed  
-        // 'detailed': Activity and tools expanded
-        
+        // 'activity': Activity expanded, tools collapsed
+        // 'detailed': Activity expanded, only key tools expanded
+
         if (toolCallExpansion === 'collapsed' || toolCallExpansion === 'activity') {
             // Tools default collapsed: expandedTools contains IDs of tools that ARE expanded
             return expandedTools;
         }
-        
-        // 'detailed': Tools default expanded
-        // Collect all relevant tool IDs (from this message and the entire turn if we're rendering a progressive group)
-        const allToolIds = new Set<string>();
-        
-        // 1. Add tools from this message
+
+        // 'detailed': expand only allowlisted tools by default.
+        // expandedTools acts as a "toggled" set (XOR with defaults).
+        const defaultExpandedToolIds = new Set<string>();
+
         for (const part of toolParts) {
-            if (part.id) {
-                allToolIds.add(part.id);
+            const toolName = (part as { tool?: unknown }).tool;
+            if (part.id && isDetailedDefaultTool(toolName)) {
+                defaultExpandedToolIds.add(part.id);
             }
         }
-        
-        // 2. If we're rendering a progressive group for the turn, include all turn tools
+
         if (turnGroupingContext?.isFirstAssistantInTurn) {
             for (const activity of turnGroupingContext.activityParts) {
-                if (activity.kind === 'tool' && activity.part.id) {
-                    allToolIds.add(activity.part.id);
+                if (activity.kind !== 'tool') {
+                    continue;
+                }
+
+                const toolPart = activity.part as unknown as { id?: string; tool?: unknown };
+                if (toolPart.id && isDetailedDefaultTool(toolPart.tool)) {
+                    defaultExpandedToolIds.add(toolPart.id);
                 }
             }
         }
-        
-        // expandedTools contains IDs of tools that ARE collapsed (inverted)
-        // Return a set of all tool IDs EXCEPT those in expandedTools
-        const effective = new Set<string>();
-        for (const id of allToolIds) {
-            if (!expandedTools.has(id)) {
+
+        const effective = new Set(defaultExpandedToolIds);
+        for (const id of expandedTools) {
+            if (effective.has(id)) {
+                effective.delete(id);
+            } else {
                 effective.add(id);
             }
         }
         return effective;
-    }, [toolCallExpansion, expandedTools, toolParts, turnGroupingContext]);
+    }, [expandedTools, toolCallExpansion, toolParts, turnGroupingContext]);
 
     const agentMention = React.useMemo(() => {
         if (!isUser) {

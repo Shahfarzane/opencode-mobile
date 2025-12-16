@@ -778,6 +778,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
             }
             // Add to recent models on successful selection
             addRecentModel(providerId, modelId);
+            setAgentMenuOpen(false);
             if (isCompact) {
                 closeMobilePanel();
             }
@@ -1160,7 +1161,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                     {!mobileModelQuery && favoriteModelsList.length > 0 && (
                         <div className="rounded-xl border border-border/40 bg-background/95">
                             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                <RiStarFill className="h-3 w-3 inline-block mr-1.5 text-yellow-500" />
+                                <RiStarFill className="h-3 w-3 inline-block mr-1.5 text-primary" />
                                 Favorites
                             </div>
                             <div className="flex flex-col border-t border-border/30">
@@ -1635,7 +1636,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                             {favoriteModelsList.length > 0 && (
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger className="typography-meta">
-                                        <RiStarFill className="h-3 w-3 flex-shrink-0 mr-2 text-yellow-500" />
+                                        <RiStarFill className="h-3 w-3 flex-shrink-0 mr-2 text-primary" />
                                         Favorites
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent
@@ -1668,8 +1669,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                                     <DropdownMenuItem
                                                         key={`fav-${providerID}-${modelID}`}
                                                         className="typography-meta"
-                                                        onSelect={(e) => {
-                                                            e.preventDefault();
+                                                        onSelect={() => {
                                                             handleProviderAndModelChange(providerID, modelID);
                                                         }}
                                                     >
@@ -1757,8 +1757,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                                     <DropdownMenuItem
                                                         key={`recent-${providerID}-${modelID}`}
                                                         className="typography-meta"
-                                                        onSelect={(e) => {
-                                                            e.preventDefault();
+                                                        onSelect={() => {
                                                             handleProviderAndModelChange(providerID, modelID);
                                                         }}
                                                     >
@@ -1873,8 +1872,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                                     <DropdownMenuItem
                                                         key={model.id}
                                                         className="typography-meta"
-                                                        onSelect={(e) => {
-                                                            e.preventDefault();
+                                                        onSelect={() => {
                                                             handleProviderAndModelChange(provider.id as string, model.id as string);
                                                         }}
                                                     >

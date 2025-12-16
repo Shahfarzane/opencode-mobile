@@ -63,7 +63,10 @@ export const FixedSessionsButton: React.FC = () => {
   }
 
   return (
-     <div className="fixed top-[0.375rem] left-[5.25rem] z-[9999]" style={{ pointerEvents: 'auto' }}>
+     <div
+       className="fixed top-[0.375rem] left-[5.25rem] z-[9999]"
+       style={{ pointerEvents: 'auto', ['--padding-scale' as string]: '1' } as React.CSSProperties}
+     >
        <button
          type="button"
          onClick={handleOpenSessionSwitcher}
@@ -425,7 +428,7 @@ export const Header: React.FC = () => {
     <header
       ref={headerRef}
       className={headerClassName}
-      style={{ borderColor: 'var(--interactive-border)' }}
+      style={{ borderColor: 'var(--interactive-border)', ['--padding-scale' as string]: '1' } as React.CSSProperties}
     >
       {isMobile ? renderMobile() : renderDesktop()}
     </header>
