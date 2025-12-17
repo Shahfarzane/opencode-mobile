@@ -59,7 +59,7 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 ### CLI (Web Server)
 
 ```bash
-pnpm add -g openchamber
+pnpm add -g @openchamber/web
 
 openchamber                          # Start on port 3000
 openchamber --port 8080              # Custom port
