@@ -9,14 +9,6 @@ import type { TerminalChunk } from '@/stores/useTerminalStore';
 import { cn } from '@/lib/utils';
 import { OverlayScrollbar } from '@/components/ui/OverlayScrollbar';
 
-type TerminalWithCore = Terminal & {
-  _core?: {
-    dimensions?: {
-      actualCellHeight?: number;
-    };
-  };
-};
-
 type TerminalController = {
   focus: () => void;
   clear: () => void;
@@ -135,83 +127,288 @@ const TerminalViewport = React.forwardRef<TerminalController, TerminalViewportPr
       }
 
       const container = containerRef.current;
-      const terminal = terminalRef.current;
-      if (!container || !terminal) {
+      if (!container) {
         return;
       }
 
+      const viewport = container.querySelector('.xterm-viewport') as HTMLElement | null;
+      if (!viewport) {
+        return;
+      }
+
+      const baseScrollMultiplier = 2.2;
+      const maxScrollBoost = 2.8;
+      const boostDenominator = 25;
+      const velocityAlpha = 0.25;
+      const maxVelocity = 8;
+      const minVelocity = 0.05;
+      const deceleration = 0.015;
+
       const state = {
         lastY: null as number | null,
-        remainder: 0,
+        lastTime: null as number | null,
+        velocity: 0,
+        rafId: null as number | null,
       };
 
-      const internalTerminal = terminal as TerminalWithCore;
-      const measuredLineHeight =
-        internalTerminal._core?.dimensions?.actualCellHeight ?? null;
-      const lineHeightEstimate =
-        (typeof measuredLineHeight === 'number' && measuredLineHeight > 0
-          ? measuredLineHeight
-          : Math.max(fontSize + 6, fontSize * 1.6));
+      const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+      const getMaxScrollTop = () => Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+
+      const setScrollTop = (nextScrollTop: number) => {
+        const maxScrollTop = getMaxScrollTop();
+        viewport.scrollTop = Math.max(0, Math.min(maxScrollTop, nextScrollTop));
+      };
+
+      const scrollByPixels = (deltaPixels: number) => {
+        if (!deltaPixels) {
+          return;
+        }
+        const previous = viewport.scrollTop;
+        setScrollTop(previous + deltaPixels);
+        return viewport.scrollTop !== previous;
+      };
+
+      const stopKinetic = () => {
+        if (state.rafId !== null && typeof window !== 'undefined') {
+          window.cancelAnimationFrame(state.rafId);
+        }
+        state.rafId = null;
+      };
+
+      const listenerOptions: AddEventListenerOptions = { passive: false, capture: true };
+      const supportsPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
+
+      if (supportsPointerEvents) {
+        const stateWithPointerId = Object.assign(state, { pointerId: null as number | null });
+
+        const handlePointerDown = (event: PointerEvent) => {
+          if (event.pointerType !== 'touch') {
+            return;
+          }
+          stopKinetic();
+          stateWithPointerId.pointerId = event.pointerId;
+          stateWithPointerId.lastY = event.clientY;
+          stateWithPointerId.lastTime = nowMs();
+          stateWithPointerId.velocity = 0;
+          try {
+            container.setPointerCapture(event.pointerId);
+          } catch { /* ignored */ }
+        };
+
+        const handlePointerMove = (event: PointerEvent) => {
+          if (event.pointerType !== 'touch' || stateWithPointerId.pointerId !== event.pointerId) {
+            return;
+          }
+
+          if (stateWithPointerId.lastY === null) {
+            stateWithPointerId.lastY = event.clientY;
+            stateWithPointerId.lastTime = nowMs();
+            return;
+          }
+
+          const previousY = stateWithPointerId.lastY;
+          const previousTime = stateWithPointerId.lastTime ?? nowMs();
+          const currentTime = nowMs();
+          stateWithPointerId.lastY = event.clientY;
+          stateWithPointerId.lastTime = currentTime;
+
+          const deltaY = previousY - event.clientY;
+          if (Math.abs(deltaY) < 1) {
+            return;
+          }
+
+          const dt = Math.max(currentTime - previousTime, 8);
+          const scrollMultiplier = baseScrollMultiplier + Math.min(maxScrollBoost, Math.abs(deltaY) / boostDenominator);
+          const deltaPixels = deltaY * scrollMultiplier;
+          const instantVelocity = deltaPixels / dt;
+          stateWithPointerId.velocity = stateWithPointerId.velocity * (1 - velocityAlpha) + instantVelocity * velocityAlpha;
+
+          if (stateWithPointerId.velocity > maxVelocity) {
+            stateWithPointerId.velocity = maxVelocity;
+          } else if (stateWithPointerId.velocity < -maxVelocity) {
+            stateWithPointerId.velocity = -maxVelocity;
+          }
+
+          if (event.cancelable) {
+            event.preventDefault();
+          }
+          event.stopPropagation();
+          scrollByPixels(deltaPixels);
+        };
+
+        const handlePointerUp = (event: PointerEvent) => {
+          if (event.pointerType !== 'touch' || stateWithPointerId.pointerId !== event.pointerId) {
+            return;
+          }
+          stateWithPointerId.pointerId = null;
+          stateWithPointerId.lastY = null;
+          stateWithPointerId.lastTime = null;
+          try {
+            container.releasePointerCapture(event.pointerId);
+          } catch { /* ignored */ }
+
+          if (typeof window === 'undefined') {
+            return;
+          }
+
+          if (Math.abs(stateWithPointerId.velocity) < minVelocity) {
+            stateWithPointerId.velocity = 0;
+            return;
+          }
+
+          let lastFrame = nowMs();
+          const step = () => {
+            const frameTime = nowMs();
+            const dt = Math.max(frameTime - lastFrame, 8);
+            lastFrame = frameTime;
+
+            const moved = scrollByPixels(stateWithPointerId.velocity * dt) ?? false;
+
+            const sign = Math.sign(stateWithPointerId.velocity);
+            const nextMagnitude = Math.max(0, Math.abs(stateWithPointerId.velocity) - deceleration * dt);
+            stateWithPointerId.velocity = nextMagnitude * sign;
+
+            if (!moved || nextMagnitude <= minVelocity) {
+              stopKinetic();
+              stateWithPointerId.velocity = 0;
+              return;
+            }
+
+            stateWithPointerId.rafId = window.requestAnimationFrame(step);
+          };
+
+          stateWithPointerId.rafId = window.requestAnimationFrame(step);
+        };
+
+        container.addEventListener('pointerdown', handlePointerDown, listenerOptions);
+        container.addEventListener('pointermove', handlePointerMove, listenerOptions);
+        container.addEventListener('pointerup', handlePointerUp, listenerOptions);
+        container.addEventListener('pointercancel', handlePointerUp, listenerOptions);
+
+        const previousTouchAction = container.style.touchAction;
+        container.style.touchAction = 'none';
+
+        touchScrollCleanupRef.current = () => {
+          stopKinetic();
+          container.removeEventListener('pointerdown', handlePointerDown, listenerOptions);
+          container.removeEventListener('pointermove', handlePointerMove, listenerOptions);
+          container.removeEventListener('pointerup', handlePointerUp, listenerOptions);
+          container.removeEventListener('pointercancel', handlePointerUp, listenerOptions);
+          container.style.touchAction = previousTouchAction;
+        };
+
+        return;
+      }
 
       const handleTouchStart = (event: TouchEvent) => {
         if (event.touches.length !== 1) {
           return;
         }
+        stopKinetic();
         state.lastY = event.touches[0].clientY;
-        state.remainder = 0;
+        state.lastTime = nowMs();
+        state.velocity = 0;
       };
 
       const handleTouchMove = (event: TouchEvent) => {
         if (event.touches.length !== 1) {
           state.lastY = null;
-          state.remainder = 0;
-          return;
-        }
-
-        if (state.lastY === null) {
-          state.lastY = event.touches[0].clientY;
+          state.lastTime = null;
+          state.velocity = 0;
+          stopKinetic();
           return;
         }
 
         const currentY = event.touches[0].clientY;
-        const delta = state.lastY - currentY;
-        state.lastY = currentY;
-
-        const aggregate = state.remainder + delta / lineHeightEstimate;
-        const lines =
-          aggregate > 0 ? Math.floor(aggregate) : aggregate < 0 ? Math.ceil(aggregate) : 0;
-
-        state.remainder = aggregate - lines;
-
-        if (lines !== 0) {
-          event.preventDefault();
-          event.stopPropagation();
-          terminal.scrollLines(lines);
+        if (state.lastY === null) {
+          state.lastY = currentY;
+          state.lastTime = nowMs();
+          return;
         }
+
+        const previousY = state.lastY;
+        const previousTime = state.lastTime ?? nowMs();
+        const currentTime = nowMs();
+        state.lastY = currentY;
+        state.lastTime = currentTime;
+
+        const deltaY = previousY - currentY;
+        if (Math.abs(deltaY) < 1) {
+          return;
+        }
+
+        const dt = Math.max(currentTime - previousTime, 8);
+        const scrollMultiplier = baseScrollMultiplier + Math.min(maxScrollBoost, Math.abs(deltaY) / boostDenominator);
+        const deltaPixels = deltaY * scrollMultiplier;
+        const instantVelocity = deltaPixels / dt;
+        state.velocity = state.velocity * (1 - velocityAlpha) + instantVelocity * velocityAlpha;
+
+        if (state.velocity > maxVelocity) {
+          state.velocity = maxVelocity;
+        } else if (state.velocity < -maxVelocity) {
+          state.velocity = -maxVelocity;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        scrollByPixels(deltaPixels);
       };
 
       const handleTouchEnd = () => {
         state.lastY = null;
-        state.remainder = 0;
+        state.lastTime = null;
+
+        if (typeof window === 'undefined') {
+          return;
+        }
+
+        if (Math.abs(state.velocity) < minVelocity) {
+          state.velocity = 0;
+          return;
+        }
+
+        let lastFrame = nowMs();
+        const step = () => {
+          const frameTime = nowMs();
+          const dt = Math.max(frameTime - lastFrame, 8);
+          lastFrame = frameTime;
+
+          const moved = scrollByPixels(state.velocity * dt) ?? false;
+
+          const sign = Math.sign(state.velocity);
+          const nextMagnitude = Math.max(0, Math.abs(state.velocity) - deceleration * dt);
+          state.velocity = nextMagnitude * sign;
+
+          if (!moved || nextMagnitude <= minVelocity) {
+            stopKinetic();
+            state.velocity = 0;
+            return;
+          }
+
+          state.rafId = window.requestAnimationFrame(step);
+        };
+
+        state.rafId = window.requestAnimationFrame(step);
       };
 
-      const listenerOptions: AddEventListenerOptions = { passive: false };
       container.addEventListener('touchstart', handleTouchStart, listenerOptions);
       container.addEventListener('touchmove', handleTouchMove, listenerOptions);
-      container.addEventListener('touchend', handleTouchEnd);
-      container.addEventListener('touchcancel', handleTouchEnd);
+      container.addEventListener('touchend', handleTouchEnd, listenerOptions);
+      container.addEventListener('touchcancel', handleTouchEnd, listenerOptions);
 
       const previousTouchAction = container.style.touchAction;
       container.style.touchAction = 'none';
 
       touchScrollCleanupRef.current = () => {
-        container.removeEventListener('touchstart', handleTouchStart);
-        container.removeEventListener('touchmove', handleTouchMove);
-        container.removeEventListener('touchend', handleTouchEnd);
-        container.removeEventListener('touchcancel', handleTouchEnd);
+        stopKinetic();
+        container.removeEventListener('touchstart', handleTouchStart, listenerOptions);
+        container.removeEventListener('touchmove', handleTouchMove, listenerOptions);
+        container.removeEventListener('touchend', handleTouchEnd, listenerOptions);
+        container.removeEventListener('touchcancel', handleTouchEnd, listenerOptions);
         container.style.touchAction = previousTouchAction;
       };
-    }, [enableTouchScroll, fontSize]);
+    }, [enableTouchScroll]);
 
     React.useEffect(() => {
       const terminal = new Terminal(getTerminalOptions(fontFamily, fontSize, theme));
