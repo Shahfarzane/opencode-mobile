@@ -1,29 +1,20 @@
 name: Bug report
-description: Report a reproducible problem
-title: "bug: "
+description: Report something broken
 labels: [bug]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for taking the time to report a bug.
-
-        Please include description/screenshots if possible.
-
   - type: textarea
-    id: what-happened
+    id: what
     attributes:
-      label: What happened?
-      description: What did you expect, what happened instead?
-      placeholder: Steps + expected vs actual
+      label: What’s wrong?
+      description: What happened and what you expected.
+      placeholder: "Expected … but got …"
     validations:
       required: true
 
   - type: textarea
-    id: repro
+    id: steps
     attributes:
       label: Steps to reproduce
-      description: Numbered steps help a lot
       placeholder: |
         1.
         2.
@@ -34,25 +25,25 @@ body:
   - type: dropdown
     id: runtime
     attributes:
-      label: Runtime
-      multiple: true
+      label: Where does it happen?
       options:
-        - Desktop MacOS app
-        - Mobile (Web/PWA)
+        - Desktop (macOS)
         - Desktop Web
+        - Mobile (Web/PWA)
         - VS Code extension
+        - Not sure
     validations:
       required: true
 
   - type: input
     id: version
     attributes:
-      label: OpenChamber version
+      label: Version (if known)
       placeholder: "e.g. 1.2.3"
 
   - type: textarea
     id: logs
     attributes:
-      label: Logs / screenshots
-      description: Paste relevant logs or attach screenshots
+      label: Logs / screenshots (optional)
+      description: Paste anything relevant (or attach screenshots).
       render: shell

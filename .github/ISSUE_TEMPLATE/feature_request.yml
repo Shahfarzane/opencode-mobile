@@ -1,39 +1,25 @@
 name: Feature request
-description: Suggest an improvement or new capability
-title: "feat: "
+description: Suggest an improvement
 labels: [enhancement]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for proposing an idea.
-
   - type: textarea
-    id: problem
+    id: goal
     attributes:
-      label: Problem / use case
-      description: What are you trying to do?
-      placeholder: "As a user, I want..."
+      label: What do you want to do?
+      placeholder: "I want to …"
     validations:
       required: true
 
   - type: textarea
-    id: proposal
+    id: idea
     attributes:
-      label: Proposed solution
-      description: What would you like to see happen?
-      placeholder: UI, behavior, config, etc.
+      label: What should OpenChamber do?
+      placeholder: "Add/change …"
     validations:
       required: true
 
   - type: textarea
-    id: alternatives
+    id: context
     attributes:
-      label: Alternatives considered
-      placeholder: "Other approaches you've tried/considered"
-
-  - type: textarea
-    id: additional
-    attributes:
-      label: Additional context
-      description: Links, screenshots, mockups, etc.
+      label: Extra context (optional)
+      description: Links, screenshots, mockups, constraints, etc.
