@@ -9,6 +9,25 @@
     <meta name="theme-color" content="#151313" />
     <link rel="preload" href="/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
     <title>OpenChamber Desktop</title>
+    <script>
+      // Blocking script to detect and apply theme before first paint
+      (function() {
+        var themeMode = localStorage.getItem('themeMode');
+        var isDark;
+        if (themeMode === 'dark') {
+          isDark = true;
+        } else if (themeMode === 'light') {
+          isDark = false;
+        } else {
+          // 'system' or not set - use system preference
+          isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        document.documentElement.classList.add(isDark ? 'dark' : 'light');
+        document.documentElement.style.setProperty('color-scheme', isDark ? 'dark' : 'light');
+        // Store for use in inline styles
+        window.__INITIAL_THEME_DARK__ = isDark;
+      })();
+    </script>
     <style>
       @font-face {
         font-family: 'IBM Plex Mono';
@@ -17,8 +36,12 @@
         src: url('/ibm-plex-mono-latin-600-normal.woff2') format('woff2');
         font-display: block;
       }
-      :root {
+      /* Theme-aware color scheme */
+      html.dark {
         color-scheme: dark;
+      }
+      html.light {
+        color-scheme: light;
       }
       html,
       body,
@@ -30,7 +53,13 @@
         margin: 0;
         font-family: 'IBM Plex Mono', monospace;
         background-color: transparent;
-        color: #ffffff;
+      }
+      /* Theme-aware text colors for loading screen */
+      html.dark body {
+        color: #CECDC3; /* Flexoki dark foreground */
+      }
+      html.light body {
+        color: #100F0F; /* Flexoki light foreground */
       }
       .loading {
         display: flex;
