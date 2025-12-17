@@ -99,30 +99,38 @@ const ProgressiveGroup: React.FC<ProgressiveGroupProps> = ({
 }) => {
     const previousExpandedRef = React.useRef<boolean | undefined>(isExpanded);
 
+    // Track expansion count to force re-mount of items when group expands from collapsed
+    const [expansionKey, setExpansionKey] = React.useState(0);
+
     React.useEffect(() => {
         if (previousExpandedRef.current === isExpanded) return;
+        const wasCollapsed = previousExpandedRef.current === false;
         previousExpandedRef.current = isExpanded;
         onContentChange?.('structural');
+
+        // Increment key when expanding to trigger fresh animations
+        if (isExpanded && wasCollapsed) {
+            setExpansionKey((k) => k + 1);
+        }
     }, [isExpanded, onContentChange]);
+
 
     const displayParts = React.useMemo(() => {
         if (!isWorking) {
-
             return sortPartsByTime(parts);
         }
 
-        if (isExpanded) {
-
-            return sortPartsByTime(parts);
-        }
-
+        // While turn is working, only show parts that have been "previewed".
+        // Collapsed mode previews them in-chat first, then migrates into Activity.
+        // Summary/Detailed modes skip in-chat preview, but still use the same migration gate.
         return sortPartsByTime(
             parts.filter((activity) => {
                 const partId = activity.part.id;
                 return partId && previewedPartIds.has(activity.id);
             })
         );
-    }, [parts, isWorking, isExpanded, previewedPartIds]);
+    }, [parts, isWorking, previewedPartIds]);
+
 
     const summary = getGroupSummary(displayParts);
     const toolConnections = getToolConnections(displayParts);
@@ -206,10 +214,12 @@ const ProgressiveGroup: React.FC<ProgressiveGroupProps> = ({
                         const partId = activity.part.id || `group-part-${index}`;
                         const connection = toolConnections[partId];
 
+                        const animationKey = `${partId}-exp${expansionKey}`;
+
                         switch (activity.kind) {
                             case 'tool':
                                 return (
-                                    <FadeInOnReveal key={partId}>
+                                    <FadeInOnReveal key={animationKey}>
                                         <ToolPart
                                             part={activity.part as ToolPartType}
                                             isExpanded={expandedTools.has(partId)}
@@ -225,7 +235,7 @@ const ProgressiveGroup: React.FC<ProgressiveGroupProps> = ({
 
                             case 'reasoning':
                                 return (
-                                    <FadeInOnReveal key={partId}>
+                                    <FadeInOnReveal key={animationKey}>
                                         <ReasoningPart
                                             part={activity.part}
                                             messageId={activity.messageId}
@@ -236,7 +246,7 @@ const ProgressiveGroup: React.FC<ProgressiveGroupProps> = ({
 
                             case 'justification':
                                 return (
-                                    <FadeInOnReveal key={partId}>
+                                    <FadeInOnReveal key={animationKey}>
                                         <JustificationBlock
                                             part={activity.part}
                                             messageId={activity.messageId}
