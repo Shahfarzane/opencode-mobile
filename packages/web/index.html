@@ -60,20 +60,36 @@
     </script>
 
     <script>
+      // Blocking script to detect and apply theme before first paint
       (function() {
         try {
+          var themeMode = localStorage.getItem('themeMode');
           var variant = localStorage.getItem('selectedThemeVariant');
           var useSystem = localStorage.getItem('useSystemTheme');
-          if (!variant || (variant !== 'light' && variant !== 'dark')) {
-            if (useSystem === null || useSystem === 'true') {
-              variant = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            } else {
-              variant = 'dark';
-            }
+          var isDark;
+          
+          // Check themeMode first (new storage key)
+          if (themeMode === 'dark') {
+            isDark = true;
+          } else if (themeMode === 'light') {
+            isDark = false;
+          } else if (themeMode === 'system' || useSystem === null || useSystem === 'true') {
+            // System preference
+            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          } else if (variant === 'light' || variant === 'dark') {
+            // Legacy storage key fallback
+            isDark = variant === 'dark';
+          } else {
+            // Default to system
+            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           }
-          document.documentElement.setAttribute('data-splash-variant', variant === 'light' ? 'light' : 'dark');
+          
+          // Apply theme class and data attribute
+          document.documentElement.classList.add(isDark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-splash-variant', isDark ? 'dark' : 'light');
+          document.documentElement.style.setProperty('color-scheme', isDark ? 'dark' : 'light');
         } catch (error) {
-          console.warn('Failed to apply splash variant:', error);
+          console.warn('Failed to apply theme:', error);
         }
       })();
     </script>
