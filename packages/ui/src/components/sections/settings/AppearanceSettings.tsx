@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { ButtonSmall } from '@/components/ui/button-small';
 import { NumberInput } from '@/components/ui/number-input';
 import { isVSCodeRuntime } from '@/lib/desktop';
+import { useDeviceInfo } from '@/lib/device';
 
 interface Option<T extends string> {
     id: T;
@@ -55,6 +56,7 @@ const DIFF_LAYOUT_OPTIONS: Option<'dynamic' | 'inline' | 'side-by-side'>[] = [
 ];
 
 export const AppearanceSettings: React.FC = () => {
+    const { isMobile } = useDeviceInfo();
     const showReasoningTraces = useUIStore(state => state.showReasoningTraces);
     const setShowReasoningTraces = useUIStore(state => state.setShowReasoningTraces);
     const toolCallExpansion = useUIStore(state => state.toolCallExpansion);
@@ -95,44 +97,46 @@ export const AppearanceSettings: React.FC = () => {
                 </div>
             )}
 
-            <div className="space-y-4">
-                <div className="space-y-1">
-                    <h3 className="typography-ui-header font-semibold text-foreground">
-                        Font Size
-                    </h3>
+            {!isMobile && (
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <h3 className="typography-ui-header font-semibold text-foreground">
+                            Font Size
+                        </h3>
 
+                    </div>
+                    <div className="flex items-center gap-3 w-full max-w-md">
+                        <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            step="5"
+                            value={fontSize}
+                            onChange={(e) => setFontSize(Number(e.target.value))}
+                            className="flex-1 min-w-0 h-2 bg-muted rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
+                        />
+                        <NumberInput
+                            value={fontSize}
+                            onValueChange={setFontSize}
+                            min={50}
+                            max={200}
+                            step={5}
+                            aria-label="Font size percentage"
+                        />
+                        <ButtonSmall
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setFontSize(100)}
+                            disabled={fontSize === 100}
+                            className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
+                            aria-label="Reset font size"
+                            title="Reset"
+                        >
+                            <RiRestartLine className="h-3.5 w-3.5" />
+                        </ButtonSmall>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 w-full max-w-md">
-                    <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        step="5"
-                        value={fontSize}
-                        onChange={(e) => setFontSize(Number(e.target.value))}
-                        className="flex-1 min-w-0 h-2 bg-muted rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
-                    />
-                    <NumberInput
-                        value={fontSize}
-                        onValueChange={setFontSize}
-                        min={50}
-                        max={200}
-                        step={5}
-                        aria-label="Font size percentage"
-                    />
-                    <ButtonSmall
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setFontSize(100)}
-                        disabled={fontSize === 100}
-                        className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
-                        aria-label="Reset font size"
-                        title="Reset"
-                    >
-                        <RiRestartLine className="h-3.5 w-3.5" />
-                    </ButtonSmall>
-                </div>
-            </div>
+            )}
 
             <div className="space-y-4">
                 <div className="space-y-1">
@@ -141,36 +145,68 @@ export const AppearanceSettings: React.FC = () => {
                     </h3>
 
                 </div>
-                <div className="flex items-center gap-3 w-full max-w-md">
-                    <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        step="5"
-                        value={padding}
-                        onChange={(e) => setPadding(Number(e.target.value))}
-                        className="flex-1 min-w-0 h-2 bg-muted rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
-                    />
-                    <NumberInput
-                        value={padding}
-                        onValueChange={setPadding}
-                        min={50}
-                        max={200}
-                        step={5}
-                        aria-label="Spacing percentage"
-                    />
-                    <ButtonSmall
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setPadding(100)}
-                        disabled={padding === 100}
-                        className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
-                        aria-label="Reset spacing"
-                        title="Reset"
-                    >
-                        <RiRestartLine className="h-3.5 w-3.5" />
-                    </ButtonSmall>
-                </div>
+
+                {isMobile ? (
+                    <div className="flex items-center gap-2 w-full">
+                        <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            step="5"
+                            value={padding}
+                            onChange={(e) => setPadding(Number(e.target.value))}
+                            className="flex-1 min-w-0 h-3 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
+                            aria-label="Spacing percentage"
+                        />
+
+                        <span className="typography-ui-label font-medium text-foreground tabular-nums rounded-md border border-border bg-background px-2 py-1.5 min-w-[3.75rem] text-center">
+                            {padding}
+                        </span>
+
+                        <ButtonSmall
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setPadding(100)}
+                            disabled={padding === 100}
+                            className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
+                            aria-label="Reset spacing"
+                            title="Reset"
+                        >
+                            <RiRestartLine className="h-3.5 w-3.5" />
+                        </ButtonSmall>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-3 w-full max-w-md">
+                        <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            step="5"
+                            value={padding}
+                            onChange={(e) => setPadding(Number(e.target.value))}
+                            className="flex-1 min-w-0 h-2 bg-muted rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
+                        />
+                        <NumberInput
+                            value={padding}
+                            onValueChange={setPadding}
+                            min={50}
+                            max={200}
+                            step={5}
+                            aria-label="Spacing percentage"
+                        />
+                        <ButtonSmall
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setPadding(100)}
+                            disabled={padding === 100}
+                            className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
+                            aria-label="Reset spacing"
+                            title="Reset"
+                        >
+                            <RiRestartLine className="h-3.5 w-3.5" />
+                        </ButtonSmall>
+                    </div>
+                )}
             </div>
 
             <div className="space-y-4">
@@ -197,34 +233,36 @@ export const AppearanceSettings: React.FC = () => {
             </div>
 
             {}
-            <div className="space-y-4">
-                <div className="space-y-1">
-                    <h3 className="typography-ui-header font-semibold text-foreground">
-                        Diff layout (Diff tab)
-                    </h3>
-                    <p className="typography-meta text-muted-foreground/80">
-                        Choose the default layout for file diffs. You can still override layout per file from the Diff tab.
-                    </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <div className="flex gap-1 w-fit">
-                        {DIFF_LAYOUT_OPTIONS.map((option) => (
-                            <ButtonSmall
-                                key={option.id}
-                                variant={diffLayoutPreference === option.id ? 'default' : 'outline'}
-                                className={cn(diffLayoutPreference === option.id ? undefined : 'text-foreground')}
-                                onClick={() => setDiffLayoutPreference(option.id)}
-                            >
-                                {option.label}
-                            </ButtonSmall>
-                        ))}
+            {!isMobile && (
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <h3 className="typography-ui-header font-semibold text-foreground">
+                            Diff layout (Diff tab)
+                        </h3>
+                        <p className="typography-meta text-muted-foreground/80">
+                            Choose the default layout for file diffs. You can still override layout per file from the Diff tab.
+                        </p>
                     </div>
-                    <p className="typography-meta text-muted-foreground/80 max-w-xl">
-                        {DIFF_LAYOUT_OPTIONS.find((option) => option.id === diffLayoutPreference)?.description}
-                    </p>
+
+                    <div className="flex flex-col gap-2">
+                        <div className="flex gap-1 w-fit">
+                            {DIFF_LAYOUT_OPTIONS.map((option) => (
+                                <ButtonSmall
+                                    key={option.id}
+                                    variant={diffLayoutPreference === option.id ? 'default' : 'outline'}
+                                    className={cn(diffLayoutPreference === option.id ? undefined : 'text-foreground')}
+                                    onClick={() => setDiffLayoutPreference(option.id)}
+                                >
+                                    {option.label}
+                                </ButtonSmall>
+                            ))}
+                        </div>
+                        <p className="typography-meta text-muted-foreground/80 max-w-xl">
+                            {DIFF_LAYOUT_OPTIONS.find((option) => option.id === diffLayoutPreference)?.description}
+                        </p>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {}
             <label className="flex items-center gap-2 cursor-pointer">

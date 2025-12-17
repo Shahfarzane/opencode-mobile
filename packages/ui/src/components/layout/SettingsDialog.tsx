@@ -137,7 +137,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   );
 
   const mainContent = (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className={cn(
+      'flex flex-col min-h-0',
+      isMobile ? 'h-full overflow-hidden' : 'flex-1 overflow-hidden'
+    )}>
       <div className="flex flex-wrap items-center gap-1 border-b border-border/40 bg-background/95 px-3 py-1.5">
         {SETTINGS_SECTIONS.map(({ id, label, icon: Icon }) => {
           const isActive = activeTab === id;
@@ -204,6 +207,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         onClose={onClose}
         title="Settings"
         className="max-w-full"
+        contentMaxHeightClassName="h-[min(80dvh,720px)]"
         renderHeader={(closeButton) => (
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
             <div className="relative flex flex-1 items-center justify-center">

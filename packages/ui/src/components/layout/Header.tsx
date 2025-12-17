@@ -5,7 +5,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
+import { RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiSettings3Line, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
 import { useUIStore, type MainTab } from '@/stores/useUIStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -82,6 +82,7 @@ export const FixedSessionsButton: React.FC = () => {
 export const Header: React.FC = () => {
   const setSessionSwitcherOpen = useUIStore((state) => state.setSessionSwitcherOpen);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const setSettingsDialogOpen = useUIStore((state) => state.setSettingsDialogOpen);
   const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
   const sidebarWidth = useUIStore((state) => state.sidebarWidth);
   const activeMainTab = useUIStore((state) => state.activeMainTab);
@@ -133,6 +134,11 @@ export const Header: React.FC = () => {
     }
     toggleSidebar();
   }, [isMobile, isSessionSwitcherOpen, setSessionSwitcherOpen, toggleSidebar]);
+
+  const handleOpenSettings = React.useCallback(() => {
+    setSessionSwitcherOpen(false);
+    setSettingsDialogOpen(true);
+  }, [setSessionSwitcherOpen, setSettingsDialogOpen]);
 
   const headerIconButtonClass = 'app-region-no-drag inline-flex h-9 w-9 items-center justify-center gap-2 p-2 typography-ui-label font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 hover:text-foreground';
 
@@ -415,6 +421,22 @@ export const Header: React.FC = () => {
             );
           })}
         </div>
+
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={handleOpenSettings}
+              aria-label="Open settings"
+              className={headerIconButtonClass}
+            >
+              <RiSettings3Line className="h-5 w-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Settings</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

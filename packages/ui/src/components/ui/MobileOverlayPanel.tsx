@@ -11,6 +11,7 @@ interface MobileOverlayPanelProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  contentMaxHeightClassName?: string;
   renderHeader?: (closeButton: React.ReactNode) => React.ReactNode;
 }
 
@@ -34,6 +35,7 @@ export const MobileOverlayPanel: React.FC<MobileOverlayPanelProps> = ({
   children,
   footer,
   className,
+  contentMaxHeightClassName,
   renderHeader,
 }) => {
   const overlayRootRef = React.useRef<HTMLElement | null>(null);
@@ -63,6 +65,8 @@ export const MobileOverlayPanel: React.FC<MobileOverlayPanelProps> = ({
   if (!open || !overlayRootRef.current) {
     return null;
   }
+
+  const contentMaxHeight = contentMaxHeightClassName ?? 'max-h-[min(70vh,520px)]';
 
   const content = (
     <div
@@ -101,7 +105,7 @@ export const MobileOverlayPanel: React.FC<MobileOverlayPanelProps> = ({
             </div>
           );
         })()}
-        <ScrollableOverlay outerClassName="max-h-[min(70vh,520px)]" className="px-2 py-2 pwa-overlay-scroll">
+        <ScrollableOverlay outerClassName={contentMaxHeight} className="px-2 py-2 pwa-overlay-scroll">
           {children}
         </ScrollableOverlay>
         {footer ? (
