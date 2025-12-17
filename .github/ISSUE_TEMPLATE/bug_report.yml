@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a reproducible problem
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        Please include description/screenshots if possible.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, what happened instead?
+      placeholder: Steps + expected vs actual
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps help a lot
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      multiple: true
+      options:
+        - Desktop MacOS app
+        - Mobile (Web/PWA)
+        - Desktop Web
+        - VS Code extension
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: OpenChamber version
+      placeholder: "e.g. 1.2.3"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste relevant logs or attach screenshots
+      render: shell

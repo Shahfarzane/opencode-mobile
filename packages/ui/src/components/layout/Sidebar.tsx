@@ -10,6 +10,7 @@ export const SIDEBAR_CONTENT_WIDTH = 264;
 const SIDEBAR_MIN_WIDTH = 200;
 const SIDEBAR_MAX_WIDTH = 500;
 const MAC_TITLEBAR_SAFE_AREA = 40;
+const CHECK_FOR_UPDATES_EVENT = 'openchamber:check-for-updates';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -25,6 +26,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
     const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false);
 
     const update = useUpdateCheck();
+    const pendingMenuUpdateCheckRef = React.useRef(false);
+
+    const checkForUpdates = update.checkForUpdates;
+    const { available, downloaded, checking } = update;
 
     const [isDesktopApp, setIsDesktopApp] = React.useState<boolean>(() => {
         if (typeof window === 'undefined') {
@@ -47,6 +52,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
         const detected = typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined';
         setIsDesktopApp(detected);
     }, []);
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const handleMenuUpdateCheck = () => {
+            const hasDesktopApi =
+                typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined';
+            if (!hasDesktopApi) {
+                return;
+            }
+            pendingMenuUpdateCheckRef.current = true;
+            void checkForUpdates();
+        };
+
+        window.addEventListener(CHECK_FOR_UPDATES_EVENT, handleMenuUpdateCheck as EventListener);
+        return () => {
+            window.removeEventListener(CHECK_FOR_UPDATES_EVENT, handleMenuUpdateCheck as EventListener);
+        };
+    }, [checkForUpdates]);
+
+    React.useEffect(() => {
+        if (!pendingMenuUpdateCheckRef.current) {
+            return;
+        }
+        if (checking) {
+            return;
+        }
+
+        if (available || downloaded) {
+            setUpdateDialogOpen(true);
+        }
+        pendingMenuUpdateCheckRef.current = false;
+    }, [available, downloaded, checking]);
 
     React.useEffect(() => {
         if (isMobile || !isResizing) {
@@ -184,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
                             <RiSettings3Line className="h-4 w-4" />
                             <span>Settings</span>
                         </button>
-                        {(update.available || update.downloaded) && (
+                        {(available || downloaded) && (
                             <button
                                 onClick={() => setUpdateDialogOpen(true)}
                                 className={cn(
