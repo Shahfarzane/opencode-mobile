@@ -235,6 +235,45 @@ const SingleDiffViewer = React.memo<SingleDiffViewerProps>(({
     );
 });
 
+interface DiffViewerEntryProps {
+    directory: string;
+    filePath: string;
+    isVisible: boolean;
+    renderSideBySide: boolean;
+    wrapLines: boolean;
+}
+
+const DiffViewerEntry = React.memo<DiffViewerEntryProps>(({
+    directory,
+    filePath,
+    isVisible,
+    renderSideBySide,
+    wrapLines,
+}) => {
+    const cachedDiff = useGitStore(
+        React.useCallback((state) => {
+            return state.directories.get(directory)?.diffCache.get(filePath) ?? null;
+        }, [directory, filePath])
+    );
+
+    const diffData = React.useMemo(() => {
+        if (!cachedDiff) return null;
+        return { original: cachedDiff.original, modified: cachedDiff.modified };
+    }, [cachedDiff?.original, cachedDiff?.modified]);
+
+    if (!diffData) return null;
+
+    return (
+        <SingleDiffViewer
+            filePath={filePath}
+            diff={diffData}
+            isVisible={isVisible}
+            renderSideBySide={renderSideBySide}
+            wrapLines={wrapLines}
+        />
+    );
+});
+
 const useEffectiveDirectory = () => {
     const { currentSessionId, sessions, worktreeMetadata: worktreeMap } = useSessionStore();
     const { currentDirectory: fallbackDirectory } = useDirectoryStore();
@@ -254,11 +293,9 @@ export const DiffView: React.FC = () => {
     const isGitRepo = useIsGitRepo(effectiveDirectory ?? null);
     const status = useGitStatus(effectiveDirectory ?? null);
     const isLoadingStatus = useGitStore((state) => state.isLoadingStatus);
-    const { setActiveDirectory, fetchStatus, setDiff } = useGitStore();
-
+    const { setActiveDirectory, fetchStatus } = useGitStore();
+ 
     const [selectedFile, setSelectedFile] = React.useState<string | null>(null);
-    const [allDiffs, setAllDiffs] = React.useState<Map<string, DiffData>>(new Map());
-    const [loadingFiles, setLoadingFiles] = React.useState<Set<string>>(new Set());
 
     const pendingDiffFile = useUIStore((state) => state.pendingDiffFile);
     const setPendingDiffFile = useUIStore((state) => state.setPendingDiffFile);
@@ -267,10 +304,6 @@ export const DiffView: React.FC = () => {
     const setDiffFileLayout = useUIStore((state) => state.setDiffFileLayout);
     const diffWrapLines = useUIStore((state) => state.diffWrapLines);
     const setDiffWrapLines = useUIStore((state) => state.setDiffWrapLines);
-    const lastStatusChange = useGitStore(React.useCallback((state) => {
-        if (!effectiveDirectory) return 0;
-        return state.directories.get(effectiveDirectory)?.lastStatusChange ?? 0;
-    }, [effectiveDirectory]));
 
     const changedFiles: FileEntry[] = React.useMemo(() => {
         if (!status?.files) return [];
@@ -352,142 +385,30 @@ export const DiffView: React.FC = () => {
         }
     }, [changedFiles, selectedFile]);
 
-    // PRE-FETCH ALL DIFFS when changedFiles changes
-    React.useEffect(() => {
-        if (!effectiveDirectory || changedFiles.length === 0) return;
-
-        const fetchAllDiffs = async () => {
-            const filesToFetch = changedFiles.filter((file) => !allDiffs.has(file.path));
-            if (filesToFetch.length === 0) return;
-
-            // Mark all as loading
-            setLoadingFiles((prev) => {
-                const next = new Set(prev);
-                filesToFetch.forEach((f) => next.add(f.path));
-                return next;
-            });
-
-            // Fetch all in parallel
-            const results = await Promise.allSettled(
-                filesToFetch.map(async (file) => {
-                    const dirState = useGitStore.getState().directories.get(effectiveDirectory);
-                    const cached = dirState?.diffCache.get(file.path);
-                    if (cached && cached.fetchedAt >= (dirState?.lastStatusChange || 0)) {
-                        return { path: file.path, diff: { original: cached.original, modified: cached.modified } };
-                    }
-
-                    const response = await git.getGitFileDiff(effectiveDirectory, { path: file.path });
-                    const diff = { original: response.original ?? '', modified: response.modified ?? '' };
-                    setDiff(effectiveDirectory, file.path, diff);
-                    return { path: file.path, diff };
-                })
-            );
-
-            // Update state with all fetched diffs
-            setAllDiffs((prev) => {
-                const next = new Map(prev);
-                results.forEach((result) => {
-                    if (result.status === 'fulfilled') {
-                        next.set(result.value.path, result.value.diff);
-                    }
-                });
-                return next;
-            });
-
-            // Clear loading state
-            setLoadingFiles((prev) => {
-                const next = new Set(prev);
-                filesToFetch.forEach((f) => next.delete(f.path));
-                return next;
-            });
-        };
-
-        fetchAllDiffs();
-    }, [effectiveDirectory, changedFiles, git, setDiff]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // Clear all diffs when directory changes
-    React.useEffect(() => {
-        setAllDiffs(new Map());
-        setLoadingFiles(new Set());
-    }, [effectiveDirectory]);
-
-    // Re-fetch stale diffs when status changes (don't clear - keep old ones visible while fetching)
-    React.useEffect(() => {
-        if (!effectiveDirectory || !lastStatusChange || changedFiles.length === 0) return;
-
-        const refetchStaleDiffs = async () => {
-            const dirState = useGitStore.getState().directories.get(effectiveDirectory);
-            if (!dirState) return;
-
-            // Find files that need refetching (stale cache or no cache)
-            const staleFiles = changedFiles.filter((file) => {
-                const cached = dirState.diffCache.get(file.path);
-                return !cached || cached.fetchedAt < lastStatusChange;
-            });
-
-            if (staleFiles.length === 0) return;
-
-            // Mark as loading
-            setLoadingFiles((prev) => {
-                const next = new Set(prev);
-                staleFiles.forEach((f) => next.add(f.path));
-                return next;
-            });
-
-            // Fetch in parallel
-            const results = await Promise.allSettled(
-                staleFiles.map(async (file) => {
-                    const response = await git.getGitFileDiff(effectiveDirectory, { path: file.path });
-                    const diff = { original: response.original ?? '', modified: response.modified ?? '' };
-                    setDiff(effectiveDirectory, file.path, diff);
-                    return { path: file.path, diff };
-                })
-            );
-
-            // Update diffs in place (don't clear old ones first)
-            setAllDiffs((prev) => {
-                const next = new Map(prev);
-                results.forEach((result) => {
-                    if (result.status === 'fulfilled') {
-                        next.set(result.value.path, result.value.diff);
-                    }
-                });
-                // Remove diffs for files that no longer exist in changedFiles
-                for (const [filePath] of prev) {
-                    if (!changedFiles.some((f) => f.path === filePath)) {
-                        next.delete(filePath);
-                    }
-                }
-                return next;
-            });
-
-            // Clear loading state
-            setLoadingFiles((prev) => {
-                const next = new Set(prev);
-                staleFiles.forEach((f) => next.delete(f.path));
-                return next;
-            });
-        };
-
-        refetchStaleDiffs();
-    }, [effectiveDirectory, lastStatusChange, changedFiles, git, setDiff]);
-
     const handleSelectFile = React.useCallback((value: string) => {
         setSelectedFile(value);
     }, []);
 
     const renderSideBySide = (currentLayoutForSelectedFile ?? 'side-by-side') === 'side-by-side';
 
+    const selectedCachedDiff = useGitStore(React.useCallback((state) => {
+        if (!effectiveDirectory || !selectedFile) return null;
+        return state.directories.get(effectiveDirectory)?.diffCache.get(selectedFile) ?? null;
+    }, [effectiveDirectory, selectedFile]));
+
+    const hasCurrentDiff = !!selectedCachedDiff;
+    const isCurrentFileLoading = !!selectedFile && !hasCurrentDiff;
+
     // Render all diff viewers - they stay mounted
     const renderAllDiffViewers = () => {
-        if (allDiffs.size === 0) return null;
+        if (!effectiveDirectory || changedFiles.length === 0) return null;
 
-        return Array.from(allDiffs.entries()).map(([filePath, diff]) => (
-            <SingleDiffViewer
-                key={filePath}
-                filePath={filePath}
-                diff={diff}
-                isVisible={filePath === selectedFile}
+        return changedFiles.map((file) => (
+            <DiffViewerEntry
+                key={file.path}
+                directory={effectiveDirectory}
+                filePath={file.path}
+                isVisible={file.path === selectedFile}
                 renderSideBySide={renderSideBySide}
                 wrapLines={diffWrapLines}
             />
@@ -528,8 +449,6 @@ export const DiffView: React.FC = () => {
             );
         }
 
-        const isCurrentFileLoading = selectedFile && loadingFiles.has(selectedFile);
-        const hasCurrentDiff = selectedFile && allDiffs.has(selectedFile);
 
         return (
             <div className="flex flex-1 min-h-0 overflow-hidden px-3 py-3 relative">

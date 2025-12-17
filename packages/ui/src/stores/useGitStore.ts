@@ -7,10 +7,10 @@ import type {
   GitIdentitySummary,
 } from '@/lib/api/types';
 
-const GIT_POLL_BASE_INTERVAL = 10000;
-const GIT_POLL_MAX_INTERVAL = 20000;
+const GIT_POLL_BASE_INTERVAL = 5000;
+const GIT_POLL_MAX_INTERVAL = 10000;
 const GIT_POLL_BACKOFF_STEP = 5000;
-const LOG_STALE_THRESHOLD = 30000;
+const LOG_STALE_THRESHOLD = 10000;
 
 interface DirectoryGitState {
   isGitRepo: boolean | null;
@@ -51,6 +51,7 @@ interface GitStore {
   getDiff: (directory: string, filePath: string) => { original: string; modified: string; fetchedAt: number } | null;
   setDiff: (directory: string, filePath: string, diff: { original: string; modified: string }) => void;
   clearDiffCache: (directory: string) => void;
+  fetchAllDiffs: (directory: string, git: GitAPI) => Promise<void>;
 
   setLogMaxCount: (directory: string, maxCount: number) => void;
 
@@ -60,12 +61,19 @@ interface GitStore {
   refresh: (git: GitAPI, options?: { force?: boolean }) => Promise<void>;
 }
 
+interface GitFileDiffResponse {
+  original: string;
+  modified: string;
+  path: string;
+}
+
 interface GitAPI {
   checkIsGitRepository: (directory: string) => Promise<boolean>;
   getGitStatus: (directory: string) => Promise<GitStatus>;
   getGitBranches: (directory: string) => Promise<GitBranch>;
   getGitLog: (directory: string, options?: { maxCount?: number }) => Promise<GitLogResponse>;
   getCurrentGitIdentity: (directory: string) => Promise<GitIdentitySummary | null>;
+  getGitFileDiff: (directory: string, options: { path: string }) => Promise<GitFileDiffResponse>;
 }
 
 const createEmptyDirectoryState = (): DirectoryGitState => ({
@@ -130,6 +138,55 @@ const hasStatusChanged = (oldStatus: GitStatus | null, newStatus: GitStatus | nu
   if (haveDiffStatsChanged(oldStatus.diffStats, newStatus.diffStats)) return true;
 
   return false;
+};
+
+const getChangedFilePaths = (oldStatus: GitStatus | null, newStatus: GitStatus | null): Set<string> => {
+  const changed = new Set<string>();
+  if (!newStatus) return changed;
+
+  const oldFiles = oldStatus?.files ?? [];
+  const newFiles = newStatus.files ?? [];
+
+  const oldFileMap = new Map(oldFiles.map((f) => [f.path, f] as const));
+  const newFileMap = new Map(newFiles.map((f) => [f.path, f] as const));
+
+  const allFilePaths = new Set<string>([...oldFileMap.keys(), ...newFileMap.keys()]);
+  for (const filePath of allFilePaths) {
+    const oldFile = oldFileMap.get(filePath);
+    const newFile = newFileMap.get(filePath);
+
+    // Added/removed/renamed
+    if (!oldFile || !newFile) {
+      changed.add(filePath);
+      continue;
+    }
+
+    // Index/worktree state changed (indicates actual content/state changed)
+    if (oldFile.index !== newFile.index || oldFile.working_dir !== newFile.working_dir) {
+      changed.add(filePath);
+      continue;
+    }
+  }
+
+  const oldStats = oldStatus?.diffStats ?? {};
+  const newStats = newStatus.diffStats ?? {};
+  const allStatPaths = new Set<string>([...Object.keys(oldStats), ...Object.keys(newStats)]);
+
+  for (const filePath of allStatPaths) {
+    const oldEntry = oldStats[filePath];
+    const newEntry = newStats[filePath];
+
+    if (!oldEntry || !newEntry) {
+      changed.add(filePath);
+      continue;
+    }
+
+    if (oldEntry.insertions !== newEntry.insertions || oldEntry.deletions !== newEntry.deletions) {
+      changed.add(filePath);
+    }
+  }
+
+  return changed;
 };
 
 export const useGitStore = create<GitStore>()(
@@ -198,13 +255,34 @@ export const useGitStore = create<GitStore>()(
             const newDirectories = new Map(get().directories);
             const currentDirState = newDirectories.get(directory) ?? createEmptyDirectoryState();
 
+            const changedPaths = getChangedFilePaths(currentDirState.status, newStatus);
+
+            const oldPaths = new Set((currentDirState.status?.files ?? []).map((f) => f.path));
+            const newPaths = new Set((newStatus.files ?? []).map((f) => f.path));
+
+            const nextDiffCache = new Map(currentDirState.diffCache);
+
+            // Drop cache for removed files
+            for (const oldPath of oldPaths) {
+              if (!newPaths.has(oldPath)) {
+                nextDiffCache.delete(oldPath);
+              }
+            }
+
+            // Drop cache for files whose state/content changed
+            for (const filePath of changedPaths) {
+              nextDiffCache.delete(filePath);
+            }
+
+            const hasFileContentChange = changedPaths.size > 0;
+
             newDirectories.set(directory, {
               ...currentDirState,
               isGitRepo: true,
               status: newStatus,
-              diffCache: new Map(),
+              diffCache: nextDiffCache,
               lastStatusFetch: Date.now(),
-              lastStatusChange: Date.now(),
+              lastStatusChange: hasFileContentChange ? Date.now() : currentDirState.lastStatusChange,
             });
             set({ directories: newDirectories });
           } else {
@@ -314,6 +392,9 @@ export const useGitStore = create<GitStore>()(
         }
 
         await get().fetchIdentity(directory, git);
+
+        // Pre-fetch all diffs so they're ready when user opens Diff tab
+        await get().fetchAllDiffs(directory, git);
       },
 
       getDiff: (directory, filePath) => {
@@ -337,6 +418,49 @@ export const useGitStore = create<GitStore>()(
           newDirectories.set(directory, { ...dirState, diffCache: new Map() });
           set({ directories: newDirectories });
         }
+      },
+
+      fetchAllDiffs: async (directory, git) => {
+        const dirState = get().directories.get(directory);
+        if (!dirState?.status?.files || dirState.status.files.length === 0) return;
+
+        const files = dirState.status.files;
+
+        // Find files that need fetching (no cache)
+        const filesToFetch = files.filter((file) => !dirState.diffCache.has(file.path));
+
+        if (filesToFetch.length === 0) return;
+
+        // Fetch all diffs in parallel
+        const results = await Promise.allSettled(
+          filesToFetch.map(async (file) => {
+            const response = await git.getGitFileDiff(directory, { path: file.path });
+            return {
+              path: file.path,
+              diff: { original: response.original ?? '', modified: response.modified ?? '' }
+            };
+          })
+        );
+
+        // Update diff cache with results
+        const newDirectories = new Map(get().directories);
+        const currentDirState = newDirectories.get(directory);
+        if (!currentDirState) return;
+
+        const newDiffCache = new Map(currentDirState.diffCache);
+        const now = Date.now();
+
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            newDiffCache.set(result.value.path, {
+              ...result.value.diff,
+              fetchedAt: now
+            });
+          }
+        });
+
+        newDirectories.set(directory, { ...currentDirState, diffCache: newDiffCache });
+        set({ directories: newDirectories });
       },
 
       setLogMaxCount: (directory, maxCount) => {
@@ -368,6 +492,8 @@ export const useGitStore = create<GitStore>()(
             const statusChanged = await get().fetchStatus(activeDirectory, git, { silent: true });
             if (statusChanged) {
               await get().fetchLog(activeDirectory, git);
+              // Pre-fetch all diffs so they're ready when user opens Diff tab
+              await get().fetchAllDiffs(activeDirectory, git);
               // Reset to base interval on changes
               set({ currentPollInterval: GIT_POLL_BASE_INTERVAL });
             } else {

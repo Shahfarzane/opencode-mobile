@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 - Added image preview support in Diff tab (shows original/modified images instead of base64 code)
 - Improved diff view visuals and alligned style among different widgets
+- Optimized git polling and background diff+syntax pre-warm for instant Diff tab open
+- Optomized reloading unaffected diffs
 
 
 ## [1.2.2] - 2025-12-17
