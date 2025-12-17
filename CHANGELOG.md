@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- MacOS app menu entries for Check for update and for creating bug/request in Help section
+
 
 ## [1.2.3] - 2025-12-17
 
