@@ -42,8 +42,14 @@ body:
       placeholder: "e.g. 1.2.3"
 
   - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / recordings (optional)
+      description: "Anything visual that helps."
+
+  - type: textarea
     id: logs
     attributes:
-      label: Logs / screenshots (optional)
-      description: Paste anything relevant (or attach screenshots).
+      label: Logs (optional)
+      description: "Paste relevant logs."
       render: shell
