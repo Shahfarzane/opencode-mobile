@@ -44,7 +44,6 @@ const useMigrationTimer = (
     React.useEffect(() => {
         if (!turnGroupingContext) return;
         if (!turnGroupingContext.isWorking) return;
-        if (turnGroupingContext.isGroupExpanded) return;
         if (!hasPreviewableParts) return;
         if (timerStartedRef.current) return;
 
@@ -71,7 +70,7 @@ const useMigrationTimer = (
 
     React.useEffect(() => {
         if (!turnGroupingContext) return;
-        if (!turnGroupingContext.isWorking || turnGroupingContext.isGroupExpanded || !hasPreviewableParts) {
+        if (!turnGroupingContext.isWorking || !hasPreviewableParts) {
             if (timerRef.current) {
                 window.clearTimeout(timerRef.current);
                 timerRef.current = null;
@@ -611,7 +610,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
     const previewableActivityPartsForMessage = React.useMemo(() => {
         if (!turnGroupingContext) return [];
         if (!shouldShowActivityGroup) return [];
-        if (!turnGroupingContext.isWorking || turnGroupingContext.isGroupExpanded) {
+        if (!turnGroupingContext.isWorking) {
             return [];
         }
 
