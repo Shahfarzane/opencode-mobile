@@ -47,6 +47,27 @@ const WEBKIT_SCROLL_FIX_CSS = `
     height: 24px !important;
     width: 24px !important;
   }
+  [data-separator-multi-button] {
+    row-gap: 0 !important;
+  }
+  [data-expand-up] {
+    height: 12px !important;
+    min-height: 12px !important;
+    max-height: 12px !important;
+    margin: 0 !important;
+    margin-top: 3px !important;
+    padding: 0 !important;
+    border-radius: 4px 4px 0 0 !important;
+  }
+  [data-expand-down] {
+    height: 12px !important;
+    min-height: 12px !important;
+    max-height: 12px !important;
+    margin: 0 !important;
+    margin-top: -3px !important;
+    padding: 0 !important;
+    border-radius: 0 0 4px 4px !important;
+  }
 `;
 
 // Fast cache key - use length + samples instead of full hash

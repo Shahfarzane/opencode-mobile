@@ -1,7 +1,11 @@
 import simpleGit from 'simple-git';
 import fs from 'fs';
 import path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
 const fsp = fs.promises;
+const execFileAsync = promisify(execFile);
 
 export async function isGitRepository(directory) {
   if (!directory || !fs.existsSync(directory)) {
@@ -305,18 +309,58 @@ export async function getDiff(directory, { path, staged = false, contextLines = 
   }
 }
 
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif'];
+
+function isImageFile(filePath) {
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext || '');
+}
+
+function getImageMimeType(filePath) {
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  const mimeMap = {
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'svg': 'image/svg+xml',
+    'webp': 'image/webp',
+    'ico': 'image/x-icon',
+    'bmp': 'image/bmp',
+    'avif': 'image/avif',
+  };
+  return mimeMap[ext] || 'application/octet-stream';
+}
+
 export async function getFileDiff(directory, { path: filePath, staged = false } = {}) {
   if (!directory || !filePath) {
     throw new Error('directory and path are required for getFileDiff');
   }
 
   const git = simpleGit(directory);
+  const isImage = isImageFile(filePath);
+  const mimeType = isImage ? getImageMimeType(filePath) : null;
 
   let original = '';
   try {
-    original = await git.show([`HEAD:${filePath}`]);
+    if (isImage) {
+      // For images, use git show with raw output and convert to base64
+      try {
+        const { stdout } = await execFileAsync('git', ['show', `HEAD:${filePath}`], {
+          cwd: directory,
+          encoding: 'buffer',
+          maxBuffer: 50 * 1024 * 1024, // 50MB max
+        });
+        if (stdout && stdout.length > 0) {
+          original = `data:${mimeType};base64,${stdout.toString('base64')}`;
+        }
+      } catch {
+        original = '';
+      }
+    } else {
+      original = await git.show([`HEAD:${filePath}`]);
+    }
   } catch {
-
     original = '';
   }
 
@@ -325,11 +369,16 @@ export async function getFileDiff(directory, { path: filePath, staged = false } 
   try {
     const stat = await fsp.stat(fullPath);
     if (stat.isFile()) {
-      modified = await fsp.readFile(fullPath, 'utf8');
+      if (isImage) {
+        // For images, read as binary and convert to data URL
+        const buffer = await fsp.readFile(fullPath);
+        modified = `data:${mimeType};base64,${buffer.toString('base64')}`;
+      } else {
+        modified = await fsp.readFile(fullPath, 'utf8');
+      }
     }
   } catch (error) {
     if (error && typeof error === 'object' && error.code === 'ENOENT') {
-
       modified = '';
     } else {
       console.error('Failed to read modified file contents for diff:', error);

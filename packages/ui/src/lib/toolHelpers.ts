@@ -269,6 +269,29 @@ export function getLanguageFromExtension(filePath: string): string | null {
   return languageMap[ext || ''] || null;
 }
 
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif'];
+
+export function isImageFile(filePath: string): boolean {
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext || '');
+}
+
+export function getImageMimeType(filePath: string): string {
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  const mimeMap: Record<string, string> = {
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'svg': 'image/svg+xml',
+    'webp': 'image/webp',
+    'ico': 'image/x-icon',
+    'bmp': 'image/bmp',
+    'avif': 'image/avif',
+  };
+  return mimeMap[ext || ''] || 'image/png';
+}
+
 export function formatToolInput(input: Record<string, unknown>, toolName: string): string {
   if (!input) return '';
 

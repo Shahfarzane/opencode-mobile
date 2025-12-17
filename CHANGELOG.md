@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Added image preview support in Diff tab (shows original/modified images instead of base64 code)
+- Improved diff view visuals and alligned style among different widgets
+
 
 ## [1.2.2] - 2025-12-17
 

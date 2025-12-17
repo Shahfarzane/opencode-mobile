@@ -1,5 +1,10 @@
 # OpenChamber
 
+[![GitHub stars](https://img.shields.io/github/stars/btriapitsyn/openchamber?style=flat&logo=github&logoColor=black&labelColor=c0c0c0&color=c0c0c0)](https://github.com/btriapitsyn/openchamber/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/btriapitsyn/openchamber?style=flat&logo=github&logoColor=black&labelColor=c0c0c0&color=c0c0c0)](https://github.com/btriapitsyn/openchamber/network/members)
+[![GitHub release](https://img.shields.io/github/v/release/btriapitsyn/openchamber?style=flat&logo=github&logoColor=black&labelColor=c0c0c0&color=c0c0c0)](https://github.com/btriapitsyn/openchamber/releases/latest)
+[![Created with OpenCode](https://img.shields.io/badge/created_with-OpenCode-c0c0c0?style=flat&labelColor=ff5722)](https://opencode.ai)
+
 Web and desktop interface for the [OpenCode](https://opencode.ai) AI coding agent. Works alongside the OpenCode TUI.
 
 The OpenCode team is actively working on their own desktop app. I still decided to release this project as a fan-made alternative.
@@ -114,3 +119,5 @@ Independent project, not affiliated with OpenCode team.
 ## License
 
 MIT
+
+
