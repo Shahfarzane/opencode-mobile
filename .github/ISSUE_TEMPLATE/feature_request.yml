@@ -6,9 +6,9 @@ body:
     id: request
     attributes:
       label: What should we add/change?
-      description: What you’re trying to do + what you’d like to happen.
+      description: What you're trying to do + what you'd like to happen.
       placeholder: |
-        I’m trying to …
+        I'm trying to …
 
         It would be great if OpenChamber …
     validations:

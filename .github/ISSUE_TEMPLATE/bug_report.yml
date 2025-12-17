@@ -5,20 +5,9 @@ body:
   - type: textarea
     id: what
     attributes:
-      label: What’s wrong?
+      label: What’s wrong? Maybe some steps to reproduce.
       description: What happened and what you expected.
       placeholder: "Expected … but got …"
-    validations:
-      required: true
-
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to reproduce
-      placeholder: |
-        1.
-        2.
-        3.
     validations:
       required: true
 
