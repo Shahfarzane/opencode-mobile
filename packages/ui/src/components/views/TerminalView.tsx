@@ -76,7 +76,7 @@ export const TerminalView: React.FC = () => {
     const { terminal } = useRuntimeAPIs();
     const { currentTheme } = useThemeSystem();
     const { monoFont } = useFontPreferences();
-    const { isMobile } = useDeviceInfo();
+    const { isMobile, hasTouchInput } = useDeviceInfo();
 
     const { currentSessionId, sessions, worktreeMetadata: worktreeMap } = useSessionStore();
     const worktreeMetadata = currentSessionId ? worktreeMap.get(currentSessionId) ?? undefined : undefined;
@@ -807,7 +807,7 @@ export const TerminalView: React.FC = () => {
             >
                 <div className="h-full w-full box-border px-3 pt-3 pb-4">
                     {isTerminalActive ? (
-                        <ScrollableOverlay outerClassName="h-full" className="h-full w-full" disableHorizontal>
+                        isMobile ? (
                             <TerminalViewport
                                 key={terminalSessionKey}
                                 ref={(controller) => {
@@ -820,9 +820,26 @@ export const TerminalView: React.FC = () => {
                                 theme={xtermTheme}
                                 fontFamily={resolvedFontStack}
                                 fontSize={TERMINAL_FONT_SIZE}
-                                enableTouchScroll={isMobile}
+                                enableTouchScroll={hasTouchInput}
                             />
-                        </ScrollableOverlay>
+                        ) : (
+                            <ScrollableOverlay outerClassName="h-full" className="h-full w-full" disableHorizontal>
+                                <TerminalViewport
+                                    key={terminalSessionKey}
+                                    ref={(controller) => {
+                                        terminalControllerRef.current = controller;
+                                    }}
+                                    sessionKey={terminalSessionKey}
+                                    chunks={bufferChunks}
+                                    onInput={handleViewportInput}
+                                    onResize={handleViewportResize}
+                                    theme={xtermTheme}
+                                    fontFamily={resolvedFontStack}
+                                    fontSize={TERMINAL_FONT_SIZE}
+                                    enableTouchScroll={hasTouchInput}
+                                />
+                            </ScrollableOverlay>
+                        )
                     ) : null}
                 </div>
                 {connectionError && (
