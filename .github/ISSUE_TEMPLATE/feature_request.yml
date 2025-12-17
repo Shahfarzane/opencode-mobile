@@ -3,18 +3,14 @@ description: Suggest an improvement
 labels: [enhancement]
 body:
   - type: textarea
-    id: goal
+    id: request
     attributes:
-      label: What do you want to do?
-      placeholder: "I want to …"
-    validations:
-      required: true
+      label: What should we add/change?
+      description: What you’re trying to do + what you’d like to happen.
+      placeholder: |
+        I’m trying to …
 
-  - type: textarea
-    id: idea
-    attributes:
-      label: What should OpenChamber do?
-      placeholder: "Add/change …"
+        It would be great if OpenChamber …
     validations:
       required: true
 
