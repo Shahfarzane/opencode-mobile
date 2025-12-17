@@ -79,6 +79,18 @@ const MODELS_DEV_API_URL: &str = "https://models.dev/api.json";
 const MODELS_METADATA_CACHE_TTL: Duration = Duration::from_secs(5 * 60);
 const MODELS_METADATA_REQUEST_TIMEOUT: Duration = Duration::from_secs(8);
 
+const CHECK_FOR_UPDATES_EVENT: &str = "openchamber:check-for-updates";
+
+#[cfg(target_os = "macos")]
+const MENU_ITEM_CHECK_FOR_UPDATES_ID: &str = "openchamber_check_for_updates";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_REPORT_BUG_ID: &str = "openchamber_report_bug";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_REQUEST_FEATURE_ID: &str = "openchamber_request_feature";
+
+const GITHUB_BUG_REPORT_URL: &str = "https://github.com/btriapitsyn/openchamber/issues/new?template=bug_report.yml";
+const GITHUB_FEATURE_REQUEST_URL: &str = "https://github.com/btriapitsyn/openchamber/issues/new?template=feature_request.yml";
+
 #[derive(Clone)]
 pub(crate) struct DesktopRuntime {
     server_port: u16,
@@ -277,6 +289,116 @@ fn prevent_app_nap() {
     info!("[macos] App Nap prevention enabled via objc2");
 }
 
+#[cfg(target_os = "macos")]
+fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tauri::menu::Menu<R>> {
+    use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu, HELP_SUBMENU_ID, WINDOW_SUBMENU_ID};
+
+    let pkg_info = app.package_info();
+    let config = app.config();
+    let about_metadata = AboutMetadata {
+        name: Some(pkg_info.name.clone()),
+        version: Some(pkg_info.version.to_string()),
+        copyright: config.bundle.copyright.clone(),
+        authors: config.bundle.publisher.clone().map(|p| vec![p]),
+        ..Default::default()
+    };
+
+    let check_for_updates = MenuItem::with_id(
+        app,
+        MENU_ITEM_CHECK_FOR_UPDATES_ID,
+        "Check for Updates…",
+        true,
+        None::<&str>,
+    )?;
+
+    let report_bug = MenuItem::with_id(
+        app,
+        MENU_ITEM_REPORT_BUG_ID,
+        "Report a Bug…",
+        true,
+        None::<&str>,
+    )?;
+
+    let request_feature = MenuItem::with_id(
+        app,
+        MENU_ITEM_REQUEST_FEATURE_ID,
+        "Request a Feature…",
+        true,
+        None::<&str>,
+    )?;
+
+    let window_menu = Submenu::with_id_and_items(
+        app,
+        WINDOW_SUBMENU_ID,
+        "Window",
+        true,
+        &[
+            &PredefinedMenuItem::minimize(app, None)?,
+            &PredefinedMenuItem::maximize(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::close_window(app, None)?,
+        ],
+    )?;
+
+    let help_menu = Submenu::with_id_and_items(
+        app,
+        HELP_SUBMENU_ID,
+        "Help",
+        true,
+        &[&report_bug, &request_feature],
+    )?;
+
+    Menu::with_items(
+        app,
+        &[
+            &Submenu::with_items(
+                app,
+                pkg_info.name.clone(),
+                true,
+                &[
+                    &PredefinedMenuItem::about(app, None, Some(about_metadata))?,
+                    &check_for_updates,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::services(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::hide(app, None)?,
+                    &PredefinedMenuItem::hide_others(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::quit(app, None)?,
+                ],
+            )?,
+            &Submenu::with_items(
+                app,
+                "File",
+                true,
+                &[&PredefinedMenuItem::close_window(app, None)?],
+            )?,
+            &Submenu::with_items(
+                app,
+                "Edit",
+                true,
+                &[
+                    &PredefinedMenuItem::undo(app, None)?,
+                    &PredefinedMenuItem::redo(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::cut(app, None)?,
+                    &PredefinedMenuItem::copy(app, None)?,
+                    &PredefinedMenuItem::paste(app, None)?,
+                    &PredefinedMenuItem::select_all(app, None)?,
+                ],
+            )?,
+            &Submenu::with_items(
+                app,
+                "View",
+                true,
+                &[&PredefinedMenuItem::fullscreen(app, None)?],
+            )?,
+            &window_menu,
+            &help_menu,
+        ],
+    )
+}
+
 fn main() {
     let mut log_builder = tauri_plugin_log::Builder::default()
         .level(log::LevelFilter::Info)
@@ -299,6 +421,16 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(log_builder.build())
+        .menu(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                return build_macos_menu(app);
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                return tauri::menu::Menu::default(app);
+            }
+        })
         .setup(|app| {
             #[cfg(target_os = "macos")]
             prevent_app_nap();
@@ -418,6 +550,33 @@ fn main() {
             fetch_desktop_logs,
             desktop_notify,
         ])
+        .on_menu_event(|app, event| {
+            #[cfg(target_os = "macos")]
+            {
+                if event.id() == MENU_ITEM_CHECK_FOR_UPDATES_ID {
+                    let _ = app.emit(CHECK_FOR_UPDATES_EVENT, ());
+                    return;
+                }
+
+                if event.id() == MENU_ITEM_REPORT_BUG_ID {
+                    use tauri_plugin_shell::ShellExt;
+                    #[allow(deprecated)]
+                    {
+                        let _ = app.shell().open(GITHUB_BUG_REPORT_URL, None);
+                    }
+                    return;
+                }
+
+                if event.id() == MENU_ITEM_REQUEST_FEATURE_ID {
+                    use tauri_plugin_shell::ShellExt;
+                    #[allow(deprecated)]
+                    {
+                        let _ = app.shell().open(GITHUB_FEATURE_REQUEST_URL, None);
+                    }
+                    return;
+                }
+            }
+        })
         .on_window_event(|window, event| {
             let window_state_manager = window.state::<WindowStateManager>().inner().clone();
 

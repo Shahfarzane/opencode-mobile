@@ -45,6 +45,8 @@ declare global {
   }
 }
 
+const CHECK_FOR_UPDATES_EVENT = 'openchamber:check-for-updates';
+
 const cleanupFunctions: Array<() => void | Promise<void>> = [];
 
 try {
@@ -54,6 +56,11 @@ try {
     window.dispatchEvent(new CustomEvent('openchamber:session-activity', { detail: event.payload }));
   });
   cleanupFunctions.push(() => activityUnlisten());
+
+  const updateCheckUnlisten = await listen(CHECK_FOR_UPDATES_EVENT, () => {
+    window.dispatchEvent(new CustomEvent(CHECK_FOR_UPDATES_EVENT));
+  });
+  cleanupFunctions.push(() => updateCheckUnlisten());
 
   requestInitialNotificationPermission().catch(err => {
     console.error('[main] Failed to request notification permission:', err);
