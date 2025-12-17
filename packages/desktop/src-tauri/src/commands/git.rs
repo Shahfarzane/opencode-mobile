@@ -660,6 +660,49 @@ pub async fn get_git_diff(
     Ok(output)
 }
 
+const IMAGE_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp", "avif"];
+
+fn is_image_file(path: &str) -> bool {
+    if let Some(ext) = path.rsplit('.').next() {
+        IMAGE_EXTENSIONS.contains(&ext.to_lowercase().as_str())
+    } else {
+        false
+    }
+}
+
+fn get_image_mime_type(path: &str) -> &'static str {
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
+    match ext.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "svg" => "image/svg+xml",
+        "webp" => "image/webp",
+        "ico" => "image/x-icon",
+        "bmp" => "image/bmp",
+        "avif" => "image/avif",
+        _ => "application/octet-stream",
+    }
+}
+
+async fn run_git_binary(args: &[&str], cwd: &Path) -> Result<Vec<u8>> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(cwd)
+        .env("GIT_OPTIONAL_LOCKS", "0")
+        .env("LC_ALL", "C")
+        .output()
+        .await
+        .context("Failed to execute git command")?;
+
+    // For binary output, we accept exit code 0 or check for actual content
+    if output.status.success() || !output.stdout.is_empty() {
+        Ok(output.stdout)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
 #[tauri::command]
 pub async fn get_git_file_diff(
     directory: String,
@@ -667,23 +710,46 @@ pub async fn get_git_file_diff(
     state: State<'_, DesktopRuntime>,
 ) -> Result<(String, String), String> {
     use tokio::fs;
+    use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 
     let root = validate_git_path(&directory, state.settings())
         .await
         .map_err(|e| e.to_string())?;
 
+    let is_image = is_image_file(&path_str);
+    let mime_type = if is_image { get_image_mime_type(&path_str) } else { "" };
+
     // Original from HEAD
-    let original_spec = format!("HEAD:{}", path_str);
-    let original_args = vec!["show", original_spec.as_str()];
-    let original = run_git_with_allowed_exit(&original_args, &root, &[0, 128])
-        .await
-        .unwrap_or_default();
+    let original = if is_image {
+        // For images, get binary content and convert to data URL
+        let original_spec = format!("HEAD:{}", path_str);
+        match run_git_binary(&["show", &original_spec], &root).await {
+            Ok(bytes) if !bytes.is_empty() => {
+                format!("data:{};base64,{}", mime_type, BASE64.encode(&bytes))
+            }
+            _ => String::new(),
+        }
+    } else {
+        let original_spec = format!("HEAD:{}", path_str);
+        let original_args = vec!["show", original_spec.as_str()];
+        run_git_with_allowed_exit(&original_args, &root, &[0, 128])
+            .await
+            .unwrap_or_default()
+    };
 
     // Modified from working tree (if file exists)
     let full_path = root.join(&path_str);
     let modified = if let Ok(metadata) = fs::metadata(&full_path).await {
         if metadata.is_file() {
-            fs::read_to_string(&full_path).await.unwrap_or_default()
+            if is_image {
+                // For images, read as binary and convert to data URL
+                match fs::read(&full_path).await {
+                    Ok(bytes) => format!("data:{};base64,{}", mime_type, BASE64.encode(&bytes)),
+                    Err(_) => String::new(),
+                }
+            } else {
+                fs::read_to_string(&full_path).await.unwrap_or_default()
+            }
         } else {
             String::new()
         }

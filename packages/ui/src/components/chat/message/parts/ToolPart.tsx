@@ -4,7 +4,7 @@ import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import { RiArrowDownSLine, RiArrowRightSLine, RiFileEditLine, RiFileSearchLine, RiFileTextLine, RiFolder6Line, RiGitBranchLine, RiGlobalLine, RiListCheck3, RiMenuSearchLine, RiPencilLine, RiTerminalBoxLine, RiToolsLine } from '@remixicon/react';
 import { cn } from '@/lib/utils';
 import { SimpleMarkdownRenderer } from '../../MarkdownRenderer';
-import { getToolMetadata, getLanguageFromExtension } from '@/lib/toolHelpers';
+import { getToolMetadata, getLanguageFromExtension, isImageFile, getImageMimeType } from '@/lib/toolHelpers';
 import type { ToolPart as ToolPartType, ToolState as ToolStateUnion } from '@opencode-ai/sdk';
 import { toolDisplayStyles } from '@/lib/typography';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -445,6 +445,46 @@ const WriteInputPreview: React.FC<WriteInputPreviewProps> = ({ content, syntaxTh
     );
 };
 
+interface ImagePreviewProps {
+    content: string;
+    filePath: string;
+    displayPath: string;
+}
+
+const ImagePreview: React.FC<ImagePreviewProps> = ({ content, filePath, displayPath }) => {
+    const mimeType = getImageMimeType(filePath);
+    const isSvg = filePath.toLowerCase().endsWith('.svg');
+
+    // For SVG, content might be raw XML, otherwise assume base64
+    const imageSrc = React.useMemo(() => {
+        if (isSvg && !content.startsWith('data:')) {
+            // Raw SVG content
+            return `data:image/svg+xml;base64,${btoa(content)}`;
+        }
+        if (content.startsWith('data:')) {
+            return content;
+        }
+        // Assume base64 encoded
+        return `data:${mimeType};base64,${content}`;
+    }, [content, mimeType, isSvg]);
+
+    return (
+        <div className="w-full min-w-0">
+            <div className="bg-muted/20 px-2 py-1 typography-meta font-medium text-muted-foreground border border-border/10 rounded-lg mb-2">
+                {displayPath}
+            </div>
+            <div className="flex justify-center p-4 bg-muted/10 rounded-lg border border-border/10">
+                <img
+                    src={imageSrc}
+                    alt={displayPath}
+                    className="max-w-full max-h-96 object-contain rounded"
+                    style={{ imageRendering: 'auto' }}
+                />
+            </div>
+        </div>
+    );
+};
+
 interface ToolExpandedContentProps {
     part: ToolPartType;
     state: ToolStateUnion;
@@ -489,6 +529,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = ({
                 : null
         : null;
     const shouldShowWriteInputPreview = part.tool === 'write' && !!writeInputContent;
+    const isWriteImageFile = writeFilePath ? isImageFile(writeFilePath) : false;
     const writeDisplayPath = shouldShowWriteInputPreview
         ? (writeFilePath ? getRelativePath(writeFilePath, currentDirectory, isMobile) : 'New file')
         : null;
@@ -724,7 +765,17 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = ({
                 renderResultContent()
             ) : (
                 <>
-                    {shouldShowWriteInputPreview ? (
+                    {shouldShowWriteInputPreview && isWriteImageFile ? (
+                        <div className="my-1">
+                            {renderScrollableBlock(
+                                <ImagePreview
+                                    content={writeInputContent as string}
+                                    filePath={writeFilePath as string}
+                                    displayPath={writeDisplayPath ?? 'New file'}
+                                />
+                            )}
+                        </div>
+                    ) : shouldShowWriteInputPreview ? (
                         <div className="my-1">
                             {renderScrollableBlock(
                                 <WriteInputPreview

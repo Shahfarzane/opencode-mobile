@@ -2851,6 +2851,7 @@ version = "1.2.2"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "dirs 5.0.1",
  "fastrand",

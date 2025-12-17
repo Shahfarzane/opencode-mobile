@@ -14,7 +14,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { RiArrowDownSLine } from '@remixicon/react';
-import { getLanguageFromExtension } from '@/lib/toolHelpers';
+import { getLanguageFromExtension, isImageFile } from '@/lib/toolHelpers';
 import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
 import { DiffViewToggle } from '@/components/chat/message/DiffViewToggle';
 import type { DiffViewMode } from '@/components/chat/message/types';
@@ -109,6 +109,68 @@ const FileSelector = React.memo<FileSelectorProps>(({
     );
 });
 
+// Image diff viewer for binary image files
+interface ImageDiffViewerProps {
+    filePath: string;
+    diff: DiffData;
+    isVisible: boolean;
+    renderSideBySide: boolean;
+}
+
+const ImageDiffViewer = React.memo<ImageDiffViewerProps>(({
+    filePath,
+    diff,
+    isVisible,
+    renderSideBySide,
+}) => {
+    const hasOriginal = diff.original.length > 0;
+    const hasModified = diff.modified.length > 0;
+
+    if (!isVisible) {
+        return <div className="absolute inset-0 hidden" />;
+    }
+
+    // Render side-by-side or stacked based on preference
+    const containerClass = renderSideBySide
+        ? 'flex flex-row gap-6 items-start justify-center h-full'
+        : 'flex flex-col gap-4 items-center';
+
+    const imageContainerClass = renderSideBySide
+        ? 'flex flex-col items-center gap-2 flex-1 min-w-0 h-full'
+        : 'flex flex-col items-center gap-2';
+
+    return (
+        <div className="absolute inset-0 overflow-auto p-4" style={{ contain: 'size layout' }}>
+            <div className={containerClass}>
+                {hasOriginal && (
+                    <div className={imageContainerClass}>
+                        <span className="typography-meta text-muted-foreground font-medium">Original</span>
+                        <img
+                            src={diff.original}
+                            alt={`Original: ${filePath}`}
+                            className={renderSideBySide ? "max-w-full max-h-[calc(100%-2rem)] object-contain" : "max-w-full object-contain"}
+                            style={{ imageRendering: 'auto' }}
+                        />
+                    </div>
+                )}
+                {hasModified && (
+                    <div className={imageContainerClass}>
+                        <span className="typography-meta text-muted-foreground font-medium">
+                            {hasOriginal ? 'Modified' : 'New'}
+                        </span>
+                        <img
+                            src={diff.modified}
+                            alt={`Modified: ${filePath}`}
+                            className={renderSideBySide ? "max-w-full max-h-[calc(100%-2rem)] object-contain" : "max-w-full object-contain"}
+                            style={{ imageRendering: 'auto' }}
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+});
+
 // Single diff viewer instance - stays mounted
 interface SingleDiffViewerProps {
     filePath: string;
@@ -129,6 +191,18 @@ const SingleDiffViewer = React.memo<SingleDiffViewerProps>(({
         () => getLanguageFromExtension(filePath) || 'text',
         [filePath]
     );
+
+    // Check if this is an image file
+    if (isImageFile(filePath)) {
+        return (
+            <ImageDiffViewer
+                filePath={filePath}
+                diff={diff}
+                isVisible={isVisible}
+                renderSideBySide={renderSideBySide}
+            />
+        );
+    }
 
     // Use display:none for hidden diffs to exclude from layout calculations during resize
     // This is faster for resize than visibility:hidden which keeps elements in layout flow
