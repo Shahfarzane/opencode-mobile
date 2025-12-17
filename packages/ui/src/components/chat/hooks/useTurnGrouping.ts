@@ -43,6 +43,10 @@ export interface TurnGroupingContext {
     hasReasoning: boolean;
     diffStats?: TurnDiffStats;
 
+    // Message that should render the Activity group for this turn.
+    // Chosen as the first assistant message where the turn reaches 2+ activities.
+    activityGroupAnchorMessageId?: string;
+
     isWorking: boolean;
     isGroupExpanded: boolean;
 
@@ -63,9 +67,16 @@ interface TurnActivityInfo {
     hasReasoning: boolean;
     summaryBody?: string;
     diffStats?: TurnDiffStats;
+    activityGroupAnchorMessageId?: string;
 }
 
 const ENABLE_TEXT_JUSTIFICATION_ACTIVITY = false;
+
+const ACTIVITY_STANDALONE_TOOL_NAMES = new Set<string>(['task']);
+
+const isActivityStandaloneTool = (toolName: unknown): boolean => {
+    return typeof toolName === 'string' && ACTIVITY_STANDALONE_TOOL_NAMES.has(toolName.toLowerCase());
+};
 
 export const detectTurns = (messages: ChatMessageEntry[]): Turn[] => {
     const result: Turn[] = [];
@@ -255,12 +266,36 @@ const getTurnActivityInfo = (turn: Turn): TurnActivityInfo => {
         });
     });
 
+    // Pick the first assistant message where the turn reaches 2+ activities.
+    // Excludes standalone tools (rendered outside Activity group).
+    const activityCountByMessage = new Map<string, number>();
+    activityParts.forEach((activity) => {
+        if (activity.kind === 'tool') {
+            const toolName = (activity.part as { tool?: unknown }).tool;
+            if (isActivityStandaloneTool(toolName)) {
+                return;
+            }
+        }
+        activityCountByMessage.set(activity.messageId, (activityCountByMessage.get(activity.messageId) ?? 0) + 1);
+    });
+
+    let activityGroupAnchorMessageId: string | undefined;
+    let cumulative = 0;
+    for (const msg of turn.assistantMessages) {
+        cumulative += activityCountByMessage.get(msg.info.id) ?? 0;
+        if (cumulative >= 2) {
+            activityGroupAnchorMessageId = msg.info.id;
+            break;
+        }
+    }
+
     return {
         activityParts,
         hasTools,
         hasReasoning,
         summaryBody,
         diffStats,
+        activityGroupAnchorMessageId,
     };
 };
 
@@ -383,6 +418,7 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
                 hasTools,
                 hasReasoning,
                 diffStats,
+                activityGroupAnchorMessageId: activityInfo?.activityGroupAnchorMessageId,
                 isWorking: isTurnWorking,
                 isGroupExpanded: uiState.isExpanded,
                 previewedPartIds: uiState.previewedPartIds,

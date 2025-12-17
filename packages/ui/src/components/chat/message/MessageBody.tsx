@@ -94,6 +94,12 @@ const useMigrationTimer = (
     return { isAnimating };
 };
 
+const ACTIVITY_STANDALONE_TOOL_NAMES = new Set<string>(['task']);
+
+const isActivityStandaloneTool = (toolName: unknown): boolean => {
+    return typeof toolName === 'string' && ACTIVITY_STANDALONE_TOOL_NAMES.has(toolName.toLowerCase());
+};
+
 interface MessageBodyProps {
     messageId: string;
     parts: Part[];
@@ -541,7 +547,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
     const toolConnections = React.useMemo(() => {
         const connections: Record<string, { hasPrev: boolean; hasNext: boolean }> = {};
         const displayableTools = toolParts.filter((toolPart) => {
-            if (toolPart.tool === 'task') {
+            if (isActivityStandaloneTool(toolPart.tool)) {
                 return false;
             }
             if (shouldHoldTools) {
@@ -584,13 +590,13 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
             ? activityPartsForTurn.filter((activity) => activity.kind === 'tool')
             : activityPartsForTurn;
 
-        // Task tool gets its own progressive card (not part of Activity group).
+        // Tools rendered standalone are excluded from Activity group.
         return base.filter((activity) => {
             if (activity.kind !== 'tool') {
                 return true;
             }
             const toolName = (activity.part as ToolPartType).tool;
-            return !(typeof toolName === 'string' && toolName.toLowerCase() === 'task');
+            return !isActivityStandaloneTool(toolName);
         });
     }, [activityPartsForTurn, showReasoningTraces, turnGroupingContext]);
 
@@ -629,7 +635,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
 
             if (activity.kind === 'tool') {
                 const toolPart = part as ToolPartType;
-                if (toolPart.tool === 'task') {
+                if (isActivityStandaloneTool(toolPart.tool)) {
                     return;
                 }
                 if (shouldHoldTools) return;
@@ -671,15 +677,59 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
 
     const { isAnimating: isMessageAnimating } = useMigrationTimer(turnGroupingContext, previewableActivityPartIds);
 
+    const shouldRenderActivityGroup = Boolean(
+        turnGroupingContext &&
+            turnGroupingContext.activityGroupAnchorMessageId === messageId &&
+            shouldShowActivityGroup &&
+            visibleActivityPartsForTurn.length > 0
+    );
+
+    const standaloneToolParts = React.useMemo(() => {
+        return toolParts.filter((toolPart) => isActivityStandaloneTool(toolPart.tool));
+    }, [toolParts]);
+
+    const isActivityGroupVisibleNow = React.useMemo(() => {
+        if (!turnGroupingContext || !shouldRenderActivityGroup) {
+            return false;
+        }
+        if (!turnGroupingContext.isWorking) {
+            return true;
+        }
+        const previewed = turnGroupingContext.previewedPartIds;
+        return visibleActivityPartsForTurn.some((activity) => previewed.has(activity.id));
+    }, [shouldRenderActivityGroup, turnGroupingContext, visibleActivityPartsForTurn]);
+
+    const standaloneToolsFirstVisibleAtRef = React.useRef<number | null>(null);
+    const activityGroupFirstVisibleAtRef = React.useRef<number | null>(null);
+
+    React.useEffect(() => {
+        standaloneToolsFirstVisibleAtRef.current = null;
+        activityGroupFirstVisibleAtRef.current = null;
+    }, [messageId]);
+
+    const now = Date.now();
+    if (standaloneToolParts.length > 0 && standaloneToolsFirstVisibleAtRef.current === null) {
+        standaloneToolsFirstVisibleAtRef.current = now;
+    }
+    if (isActivityGroupVisibleNow && activityGroupFirstVisibleAtRef.current === null) {
+        activityGroupFirstVisibleAtRef.current = now;
+    }
+
+    const shouldPlaceActivityAfterStandaloneTools = Boolean(
+        standaloneToolParts.length > 0 &&
+            isActivityGroupVisibleNow &&
+            typeof standaloneToolsFirstVisibleAtRef.current === 'number' &&
+            typeof activityGroupFirstVisibleAtRef.current === 'number' &&
+            activityGroupFirstVisibleAtRef.current > standaloneToolsFirstVisibleAtRef.current
+    );
+
     const renderedParts = React.useMemo(() => {
         const rendered: React.ReactNode[] = [];
 
-        if (
-            turnGroupingContext &&
-            turnGroupingContext.isFirstAssistantInTurn &&
-            shouldShowActivityGroup &&
-            visibleActivityPartsForTurn.length > 0
-        ) {
+        const pushActivityGroup = () => {
+            if (!turnGroupingContext || !shouldRenderActivityGroup) {
+                return;
+            }
             rendered.push(
                 <ProgressiveGroup
                     key="progressive-group"
@@ -697,16 +747,19 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                     diffStats={turnGroupingContext.diffStats}
                 />
             );
+        };
+
+        if (!shouldPlaceActivityAfterStandaloneTools) {
+            pushActivityGroup();
         }
 
-        // Task tool: show immediately and update progressively from metadata.
-        const taskTools = toolParts.filter((toolPart) => toolPart.tool === 'task');
-        taskTools.forEach((taskPart) => {
+        // Standalone tools: rendered outside Activity group
+        standaloneToolParts.forEach((standaloneToolPart) => {
             rendered.push(
-                <FadeInOnReveal key={`task-${taskPart.id}`}>
+                <FadeInOnReveal key={`standalone-tool-${standaloneToolPart.id}`}>
                     <ToolPart
-                        part={taskPart}
-                        isExpanded={expandedTools.has(taskPart.id)}
+                        part={standaloneToolPart}
+                        isExpanded={expandedTools.has(standaloneToolPart.id)}
                         onToggle={onToggleTool}
                         syntaxTheme={syntaxTheme}
                         isMobile={isMobile}
@@ -717,6 +770,10 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                 </FadeInOnReveal>
             );
         });
+
+        if (shouldPlaceActivityAfterStandaloneTools) {
+            pushActivityGroup();
+        }
 
         const partsWithTime: Array<{
             part: Part;
@@ -742,7 +799,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                 if (activity.kind === 'tool') {
                     const toolPart = part as ToolPartType;
 
-                    if (toolPart.tool === 'task') {
+                    if (isActivityStandaloneTool(toolPart.tool)) {
                         return;
                     }
 
@@ -805,7 +862,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                 case 'tool': {
                     const toolPart = part as ToolPartType;
 
-                    if (toolPart.tool === 'task') {
+                    if (isActivityStandaloneTool(toolPart.tool)) {
                         break;
                     }
 
@@ -973,6 +1030,9 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         visibleActivityPartsForTurn,
         visibleParts,
         toolParts,
+        standaloneToolParts,
+        shouldRenderActivityGroup,
+        shouldPlaceActivityAfterStandaloneTools,
     ]);
 
     const userMessageId = turnGroupingContext?.turnId;
