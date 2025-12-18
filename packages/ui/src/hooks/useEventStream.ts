@@ -160,6 +160,23 @@ export const useEventStream = () => {
     [setEventStreamStatus]
   );
 
+  const bootstrapState = React.useCallback(
+    async (reason: string) => {
+      if (streamDebugEnabled()) {
+        console.info('[useEventStream] Bootstrapping state:', reason);
+      }
+      try {
+        await Promise.all([
+          loadSessions(),
+          currentSessionId ? loadMessages(currentSessionId) : Promise.resolve(),
+        ]);
+      } catch (error) {
+        console.warn('[useEventStream] Bootstrap failed:', reason, error);
+      }
+    },
+    [currentSessionId, loadMessages, loadSessions]
+  );
+
   const trackMessage = React.useCallback((messageId: string, event?: string, extraData?: Record<string, unknown>) => {
     if (streamDebugEnabled()) {
       console.debug(`[MessageTracker] ${messageId}: ${event}`, extraData);
@@ -194,6 +211,17 @@ export const useEventStream = () => {
   const staleCheckIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const lastEventTimestampRef = React.useRef<number>(Date.now());
   const isDesktopRuntimeRef = React.useRef<boolean>(false);
+
+  const maybeBootstrapIfStale = React.useCallback(
+    (reason: string) => {
+      const now = Date.now();
+      if (now - lastEventTimestampRef.current > 25000) {
+        void bootstrapState(reason);
+        lastEventTimestampRef.current = now;
+      }
+    },
+    [bootstrapState]
+  );
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -325,6 +353,11 @@ export const useEventStream = () => {
       case 'server.connected':
         checkConnection();
         break;
+      case 'global.disposed':
+      case 'server.instance.disposed': {
+        void bootstrapState('server_disposed_event');
+        break;
+      }
       case 'openchamber:session-activity': {
         if (!isDesktopRuntimeRef.current) break;
         const sessionId = typeof props.sessionId === 'string' ? props.sessionId : null;
@@ -821,7 +854,8 @@ export const useEventStream = () => {
     applySessionMetadata,
     trackMessage,
     reportMessage,
-    updateSessionActivityPhase
+    updateSessionActivityPhase,
+    bootstrapState
   ]);
 
   const shouldHoldConnection = React.useCallback(() => {
@@ -921,7 +955,9 @@ export const useEventStream = () => {
       publishStatus('connected', null);
       checkConnection();
 
-      if (shouldRefresh && currentSessionId) {
+      if (shouldRefresh) {
+        void bootstrapState('sse_reconnected');
+      } else if (currentSessionId) {
         setTimeout(() => {
           loadMessages(currentSessionId)
             .then(() => requestSessionMetadataRefresh(currentSessionId))
@@ -980,7 +1016,8 @@ export const useEventStream = () => {
     effectiveDirectory,
     updateSessionActivityPhase,
     waitForDesktopBridge,
-    debugConnectionState
+    debugConnectionState,
+    bootstrapState
   ]);
 
   const scheduleReconnect = React.useCallback((hint?: string) => {
@@ -1064,6 +1101,7 @@ export const useEventStream = () => {
 
     if (visibilityStateRef.current === 'visible') {
       clearPauseTimeout();
+      maybeBootstrapIfStale('visibility_restore');
       if (pendingResumeRef.current || !unsubscribeRef.current) {
         console.info('[useEventStream] Visibility restored, triggering soft refresh...');
         if (!isDesktopRuntimeRef.current) {
@@ -1088,6 +1126,7 @@ export const useEventStream = () => {
 
     if (visibilityStateRef.current === 'visible') {
       clearPauseTimeout();
+      maybeBootstrapIfStale('window_focus');
 
       if (pendingResumeRef.current || !unsubscribeRef.current) {
         console.info('[useEventStream] Window focused after pause, triggering soft refresh...');
@@ -1111,6 +1150,7 @@ export const useEventStream = () => {
 
     const handleOnline = () => {
       onlineStatusRef.current = true;
+      maybeBootstrapIfStale('network_restored');
       if (pendingResumeRef.current || !unsubscribeRef.current) {
         publishStatus('connecting', 'Network restored');
         startStream({ resetAttempts: true });

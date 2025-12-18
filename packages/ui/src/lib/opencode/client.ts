@@ -633,6 +633,8 @@ class OpencodeService {
     const abortController = new AbortController();
     this.sseAbortController = abortController;
 
+    let lastEventId: string | undefined;
+
     console.log('[OpencodeClient] Starting SSE subscription...');
 
     // Start async generator in background with reconnect on failure
@@ -645,13 +647,21 @@ class OpencodeService {
 
       const connect = async (attempt: number): Promise<void> => {
         try {
-          const result = await this.client.event.subscribe({
+          const subscribeOptions: {
+            query?: { directory?: string };
+            signal: AbortSignal;
+            sseDefaultRetryDelay: number;
+            sseMaxRetryDelay: number;
+            onSseError?: (error: unknown) => void;
+            onSseEvent: (event: StreamEvent<unknown>) => void;
+            headers?: Record<string, string>;
+            lastEventId?: string;
+          } = {
             query: resolvedDirectory ? { directory: resolvedDirectory } : undefined,
             signal: abortController.signal,
-            sseMaxRetryAttempts: 2,
-            sseDefaultRetryDelay: 500,
-            sseMaxRetryDelay: 8000,
-            onSseError: (error) => {
+            sseDefaultRetryDelay: 3000,
+            sseMaxRetryDelay: 30000,
+            onSseError: (error: unknown) => {
               if (error instanceof Error && error.name === 'AbortError') {
                 return;
               }
@@ -661,14 +671,23 @@ class OpencodeService {
               }
             },
             onSseEvent: (event: StreamEvent<unknown>) => {
-              if (!abortController.signal.aborted) {
-                const payload = event.data;
-                if (payload && typeof payload === 'object') {
-                  onMessage(payload as Event);
-                }
+              if (abortController.signal.aborted) return;
+              if (event.id && typeof event.id === 'string') {
+                lastEventId = event.id;
+              }
+              const payload = event.data;
+              if (payload && typeof payload === 'object') {
+                onMessage(payload as Event);
               }
             },
-          });
+          };
+
+          if (lastEventId) {
+            subscribeOptions.lastEventId = lastEventId;
+            subscribeOptions.headers = { ...(subscribeOptions.headers || {}), 'Last-Event-ID': lastEventId };
+          }
+
+          const result = await this.client.event.subscribe(subscribeOptions);
 
           if (onOpen && !abortController.signal.aborted) {
             console.log('[OpencodeClient] SSE connection opened');
@@ -682,6 +701,13 @@ class OpencodeService {
               break;
             }
           }
+
+          if (!abortController.signal.aborted) {
+            // Stream ended unexpectedly; attempt reconnect
+            const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            await connect(attempt + 1);
+          }
         } catch (error: unknown) {
           if ((error as Error)?.name === 'AbortError' || abortController.signal.aborted) {
             console.log('[OpencodeClient] SSE stream aborted normally');
@@ -691,7 +717,7 @@ class OpencodeService {
           if (onError) {
             onError(error);
           }
-          const delay = Math.min(500 * Math.pow(2, attempt), 8000);
+          const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
           await new Promise((resolve) => setTimeout(resolve, delay));
           if (!abortController.signal.aborted) {
             await connect(attempt + 1);

@@ -233,6 +233,25 @@ impl OpenCodeManager {
         self.is_ready.load(Ordering::SeqCst)
     }
 
+    pub fn is_shutting_down(&self) -> bool {
+        self.shutting_down.load(Ordering::SeqCst)
+    }
+
+    pub async fn is_child_running(&self) -> Result<bool> {
+        let mut guard = self.child.lock().await;
+        if let Some(child) = guard.as_mut() {
+            match child.try_wait()? {
+                None => return Ok(true),
+                Some(_status) => {
+                    *guard = None;
+                    self.is_ready.store(false, Ordering::SeqCst);
+                    return Ok(false);
+                }
+            }
+        }
+        Ok(false)
+    }
+
     pub fn rewrite_path(&self, incoming_path: &str) -> String {
         // Strip /api prefix to get OpenCode path
         let result = incoming_path

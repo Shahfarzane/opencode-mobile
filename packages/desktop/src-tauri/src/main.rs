@@ -491,6 +491,99 @@ fn main() {
                 let _ = app_handle.emit("openchamber:runtime-ready", ());
             });
 
+            // Sidecar watchdog: restart on unexpected exit and notify UI
+            {
+                let app_handle = app.app_handle().clone();
+                let runtime = runtime.clone();
+                tauri::async_runtime::spawn(async move {
+                    let mut backoff_ms: u64 = 1000;
+                    loop {
+                        if runtime.opencode_manager().is_shutting_down() {
+                            break;
+                        }
+
+                        let mut sleep_ms = backoff_ms;
+
+                        match runtime.opencode_manager().is_child_running().await {
+                            Ok(true) => {
+                                sleep_ms = 1000;
+                                backoff_ms = 1000;
+                            }
+                            Ok(false) => {
+                                let _ = app_handle.emit("server.instance.disposed", ());
+                                if runtime.opencode_manager().is_cli_available() {
+                                    if let Err(err) = runtime.opencode_manager().ensure_running().await {
+                                        warn!("[desktop:watchdog] Failed to restart OpenCode: {err}");
+                                    } else {
+                                        backoff_ms = 1000;
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                warn!("[desktop:watchdog] Failed to check child status: {err}");
+                            }
+                        }
+
+                        tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
+                        backoff_ms = (backoff_ms * 2).min(8000);
+                    }
+                });
+            }
+
+            // Health and wake monitor: emit health and port updates to webview
+            {
+                let app_handle = app.app_handle().clone();
+                let runtime = runtime.clone();
+                tauri::async_runtime::spawn(async move {
+                    #[derive(Clone, Serialize)]
+                    struct HealthSnapshot {
+                        ok: bool,
+                        port: Option<u16>,
+                        api_prefix: String,
+                        cli_available: bool,
+                    }
+
+                    let mut last_snapshot: Option<HealthSnapshot> = None;
+                    let mut last_tick = Instant::now();
+
+                    loop {
+                        if runtime.opencode_manager().is_shutting_down() {
+                            break;
+                        }
+
+                        let now = Instant::now();
+                        let gap_ms = now.saturating_duration_since(last_tick).as_millis() as u64;
+                        last_tick = now;
+
+                        let snapshot = HealthSnapshot {
+                            ok: runtime.opencode_manager().is_ready(),
+                            port: runtime.opencode_manager().current_port(),
+                            api_prefix: runtime.opencode_manager().api_prefix(),
+                            cli_available: opencode_manager::check_cli_exists(),
+                        };
+
+                        let changed = match &last_snapshot {
+                            Some(prev) => prev.ok != snapshot.ok
+                                || prev.port != snapshot.port
+                                || prev.api_prefix != snapshot.api_prefix
+                                || prev.cli_available != snapshot.cli_available,
+                            None => true,
+                        };
+
+                        if changed {
+                            let _ = app_handle.emit("openchamber:health-changed", &snapshot);
+                            last_snapshot = Some(snapshot.clone());
+                        }
+
+                        if gap_ms > 15000 {
+                            let _ = app_handle.emit("openchamber:wake", ());
+                        }
+
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                    }
+                });
+            }
+
             spawn_assistant_notifications(app.app_handle().clone(), runtime.clone());
             spawn_session_activity_tracker(app.app_handle().clone(), runtime.clone());
 
