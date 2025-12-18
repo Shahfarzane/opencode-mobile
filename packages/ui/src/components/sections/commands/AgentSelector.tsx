@@ -23,7 +23,8 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({
     onChange,
     className
 }) => {
-    const { agents, loadAgents } = useAgentsStore();
+    const { loadAgents, getVisibleAgents } = useAgentsStore();
+    const agents = getVisibleAgents();
     const isMobile = useUIStore(state => state.isMobile);
     const { isMobile: deviceIsMobile } = useDeviceInfo();
     const isActuallyMobile = isMobile || deviceIsMobile;

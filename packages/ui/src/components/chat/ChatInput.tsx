@@ -72,7 +72,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     const clearAttachedFiles = useSessionStore((state) => state.clearAttachedFiles);
     const saveSessionAgentSelection = useSessionStore((state) => state.saveSessionAgentSelection);
 
-    const { currentProviderId, currentModelId, currentAgentName, agents, setAgent } = useConfigStore();
+    const { currentProviderId, currentModelId, currentAgentName, setAgent, getVisibleAgents } = useConfigStore();
+    const agents = getVisibleAgents();
     const { isMobile } = useUIStore();
     const { working } = useAssistantStatus();
     const [showAbortStatus, setShowAbortStatus] = React.useState(false);
