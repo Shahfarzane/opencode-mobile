@@ -211,8 +211,25 @@ export function WorkingPlaceholder({
 
         const CHECK_THROTTLE_MS = 150; // Throttle checks to ~6-7 times per second
 
+        const hasInitialWork = Boolean(
+            statusText ||
+            displayedStatus ||
+            resultState !== null ||
+            removalPendingRef.current ||
+            statusQueueRef.current.length > 0 ||
+            wasAbortedRef.current ||
+            isCompleteRef.current
+        );
+
+        if (!hasInitialWork) {
+            if (rafIdRef.current !== null) {
+                cancelAnimationFrame(rafIdRef.current);
+                rafIdRef.current = null;
+            }
+            return;
+        }
+
         const checkLoop = (timestamp: number) => {
-            // Throttle: skip if less than CHECK_THROTTLE_MS since last check
             if (timestamp - lastCheckTimeRef.current < CHECK_THROTTLE_MS) {
                 rafIdRef.current = requestAnimationFrame(checkLoop);
                 return;
@@ -223,7 +240,6 @@ export function WorkingPlaceholder({
             const elapsed = now - displayStartTimeRef.current;
 
             const isDone = removalPendingRef.current && isCompleteRef.current;
-
             const shouldWaitForMinTime = !isDone && statusQueueRef.current.length > 0;
 
             if (shouldWaitForMinTime && elapsed < MIN_DISPLAY_TIME) {
@@ -269,14 +285,27 @@ export function WorkingPlaceholder({
                     lastActiveStatusRef.current = null;
                     removalPendingRef.current = false;
                     wasAbortedRef.current = false;
-                    rafIdRef.current = requestAnimationFrame(checkLoop);
+                    rafIdRef.current = null;
                     return;
                 }
 
                 startFadeOut(result);
             }
 
-            rafIdRef.current = requestAnimationFrame(checkLoop);
+            const hasPendingWork = Boolean(
+                displayedStatus ||
+                resultState !== null ||
+                statusQueueRef.current.length > 0 ||
+                removalPendingRef.current ||
+                wasAbortedRef.current ||
+                isCompleteRef.current
+            );
+
+            if (hasPendingWork) {
+                rafIdRef.current = requestAnimationFrame(checkLoop);
+            } else {
+                rafIdRef.current = null;
+            }
         };
 
         rafIdRef.current = requestAnimationFrame(checkLoop);
@@ -288,7 +317,7 @@ export function WorkingPlaceholder({
             }
         };
 
-    }, [isFadingOut]);
+    }, [statusText, displayedStatus, resultState, isComplete, wasAborted, isFadingOut]);
 
     useEffect(() => {
         return () => {
