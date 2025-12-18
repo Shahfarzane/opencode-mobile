@@ -72,6 +72,10 @@ pnpm run desktop:build         # Build desktop app
 pnpm vscode:build              # Build VS Code extension
 ```
 
+## Communication & Output Discipline (MANDATORY)
+- Default to brevity. Responses must be as short as possible (until you suggesting plan) while remaining correct.
+- Do not narrate internal reasoning, step-by-step thinking, or deliberation.
+
 ## Key Patterns
 
 ### Section-Based Navigation

@@ -30,6 +30,21 @@ export interface AgentConfig {
   disable?: boolean;
 }
 
+// Extended Agent type for API properties not in SDK types
+export type AgentWithExtras = Agent & { native?: boolean; hidden?: boolean };
+
+// Helper to check if agent is built-in (handles both SDK 'builtIn' and API 'native')
+export const isAgentBuiltIn = (agent: Agent): boolean =>
+  agent.builtIn || (agent as AgentWithExtras).native === true;
+
+// Helper to check if agent is hidden (internal agents like title, compaction, summary)
+export const isAgentHidden = (agent: Agent): boolean =>
+  (agent as AgentWithExtras).hidden === true;
+
+// Helper to filter only visible (non-hidden) agents
+export const filterVisibleAgents = (agents: Agent[]): Agent[] =>
+  agents.filter((agent) => !isAgentHidden(agent));
+
 const CONFIG_EVENT_SOURCE = "useAgentsStore";
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const MAX_HEALTH_WAIT_MS = 20000;
@@ -51,6 +66,8 @@ interface AgentsStore {
   updateAgent: (name: string, config: Partial<AgentConfig>) => Promise<boolean>;
   deleteAgent: (name: string) => Promise<boolean>;
   getAgentByName: (name: string) => Agent | undefined;
+  // Returns only visible agents (excludes hidden internal agents)
+  getVisibleAgents: () => Agent[];
 }
 
 declare global {
@@ -263,6 +280,11 @@ export const useAgentsStore = create<AgentsStore>()(
         getAgentByName: (name: string) => {
           const { agents } = get();
           return agents.find((a) => a.name === name);
+        },
+
+        getVisibleAgents: () => {
+          const { agents } = get();
+          return filterVisibleAgents(agents);
         },
       }),
       {

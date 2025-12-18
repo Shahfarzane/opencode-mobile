@@ -7,6 +7,7 @@ import { scopeMatches, subscribeToConfigChanges } from "@/lib/configSync";
 import type { ModelMetadata } from "@/types";
 import { getSafeStorage } from "./utils/safeStorage";
 import type { SessionStore } from "./types/sessionTypes";
+import { filterVisibleAgents } from "./useAgentsStore";
 
 const MODELS_DEV_API_URL = "https://models.dev/api.json";
 const MODELS_DEV_PROXY_URL = "/api/openchamber/models-metadata";
@@ -230,6 +231,8 @@ interface ConfigStore {
     getCurrentModel: () => ProviderModel | undefined;
     getCurrentAgent: () => Agent | undefined;
     getModelMetadata: (providerId: string, modelId: string) => ModelMetadata | undefined;
+    // Returns only visible agents (excludes hidden internal agents like title, compaction, summary)
+    getVisibleAgents: () => Agent[];
 }
 
 declare global {
@@ -521,6 +524,10 @@ export const useConfigStore = create<ConfigStore>()(
                     }
                     const { modelsMetadata } = get();
                     return modelsMetadata.get(key);
+                },
+                getVisibleAgents: () => {
+                    const { agents } = get();
+                    return filterVisibleAgents(agents);
                 },
             }),
             {

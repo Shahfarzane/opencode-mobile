@@ -398,6 +398,10 @@ export const useChatScrollManager = ({
 
             spacerHeightRef.current = 0;
             setSpacerHeight(0);
+
+            setPendingAnchorId(null);
+            setShowScrollButton(false);
+
             userScrollOverrideRef.current = false;
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on session change, not message changes
@@ -479,6 +483,21 @@ export const useChatScrollManager = ({
             observer.disconnect();
         };
     }, [refreshSpacer, updateScrollButtonVisibility]);
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') {
+            updateScrollButtonVisibility();
+            return;
+        }
+
+        const rafId = window.requestAnimationFrame(() => {
+            updateScrollButtonVisibility();
+        });
+
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
+    }, [currentSessionId, sessionMessages.length, updateScrollButtonVisibility]);
 
     React.useEffect(() => {
         if (anchorId) {

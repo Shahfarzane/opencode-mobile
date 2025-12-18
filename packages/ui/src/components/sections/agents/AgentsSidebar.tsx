@@ -19,7 +19,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { RiAddLine, RiAiAgentFill, RiAiAgentLine, RiDeleteBinLine, RiFileCopyLine, RiMore2Line, RiRobot2Line, RiRobotLine } from '@remixicon/react';
-import { useAgentsStore } from '@/stores/useAgentsStore';
+import { useAgentsStore, isAgentBuiltIn, isAgentHidden } from '@/stores/useAgentsStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDeviceInfo } from '@/lib/device';
 import { cn } from '@/lib/utils';
@@ -66,7 +66,7 @@ export const AgentsSidebar: React.FC = () => {
     };
 
     const handleDeleteAgent = async (agent: Agent) => {
-        if (agent.builtIn) {
+        if (isAgentBuiltIn(agent)) {
             toast.error('Built-in agents cannot be deleted');
             return;
         }
@@ -112,8 +112,10 @@ export const AgentsSidebar: React.FC = () => {
         }
     };
 
-    const builtInAgents = agents.filter((agent) => agent.builtIn);
-    const customAgents = agents.filter((agent) => !agent.builtIn);
+    // Filter out hidden agents (internal agents like title, compaction, summary)
+    const visibleAgents = agents.filter((agent) => !isAgentHidden(agent));
+    const builtInAgents = visibleAgents.filter(isAgentBuiltIn);
+    const customAgents = visibleAgents.filter((agent) => !isAgentBuiltIn(agent));
 
     return (
         <div className="flex h-full flex-col bg-sidebar">
@@ -122,7 +124,7 @@ export const AgentsSidebar: React.FC = () => {
                     <div className="flex items-center justify-between gap-2">
                         <h2 className="typography-ui-label font-semibold text-foreground">Agents</h2>
                         <div className="flex items-center gap-1">
-                            <span className="typography-meta text-muted-foreground">{agents.length}</span>
+                            <span className="typography-meta text-muted-foreground">{visibleAgents.length}</span>
                             <DialogTrigger asChild>
                                 <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
                                     <RiAddLine className="size-4" />
@@ -133,7 +135,7 @@ export const AgentsSidebar: React.FC = () => {
                 </div>
 
                 <ScrollableOverlay outerClassName="flex-1 min-h-0" className="space-y-1 px-3 py-2 overflow-x-hidden">
-                    {agents.length === 0 ? (
+                    {visibleAgents.length === 0 ? (
                         <div className="py-12 px-4 text-center text-muted-foreground">
                             <RiRobot2Line className="mx-auto mb-3 h-10 w-10 opacity-50" />
                             <p className="typography-ui-label font-medium">No agents configured</p>
@@ -297,7 +299,7 @@ const AgentListItem: React.FC<AgentListItemProps> = ({
                                 Duplicate
                             </DropdownMenuItem>
 
-                            {!agent.builtIn && onDelete && (
+                            {!isAgentBuiltIn(agent) && onDelete && (
                                 <DropdownMenuItem
                                     onClick={(e) => {
                                         e.stopPropagation();

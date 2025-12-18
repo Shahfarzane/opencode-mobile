@@ -34,10 +34,11 @@ export const AgentMentionAutocomplete = React.forwardRef<AgentMentionAutocomplet
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [agents, setAgents] = React.useState<AgentInfo[]>([]);
-  const { agents: allAgents } = useConfigStore();
+  const { getVisibleAgents } = useConfigStore();
 
   React.useEffect(() => {
-    const filtered = allAgents
+    const visibleAgents = getVisibleAgents();
+    const filtered = visibleAgents
       .filter((agent) => isMentionable(agent.mode))
       .map((agent) => ({
         name: agent.name,
@@ -54,7 +55,7 @@ export const AgentMentionAutocomplete = React.forwardRef<AgentMentionAutocomplet
 
     setAgents(matches);
     setSelectedIndex(0);
-  }, [allAgents, searchQuery]);
+  }, [getVisibleAgents, searchQuery]);
 
   React.useEffect(() => {
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {

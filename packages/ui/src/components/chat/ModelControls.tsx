@@ -209,7 +209,6 @@ interface ModelControlsProps {
 export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
     const {
         providers,
-        agents,
         currentProviderId,
         currentModelId,
         currentAgentName,
@@ -219,7 +218,11 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
         getCurrentProvider,
         getModelMetadata,
         getCurrentAgent,
+        getVisibleAgents,
     } = useConfigStore();
+
+    // Use visible agents (excludes hidden internal agents)
+    const agents = getVisibleAgents();
 
     const {
         currentSessionId,
