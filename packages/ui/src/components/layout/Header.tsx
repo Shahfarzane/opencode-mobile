@@ -127,18 +127,40 @@ export const Header: React.FC = () => {
   const contextUsage = getContextUsage(contextLimit, outputLimit);
   const isSessionSwitcherOpen = useUIStore((state) => state.isSessionSwitcherOpen);
 
+  const blurActiveElement = React.useCallback(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const active = document.activeElement as HTMLElement | null;
+    if (!active) {
+      return;
+    }
+
+    const tagName = active.tagName;
+    const isInput = tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT';
+
+    if (isInput || active.isContentEditable) {
+      active.blur();
+    }
+  }, []);
+
   const handleOpenSessionSwitcher = React.useCallback(() => {
     if (isMobile) {
+      blurActiveElement();
       setSessionSwitcherOpen(!isSessionSwitcherOpen);
       return;
     }
     toggleSidebar();
-  }, [isMobile, isSessionSwitcherOpen, setSessionSwitcherOpen, toggleSidebar]);
+  }, [blurActiveElement, isMobile, isSessionSwitcherOpen, setSessionSwitcherOpen, toggleSidebar]);
 
   const handleOpenSettings = React.useCallback(() => {
+    if (isMobile) {
+      blurActiveElement();
+    }
     setSessionSwitcherOpen(false);
     setSettingsDialogOpen(true);
-  }, [setSessionSwitcherOpen, setSettingsDialogOpen]);
+  }, [blurActiveElement, isMobile, setSessionSwitcherOpen, setSettingsDialogOpen]);
 
   const headerIconButtonClass = 'app-region-no-drag inline-flex h-9 w-9 items-center justify-center gap-2 p-2 typography-ui-label font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 hover:text-foreground';
 
@@ -397,7 +419,12 @@ export const Header: React.FC = () => {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => setActiveMainTab(tab.id)}
+                    onClick={() => {
+                      if (isMobile) {
+                        blurActiveElement();
+                      }
+                      setActiveMainTab(tab.id);
+                    }}
                     aria-label={tab.label}
                     aria-selected={isActive}
                     role="tab"

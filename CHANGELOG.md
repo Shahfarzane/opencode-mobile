@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 - MacOS app menu entries for Check for update and for creating bug/request in Help section
-
+- For Mobile added settings, improved terminal scrolling, fixed app layout positioning
 
 ## [1.2.3] - 2025-12-17
 

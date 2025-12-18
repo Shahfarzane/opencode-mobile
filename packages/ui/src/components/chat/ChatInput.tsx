@@ -78,6 +78,51 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     const [showAbortStatus, setShowAbortStatus] = React.useState(false);
     const abortTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevWasAbortedRef = React.useRef(false);
+    const sendTriggeredByPointerDownRef = React.useRef(false);
+
+    const handleTextareaPointerDownCapture = React.useCallback((event: React.PointerEvent<HTMLTextAreaElement>) => {
+        if (!isMobile) {
+            return;
+        }
+
+        if (event.pointerType !== 'touch') {
+            return;
+        }
+
+        const textarea = textareaRef.current;
+        if (!textarea) {
+            return;
+        }
+
+        if (document.activeElement === textarea) {
+            return;
+        }
+
+        // Prevent iOS from scrolling the page to reveal the input.
+        event.preventDefault();
+        event.stopPropagation();
+
+        const scroller = document.scrollingElement;
+        if (scroller && scroller.scrollTop !== 0) {
+            scroller.scrollTop = 0;
+        }
+        if (window.scrollY !== 0) {
+            window.scrollTo(0, 0);
+        }
+
+        try {
+            textarea.focus({ preventScroll: true });
+        } catch {
+            textarea.focus();
+        }
+
+        const len = textarea.value.length;
+        try {
+            textarea.setSelectionRange(len, len);
+        } catch {
+            // ignored
+        }
+    }, [isMobile]);
 
     const currentAgent = React.useMemo(() => {
         if (!currentAgentName) {
@@ -201,7 +246,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
 
         setMessage('');
 
+        if (isMobile) {
+            textareaRef.current?.blur();
+        }
+ 
         await sendMessage(sanitizedText, currentProviderId, currentModelId, currentAgentName, attachmentsToSend, agentMentionName)
+
             .catch((error: unknown) => {
                 const rawMessage =
                     error instanceof Error
@@ -235,7 +285,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                 toast.error(rawMessage || 'Message failed to send. Attachments restored.');
             });
 
-        textareaRef.current?.focus();
+        if (!isMobile) {
+            textareaRef.current?.focus();
+        }
 
     };
 
@@ -768,8 +820,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         </button>
     ) : (
         <button
-            type='submit'
+            type={isMobile ? 'button' : 'submit'}
             disabled={!hasContent || !currentSessionId}
+            onPointerDownCapture={(event) => {
+                if (!isMobile || event.pointerType !== 'touch') {
+                    return;
+                }
+
+                if (!hasContent || !currentSessionId) {
+                    return;
+                }
+
+                sendTriggeredByPointerDownRef.current = true;
+                event.preventDefault();
+                event.stopPropagation();
+                void handleSubmit();
+            }}
+            onClick={(event) => {
+                if (!isMobile) {
+                    return;
+                }
+
+                if (sendTriggeredByPointerDownRef.current) {
+                    sendTriggeredByPointerDownRef.current = false;
+                    return;
+                }
+
+                event.preventDefault();
+                void handleSubmit();
+            }}
             className={cn(
                 iconButtonBaseClass,
                 hasContent && currentSessionId
@@ -983,6 +1062,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                             onChange={handleTextChange}
                             onKeyDown={handleKeyDown}
                             onPaste={handlePaste}
+                            onPointerDownCapture={handleTextareaPointerDownCapture}
                             placeholder={currentSessionId ? "# for agents; @ for files; / for commands" : "Select or create a session to start chatting"}
                             disabled={!currentSessionId}
 

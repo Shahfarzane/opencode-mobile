@@ -9,6 +9,9 @@
   --oc-safe-area-bottom: 0px;
   --oc-safe-area-bottom-visual: 0px;
   --oc-safe-area-left: 0px;
+  --oc-header-height: 56px;
+  --oc-visual-viewport-offset-top: 0px;
+  --oc-keyboard-inset: 0px;
   --ui-regular-font-weight: 400;
   --oc-scrollbar-thumb: oklch(0.32 0.03 50 / 0.4);
   --oc-scrollbar-thumb-hover: oklch(0.32 0.03 50 / 0.6);
@@ -1028,6 +1031,16 @@ html:not(.dark) .chat-scroll {
     overflow: hidden;
   }
 
+  /* Prevent iOS keyboard from scrolling the page */
+  :root.device-mobile:not(.desktop-runtime) body,
+  :root.device-mobile:not(.desktop-runtime) #root {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior-y: none;
+  }
+
   /* Fix main layout container */
   :root.mobile-pointer:not(.desktop-runtime) .flex.flex-col.h-screen {
     height: 100vh;
@@ -1036,9 +1049,12 @@ html:not(.dark) .chat-scroll {
   }
 
   /* Fix header positioning */
-  :root.mobile-pointer:not(.desktop-runtime) .header-safe-area {
-    position: sticky;
-    top: 0;
+  :root.device-mobile:not(.desktop-runtime) .header-safe-area {
+    position: fixed;
+    top: var(--oc-visual-viewport-offset-top, 0px);
+    left: 0;
+    right: 0;
+    width: 100%;
     z-index: 50;
   }
 
@@ -1116,12 +1132,15 @@ html:not(.dark) .chat-scroll {
       padding-bottom: var(--oc-safe-area-bottom-visual) !important;
     }
 
-    /* Ensure proper body spacing for iOS */
+    /* Prevent keyboard-induced page scroll on iOS PWA */
     body {
       min-height: 100vh;
       min-height: -webkit-fill-available;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      overflow: hidden;
+      overscroll-behavior-y: none;
     }
 
     /* Fix iOS viewport issues */
