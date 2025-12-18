@@ -40,6 +40,15 @@ const setRootDeviceAttributes = (
   const isMobile = deviceType === 'mobile';
   const isTablet = deviceType === 'tablet';
 
+  root.classList.remove('device-mobile', 'device-tablet', 'device-desktop');
+  root.classList.add(
+    deviceType === 'mobile'
+      ? 'device-mobile'
+      : deviceType === 'tablet'
+        ? 'device-tablet'
+        : 'device-desktop'
+  );
+
   if (isDesktopRuntime) {
     root.classList.add('desktop-runtime');
     root.style.setProperty('--is-mobile', '0');
