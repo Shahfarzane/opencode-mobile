@@ -812,6 +812,13 @@ export const useMessageStore = create<MessageStore>()(
                     if (ignoredAssistantMessageIds.has(messageId)) {
                         return;
                     }
+
+                    const trimmedHeadMaxId = stateSnapshot.sessionMemoryState.get(sessionId)?.trimmedHeadMaxId;
+                    if (trimmedHeadMaxId && !isIdNewer(messageId, trimmedHeadMaxId)) {
+                        (window as any).__messageTracker?.(messageId, 'ignored_trimmed_stream_part');
+                        return;
+                    }
+
                     const existingMessagesSnapshot = stateSnapshot.messages.get(sessionId) || [];
                     const existingMessageSnapshot = existingMessagesSnapshot.find((m) => m.info.id === messageId);
 
@@ -1435,6 +1442,12 @@ export const useMessageStore = create<MessageStore>()(
 
                 updateMessageInfo: (sessionId: string, messageId: string, messageInfo: any) => {
                     set((state) => {
+                        const trimmedHeadMaxId = state.sessionMemoryState.get(sessionId)?.trimmedHeadMaxId;
+                        if (trimmedHeadMaxId && !isIdNewer(messageId, trimmedHeadMaxId)) {
+                            (window as any).__messageTracker?.(messageId, 'ignored_trimmed_update');
+                            return state;
+                        }
+
                         const sessionMessages = state.messages.get(sessionId) ?? [];
                         const normalizedSessionMessages = [...sessionMessages];
 

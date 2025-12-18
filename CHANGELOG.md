@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Polished chat expirience for longer session
+- Fixed file link from git view to diff
+
 
 ## [1.2.4] - 2025-12-18
 
