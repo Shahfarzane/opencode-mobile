@@ -368,12 +368,12 @@ export const DiffView: React.FC = () => {
         }
     }, [pendingDiffFile, setPendingDiffFile]);
 
-    // Auto-select first file
+    // Auto-select first file (skip if we have a pending file to consume)
     React.useEffect(() => {
-        if (!selectedFile && changedFiles.length > 0) {
+        if (!selectedFile && !pendingDiffFile && changedFiles.length > 0) {
             setSelectedFile(changedFiles[0].path);
         }
-    }, [changedFiles, selectedFile]);
+    }, [changedFiles, selectedFile, pendingDiffFile]);
 
     // Clear selection if file no longer exists
     React.useEffect(() => {
