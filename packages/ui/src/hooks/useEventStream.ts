@@ -45,6 +45,25 @@ const computeTextLength = (parts: Part[] | undefined | null): number => {
   return length;
 };
 
+const MIN_SORTABLE_LENGTH = 10;
+const extractSortableId = (id: unknown): string | null => {
+  if (typeof id !== 'string') return null;
+  const trimmed = id.trim();
+  if (!trimmed) return null;
+  const underscoreIndex = trimmed.indexOf('_');
+  const candidate = underscoreIndex >= 0 ? trimmed.slice(underscoreIndex + 1) : trimmed;
+  if (!candidate || candidate.length < MIN_SORTABLE_LENGTH) return null;
+  return candidate;
+};
+
+const isIdNewer = (id: string, referenceId: string): boolean => {
+  const currentSortable = extractSortableId(id);
+  const referenceSortable = extractSortableId(referenceId);
+  if (!currentSortable || !referenceSortable) return true;
+  if (currentSortable.length !== referenceSortable.length) return true;
+  return currentSortable > referenceSortable;
+};
+
 const messageCache = new Map<string, { sessionId: string; message: { info: Message; parts: Part[] } | null }>();
 const getMessageFromStore = (sessionId: string, messageId: string): { info: Message; parts: Part[] } | null => {
   const cacheKey = `${sessionId}:${messageId}`;
@@ -376,6 +395,18 @@ export const useEventStream = () => {
         const sessionId = resolvedSessionId;
         const messageId = resolvedMessageId;
 
+        const trimmedHeadMaxId = useSessionStore.getState().sessionMemoryState.get(sessionId)?.trimmedHeadMaxId;
+        if (trimmedHeadMaxId && !isIdNewer(messageId, trimmedHeadMaxId)) {
+          if (streamDebugEnabled()) {
+            console.debug('[useEventStream] Skipping message.part.updated for trimmed message', {
+              sessionId,
+              messageId,
+              trimmedHeadMaxId,
+            });
+          }
+          break;
+        }
+
         let roleInfo = 'assistant';
         if (messageInfo && typeof (messageInfo as { role?: unknown }).role === 'string') {
           roleInfo = (messageInfo as { role?: string }).role as string;
@@ -432,6 +463,18 @@ export const useEventStream = () => {
 
         const sessionId = resolvedSessionId;
         const messageId = resolvedMessageId;
+
+        const trimmedHeadMaxId = useSessionStore.getState().sessionMemoryState.get(sessionId)?.trimmedHeadMaxId;
+        if (trimmedHeadMaxId && !isIdNewer(messageId, trimmedHeadMaxId)) {
+          if (streamDebugEnabled()) {
+            console.debug('[useEventStream] Skipping message.updated for trimmed message', {
+              sessionId,
+              messageId,
+              trimmedHeadMaxId,
+            });
+          }
+          break;
+        }
 
         if (isDesktopRuntimeRef.current && streamDebugEnabled()) {
           try {
