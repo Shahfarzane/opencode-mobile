@@ -861,7 +861,8 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
                     <button
                       type="button"
                       className={cn(
-                        'inline-flex h-3.5 w-[18px] items-center justify-center rounded-md text-muted-foreground transition-opacity opacity-0 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                        'inline-flex h-3.5 w-[18px] items-center justify-center rounded-md text-muted-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                        mobileVariant ? 'opacity-70' : 'opacity-0 group-hover:opacity-100',
                       )}
                       aria-label="Session menu"
                       onClick={(event) => event.stopPropagation()}

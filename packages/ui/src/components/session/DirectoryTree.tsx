@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { RiAddLine, RiArrowDownSLine, RiArrowRightSLine, RiCheckLine, RiCloseLine, RiFolder6Line, RiPushpin2Line, RiPushpinLine } from '@remixicon/react';
+import { RiAddLine, RiArrowDownSLine, RiArrowRightSLine, RiCheckLine, RiCloseLine, RiFolder6Line, RiPushpin2Line, RiPushpinLine, RiStarLine } from '@remixicon/react';
 import { cn, formatPathForDisplay } from '@/lib/utils';
 import { opencodeClient } from '@/lib/opencode/client';
 import { isDesktopRuntime, getDesktopSettings } from '@/lib/desktop';
@@ -36,6 +36,8 @@ interface DirectoryTreeProps {
   showHidden?: boolean;
   rootDirectory?: string | null;
   isRootReady?: boolean;
+  /** Always show action icons (add, pin) instead of only on hover */
+  alwaysShowActions?: boolean;
 }
 
 export const DirectoryTree: React.FC<DirectoryTreeProps> = ({
@@ -49,6 +51,7 @@ export const DirectoryTree: React.FC<DirectoryTreeProps> = ({
   showHidden = false,
   rootDirectory = null,
   isRootReady,
+  alwaysShowActions = false,
 }) => {
   const desktopRuntime = React.useMemo(() => isDesktopRuntime(), []);
   const [directories, setDirectories] = React.useState<DirectoryItem[]>([]);
@@ -59,6 +62,7 @@ export const DirectoryTree: React.FC<DirectoryTreeProps> = ({
   const [pinnedPaths, setPinnedPaths] = React.useState<Set<string>>(new Set());
   const [creatingInPath, setCreatingInPath] = React.useState<string | null>(null);
   const [newDirName, setNewDirName] = React.useState('');
+  const [isPinnedExpanded, setIsPinnedExpanded] = React.useState(true);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { requestAccess, startAccessing, isDesktop } = useFileSystemAccess();
   const previousShowHidden = React.useRef(showHidden);
@@ -674,7 +678,10 @@ export const DirectoryTree: React.FC<DirectoryTreeProps> = ({
             e.stopPropagation();
             startCreatingDirectory(item);
           }}
-          className="p-1 opacity-0 group-hover:opacity-100 hover:bg-accent rounded transition-opacity"
+          className={cn(
+            "p-1 hover:bg-accent rounded transition-opacity",
+            alwaysShowActions ? "opacity-70" : "opacity-0 group-hover:opacity-100"
+          )}
           title="Create new directory"
         >
           <RiAddLine className="h-3 w-3 text-muted-foreground" />
@@ -685,7 +692,10 @@ export const DirectoryTree: React.FC<DirectoryTreeProps> = ({
             e.stopPropagation();
             togglePin(item.path);
           }}
-          className="p-1 opacity-0 group-hover:opacity-100 hover:bg-accent rounded transition-opacity"
+          className={cn(
+            "p-1 hover:bg-accent rounded transition-opacity",
+            alwaysShowActions ? "opacity-70" : "opacity-0 group-hover:opacity-100"
+          )}
           title={isPinned ? "Unpin directory" : "Pin directory"}
         >
           {isPinned ? (
@@ -958,15 +968,32 @@ export const DirectoryTree: React.FC<DirectoryTreeProps> = ({
         <>
           {pinnedDirectories.length > 0 && (
             <>
-              <div className="px-2 py-1.5 typography-meta font-semibold text-muted-foreground">
-                Pinned
-              </div>
-              {pinnedDirectories.map(({ name, path }) => renderPinnedRow(name, path))}
+              <button
+                type="button"
+                onClick={() => setIsPinnedExpanded(prev => !prev)}
+                className="flex w-full items-center gap-1.5 px-2 py-1.5 typography-meta font-semibold text-muted-foreground hover:bg-accent/30 rounded transition-colors"
+              >
+                {isPinnedExpanded ? (
+                  <RiArrowDownSLine className="h-3.5 w-3.5" />
+                ) : (
+                  <RiArrowRightSLine className="h-3.5 w-3.5" />
+                )}
+                <RiStarLine className="h-3.5 w-3.5" />
+                <span>Pinned</span>
+                <span className="ml-auto typography-micro text-muted-foreground/70">
+                  {pinnedDirectories.length}
+                </span>
+              </button>
+              {isPinnedExpanded && pinnedDirectories.map(({ name, path }) => renderPinnedRow(name, path))}
               {variant === 'dropdown' && <DropdownMenuSeparator />}
+              {variant === 'inline' && isPinnedExpanded && (
+                <div className="mx-2 my-1.5 border-t border-border/30" />
+              )}
             </>
           )}
 
-          <div className="px-2 py-1.5 typography-meta font-semibold text-muted-foreground">
+          <div className="px-2 py-1.5 typography-meta font-semibold text-muted-foreground flex items-center gap-1.5">
+            <RiFolder6Line className="h-3.5 w-3.5" />
             Browse
           </div>
 
