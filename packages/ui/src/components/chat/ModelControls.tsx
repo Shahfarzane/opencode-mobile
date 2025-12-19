@@ -1180,7 +1180,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                             className={cn(
                                                 'flex w-full items-start gap-2 border-b border-border/30 px-2 py-1.5 text-left last:border-b-0',
                                                 'focus:outline-none focus-visible:ring-1 focus-visible:ring-primary',
-                                                isSelected ? 'bg-primary/15 text-primary' : 'hover:bg-accent/40'
+                                                isSelected ? 'bg-primary/15 text-primary' : 'hover:bg-muted'
                                             )}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
@@ -1225,7 +1225,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                             className={cn(
                                                 'flex w-full items-start gap-2 border-b border-border/30 px-2 py-1.5 text-left last:border-b-0',
                                                 'focus:outline-none focus-visible:ring-1 focus-visible:ring-primary',
-                                                isSelected ? 'bg-primary/15 text-primary' : 'hover:bg-accent/40'
+                                                isSelected ? 'bg-primary/15 text-primary' : 'hover:bg-muted'
                                             )}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
@@ -1309,7 +1309,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                                         className={cn(
                                                             'flex flex-1 min-w-0 items-start gap-2 text-left',
                                                             'focus:outline-none focus-visible:ring-1 focus-visible:ring-primary',
-                                                            !isSelected && 'hover:bg-accent/40'
+                                                            !isSelected && 'hover:bg-muted'
                                                         )}
                                                     >
                                                         <div className="flex min-w-0 flex-col">

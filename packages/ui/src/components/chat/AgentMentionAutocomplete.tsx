@@ -109,7 +109,7 @@ export const AgentMentionAutocomplete = React.forwardRef<AgentMentionAutocomplet
       key={agent.name}
       className={cn(
         'flex items-start gap-2 px-3 py-1.5 cursor-pointer rounded-lg typography-ui-label',
-        index === selectedIndex && 'bg-accent'
+        index === selectedIndex && 'bg-muted'
       )}
       onClick={() => onAgentSelect(agent.name)}
       onMouseEnter={() => setSelectedIndex(index)}
@@ -130,7 +130,7 @@ export const AgentMentionAutocomplete = React.forwardRef<AgentMentionAutocomplet
   return (
     <div
       ref={containerRef}
-      className="absolute z-[100] min-w-0 w-full max-w-[360px] max-h-60 bg-popover border border-border rounded-xl shadow-none bottom-full mb-2 left-0 flex flex-col"
+      className="absolute z-[100] min-w-0 w-full max-w-[360px] max-h-60 bg-background border border-border rounded-xl shadow-none bottom-full mb-2 left-0 flex flex-col"
     >
       <ScrollableOverlay outerClassName="flex-1 min-h-0" className="px-0">
         {agents.length ? (

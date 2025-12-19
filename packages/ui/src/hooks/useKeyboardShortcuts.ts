@@ -107,6 +107,13 @@ export const useKeyboardShortcuts = () => {
         return;
       }
 
+      if (e.ctrlKey && !e.metaKey && !e.shiftKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        const { activeMainTab } = useUIStore.getState();
+        setActiveMainTab(activeMainTab === 'diff' ? 'chat' : 'diff');
+        return;
+      }
+
        if (e.ctrlKey && !e.metaKey && !e.shiftKey && e.key.toLowerCase() === 't') {
         e.preventDefault();
         const { activeMainTab } = useUIStore.getState();
