@@ -26,14 +26,14 @@ export function WorkingPlaceholder({
     const [isVisible, setIsVisible] = useState<boolean>(false);
     const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
     const [resultState, setResultState] = useState<ResultState>(null);
-    const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+
 
     const displayStartTimeRef = useRef<number>(0);
     const statusQueueRef = useRef<Array<{ status: string; permission: boolean }>>([]);
     const removalPendingRef = useRef<boolean>(false);
     const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const rafIdRef = useRef<number | null>(null);
     const lastCheckTimeRef = useRef<number>(0);
     const lastActiveStatusRef = useRef<string | null>(null);
@@ -53,17 +53,11 @@ export function WorkingPlaceholder({
             clearTimeout(resultTimeoutRef.current);
             resultTimeoutRef.current = null;
         }
-        if (transitionTimeoutRef.current) {
-            clearTimeout(transitionTimeoutRef.current);
-            transitionTimeoutRef.current = null;
-        }
-
         if (status === 'aborted') {
             setDisplayedStatus(null);
             setDisplayedPermission(false);
             setIsFadingOut(false);
             setResultState('aborted');
-            setIsTransitioning(false);
             lastActiveStatusRef.current = 'aborted';
             hasShownActivityRef.current = true;
             wasAbortedRef.current = true;
@@ -81,17 +75,6 @@ export function WorkingPlaceholder({
         setIsFadingOut(false);
         lastActiveStatusRef.current = status;
         hasShownActivityRef.current = true;
-
-        const isStatusChanging = displayedStatus !== null && displayedStatus !== status;
-
-        if (isStatusChanging) {
-
-            setIsTransitioning(true);
-            transitionTimeoutRef.current = setTimeout(() => {
-                setIsTransitioning(false);
-                transitionTimeoutRef.current = null;
-            }, 150);
-        }
 
         setDisplayedStatus(status);
         setDisplayedPermission(permission);
@@ -167,8 +150,6 @@ export function WorkingPlaceholder({
                 setDisplayedPermission(false);
                 setResultState(result);
                 lastActiveStatusRef.current = null;
-
-                setIsTransitioning(false);
 
                 if (result === 'success' && completionId) {
                     lastCompletionShownRef.current = completionId;
@@ -327,9 +308,6 @@ export function WorkingPlaceholder({
             if (resultTimeoutRef.current) {
                 clearTimeout(resultTimeoutRef.current);
             }
-            if (transitionTimeoutRef.current) {
-                clearTimeout(transitionTimeoutRef.current);
-            }
         };
     }, []);
 
@@ -425,8 +403,7 @@ export function WorkingPlaceholder({
                 {resultState === null && (
                     <Text
                         variant="shine"
-                        className="typography-ui-header transition-opacity duration-150"
-                        style={{ opacity: isTransitioning ? 0.6 : 1 }}
+                        className="typography-ui-header"
                     >
                         {displayText}
                     </Text>
@@ -434,8 +411,7 @@ export function WorkingPlaceholder({
                 {resultState === 'success' && (
                     <Text
                         variant="hover-enter"
-                        className="typography-ui-header transition-opacity duration-150"
-                        style={{ opacity: isTransitioning ? 0.6 : 1 }}
+                        className="typography-ui-header"
                     >
                         Done
                     </Text>
@@ -443,8 +419,7 @@ export function WorkingPlaceholder({
                 {resultState === 'aborted' && (
                     <Text
                         variant="hover-enter"
-                        className="typography-ui-header transition-opacity duration-150 text-status-error"
-                        style={{ opacity: isTransitioning ? 0.6 : 1 }}
+                        className="typography-ui-header text-status-error"
                     >
                         Aborted
                     </Text>
