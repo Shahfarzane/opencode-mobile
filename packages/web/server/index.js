@@ -1605,6 +1605,112 @@ async function main(options = {}) {
 
   app.use('/api', (req, res, next) => uiAuthController.requireAuth(req, res, next));
 
+  app.get('/api/openchamber/update-check', async (_req, res) => {
+    try {
+      const { checkForUpdates } = await import('./lib/package-manager.js');
+      const updateInfo = await checkForUpdates();
+      res.json(updateInfo);
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+      res.status(500).json({
+        available: false,
+        error: error instanceof Error ? error.message : 'Failed to check for updates',
+      });
+    }
+  });
+
+  app.post('/api/openchamber/update-install', async (_req, res) => {
+    try {
+      const { spawn: spawnChild } = await import('child_process');
+      const {
+        checkForUpdates,
+        getUpdateCommand,
+        detectPackageManager,
+      } = await import('./lib/package-manager.js');
+
+      // Verify update is available
+      const updateInfo = await checkForUpdates();
+      if (!updateInfo.available) {
+        return res.status(400).json({ error: 'No update available' });
+      }
+
+      const pm = detectPackageManager();
+      const updateCmd = getUpdateCommand(pm);
+
+      // Get current server port for restart
+      const currentPort = server.address()?.port || 3000;
+
+      // Try to read stored instance options for restart
+      const tmpDir = os.tmpdir();
+      const instanceFilePath = path.join(tmpDir, `openchamber-${currentPort}.json`);
+      let storedOptions = { port: currentPort, daemon: true };
+      try {
+        const content = fs.readFileSync(instanceFilePath, 'utf8');
+        storedOptions = JSON.parse(content);
+      } catch {
+        // Use defaults
+      }
+
+      // Build restart command with stored options
+      let restartCmd = `openchamber serve --port ${storedOptions.port} --daemon`;
+      if (storedOptions.uiPassword) {
+        // Escape password for shell
+        const escapedPw = storedOptions.uiPassword.replace(/'/g, "'\\''");
+        restartCmd += ` --ui-password '${escapedPw}'`;
+      }
+
+      // Respond immediately - update will happen after response
+      res.json({
+        success: true,
+        message: 'Update starting, server will restart shortly',
+        version: updateInfo.version,
+        packageManager: pm,
+      });
+
+      // Give time for response to be sent
+      setTimeout(() => {
+        console.log(`\nInstalling update using ${pm}...`);
+        console.log(`Running: ${updateCmd}`);
+
+        // Create a script that will:
+        // 1. Wait for current process to exit
+        // 2. Run the update
+        // 3. Restart the server with original options
+        const script = `
+          sleep 2
+          ${updateCmd}
+          if [ $? -eq 0 ]; then
+            echo "Update successful, restarting OpenChamber..."
+            ${restartCmd}
+          else
+            echo "Update failed"
+            exit 1
+          fi
+        `;
+
+        // Spawn detached shell to run update after we exit
+        const child = spawnChild('sh', ['-c', script], {
+          detached: true,
+          stdio: 'ignore',
+          env: process.env,
+        });
+        child.unref();
+
+        console.log('Update process spawned, shutting down server...');
+
+        // Give child process time to start, then exit
+        setTimeout(() => {
+          process.exit(0);
+        }, 500);
+      }, 500);
+    } catch (error) {
+      console.error('Failed to install update:', error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Failed to install update',
+      });
+    }
+  });
+
   app.get('/api/openchamber/models-metadata', async (req, res) => {
     const now = Date.now();
 

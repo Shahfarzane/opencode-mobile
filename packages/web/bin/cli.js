@@ -94,6 +94,7 @@ COMMANDS:
   stop           Stop running instance(s)
   restart        Stop and start the server
   status         Show server status
+  update         Check for and install updates
 
 OPTIONS:
   -p, --port     Web server port (default: ${DEFAULT_PORT})
@@ -112,6 +113,7 @@ EXAMPLES:
   openchamber stop               # Stop all running instances
   openchamber stop --port 3000   # Stop specific instance
   openchamber status             # Check status
+  openchamber update             # Update to latest version
 `);
 }
 
@@ -245,6 +247,12 @@ async function getPidFilePath(port) {
   return path.join(tmpDir, `openchamber-${port}.pid`);
 }
 
+async function getInstanceFilePath(port) {
+  const os = await import('os');
+  const tmpDir = os.tmpdir();
+  return path.join(tmpDir, `openchamber-${port}.json`);
+}
+
 function readPidFile(pidFilePath) {
   try {
     const content = fs.readFileSync(pidFilePath, 'utf8').trim();
@@ -276,6 +284,50 @@ function removePidFile(pidFilePath) {
   }
 }
 
+/**
+ * Read stored instance options (port, daemon, uiPassword)
+ */
+function readInstanceOptions(instanceFilePath) {
+  try {
+    const content = fs.readFileSync(instanceFilePath, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Write instance options for restart/update to reuse
+ */
+function writeInstanceOptions(instanceFilePath, options) {
+  try {
+    // Only store non-sensitive restart-relevant options
+    const toStore = {
+      port: options.port,
+      daemon: options.daemon || false,
+      // Store password existence but not value - will use env var
+      hasUiPassword: typeof options.uiPassword === 'string',
+    };
+    // For daemon mode, we need to store the password to restart properly
+    if (options.daemon && typeof options.uiPassword === 'string') {
+      toStore.uiPassword = options.uiPassword;
+    }
+    fs.writeFileSync(instanceFilePath, JSON.stringify(toStore, null, 2));
+  } catch (error) {
+    console.warn(`Warning: Could not write instance file: ${error.message}`);
+  }
+}
+
+function removeInstanceFile(instanceFilePath) {
+  try {
+    if (fs.existsSync(instanceFilePath)) {
+      fs.unlinkSync(instanceFilePath);
+    }
+  } catch (error) {
+    // Ignore
+  }
+}
+
 function isProcessRunning(pid) {
   try {
     process.kill(pid, 0);
@@ -288,6 +340,7 @@ function isProcessRunning(pid) {
 const commands = {
   async serve(options) {
     const pidFilePath = await getPidFilePath(options.port);
+    const instanceFilePath = await getInstanceFilePath(options.port);
 
     const existingPid = readPidFile(pidFilePath);
     if (existingPid && isProcessRunning(existingPid)) {
@@ -323,6 +376,7 @@ const commands = {
       setTimeout(() => {
         if (isProcessRunning(child.pid)) {
           writePidFile(pidFilePath, child.pid);
+          writeInstanceOptions(instanceFilePath, options);
           console.log(`OpenChamber started in daemon mode on port ${options.port}`);
           console.log(`PID: ${child.pid}`);
           console.log(`Visit: http://localhost:${options.port}`);
@@ -338,6 +392,7 @@ const commands = {
       if (typeof options.uiPassword === 'string') {
         process.env.OPENCHAMBER_UI_PASSWORD = options.uiPassword;
       }
+      writeInstanceOptions(instanceFilePath, options);
       const { startWebUiServer } = await import(serverPath);
       await startWebUiServer({
         port: options.port,
@@ -365,10 +420,12 @@ const commands = {
           const pid = readPidFile(pidFilePath);
 
           if (pid && isProcessRunning(pid)) {
-            runningInstances.push({ port, pid, pidFilePath });
+            const instanceFilePath = path.join(tmpDir, `openchamber-${port}.json`);
+            runningInstances.push({ port, pid, pidFilePath, instanceFilePath });
           } else {
 
             removePidFile(pidFilePath);
+            removeInstanceFile(path.join(tmpDir, `openchamber-${port}.json`));
           }
         }
       }
@@ -404,12 +461,14 @@ const commands = {
           if (!isProcessRunning(targetInstance.pid)) {
             clearInterval(checkShutdown);
             removePidFile(targetInstance.pidFilePath);
+            removeInstanceFile(targetInstance.instanceFilePath);
             console.log('OpenChamber stopped successfully');
           } else if (attempts >= maxAttempts) {
             clearInterval(checkShutdown);
             console.log('Force killing process...');
             process.kill(targetInstance.pid, 'SIGKILL');
             removePidFile(targetInstance.pidFilePath);
+            removeInstanceFile(targetInstance.instanceFilePath);
             console.log('OpenChamber force stopped');
           }
         }, 500);
@@ -437,6 +496,7 @@ const commands = {
               if (!isProcessRunning(instance.pid)) {
                 clearInterval(checkShutdown);
                 removePidFile(instance.pidFilePath);
+                removeInstanceFile(instance.instanceFilePath);
                 console.log(`    Port ${instance.port} stopped successfully`);
                 resolve(true);
               } else if (attempts >= maxAttempts) {
@@ -445,6 +505,7 @@ const commands = {
                 try {
                   process.kill(instance.pid, 'SIGKILL');
                   removePidFile(instance.pidFilePath);
+                  removeInstanceFile(instance.instanceFilePath);
                   console.log(`    Port ${instance.port} force stopped`);
                 } catch (e) {
 
@@ -464,11 +525,95 @@ const commands = {
   },
 
   async restart(options) {
-    await commands.stop(options);
-    await commands.serve(options);
+    const os = await import('os');
+    const tmpDir = os.tmpdir();
+
+    // Find running instances to get their stored options
+    let instancesToRestart = [];
+
+    try {
+      const files = fs.readdirSync(tmpDir);
+      const pidFiles = files.filter(file => file.startsWith('openchamber-') && file.endsWith('.pid'));
+
+      for (const file of pidFiles) {
+        const port = parseInt(file.replace('openchamber-', '').replace('.pid', ''));
+        if (!isNaN(port)) {
+          const pidFilePath = path.join(tmpDir, file);
+          const instanceFilePath = path.join(tmpDir, `openchamber-${port}.json`);
+          const pid = readPidFile(pidFilePath);
+
+          if (pid && isProcessRunning(pid)) {
+            const storedOptions = readInstanceOptions(instanceFilePath);
+            instancesToRestart.push({
+              port,
+              pid,
+              pidFilePath,
+              instanceFilePath,
+              storedOptions: storedOptions || { port, daemon: false },
+            });
+          }
+        }
+      }
+    } catch (error) {
+      // Ignore
+    }
+
+    const portWasSpecified = process.argv.includes('--port') || process.argv.includes('-p');
+
+    if (instancesToRestart.length === 0) {
+      console.log('No running OpenChamber instances to restart');
+      console.log('Use "openchamber serve" to start a new instance');
+      return;
+    }
+
+    if (portWasSpecified) {
+      // Restart specific instance
+      const target = instancesToRestart.find(inst => inst.port === options.port);
+      if (!target) {
+        console.log(`No OpenChamber instance found running on port ${options.port}`);
+        return;
+      }
+      instancesToRestart = [target];
+    }
+
+    for (const instance of instancesToRestart) {
+      console.log(`Restarting OpenChamber on port ${instance.port}...`);
+
+      // Merge stored options with any explicitly provided options
+      const restartOptions = {
+        ...instance.storedOptions,
+        // CLI-provided options override stored ones
+        ...(portWasSpecified ? { port: options.port } : {}),
+        ...(process.argv.includes('--daemon') || process.argv.includes('-d') ? { daemon: options.daemon } : {}),
+        ...(process.argv.includes('--ui-password') ? { uiPassword: options.uiPassword } : {}),
+      };
+
+      // Stop the instance
+      try {
+        process.kill(instance.pid, 'SIGTERM');
+        // Wait for it to stop
+        let attempts = 0;
+        while (isProcessRunning(instance.pid) && attempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          attempts++;
+        }
+        if (isProcessRunning(instance.pid)) {
+          process.kill(instance.pid, 'SIGKILL');
+        }
+        removePidFile(instance.pidFilePath);
+      } catch (error) {
+        console.warn(`Warning: Could not stop instance: ${error.message}`);
+      }
+
+      // Small delay before restart
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Start with merged options
+      await commands.serve(restartOptions);
+    }
   },
 
-  async status(options) {
+  async status() {
     const os = await import('os');
     const tmpDir = os.tmpdir();
 
@@ -524,6 +669,131 @@ const commands = {
       } catch (error) {
 
       }
+    }
+  },
+
+  async update() {
+    const os = await import('os');
+    const tmpDir = os.tmpdir();
+    const packageManagerPath = path.join(__dirname, '..', 'server', 'lib', 'package-manager.js');
+    const {
+      checkForUpdates,
+      executeUpdate,
+      detectPackageManager,
+      getCurrentVersion,
+    } = await import(packageManagerPath);
+
+    // Check for running instances before update
+    let runningInstances = [];
+    try {
+      const files = fs.readdirSync(tmpDir);
+      const pidFiles = files.filter(file => file.startsWith('openchamber-') && file.endsWith('.pid'));
+
+      for (const file of pidFiles) {
+        const port = parseInt(file.replace('openchamber-', '').replace('.pid', ''));
+        if (!isNaN(port)) {
+          const pidFilePath = path.join(tmpDir, file);
+          const instanceFilePath = path.join(tmpDir, `openchamber-${port}.json`);
+          const pid = readPidFile(pidFilePath);
+
+          if (pid && isProcessRunning(pid)) {
+            const storedOptions = readInstanceOptions(instanceFilePath);
+            runningInstances.push({
+              port,
+              pid,
+              pidFilePath,
+              instanceFilePath,
+              storedOptions: storedOptions || { port, daemon: true },
+            });
+          }
+        }
+      }
+    } catch (error) {
+      // Ignore
+    }
+
+    console.log('Checking for updates...');
+    console.log(`Current version: ${getCurrentVersion()}`);
+
+    const updateInfo = await checkForUpdates();
+
+    if (updateInfo.error) {
+      console.error(`Error: ${updateInfo.error}`);
+      process.exit(1);
+    }
+
+    if (!updateInfo.available) {
+      console.log('\nYou are running the latest version.');
+      return;
+    }
+
+    console.log(`\nNew version available: ${updateInfo.version}`);
+
+    if (updateInfo.body) {
+      console.log('\nChangelog:');
+      console.log('─'.repeat(40));
+      // Simple formatting for CLI
+      const formatted = updateInfo.body
+        .replace(/^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}/gm, '\nv$1')
+        .replace(/^### /gm, '\n')
+        .replace(/^- /gm, '  • ');
+      console.log(formatted);
+      console.log('─'.repeat(40));
+    }
+
+    // Stop running instances before update
+    if (runningInstances.length > 0) {
+      console.log(`\nStopping ${runningInstances.length} running instance(s) before update...`);
+      for (const instance of runningInstances) {
+        try {
+          process.kill(instance.pid, 'SIGTERM');
+          let attempts = 0;
+          while (isProcessRunning(instance.pid) && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 250));
+            attempts++;
+          }
+          if (isProcessRunning(instance.pid)) {
+            process.kill(instance.pid, 'SIGKILL');
+          }
+          removePidFile(instance.pidFilePath);
+          console.log(`  Stopped instance on port ${instance.port}`);
+        } catch (error) {
+          console.warn(`  Warning: Could not stop instance on port ${instance.port}`);
+        }
+      }
+    }
+
+    const pm = detectPackageManager();
+    console.log(`\nDetected package manager: ${pm}`);
+    console.log('Installing update...\n');
+
+    const result = executeUpdate(pm);
+
+    if (result.success) {
+      console.log('\nUpdate successful!');
+
+      // Restart previously running instances
+      if (runningInstances.length > 0) {
+        console.log(`\nRestarting ${runningInstances.length} instance(s)...`);
+        for (const instance of runningInstances) {
+          try {
+            // Force daemon mode for restart after update
+            const restartOptions = {
+              ...instance.storedOptions,
+              daemon: true,
+            };
+            await commands.serve(restartOptions);
+            console.log(`  Restarted instance on port ${instance.port}`);
+          } catch (error) {
+            console.error(`  Failed to restart instance on port ${instance.port}: ${error.message}`);
+            console.log(`  Run manually: openchamber serve --port ${instance.port} --daemon`);
+          }
+        }
+      }
+    } else {
+      console.error('\nUpdate failed.');
+      console.error(`Exit code: ${result.exitCode}`);
+      process.exit(1);
     }
   },
 

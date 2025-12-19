@@ -4,6 +4,7 @@ import {
   downloadDesktopUpdate,
   restartToApplyUpdate,
   isDesktopRuntime,
+  isWebRuntime,
   type UpdateInfo,
   type UpdateProgress,
 } from '@/lib/desktop';
@@ -16,6 +17,8 @@ export type UpdateState = {
   info: UpdateInfo | null;
   progress: UpdateProgress | null;
   error: string | null;
+  /** Runtime type for conditional UI rendering */
+  runtimeType: 'desktop' | 'web' | 'vscode' | null;
 };
 
 export type UseUpdateCheckReturn = UpdateState & {
@@ -58,11 +61,48 @@ const createMockUpdate = (config: MockUpdateConfig): UpdateState => ({
   },
   progress: null,
   error: null,
+  runtimeType: 'desktop',
 });
 
 const shouldMockUpdate = (): boolean => {
   return getMockConfig() !== null;
 };
+
+/**
+ * Check for web updates via server API
+ */
+async function checkForWebUpdates(): Promise<UpdateInfo | null> {
+  try {
+    const response = await fetch('/api/openchamber/update-check', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      available: data.available ?? false,
+      version: data.version,
+      currentVersion: data.currentVersion ?? 'unknown',
+      body: data.body,
+      packageManager: data.packageManager,
+      updateCommand: data.updateCommand,
+    };
+  } catch (error) {
+    console.warn('Failed to check for web updates:', error);
+    return null;
+  }
+}
+
+function detectRuntimeType(): 'desktop' | 'web' | 'vscode' | null {
+  if (isDesktopRuntime()) return 'desktop';
+  if (isWebRuntime()) return 'web';
+  // VSCode doesn't support updates through this mechanism
+  return null;
+}
 
 export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
   const [state, setState] = useState<UpdateState>({
@@ -73,6 +113,7 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
     info: null,
     progress: null,
     error: null,
+    runtimeType: null,
   });
 
   // Only check mock mode once at startup - no polling
@@ -84,6 +125,12 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
     }
     return null;
   });
+
+  // Detect runtime type on mount
+  useEffect(() => {
+    const runtime = detectRuntimeType();
+    setState((prev) => ({ ...prev, runtimeType: runtime }));
+  }, []);
 
   const checkForUpdates = useCallback(async () => {
     if (mockMode) {
@@ -98,14 +145,23 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
       }
       return;
     }
-    if (!isDesktopRuntime()) {
+
+    const runtime = detectRuntimeType();
+    if (!runtime) {
       return;
     }
 
-    setState((prev) => ({ ...prev, checking: true, error: null }));
+    setState((prev) => ({ ...prev, checking: true, error: null, runtimeType: runtime }));
 
     try {
-      const info = await checkForDesktopUpdates();
+      let info: UpdateInfo | null = null;
+
+      if (runtime === 'desktop') {
+        info = await checkForDesktopUpdates();
+      } else if (runtime === 'web') {
+        info = await checkForWebUpdates();
+      }
+
       setState((prev) => ({
         ...prev,
         checking: false,
@@ -144,6 +200,8 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
       return;
     }
 
+    // For web runtime, there's no download - user runs CLI command
+    // This is only applicable to desktop
     if (!isDesktopRuntime() || !state.available) {
       return;
     }
@@ -169,6 +227,7 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
       return;
     }
 
+    // Only applicable to desktop
     if (!isDesktopRuntime() || !state.downloaded) {
       return;
     }
@@ -192,7 +251,8 @@ export const useUpdateCheck = (checkOnMount = true): UseUpdateCheckReturn => {
   }, [mockMode]);
 
   useEffect(() => {
-    if (checkOnMount && (isDesktopRuntime() || mockMode)) {
+    const runtime = detectRuntimeType();
+    if (checkOnMount && (runtime === 'desktop' || runtime === 'web' || mockMode)) {
       const timer = setTimeout(() => {
         checkForUpdates();
       }, 3000);
