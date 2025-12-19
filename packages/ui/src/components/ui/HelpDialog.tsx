@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useUIStore } from '@/stores/useUIStore';
-import { RiAddLine, RiArrowUpSLine, RiArrowUpWideLine, RiCloseCircleLine, RiCommandLine, RiGitBranchLine, RiLayoutLeftLine, RiPaletteLine, RiQuestionLine, RiSettings3Line, RiTerminalBoxLine, RiText } from '@remixicon/react';
+import { RiAddLine, RiArrowUpSLine, RiArrowUpWideLine, RiCloseCircleLine, RiCodeLine, RiCommandLine, RiGitBranchLine, RiLayoutLeftLine, RiPaletteLine, RiQuestionLine, RiSettings3Line, RiTerminalBoxLine, RiText } from '@remixicon/react';
 
 const renderKeyToken = (token: string, index: number) => {
   const normalized = token.trim().toLowerCase();
@@ -70,7 +70,7 @@ export const HelpDialog: React.FC = () => {
       category: "Session Management",
       items: [
         { keys: ["Ctrl + N"], description: "Create New Session", icon: RiAddLine },
-        { keys: ["Shift + Ctrl + N"], description: "Open Session Creator (worktree support)", icon: RiGitBranchLine },
+        { keys: ["Shift + Ctrl + N"], description: "Open Worktree Creator", icon: RiGitBranchLine },
         { keys: ["Ctrl + I"], description: "Focus Chat Input", icon: RiText },
         { keys: ["Esc + Esc"], description: "Abort active run (double press)", icon: RiCloseCircleLine },
       ]
@@ -79,6 +79,7 @@ export const HelpDialog: React.FC = () => {
       category: "Interface",
       items: [
         { keys: ["⌘ + /", "Ctrl + /"], description: "Cycle Theme (Light → Dark → System)", icon: RiPaletteLine },
+        { keys: ["Ctrl + E"], description: "Open Diff Panel", icon: RiCodeLine },
         { keys: ["Ctrl + G"], description: "Open Git Panel", icon: RiGitBranchLine },
         { keys: ["Ctrl + T"], description: "Open Terminal", icon: RiTerminalBoxLine },
         { keys: ["Ctrl + ,"], description: "Open Settings", icon: RiSettings3Line },

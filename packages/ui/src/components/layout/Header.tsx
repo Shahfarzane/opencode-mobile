@@ -5,7 +5,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { RiChat4Line, RiCodeLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiSettings3Line, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
+import { RiChat4Line, RiCodeLine, RiCommandLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiQuestionLine, RiSettings3Line, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
 import { useUIStore, type MainTab } from '@/stores/useUIStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -83,6 +83,8 @@ export const Header: React.FC = () => {
   const setSessionSwitcherOpen = useUIStore((state) => state.setSessionSwitcherOpen);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const setSettingsDialogOpen = useUIStore((state) => state.setSettingsDialogOpen);
+  const toggleCommandPalette = useUIStore((state) => state.toggleCommandPalette);
+  const toggleHelpDialog = useUIStore((state) => state.toggleHelpDialog);
   const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
   const sidebarWidth = useUIStore((state) => state.sidebarWidth);
   const activeMainTab = useUIStore((state) => state.activeMainTab);
@@ -384,6 +386,40 @@ export const Header: React.FC = () => {
 
       {}
       <div className="flex-1" />
+
+      {}
+      <div className="flex items-center gap-1 pr-3">
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={toggleCommandPalette}
+              aria-label="Open command palette"
+              className={headerIconButtonClass}
+            >
+              <RiCommandLine className="h-5 w-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Command Palette (Ctrl+X)</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={500}>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={toggleHelpDialog}
+              aria-label="Keyboard shortcuts"
+              className={headerIconButtonClass}
+            >
+              <RiQuestionLine className="h-5 w-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Keyboard Shortcuts (Ctrl+H)</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 

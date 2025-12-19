@@ -201,7 +201,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
   return (
     <div
       ref={containerRef}
-      className="absolute z-[100] min-w-0 w-full max-w-[450px] max-h-64 bg-popover border border-border rounded-xl shadow-none bottom-full mb-2 left-0 flex flex-col"
+      className="absolute z-[100] min-w-0 w-full max-w-[450px] max-h-64 bg-background border border-border rounded-xl shadow-none bottom-full mb-2 left-0 flex flex-col"
     >
       <ScrollableOverlay outerClassName="flex-1 min-h-0" className="px-0">
         {loading ? (
@@ -216,7 +216,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
                 ref={(el) => { itemRefs.current[index] = el; }}
                 className={cn(
                   "flex items-start gap-2 px-3 py-2 cursor-pointer rounded-lg",
-                  index === selectedIndex && "bg-accent"
+                  index === selectedIndex && "bg-muted"
                 )}
                 onClick={() => onCommandSelect(command)}
                 onMouseEnter={() => setSelectedIndex(index)}
