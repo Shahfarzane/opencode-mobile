@@ -46,7 +46,6 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
   onCopyHash,
 }) => {
   const [isOpen, setIsOpen] = React.useState(true);
-  const commitCount = log?.all.length ?? 0;
 
   if (!log) {
     return null;
