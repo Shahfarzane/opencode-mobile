@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.8] - 2025-12-19
+
+- Introduced update mechanism for web version that doesn't need any cli interaction
+- Added installation script for web version with package managed detection
+- Update and restart of web server now support automatic pick-up of previously set parameters like port or password
+
+
 ## [1.2.7] - 2025-12-19
 
 - Comprehensive macOS native menu bar entries
