@@ -1,0 +1,151 @@
+import React from 'react';
+import {
+  RiGitCommitLine,
+  RiArrowUpLine,
+  RiAiGenerate2,
+  RiLoader4Line,
+} from '@remixicon/react';
+import {
+  Collapsible,
+  CollapsibleContent,
+} from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
+import { ButtonLarge } from '@/components/ui/button-large';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { CommitInput } from './CommitInput';
+import { AIHighlightsBox } from './AIHighlightsBox';
+
+type CommitAction = 'commit' | 'commitAndPush' | null;
+
+interface CommitSectionProps {
+  selectedCount: number;
+  commitMessage: string;
+  onCommitMessageChange: (value: string) => void;
+  generatedHighlights: string[];
+  onInsertHighlights: () => void;
+  onClearHighlights: () => void;
+  onGenerateMessage: () => void;
+  isGeneratingMessage: boolean;
+  onCommit: () => void;
+  onCommitAndPush: () => void;
+  commitAction: CommitAction;
+  isBusy: boolean;
+}
+
+export const CommitSection: React.FC<CommitSectionProps> = ({
+  selectedCount,
+  commitMessage,
+  onCommitMessageChange,
+  generatedHighlights,
+  onInsertHighlights,
+  onClearHighlights,
+  onGenerateMessage,
+  isGeneratingMessage,
+  onCommit,
+  onCommitAndPush,
+  commitAction,
+  isBusy,
+}) => {
+  const hasSelectedFiles = selectedCount > 0;
+  const canCommit = commitMessage.trim() && hasSelectedFiles && commitAction === null;
+
+  return (
+    <Collapsible
+      open={hasSelectedFiles}
+      className="rounded-xl border border-border/60 bg-background/70 overflow-hidden"
+    >
+      <div className="flex w-full items-center justify-between px-3 py-2">
+        <h3 className="typography-ui-header font-semibold text-foreground">Commit</h3>
+        <span className="typography-meta text-muted-foreground">
+          {hasSelectedFiles
+            ? `${selectedCount} file${selectedCount === 1 ? '' : 's'} selected`
+            : 'No files selected'}
+        </span>
+      </div>
+
+      <CollapsibleContent>
+        <div className="flex flex-col gap-3 p-3 pt-0">
+          <AIHighlightsBox
+            highlights={generatedHighlights}
+            onInsert={onInsertHighlights}
+            onClear={onClearHighlights}
+          />
+
+          <CommitInput
+            value={commitMessage}
+            onChange={onCommitMessageChange}
+            placeholder="Commit message"
+            disabled={commitAction !== null}
+          />
+
+          <div className="flex items-center gap-2">
+            <Tooltip delayDuration={1000}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onGenerateMessage}
+                  disabled={
+                    isGeneratingMessage ||
+                    commitAction !== null ||
+                    selectedCount === 0 ||
+                    isBusy
+                  }
+                  aria-label="Generate commit message"
+                >
+                  {isGeneratingMessage ? (
+                    <RiLoader4Line className="size-4 animate-spin" />
+                  ) : (
+                    <RiAiGenerate2 className="size-4 text-primary" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={8}>
+                Generate commit message with AI
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex-1" />
+
+            <ButtonLarge
+              variant="outline"
+              onClick={onCommit}
+              disabled={!canCommit || isGeneratingMessage}
+            >
+              {commitAction === 'commit' ? (
+                <>
+                  <RiLoader4Line className="size-4 animate-spin" />
+                  Committing...
+                </>
+              ) : (
+                <>
+                  <RiGitCommitLine className="size-4" />
+                  Commit
+                </>
+              )}
+            </ButtonLarge>
+
+            <ButtonLarge
+              variant="default"
+              onClick={onCommitAndPush}
+              disabled={!canCommit || isGeneratingMessage}
+            >
+              {commitAction === 'commitAndPush' ? (
+                <>
+                  <RiLoader4Line className="size-4 animate-spin" />
+                  Pushing...
+                </>
+              ) : (
+                <>
+                  <RiArrowUpLine className="size-4" />
+                  Commit &amp; Push
+                </>
+              )}
+            </ButtonLarge>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};

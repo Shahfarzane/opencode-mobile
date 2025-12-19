@@ -2,7 +2,6 @@ import React from 'react';
 import type { Session } from '@opencode-ai/sdk';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -690,44 +689,73 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
 
       if (editingId === session.id) {
         return (
-          <div key={session.id} className="flex flex-col rounded-lg border border-transparent px-2 py-2">
-            <form
-              className="flex w-full items-center justify-between gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                handleSaveEdit();
-              }}
-            >
-              <Input
-                value={editTitle}
-                onChange={(event) => setEditTitle(event.target.value)}
-                className="h-7 flex-1 border-none bg-transparent px-0 py-0 typography-micro focus-visible:ring-0 focus-visible:ring-offset-0"
-                autoFocus
-                placeholder="Rename session"
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') handleCancelEdit();
+          <div
+            key={session.id}
+            className={cn(
+              'group relative flex items-center rounded-md px-1.5 py-1',
+              'dark:bg-accent/80 bg-primary/12',
+              depth > 0 && 'pl-[20px]',
+            )}
+          >
+            <div className="flex min-w-0 flex-1 flex-col gap-0">
+              <form
+                className="flex w-full items-center gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  handleSaveEdit();
                 }}
-              />
-              <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="h-6 w-6 p-0" type="submit">
-                  <RiCheckLine className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
+              >
+                <input
+                  value={editTitle}
+                  onChange={(event) => setEditTitle(event.target.value)}
+                  className="flex-1 min-w-0 bg-transparent typography-ui-label outline-none placeholder:text-muted-foreground"
+                  autoFocus
+                  placeholder="Rename session"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') handleCancelEdit();
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                >
+                  <RiCheckLine className="size-4" />
+                </button>
+                <button
                   type="button"
                   onClick={handleCancelEdit}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
                 >
-                  <RiCloseLine className="h-4 w-4" />
-                </Button>
+                  <RiCloseLine className="size-4" />
+                </button>
+              </form>
+              <div className="flex items-center gap-2 typography-micro text-muted-foreground/60 min-w-0 overflow-hidden leading-tight">
+                {hasChildren ? (
+                  <span className="inline-flex items-center justify-center flex-shrink-0">
+                    {isExpanded ? (
+                      <RiArrowDownSLine className="h-3 w-3" />
+                    ) : (
+                      <RiArrowRightSLine className="h-3 w-3" />
+                    )}
+                  </span>
+                ) : null}
+                <span className="flex-shrink-0">{formatDateLabel(session.time?.created || Date.now())}</span>
+                {session.share ? (
+                  <RiShare2Line className="h-3 w-3 text-[color:var(--status-info)] flex-shrink-0" />
+                ) : null}
+                {hasSummary && ((additions ?? 0) !== 0 || (deletions ?? 0) !== 0) ? (
+                  <span className="flex-shrink-0 text-[0.7rem] leading-none">
+                    <span className="text-[color:var(--status-success)]">+{Math.max(0, additions ?? 0)}</span>
+                    <span className="text-muted-foreground/50">/</span>
+                    <span className="text-destructive">-{Math.max(0, deletions ?? 0)}</span>
+                  </span>
+                ) : null}
+                {hasChildren ? (
+                  <span className="truncate">
+                    {node.children.length} {node.children.length === 1 ? 'task' : 'tasks'}
+                  </span>
+                ) : null}
               </div>
-            </form>
-            <div className="flex items-center gap-2 pt-1 typography-micro text-muted-foreground/70 overflow-hidden">
-              <span className="flex-shrink-0">{formatDateLabel(session.time?.created || Date.now())}</span>
-              {session.share && (
-                <RiShare2Line className="h-3 w-3 text-[color:var(--status-info)] flex-shrink-0" />
-              )}
             </div>
           </div>
         );
