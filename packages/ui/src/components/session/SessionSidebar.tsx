@@ -1,7 +1,6 @@
 import React from 'react';
 import type { Session } from '@opencode-ai/sdk';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
