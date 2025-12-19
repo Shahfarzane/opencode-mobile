@@ -234,6 +234,10 @@ export const useEventStream = () => {
 
   const sessionCooldownTimersRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
   const sessionActivityPhaseRef = React.useRef<Map<string, 'idle' | 'busy' | 'cooldown'>>(new Map());
+  const currentSessionIdRef = React.useRef<string | null>(currentSessionId);
+  React.useEffect(() => {
+    currentSessionIdRef.current = currentSessionId;
+  }, [currentSessionId]);
 
   const requestSessionMetadataRefresh = React.useCallback(
     (sessionId: string | undefined | null) => {
@@ -308,6 +312,21 @@ export const useEventStream = () => {
       sessionCooldownTimersRef.current.set(sessionId, timer);
     }
   }, []);
+
+  const refreshSessionActivityStatus = React.useCallback(async () => {
+    try {
+      const statusMap = await opencodeClient.getSessionStatus();
+      if (!statusMap) return;
+
+      Object.entries(statusMap).forEach(([sessionId, raw]) => {
+        if (!sessionId || !raw) return;
+        const status = raw as { type?: string };
+        const phase: 'idle' | 'busy' = 
+          status.type === 'busy' || status.type === 'retry' ? 'busy' : 'idle';
+        updateSessionActivityPhase(sessionId, phase);
+      });
+    } catch { /* ignored */ }
+  }, [updateSessionActivityPhase]);
 
   const handleEvent = React.useCallback((event: EventData) => {
     lastEventTimestampRef.current = Date.now();
@@ -869,7 +888,7 @@ export const useEventStream = () => {
       console.debug('[useEventStream] Connection state:', {
         isDesktopRuntime: isDesktopRuntimeRef.current,
         hasUnsubscribe: Boolean(unsubscribeRef.current),
-        currentSessionId,
+        currentSessionId: currentSessionIdRef.current,
         effectiveDirectory,
         onlineStatus: onlineStatusRef.current,
         visibilityState: visibilityStateRef.current,
@@ -877,7 +896,7 @@ export const useEventStream = () => {
         reconnectAttempts: reconnectAttemptsRef.current,
       });
     }
-  }, [currentSessionId, effectiveDirectory]);
+  }, [effectiveDirectory]);
 
   const waitForDesktopBridge = React.useCallback(async (): Promise<boolean> => true, []);
 
@@ -957,14 +976,17 @@ export const useEventStream = () => {
 
       if (shouldRefresh) {
         void bootstrapState('sse_reconnected');
-      } else if (currentSessionId) {
-        setTimeout(() => {
-          loadMessages(currentSessionId)
-            .then(() => requestSessionMetadataRefresh(currentSessionId))
-            .catch((error) => {
-              console.warn('[useEventStream] Failed to resync messages after reconnect:', error);
-            });
-        }, 0);
+      } else {
+        const sessionId = currentSessionIdRef.current;
+        if (sessionId) {
+          setTimeout(() => {
+            loadMessages(sessionId)
+              .then(() => requestSessionMetadataRefresh(sessionId))
+              .catch((error) => {
+                console.warn('[useEventStream] Failed to resync messages after reconnect:', error);
+              });
+          }, 0);
+        }
       }
     };
 
@@ -1007,7 +1029,6 @@ export const useEventStream = () => {
     stopStream,
     publishStatus,
     checkConnection,
-    currentSessionId,
     loadMessages,
     requestSessionMetadataRefresh,
     requestSessionListRefresh,
@@ -1104,14 +1125,13 @@ export const useEventStream = () => {
       maybeBootstrapIfStale('visibility_restore');
       if (pendingResumeRef.current || !unsubscribeRef.current) {
         console.info('[useEventStream] Visibility restored, triggering soft refresh...');
-        if (!isDesktopRuntimeRef.current) {
-          sessionActivityPhaseRef.current.clear();
-        }
-        if (currentSessionId) {
-          loadMessages(currentSessionId).catch(() => {});
-          requestSessionMetadataRefresh(currentSessionId);
+        const sessionId = currentSessionIdRef.current;
+        if (sessionId) {
+          loadMessages(sessionId).catch(() => {});
+          requestSessionMetadataRefresh(sessionId);
         }
         void loadSessions();
+        void refreshSessionActivityStatus();
         publishStatus('connecting', 'Resuming stream');
           startStream({ resetAttempts: true });
         }
@@ -1130,17 +1150,15 @@ export const useEventStream = () => {
 
       if (pendingResumeRef.current || !unsubscribeRef.current) {
         console.info('[useEventStream] Window focused after pause, triggering soft refresh...');
-          if (!isDesktopRuntimeRef.current) {
-            sessionActivityPhaseRef.current.clear();
-          }
-
-          if (currentSessionId) {
-            requestSessionMetadataRefresh(currentSessionId);
-            loadMessages(currentSessionId)
+          const sessionId = currentSessionIdRef.current;
+          if (sessionId) {
+            requestSessionMetadataRefresh(sessionId);
+            loadMessages(sessionId)
               .then(() => console.info('[useEventStream] Messages refreshed on focus'))
               .catch((err) => console.warn('[useEventStream] Failed to refresh messages:', err));
           }
           void loadSessions();
+          void refreshSessionActivityStatus();
 
           publishStatus('connecting', 'Resuming stream');
           startStream({ resetAttempts: true });
@@ -1228,11 +1246,9 @@ export const useEventStream = () => {
       }
 
       const cooldownTimers = sessionCooldownTimersRef.current;
-      const activityPhase = sessionActivityPhaseRef.current;
 
       cooldownTimers.forEach((timer) => clearTimeout(timer));
       cooldownTimers.clear();
-      activityPhase.clear();
       messageCache.clear();
 
       pendingResumeRef.current = false;
@@ -1249,7 +1265,6 @@ export const useEventStream = () => {
       publishStatus('idle', null);
     };
   }, [
-    currentSessionId,
     effectiveDirectory,
     trackMessage,
     resolveVisibilityState,
@@ -1260,6 +1275,7 @@ export const useEventStream = () => {
     loadMessages,
     requestSessionMetadataRefresh,
     updateSessionActivityPhase,
+    refreshSessionActivityStatus,
     shouldHoldConnection
   ]);
 };
