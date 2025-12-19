@@ -18,11 +18,23 @@ import { opencodeClient } from '@/lib/opencode/client';
 import { useFontPreferences } from '@/hooks/useFontPreferences';
 import { CODE_FONT_OPTION_MAP, DEFAULT_MONO_FONT, DEFAULT_UI_FONT, UI_FONT_OPTION_MAP } from '@/lib/fontOptions';
 import { ConfigUpdateOverlay } from '@/components/ui/ConfigUpdateOverlay';
+import { AboutDialog } from '@/components/ui/AboutDialog';
 import { RuntimeAPIProvider } from '@/contexts/RuntimeAPIProvider';
 import { registerRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
 import { isCliAvailable } from '@/lib/desktop';
+import { useUIStore } from '@/stores/useUIStore';
 import type { RuntimeAPIs } from '@/lib/api/types';
+
+const AboutDialogWrapper: React.FC = () => {
+  const { isAboutDialogOpen, setAboutDialogOpen } = useUIStore();
+  return (
+    <AboutDialog
+      open={isAboutDialogOpen}
+      onOpenChange={setAboutDialogOpen}
+    />
+  );
+};
 
 type AppProps = {
   apis: RuntimeAPIs;
@@ -200,6 +212,7 @@ function App({ apis }: AppProps) {
               <MainLayout />
               <Toaster />
               <ConfigUpdateOverlay />
+              <AboutDialogWrapper />
               {showMemoryDebug && (
                 <MemoryDebugPanel onClose={() => setShowMemoryDebug(false)} />
               )}

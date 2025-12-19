@@ -90,6 +90,8 @@ const MENU_ITEM_REQUEST_FEATURE_ID: &str = "openchamber_request_feature";
 
 // App menu
 #[cfg(target_os = "macos")]
+const MENU_ITEM_ABOUT_ID: &str = "openchamber_about";
+#[cfg(target_os = "macos")]
 const MENU_ITEM_SETTINGS_ID: &str = "openchamber_settings";
 #[cfg(target_os = "macos")]
 const MENU_ITEM_COMMAND_PALETTE_ID: &str = "openchamber_command_palette";
@@ -329,17 +331,17 @@ fn prevent_app_nap() {
 
 #[cfg(target_os = "macos")]
 fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tauri::menu::Menu<R>> {
-    use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu, HELP_SUBMENU_ID, WINDOW_SUBMENU_ID};
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu, HELP_SUBMENU_ID, WINDOW_SUBMENU_ID};
 
     let pkg_info = app.package_info();
-    let config = app.config();
-    let about_metadata = AboutMetadata {
-        name: Some(pkg_info.name.clone()),
-        version: Some(pkg_info.version.to_string()),
-        copyright: config.bundle.copyright.clone(),
-        authors: config.bundle.publisher.clone().map(|p| vec![p]),
-        ..Default::default()
-    };
+
+    let about = MenuItem::with_id(
+        app,
+        MENU_ITEM_ABOUT_ID,
+        format!("About {}", pkg_info.name),
+        true,
+        None::<&str>,
+    )?;
 
     let check_for_updates = MenuItem::with_id(
         app,
@@ -378,7 +380,7 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
     let worktree_creator = MenuItem::with_id(
         app,
         MENU_ITEM_WORKTREE_CREATOR_ID,
-        "New Worktree…",
+        "New Worktree",
         true,
         Some("Ctrl+Shift+N"),
     )?;
@@ -386,7 +388,7 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
     let change_workspace = MenuItem::with_id(
         app,
         MENU_ITEM_CHANGE_WORKSPACE_ID,
-        "Change Workspace…",
+        "Change Workspace",
         true,
         None::<&str>,
     )?;
@@ -476,7 +478,7 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
     let report_bug = MenuItem::with_id(
         app,
         MENU_ITEM_REPORT_BUG_ID,
-        "Report a Bug…",
+        "Report a Bug",
         true,
         None::<&str>,
     )?;
@@ -484,7 +486,7 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
     let request_feature = MenuItem::with_id(
         app,
         MENU_ITEM_REQUEST_FEATURE_ID,
-        "Request a Feature…",
+        "Request a Feature",
         true,
         None::<&str>,
     )?;
@@ -531,7 +533,7 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
                 pkg_info.name.clone(),
                 true,
                 &[
-                    &PredefinedMenuItem::about(app, None, Some(about_metadata))?,
+                    &about,
                     &check_for_updates,
                     &PredefinedMenuItem::separator(app)?,
                     &settings,
@@ -870,6 +872,11 @@ fn main() {
                 }
 
                 // App menu actions
+                if event_id == MENU_ITEM_ABOUT_ID {
+                    let _ = app.emit("openchamber:menu-action", "about");
+                    return;
+                }
+
                 if event_id == MENU_ITEM_SETTINGS_ID {
                     let _ = app.emit("openchamber:menu-action", "settings");
                     return;

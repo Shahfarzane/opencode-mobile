@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { themeStoragePlugin } from '../../vite-theme-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 
 export default defineConfig({
   root: path.resolve(__dirname, '.'),
@@ -23,6 +25,7 @@ export default defineConfig({
   define: {
     'process.env': {},
     global: 'globalThis',
+    __APP_VERSION__: JSON.stringify(packageJson.version),
   },
   optimizeDeps: {
     include: ['@opencode-ai/sdk'],

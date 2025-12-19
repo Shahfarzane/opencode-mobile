@@ -12,6 +12,7 @@ import { isDesktopRuntime } from '@/lib/desktop';
 const MENU_ACTION_EVENT = 'openchamber:menu-action';
 
 type MenuAction =
+  | 'about'
   | 'settings'
   | 'command-palette'
   | 'new-session'
@@ -39,6 +40,7 @@ export const useMenuActions = (
     setSessionCreateDialogOpen,
     setActiveMainTab,
     setSettingsDialogOpen,
+    setAboutDialogOpen,
   } = useUIStore();
   const { agents } = useConfigStore();
   const { setDirectory } = useDirectoryStore();
@@ -72,6 +74,10 @@ export const useMenuActions = (
       const action = (event as CustomEvent<MenuAction>).detail;
 
       switch (action) {
+        case 'about':
+          setAboutDialogOpen(true);
+          break;
+
         case 'settings':
           setSettingsDialogOpen(true);
           break;
@@ -185,6 +191,7 @@ export const useMenuActions = (
     setSessionCreateDialogOpen,
     setActiveMainTab,
     setSettingsDialogOpen,
+    setAboutDialogOpen,
     setThemeMode,
     agents,
     onToggleMemoryDebug,
