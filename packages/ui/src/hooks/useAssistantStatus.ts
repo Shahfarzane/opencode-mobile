@@ -210,12 +210,54 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             }
         }
 
+        const TOOL_STATUS_PHRASES: Record<string, string> = {
+            read: 'reading file',
+            write: 'writing file',
+            edit: 'editing file',
+            multiedit: 'editing files',
+            bash: 'running command',
+            grep: 'searching content',
+            glob: 'finding files',
+            list: 'listing directory',
+            task: 'delegating task',
+            webfetch: 'fetching URL',
+            websearch: 'searching web',
+            codesearch: 'web code search',
+            todowrite: 'updating todos',
+            todoread: 'reading todos',
+        };
+
+        const WORKING_PHRASES = [
+            'working',
+            'processing',
+            'preparing',
+            'warming up',
+            'gears turning',
+            'computing',
+            'calculating',
+            'analyzing',
+            'wheels spinning',
+            'calibrating',
+            'synthesizing',
+            'connecting dots',
+            'inspecting logic',
+            'weighing options',
+        ];
+
+        const getToolStatusPhrase = (toolName: string): string => {
+            return TOOL_STATUS_PHRASES[toolName] ?? `using ${toolName}`;
+        };
+
+        const getRandomWorkingPhrase = (): string => {
+            return WORKING_PHRASES[Math.floor(Math.random() * WORKING_PHRASES.length)];
+        };
+
         const statusText = (() => {
-            if (activePartType === 'editing') return 'editing';
-            if (activePartType === 'tool' && activeToolName) return `using ${activeToolName}`;
+            if (activePartType === 'editing') return 'editing file';
+            if (activePartType === 'tool' && activeToolName) return getToolStatusPhrase(activeToolName);
             if (activePartType === 'reasoning') return 'thinking';
             if (activePartType === 'text') return 'composing';
-            return 'working';
+            return getRandomWorkingPhrase();
         })();
 
         return { activePartType, activeToolName, statusText };
