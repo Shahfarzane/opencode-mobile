@@ -137,7 +137,8 @@ export async function getStatus(directory) {
   const git = simpleGit(directory);
 
   try {
-    const status = await git.status();
+    // Use -uall to show all untracked files individually, not just directories
+    const status = await git.status(['-uall']);
 
     const [stagedStatsRaw, workingStatsRaw] = await Promise.all([
       git.raw(['diff', '--cached', '--numstat']).catch(() => ''),

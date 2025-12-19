@@ -6,7 +6,10 @@ All notable changes to this project will be documented in this file.
 
 - Polished chat expirience for longer session
 - Fixed file link from git view to diff
-
+- Enhancements to the inactive state management of the desktop app
+- Redesigned Git tab layout with improved organization
+- Fixed untracked files in new directories not showing individually
+- Smoother session rename experience
 
 ## [1.2.4] - 2025-12-18
 

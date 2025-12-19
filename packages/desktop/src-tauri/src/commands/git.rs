@@ -452,7 +452,8 @@ pub async fn get_git_status(
         .map_err(|e| e.to_string())?;
 
     // 1. Get porcelain status
-    let status_output = run_git(&["status", "--porcelain", "-b", "-z"], &path)
+    // Use -uall to show all untracked files individually, not just directories
+    let status_output = run_git(&["status", "--porcelain", "-b", "-z", "-uall"], &path)
         .await
         .map_err(|e| e.to_string())?;
 
