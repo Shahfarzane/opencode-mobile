@@ -1,5 +1,5 @@
 import React from 'react';
-import { RiCheckLine, RiCloseLine, RiGlobalLine, RiPencilAiLine, RiQuestionLine, RiTerminalBoxLine, RiTimeLine, RiToolsLine } from '@remixicon/react';
+import { RiCheckLine, RiCloseLine, RiFileEditLine, RiGlobalLine, RiPencilAiLine, RiQuestionLine, RiTerminalBoxLine, RiTimeLine, RiToolsLine } from '@remixicon/react';
 import { cn } from '@/lib/utils';
 import type { Permission, PermissionResponse } from '@/types/permission';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -7,6 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { generateSyntaxTheme } from '@/lib/theme/syntaxThemeGenerator';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+import { DiffPreview, WritePreview } from './DiffPreview';
 
 interface PermissionCardProps {
   permission: Permission;
@@ -19,6 +20,10 @@ const getToolIcon = (toolName: string) => {
 
   if (tool === 'edit' || tool === 'multiedit' || tool === 'str_replace' || tool === 'str_replace_based_edit_tool') {
     return <RiPencilAiLine className={iconClass} />;
+  }
+
+  if (tool === 'write' || tool === 'create' || tool === 'file_write') {
+    return <RiFileEditLine className={iconClass} />;
   }
 
   if (tool === 'bash' || tool === 'shell' || tool === 'cmd' || tool === 'terminal' || tool === 'shell_command') {
@@ -37,6 +42,9 @@ const getToolDisplayName = (toolName: string): string => {
 
   if (tool === 'edit' || tool === 'multiedit' || tool === 'str_replace' || tool === 'str_replace_based_edit_tool') {
     return 'edit';
+  }
+  if (tool === 'write' || tool === 'create' || tool === 'file_write') {
+    return 'write';
   }
   if (tool === 'bash' || tool === 'shell' || tool === 'cmd' || tool === 'terminal' || tool === 'shell_command') {
     return 'bash';
@@ -154,73 +162,38 @@ export const PermissionCard: React.FC<PermissionCardProps> = ({
 
     if (tool === 'edit' || tool === 'multiedit' || tool === 'str_replace' || tool === 'str_replace_based_edit_tool') {
       const filePath = getMeta('path') || getMeta('file_path') || getMeta('filename') || getMeta('filePath');
-      const oldContent = getMeta('old_str') || getMeta('oldString') || getMeta('old_content') || getMeta('before');
-      const newContent = getMeta('new_str') || getMeta('newString') || getMeta('new_content') || getMeta('after');
       const changes = getMeta('changes') || getMeta('diff');
       const replaceAll = getMetaBool('replace_all') || getMetaBool('replaceAll');
 
       return (
         <>
-          {filePath && (
-            <div className="mb-2">
-              <div className="typography-meta text-muted-foreground mb-1">File Path:</div>
-              <code className="typography-meta px-2 py-1 bg-muted/30 rounded block break-all">
-                {filePath}
-              </code>
-            </div>
-          )}
           {replaceAll && (
             <div className="typography-meta text-muted-foreground mb-2">
               <span className="font-semibold">⚠️ Replace All Occurrences</span>
             </div>
           )}
-          {changes ? (
-            <div>
-              <div className="typography-meta text-muted-foreground mb-1">Changes:</div>
-              <ScrollableOverlay outerClassName="max-h-64" className="overflow-x-auto p-0">
-                <SyntaxHighlighter
-                  language="diff"
-                  style={syntaxTheme}
-                  customStyle={{
-                    margin: 0,
-                    padding: '0.5rem',
-                    fontSize: 'var(--text-meta)',
-                    lineHeight: '1.25rem',
-                    background: 'rgb(var(--muted) / 0.3)',
-                    borderRadius: '0.25rem'
-                  }}
-                  wrapLongLines={false}
-                >
-                  {changes}
-                </SyntaxHighlighter>
-              </ScrollableOverlay>
-            </div>
-          ) : (
-            <>
-              {oldContent && (
-                <div className="mb-2">
-                  <div className="typography-meta text-muted-foreground mb-1">Remove:</div>
-              <ScrollableOverlay outerClassName="max-h-32 border border-red-500/20 rounded bg-red-500/5 p-2" className="p-0">
-                <pre className="typography-meta font-mono text-red-600 dark:text-red-400 whitespace-pre-wrap break-all">
-                  {oldContent.length > 500 ? oldContent.substring(0, 500) + '...' : oldContent}
-                </pre>
-              </ScrollableOverlay>
-                </div>
-              )}
-              {newContent && (
-                <div>
-                  <div className="typography-meta text-muted-foreground mb-1">Replace with:</div>
-                  <ScrollableOverlay outerClassName="max-h-32 border border-green-500/20 rounded bg-green-500/5 p-2" className="p-0">
-                    <pre className="typography-meta font-mono text-green-600 dark:text-green-400 whitespace-pre-wrap break-all">
-                      {newContent.length > 500 ? newContent.substring(0, 500) + '...' : newContent}
-                    </pre>
-                  </ScrollableOverlay>
-                </div>
-              )}
-            </>
+          {changes && (
+            <ScrollableOverlay outerClassName="max-h-[60vh]" className="tool-output-surface p-1 rounded-xl border border-border/20 bg-transparent">
+              <DiffPreview diff={changes} syntaxTheme={syntaxTheme} filePath={filePath} />
+            </ScrollableOverlay>
           )}
         </>
       );
+    }
+
+    if (tool === 'write' || tool === 'create' || tool === 'file_write') {
+      const filePath = getMeta('path') || getMeta('file_path') || getMeta('filename') || getMeta('filePath');
+      const content = getMeta('content') || getMeta('text') || getMeta('data');
+
+      if (content) {
+        return (
+          <ScrollableOverlay outerClassName="max-h-[60vh]" className="tool-output-surface p-1 rounded-xl border border-border/20 bg-transparent">
+            <WritePreview content={content} syntaxTheme={syntaxTheme} filePath={filePath} />
+          </ScrollableOverlay>
+        );
+      }
+
+      return null;
     }
 
     if (tool === 'webfetch' || tool === 'fetch' || tool === 'curl' || tool === 'wget') {
@@ -369,7 +342,7 @@ export const PermissionCard: React.FC<PermissionCardProps> = ({
                 shouldHighlight = true;
               }
 
-              else if (tool === 'edit' || tool === 'multiedit' || tool === 'str_replace' || tool === 'str_replace_based_edit_tool') {
+              else if (tool === 'edit' || tool === 'multiedit' || tool === 'str_replace' || tool === 'str_replace_based_edit_tool' || tool === 'write' || tool === 'create' || tool === 'file_write') {
                 primaryContent = getMeta('path') || getMeta('file_path') || getMeta('filename') || getMeta('filePath');
                 shouldHighlight = false;
               }
