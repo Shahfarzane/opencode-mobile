@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+
+## [1.2.6] - 2025-12-19
+
 - Added write/create tool preview in permission cards with syntax highlighting
+- More descriptive assistant status messages with tool-specific and varied idle phrases
+- Polished Git view layout
+
 
 ## [1.2.5] - 2025-12-19
 
