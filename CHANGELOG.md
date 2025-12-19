@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Added write/create tool preview in permission cards with syntax highlighting
 
 ## [1.2.5] - 2025-12-19
 
