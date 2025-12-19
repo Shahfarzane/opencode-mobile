@@ -2,6 +2,7 @@ import React from 'react';
 import { useSessionStore, MEMORY_LIMITS } from '@/stores/useSessionStore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { RiCloseLine, RiDatabase2Line, RiDeleteBinLine, RiPulseLine } from '@remixicon/react';
 import { useDesktopServerInfo } from '@/hooks/useDesktopServerInfo';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
@@ -153,40 +154,65 @@ export const MemoryDebugPanel: React.FC<MemoryDebugPanelProps> = ({ onClose }) =
 
         {}
         <div className="flex gap-2 pt-2 border-t">
-          <Button
-            size="sm"
-            variant="outline"
-            className="typography-meta"
-            onClick={() => {
-              if (currentSessionId) {
-                trimToViewportWindow(currentSessionId, 10);
-              }
-            }}
-          >
-            <RiDeleteBinLine className="h-3 w-3 mr-1" />
-            Force Trim (10)
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="typography-meta"
-            onClick={() => {
-              evictLeastRecentlyUsed();
-
-            }}
-          >
-            Evict LRU
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="typography-meta"
-            onClick={() => {
-
-            }}
-          >
-            Log State
-          </Button>
+          <Tooltip delayDuration={1000}>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="typography-meta"
+                onClick={() => {
+                  if (currentSessionId) {
+                    trimToViewportWindow(currentSessionId, 10);
+                  }
+                }}
+              >
+                <RiDeleteBinLine className="h-3 w-3 mr-1" />
+                Force Trim (10)
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              Trim current session to only 10 most recent messages
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip delayDuration={1000}>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="typography-meta"
+                onClick={() => {
+                  evictLeastRecentlyUsed();
+                }}
+              >
+                Evict LRU
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              Remove least recently used sessions from memory cache
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip delayDuration={1000}>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="typography-meta"
+                onClick={() => {
+                  console.log('[MemoryDebug] Session store state:', {
+                    sessions: sessions.map(s => ({ id: s.id, title: s.title })),
+                    currentSessionId,
+                    cachedSessions: Array.from(messages.keys()),
+                    memoryStates: Object.fromEntries(sessionMemoryState),
+                  });
+                }}
+              >
+                Log State
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              Log current memory state to browser console
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </Card>

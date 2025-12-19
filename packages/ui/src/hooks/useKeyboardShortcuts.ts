@@ -57,11 +57,12 @@ export const useKeyboardShortcuts = () => {
         diagnostics
           .downloadLogs()
           .then(({ fileName, content }) => {
+            const finalFileName = fileName || 'openchamber.log';
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement('a');
             anchor.href = url;
-            anchor.download = fileName || 'desktop.log';
+            anchor.download = finalFileName;
             document.body.appendChild(anchor);
             anchor.click();
             document.body.removeChild(anchor);

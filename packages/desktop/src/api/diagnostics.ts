@@ -7,7 +7,7 @@ type LogResponse = {
 };
 
 const normalizePayload = (payload: LogResponse): { fileName: string; content: string } => ({
-  fileName: typeof payload.fileName === 'string' && payload.fileName.trim().length > 0 ? payload.fileName : 'desktop.log',
+  fileName: typeof payload.fileName === 'string' && payload.fileName.trim().length > 0 ? payload.fileName : 'openchamber.log',
   content: typeof payload.content === 'string' ? payload.content : '',
 });
 

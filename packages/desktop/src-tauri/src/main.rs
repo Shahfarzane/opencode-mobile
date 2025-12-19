@@ -88,6 +88,44 @@ const MENU_ITEM_REPORT_BUG_ID: &str = "openchamber_report_bug";
 #[cfg(target_os = "macos")]
 const MENU_ITEM_REQUEST_FEATURE_ID: &str = "openchamber_request_feature";
 
+// App menu
+#[cfg(target_os = "macos")]
+const MENU_ITEM_SETTINGS_ID: &str = "openchamber_settings";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_COMMAND_PALETTE_ID: &str = "openchamber_command_palette";
+
+// File menu
+#[cfg(target_os = "macos")]
+const MENU_ITEM_NEW_SESSION_ID: &str = "openchamber_new_session";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_WORKTREE_CREATOR_ID: &str = "openchamber_worktree_creator";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_CHANGE_WORKSPACE_ID: &str = "openchamber_change_workspace";
+
+// View menu
+#[cfg(target_os = "macos")]
+const MENU_ITEM_OPEN_GIT_TAB_ID: &str = "openchamber_open_git_tab";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_OPEN_DIFF_TAB_ID: &str = "openchamber_open_diff_tab";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_OPEN_TERMINAL_TAB_ID: &str = "openchamber_open_terminal_tab";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_THEME_LIGHT_ID: &str = "openchamber_theme_light";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_THEME_DARK_ID: &str = "openchamber_theme_dark";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_THEME_SYSTEM_ID: &str = "openchamber_theme_system";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_TOGGLE_SIDEBAR_ID: &str = "openchamber_toggle_sidebar";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_TOGGLE_MEMORY_DEBUG_ID: &str = "openchamber_toggle_memory_debug";
+
+// Help menu
+#[cfg(target_os = "macos")]
+const MENU_ITEM_HELP_DIALOG_ID: &str = "openchamber_help_dialog";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_DOWNLOAD_LOGS_ID: &str = "openchamber_download_logs";
+
 const GITHUB_BUG_REPORT_URL: &str = "https://github.com/btriapitsyn/openchamber/issues/new?template=bug_report.yml";
 const GITHUB_FEATURE_REQUEST_URL: &str = "https://github.com/btriapitsyn/openchamber/issues/new?template=feature_request.yml";
 
@@ -306,9 +344,133 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
     let check_for_updates = MenuItem::with_id(
         app,
         MENU_ITEM_CHECK_FOR_UPDATES_ID,
-        "Check for Updates…",
+        "Check for Updates",
         true,
         None::<&str>,
+    )?;
+
+    // App menu items
+    let settings = MenuItem::with_id(
+        app,
+        MENU_ITEM_SETTINGS_ID,
+        "Settings",
+        true,
+        Some("Cmd+,"),
+    )?;
+
+    let command_palette = MenuItem::with_id(
+        app,
+        MENU_ITEM_COMMAND_PALETTE_ID,
+        "Command Palette",
+        true,
+        Some("Ctrl+X"),
+    )?;
+
+    // File menu items
+    let new_session = MenuItem::with_id(
+        app,
+        MENU_ITEM_NEW_SESSION_ID,
+        "New Session",
+        true,
+        Some("Ctrl+N"),
+    )?;
+
+    let worktree_creator = MenuItem::with_id(
+        app,
+        MENU_ITEM_WORKTREE_CREATOR_ID,
+        "New Worktree…",
+        true,
+        Some("Ctrl+Shift+N"),
+    )?;
+
+    let change_workspace = MenuItem::with_id(
+        app,
+        MENU_ITEM_CHANGE_WORKSPACE_ID,
+        "Change Workspace…",
+        true,
+        None::<&str>,
+    )?;
+
+    // View menu items
+    let open_git_tab = MenuItem::with_id(
+        app,
+        MENU_ITEM_OPEN_GIT_TAB_ID,
+        "Git",
+        true,
+        Some("Ctrl+G"),
+    )?;
+
+    let open_diff_tab = MenuItem::with_id(
+        app,
+        MENU_ITEM_OPEN_DIFF_TAB_ID,
+        "Diff",
+        true,
+        Some("Ctrl+E"),
+    )?;
+
+    let open_terminal_tab = MenuItem::with_id(
+        app,
+        MENU_ITEM_OPEN_TERMINAL_TAB_ID,
+        "Terminal",
+        true,
+        Some("Ctrl+T"),
+    )?;
+
+    let theme_light = MenuItem::with_id(
+        app,
+        MENU_ITEM_THEME_LIGHT_ID,
+        "Light Theme",
+        true,
+        None::<&str>,
+    )?;
+
+    let theme_dark = MenuItem::with_id(
+        app,
+        MENU_ITEM_THEME_DARK_ID,
+        "Dark Theme",
+        true,
+        None::<&str>,
+    )?;
+
+    let theme_system = MenuItem::with_id(
+        app,
+        MENU_ITEM_THEME_SYSTEM_ID,
+        "System Theme",
+        true,
+        None::<&str>,
+    )?;
+
+    let toggle_sidebar = MenuItem::with_id(
+        app,
+        MENU_ITEM_TOGGLE_SIDEBAR_ID,
+        "Toggle Session Sidebar",
+        true,
+        Some("Ctrl+L"),
+    )?;
+
+    let toggle_memory_debug = MenuItem::with_id(
+        app,
+        MENU_ITEM_TOGGLE_MEMORY_DEBUG_ID,
+        "Toggle Memory Debug",
+        true,
+        Some("Cmd+Shift+M"),
+    )?;
+
+    // Help menu items
+    let help_dialog = MenuItem::with_id(
+        app,
+        MENU_ITEM_HELP_DIALOG_ID,
+        "Keyboard Shortcuts",
+        true,
+        Some("Ctrl+H"),
+    )?;
+
+    let download_logs = MenuItem::with_id(
+        app,
+        MENU_ITEM_DOWNLOAD_LOGS_ID,
+        "Download Logs",
+        true,
+        Some("Ctrl+Shift+L"),
     )?;
 
     let report_bug = MenuItem::with_id(
@@ -325,6 +487,13 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
         "Request a Feature…",
         true,
         None::<&str>,
+    )?;
+
+    let theme_submenu = Submenu::with_items(
+        app,
+        "Theme",
+        true,
+        &[&theme_light, &theme_dark, &theme_system],
     )?;
 
     let window_menu = Submenu::with_id_and_items(
@@ -345,7 +514,13 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
         HELP_SUBMENU_ID,
         "Help",
         true,
-        &[&report_bug, &request_feature],
+        &[
+            &help_dialog,
+            &download_logs,
+            &PredefinedMenuItem::separator(app)?,
+            &report_bug,
+            &request_feature,
+        ],
     )?;
 
     Menu::with_items(
@@ -359,6 +534,9 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
                     &PredefinedMenuItem::about(app, None, Some(about_metadata))?,
                     &check_for_updates,
                     &PredefinedMenuItem::separator(app)?,
+                    &settings,
+                    &command_palette,
+                    &PredefinedMenuItem::separator(app)?,
                     &PredefinedMenuItem::services(app, None)?,
                     &PredefinedMenuItem::separator(app)?,
                     &PredefinedMenuItem::hide(app, None)?,
@@ -371,7 +549,14 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
                 app,
                 "File",
                 true,
-                &[&PredefinedMenuItem::close_window(app, None)?],
+                &[
+                    &new_session,
+                    &worktree_creator,
+                    &PredefinedMenuItem::separator(app)?,
+                    &change_workspace,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::close_window(app, None)?,
+                ],
             )?,
             &Submenu::with_items(
                 app,
@@ -391,7 +576,18 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
                 app,
                 "View",
                 true,
-                &[&PredefinedMenuItem::fullscreen(app, None)?],
+                &[
+                    &open_git_tab,
+                    &open_diff_tab,
+                    &open_terminal_tab,
+                    &PredefinedMenuItem::separator(app)?,
+                    &theme_submenu,
+                    &PredefinedMenuItem::separator(app)?,
+                    &toggle_sidebar,
+                    &toggle_memory_debug,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::fullscreen(app, None)?,
+                ],
             )?,
             &window_menu,
             &help_menu,
@@ -409,7 +605,7 @@ fn main() {
     if let Some(dir) = logging::log_directory() {
         log_builder = log_builder.target(Target::new(TargetKind::Folder {
             path: dir,
-            file_name: Some("desktop".into()),
+            file_name: Some("openchamber".into()),
         }));
     }
 
@@ -646,12 +842,16 @@ fn main() {
         .on_menu_event(|app, event| {
             #[cfg(target_os = "macos")]
             {
-                if event.id() == MENU_ITEM_CHECK_FOR_UPDATES_ID {
+                let event_id = event.id().as_ref();
+
+                // Check for updates
+                if event_id == MENU_ITEM_CHECK_FOR_UPDATES_ID {
                     let _ = app.emit(CHECK_FOR_UPDATES_EVENT, ());
                     return;
                 }
 
-                if event.id() == MENU_ITEM_REPORT_BUG_ID {
+                // External links
+                if event_id == MENU_ITEM_REPORT_BUG_ID {
                     use tauri_plugin_shell::ShellExt;
                     #[allow(deprecated)]
                     {
@@ -660,12 +860,91 @@ fn main() {
                     return;
                 }
 
-                if event.id() == MENU_ITEM_REQUEST_FEATURE_ID {
+                if event_id == MENU_ITEM_REQUEST_FEATURE_ID {
                     use tauri_plugin_shell::ShellExt;
                     #[allow(deprecated)]
                     {
                         let _ = app.shell().open(GITHUB_FEATURE_REQUEST_URL, None);
                     }
+                    return;
+                }
+
+                // App menu actions
+                if event_id == MENU_ITEM_SETTINGS_ID {
+                    let _ = app.emit("openchamber:menu-action", "settings");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_COMMAND_PALETTE_ID {
+                    let _ = app.emit("openchamber:menu-action", "command-palette");
+                    return;
+                }
+
+                // File menu actions
+                if event_id == MENU_ITEM_NEW_SESSION_ID {
+                    let _ = app.emit("openchamber:menu-action", "new-session");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_WORKTREE_CREATOR_ID {
+                    let _ = app.emit("openchamber:menu-action", "worktree-creator");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_CHANGE_WORKSPACE_ID {
+                    let _ = app.emit("openchamber:menu-action", "change-workspace");
+                    return;
+                }
+
+                // View menu actions
+                if event_id == MENU_ITEM_OPEN_GIT_TAB_ID {
+                    let _ = app.emit("openchamber:menu-action", "open-git-tab");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_OPEN_DIFF_TAB_ID {
+                    let _ = app.emit("openchamber:menu-action", "open-diff-tab");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_OPEN_TERMINAL_TAB_ID {
+                    let _ = app.emit("openchamber:menu-action", "open-terminal-tab");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_THEME_LIGHT_ID {
+                    let _ = app.emit("openchamber:menu-action", "theme-light");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_THEME_DARK_ID {
+                    let _ = app.emit("openchamber:menu-action", "theme-dark");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_THEME_SYSTEM_ID {
+                    let _ = app.emit("openchamber:menu-action", "theme-system");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_TOGGLE_SIDEBAR_ID {
+                    let _ = app.emit("openchamber:menu-action", "toggle-sidebar");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_TOGGLE_MEMORY_DEBUG_ID {
+                    let _ = app.emit("openchamber:menu-action", "toggle-memory-debug");
+                    return;
+                }
+
+                // Help menu actions
+                if event_id == MENU_ITEM_HELP_DIALOG_ID {
+                    let _ = app.emit("openchamber:menu-action", "help-dialog");
+                    return;
+                }
+
+                if event_id == MENU_ITEM_DOWNLOAD_LOGS_ID {
+                    let _ = app.emit("openchamber:menu-action", "download-logs");
                     return;
                 }
             }

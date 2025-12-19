@@ -18,7 +18,7 @@ pub async fn fetch_desktop_logs() -> Result<DesktopLogFile, String> {
     let file_name = path
         .file_name()
         .and_then(|value| value.to_str())
-        .unwrap_or("desktop.log")
+        .unwrap_or("openchamber.log")
         .to_string();
 
     Ok(DesktopLogFile { file_name, content })

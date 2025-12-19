@@ -1,5 +1,6 @@
 import React from 'react';
 import { RiDownloadLine, RiSettings3Line } from '@remixicon/react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { useUIStore } from '@/stores/useUIStore';
@@ -84,6 +85,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
 
         if (available || downloaded) {
             setUpdateDialogOpen(true);
+        } else {
+            toast.success('No updates available', {
+                description: 'You are running the latest version.',
+            });
         }
         pendingMenuUpdateCheckRef.current = false;
     }, [available, downloaded, checking]);
