@@ -1,5 +1,4 @@
 import React from 'react';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
@@ -10,65 +9,41 @@ interface CommitInputProps {
   disabled?: boolean;
 }
 
+const MIN_HEIGHT = 38; // Single line height
+const MAX_HEIGHT = 200;
+
 export const CommitInput: React.FC<CommitInputProps> = ({
   value,
   onChange,
   placeholder = 'Commit message',
   disabled = false,
 }) => {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-  const hasMultipleLines = value.includes('\n');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
-  const shouldShowTextarea = isExpanded || hasMultipleLines;
-
-  const handleInputFocus = () => {
-    setIsExpanded(true);
-  };
-
-  const handleTextareaBlur = () => {
-    if (!hasMultipleLines && !value.trim()) {
-      setIsExpanded(false);
-    }
-  };
-
+  // Auto-resize based on content
   React.useEffect(() => {
-    if (shouldShowTextarea && textareaRef.current) {
-      textareaRef.current.focus();
-      const len = textareaRef.current.value.length;
-      textareaRef.current.setSelectionRange(len, len);
-    }
-  }, [shouldShowTextarea]);
+    const textarea = textareaRef.current;
+    if (!textarea) return;
 
-  if (shouldShowTextarea) {
-    return (
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={handleTextareaBlur}
-        placeholder={placeholder}
-        rows={4}
-        disabled={disabled}
-        className={cn(
-          'rounded-lg bg-background/80 resize-none min-h-[100px]',
-          disabled && 'opacity-50'
-        )}
-      />
-    );
-  }
+    // Reset height to measure scrollHeight accurately
+    textarea.style.height = `${MIN_HEIGHT}px`;
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, MIN_HEIGHT), MAX_HEIGHT);
+    textarea.style.height = `${newHeight}px`;
+  }, [value]);
 
   return (
-    <Input
+    <Textarea
+      ref={textareaRef}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onFocus={handleInputFocus}
       placeholder={placeholder}
+      rows={1}
       disabled={disabled}
       className={cn(
-        'rounded-lg bg-background/80',
+        'rounded-lg bg-background/80 resize-none overflow-y-auto',
         disabled && 'opacity-50'
       )}
+      style={{ minHeight: MIN_HEIGHT, maxHeight: MAX_HEIGHT }}
     />
   );
 };
