@@ -676,27 +676,31 @@ export const GitView: React.FC = () => {
                 onRevertFile={handleRevertFile}
               />
             ) : (
-              <GitEmptyState
-                behind={status?.behind ?? 0}
-                onPull={() => handleSyncAction('pull')}
-                isPulling={syncAction === 'pull'}
-              />
+              <div className="lg:col-span-2 flex justify-center">
+                <GitEmptyState
+                  behind={status?.behind ?? 0}
+                  onPull={() => handleSyncAction('pull')}
+                  isPulling={syncAction === 'pull'}
+                />
+              </div>
             )}
 
-            <CommitSection
-              selectedCount={selectedCount}
-              commitMessage={commitMessage}
-              onCommitMessageChange={setCommitMessage}
-              generatedHighlights={generatedHighlights}
-              onInsertHighlights={handleInsertHighlights}
-              onClearHighlights={clearGeneratedHighlights}
-              onGenerateMessage={handleGenerateCommitMessage}
-              isGeneratingMessage={isGeneratingMessage}
-              onCommit={() => handleCommit({ pushAfter: false })}
-              onCommitAndPush={() => handleCommit({ pushAfter: true })}
-              commitAction={commitAction}
-              isBusy={isBusy}
-            />
+            {changeEntries.length > 0 && (
+              <CommitSection
+                selectedCount={selectedCount}
+                commitMessage={commitMessage}
+                onCommitMessageChange={setCommitMessage}
+                generatedHighlights={generatedHighlights}
+                onInsertHighlights={handleInsertHighlights}
+                onClearHighlights={clearGeneratedHighlights}
+                onGenerateMessage={handleGenerateCommitMessage}
+                isGeneratingMessage={isGeneratingMessage}
+                onCommit={() => handleCommit({ pushAfter: false })}
+                onCommitAndPush={() => handleCommit({ pushAfter: true })}
+                commitAction={commitAction}
+                isBusy={isBusy}
+              />
+            )}
           </div>
 
           {/* History below, constrained width */}
