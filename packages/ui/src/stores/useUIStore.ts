@@ -26,6 +26,7 @@ interface UIStore {
   isMobile: boolean;
   isCommandPaletteOpen: boolean;
   isHelpDialogOpen: boolean;
+  isAboutDialogOpen: boolean;
   isSessionCreateDialogOpen: boolean;
   isSettingsDialogOpen: boolean;
   sidebarSection: SidebarSection;
@@ -58,6 +59,7 @@ interface UIStore {
   setCommandPaletteOpen: (open: boolean) => void;
   toggleHelpDialog: () => void;
   setHelpDialogOpen: (open: boolean) => void;
+  setAboutDialogOpen: (open: boolean) => void;
   setSessionCreateDialogOpen: (open: boolean) => void;
   setSettingsDialogOpen: (open: boolean) => void;
   applyTheme: () => void;
@@ -93,6 +95,7 @@ export const useUIStore = create<UIStore>()(
         isMobile: false,
         isCommandPaletteOpen: false,
         isHelpDialogOpen: false,
+        isAboutDialogOpen: false,
         isSessionCreateDialogOpen: false,
         isSettingsDialogOpen: false,
         sidebarSection: 'sessions',
@@ -190,6 +193,10 @@ export const useUIStore = create<UIStore>()(
 
         setHelpDialogOpen: (open) => {
           set({ isHelpDialogOpen: open });
+        },
+
+        setAboutDialogOpen: (open) => {
+          set({ isAboutDialogOpen: open });
         },
 
         setSessionCreateDialogOpen: (open) => {

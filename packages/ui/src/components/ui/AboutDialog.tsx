@@ -1,0 +1,92 @@
+import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import { OpenChamberLogo } from '@/components/ui/OpenChamberLogo';
+import { RiGithubFill, RiTwitterXFill } from '@remixicon/react';
+
+declare const __APP_VERSION__: string | undefined;
+
+interface AboutDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const AboutDialog: React.FC<AboutDialogProps> = ({
+  open,
+  onOpenChange,
+}) => {
+  const [version, setVersion] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const isDesktop = typeof window !== 'undefined' && !!window.opencodeDesktop;
+
+    if (isDesktop) {
+      const fetchVersion = async () => {
+        try {
+          const { getVersion } = await import('@tauri-apps/api/app');
+          const v = await getVersion();
+          setVersion(v);
+        } catch {
+          setVersion(typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : null);
+        }
+      };
+      fetchVersion();
+    } else {
+      setVersion(typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : null);
+    }
+  }, [open]);
+
+  const displayVersion = version;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xs p-6">
+        <div className="flex flex-col items-center text-center space-y-4">
+          <OpenChamberLogo width={64} height={64} />
+          
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">OpenChamber</h2>
+            {displayVersion && (
+              <p className="typography-meta text-muted-foreground">
+                Version {displayVersion}
+              </p>
+            )}
+          </div>
+
+          <p className="typography-meta text-muted-foreground">
+            A beautiful interface for OpenCode AI coding agent
+          </p>
+
+          <div className="flex items-center gap-4 pt-2">
+            <a
+              href="https://github.com/btriapitsyn/openchamber"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 typography-meta text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RiGithubFill className="h-4 w-4" />
+              <span>GitHub</span>
+            </a>
+            <a
+              href="https://x.com/btriapitsyn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 typography-meta text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RiTwitterXFill className="h-4 w-4" />
+              <span>@btriapitsyn</span>
+            </a>
+          </div>
+
+          <p className="typography-meta text-muted-foreground/60 pt-2">
+            Made with care for developers
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
