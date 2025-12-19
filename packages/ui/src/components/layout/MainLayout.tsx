@@ -11,6 +11,7 @@ import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
 import { DiffWorkerProvider } from '@/contexts/DiffWorkerProvider';
 
 import { useUIStore } from '@/stores/useUIStore';
+import { useUpdateStore } from '@/stores/useUpdateStore';
 import { useDeviceInfo } from '@/lib/device';
 import { useEdgeSwipe } from '@/hooks/useEdgeSwipe';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,15 @@ export const MainLayout: React.FC = () => {
     }, []);
 
     useEdgeSwipe({ enabled: true });
+
+    // Trigger update check 3 seconds after mount (for both mobile and desktop)
+    const checkForUpdates = useUpdateStore((state) => state.checkForUpdates);
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            checkForUpdates();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [checkForUpdates]);
 
     React.useEffect(() => {
         const previous = useUIStore.getState().isMobile;

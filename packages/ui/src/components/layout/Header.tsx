@@ -7,6 +7,7 @@ import {
 
 import { RiChat4Line, RiCodeLine, RiCommandLine, RiGitBranchLine, RiLayoutLeftLine, RiPlayListAddLine, RiQuestionLine, RiSettings3Line, RiTerminalBoxLine, type RemixiconComponentType } from '@remixicon/react';
 import { useUIStore, type MainTab } from '@/stores/useUIStore';
+import { useUpdateStore } from '@/stores/useUpdateStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { ContextUsageDisplay } from '@/components/ui/ContextUsageDisplay';
@@ -95,6 +96,7 @@ export const Header: React.FC = () => {
   const getContextUsage = useSessionStore((state) => state.getContextUsage);
   const { isMobile } = useDeviceInfo();
   const diffFileCount = useDiffFileCount();
+  const updateAvailable = useUpdateStore((state) => state.available);
 
   const headerRef = React.useRef<HTMLElement | null>(null);
 
@@ -491,13 +493,19 @@ export const Header: React.FC = () => {
               type="button"
               onClick={handleOpenSettings}
               aria-label="Open settings"
-              className={headerIconButtonClass}
+              className={cn(headerIconButtonClass, 'relative')}
             >
               <RiSettings3Line className="h-5 w-5" />
+              {updateAvailable && (
+                <span
+                  className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary"
+                  aria-label="Update available"
+                />
+              )}
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Settings</p>
+            <p>{updateAvailable ? 'Settings (Update available)' : 'Settings'}</p>
           </TooltipContent>
         </Tooltip>
       </div>

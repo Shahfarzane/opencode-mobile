@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { useUIStore } from '@/stores/useUIStore';
-import { useUpdateCheck } from '@/hooks/useUpdateCheck';
+import { useUpdateStore } from '@/stores/useUpdateStore';
 import { UpdateDialog } from '../ui/UpdateDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
@@ -27,11 +27,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
     const startWidthRef = React.useRef(sidebarWidth || SIDEBAR_CONTENT_WIDTH);
     const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false);
 
-    const update = useUpdateCheck();
+    const updateStore = useUpdateStore();
     const pendingMenuUpdateCheckRef = React.useRef(false);
 
-    const checkForUpdates = update.checkForUpdates;
-    const { available, downloaded, checking } = update;
+    const checkForUpdates = updateStore.checkForUpdates;
+    const { available, downloaded, checking } = updateStore;
 
     const [isDesktopApp, setIsDesktopApp] = React.useState<boolean>(() => {
         if (typeof window === 'undefined') {
@@ -267,14 +267,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
                 <UpdateDialog
                     open={updateDialogOpen}
                     onOpenChange={setUpdateDialogOpen}
-                    info={update.info}
-                    downloading={update.downloading}
-                    downloaded={update.downloaded}
-                    progress={update.progress}
-                    error={update.error}
-                    onDownload={update.downloadUpdate}
-                    onRestart={update.restartToUpdate}
-                    runtimeType={update.runtimeType}
+                    info={updateStore.info}
+                    downloading={updateStore.downloading}
+                    downloaded={updateStore.downloaded}
+                    progress={updateStore.progress}
+                    error={updateStore.error}
+                    onDownload={updateStore.downloadUpdate}
+                    onRestart={updateStore.restartToUpdate}
+                    runtimeType={updateStore.runtimeType}
                 />
             </div>
         </aside>
