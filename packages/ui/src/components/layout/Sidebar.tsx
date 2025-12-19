@@ -274,6 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children }) 
                     error={update.error}
                     onDownload={update.downloadUpdate}
                     onRestart={update.restartToUpdate}
+                    runtimeType={update.runtimeType}
                 />
             </div>
         </aside>

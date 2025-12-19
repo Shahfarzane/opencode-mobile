@@ -59,13 +59,20 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 ### CLI (Web Server)
 
 ```bash
-pnpm add -g @openchamber/web
+# Quick install (auto-detects your package manager)
+curl -fsSL https://raw.githubusercontent.com/btriapitsyn/openchamber/main/scripts/install.sh | bash
 
+# Or install manually
+pnpm add -g @openchamber/web    # or npm, yarn, bun
+```
+
+```bash
 openchamber                          # Start on port 3000
 openchamber --port 8080              # Custom port
 openchamber --daemon                 # Background mode
 openchamber --ui-password secret     # Password-protect UI
 openchamber stop                     # Stop server
+openchamber update                   # Update to latest version
 ```
 
 ### Desktop App (macOS)

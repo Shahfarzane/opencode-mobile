@@ -9,6 +9,9 @@ export type UpdateInfo = {
   currentVersion: string;
   body?: string;
   date?: string;
+  // Web-specific fields
+  packageManager?: string;
+  updateCommand?: string;
 };
 
 export type UpdateProgress = {
@@ -69,6 +72,12 @@ export const isVSCodeRuntime = (): boolean => {
   if (typeof window === "undefined") return false;
   const apis = (window as { __OPENCHAMBER_RUNTIME_APIS__?: { runtime?: { isVSCode?: boolean } } }).__OPENCHAMBER_RUNTIME_APIS__;
   return apis?.runtime?.isVSCode === true;
+};
+
+export const isWebRuntime = (): boolean => {
+  if (typeof window === "undefined") return false;
+  // Web runtime: not desktop, not VSCode
+  return !isDesktopRuntime() && !isVSCodeRuntime();
 };
 
 export const getDesktopApi = (): DesktopApi | null => {

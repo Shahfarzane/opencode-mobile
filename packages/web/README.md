@@ -5,13 +5,22 @@ Web interface for the [OpenCode](https://opencode.ai) AI coding agent.
 ## Installation
 
 ```bash
-npm add -g @openchamber/web
+# Quick install (auto-detects your package manager)
+curl -fsSL https://raw.githubusercontent.com/btriapitsyn/openchamber/main/scripts/install.sh | bash
 
+# Or install manually
+npm add -g @openchamber/web    # or pnpm, yarn, bun
+```
+
+## Usage
+
+```bash
 openchamber                          # Start on port 3000
 openchamber --port 8080              # Custom port
 openchamber --daemon                 # Background mode
 openchamber --ui-password secret     # Password-protect UI
 openchamber stop                     # Stop server
+openchamber update                   # Update to latest version
 ```
 
 ## Prerequisites
