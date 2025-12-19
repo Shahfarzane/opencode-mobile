@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.7] - 2025-12-19
+
+- Comprehensive macOS native menu bar entries
+- Redesigned directory selection view for web/mobile with improved layout
+- Improved theme consistency across dropdown menus, selects, and command palette
+- Introduced keyboard shortcuts help menu and quick actions menu
+
 
 ## [1.2.6] - 2025-12-19
 
