@@ -7,6 +7,7 @@ import { MemoryDebugPanel } from '@/components/ui/MemoryDebugPanel';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useEventStream } from '@/hooks/useEventStream';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useMenuActions } from '@/hooks/useMenuActions';
 import { useMessageSync } from '@/hooks/useMessageSync';
 import { useSessionStatusBootstrap } from '@/hooks/useSessionStatusBootstrap';
 import { GitPollingProvider } from '@/hooks/useGitPolling';
@@ -129,6 +130,12 @@ function App({ apis }: AppProps) {
   useEventStream();
 
   useKeyboardShortcuts();
+
+  const handleToggleMemoryDebug = React.useCallback(() => {
+    setShowMemoryDebug(prev => !prev);
+  }, []);
+
+  useMenuActions(handleToggleMemoryDebug);
 
   useMessageSync();
 

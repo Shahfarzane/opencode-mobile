@@ -46,6 +46,7 @@ declare global {
 }
 
 const CHECK_FOR_UPDATES_EVENT = 'openchamber:check-for-updates';
+const MENU_ACTION_EVENT = 'openchamber:menu-action';
 
 const cleanupFunctions: Array<() => void | Promise<void>> = [];
 
@@ -61,6 +62,11 @@ try {
     window.dispatchEvent(new CustomEvent(CHECK_FOR_UPDATES_EVENT));
   });
   cleanupFunctions.push(() => updateCheckUnlisten());
+
+  const menuActionUnlisten = await listen<string>(MENU_ACTION_EVENT, (event) => {
+    window.dispatchEvent(new CustomEvent(MENU_ACTION_EVENT, { detail: event.payload }));
+  });
+  cleanupFunctions.push(() => menuActionUnlisten());
 
   requestInitialNotificationPermission().catch(err => {
     console.error('[main] Failed to request notification permission:', err);
@@ -117,14 +123,25 @@ if (homeDirectory) {
 window.opencodeDesktop = {
   homeDirectory,
   async getServerInfo() {
-    const server = window.__OPENCHAMBER_DESKTOP_SERVER__;
-    return {
-      webPort: server?.origin ? parseInt(server.origin.split(':')[2] || '0', 10) : null,
-      openCodePort: server?.opencodePort ?? null,
-      host: '127.0.0.1',
-      ready: true,
-      cliAvailable: server?.cliAvailable ?? false,
-    };
+    try {
+      const info = await invoke<ServerInfo>('desktop_server_info');
+      return {
+        webPort: info.server_port,
+        openCodePort: info.opencode_port ?? null,
+        host: '127.0.0.1',
+        ready: info.opencode_port !== null,
+        cliAvailable: info.cli_available ?? false,
+      };
+    } catch {
+      const server = window.__OPENCHAMBER_DESKTOP_SERVER__;
+      return {
+        webPort: server?.origin ? parseInt(server.origin.split(':')[2] || '0', 10) : null,
+        openCodePort: server?.opencodePort ?? null,
+        host: '127.0.0.1',
+        ready: false,
+        cliAvailable: server?.cliAvailable ?? false,
+      };
+    }
   },
   async getSettings(): Promise<DesktopSettings> {
     try {

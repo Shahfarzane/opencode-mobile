@@ -15,6 +15,6 @@ pub fn log_directory() -> Option<PathBuf> {
 
 pub fn log_file_path() -> Option<PathBuf> {
     let mut dir = log_directory()?;
-    dir.push("desktop.log");
+    dir.push("openchamber.log");
     Some(dir)
 }
