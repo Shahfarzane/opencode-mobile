@@ -10,6 +10,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useMenuActions } from '@/hooks/useMenuActions';
 import { useMessageSync } from '@/hooks/useMessageSync';
 import { useSessionStatusBootstrap } from '@/hooks/useSessionStatusBootstrap';
+import { useSessionAutoCleanup } from '@/hooks/useSessionAutoCleanup';
 import { GitPollingProvider } from '@/hooks/useGitPolling';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -152,6 +153,7 @@ function App({ apis }: AppProps) {
   useMessageSync();
 
   useSessionStatusBootstrap();
+  useSessionAutoCleanup();
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

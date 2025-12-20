@@ -330,6 +330,8 @@ export interface SettingsPayload {
   securityScopedBookmarks?: string[];
   pinnedDirectories?: string[];
   showReasoningTraces?: boolean;
+  autoDeleteEnabled?: boolean;
+  autoDeleteAfterDays?: number;
 
   [key: string]: unknown;
 }

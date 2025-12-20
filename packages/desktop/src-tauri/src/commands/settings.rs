@@ -136,6 +136,21 @@ fn sanitize_settings_update(payload: &Value) -> Value {
         if let Some(Value::Bool(b)) = obj.get("showReasoningTraces") {
             result_obj.insert("showReasoningTraces".to_string(), json!(b));
         }
+        if let Some(Value::Bool(b)) = obj.get("autoDeleteEnabled") {
+            result_obj.insert("autoDeleteEnabled".to_string(), json!(b));
+        }
+
+        // Number fields
+        if let Some(Value::Number(n)) = obj.get("autoDeleteAfterDays") {
+            let parsed = n
+                .as_u64()
+                .or_else(|| n.as_i64().and_then(|value| if value >= 0 { Some(value as u64) } else { None }))
+                .or_else(|| n.as_f64().map(|value| value.round().max(0.0) as u64));
+            if let Some(value) = parsed {
+                let clamped = value.max(1).min(365);
+                result_obj.insert("autoDeleteAfterDays".to_string(), json!(clamped));
+            }
+        }
 
         // Array fields
         if let Some(arr) = obj.get("approvedDirectories") {
