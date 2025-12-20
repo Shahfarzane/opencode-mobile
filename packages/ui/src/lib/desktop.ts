@@ -39,6 +39,8 @@ export type DesktopSettings = {
   securityScopedBookmarks?: string[];
   pinnedDirectories?: string[];
   showReasoningTraces?: boolean;
+  autoDeleteEnabled?: boolean;
+  autoDeleteAfterDays?: number;
 };
 
 export type DesktopSettingsApi = {

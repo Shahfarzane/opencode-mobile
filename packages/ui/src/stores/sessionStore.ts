@@ -653,13 +653,19 @@ export const useSessionStore = create<SessionStore>()(
                     }
                 },
 
-                deleteSessions: async (ids: string[], options) => {
+                deleteSessions: async (
+                    ids: string[],
+                    options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; remoteName?: string; silent?: boolean }
+                ) => {
                     const uniqueIds = Array.from(new Set(ids.filter((id): id is string => typeof id === "string" && id.length > 0)));
                     if (uniqueIds.length === 0) {
                         return { deletedIds: [], failedIds: [] };
                     }
 
-                    set({ isLoading: true, error: null });
+                    const silent = options?.silent === true;
+                    if (!silent) {
+                        set({ isLoading: true, error: null });
+                    }
                     const deletedIds: string[] = [];
                     const failedIds: string[] = [];
                     const archivedIds = new Set<string>();
@@ -743,10 +749,9 @@ export const useSessionStore = create<SessionStore>()(
                         return {
                             sessions: filteredSessions,
                             currentSessionId: nextCurrentId,
-                            isLoading: false,
+                            ...(silent ? {} : { isLoading: false, error: errorMessage }),
                             worktreeMetadata: nextMetadata,
                             availableWorktrees: nextAvailableWorktrees,
-                            error: errorMessage,
                         };
                     });
 

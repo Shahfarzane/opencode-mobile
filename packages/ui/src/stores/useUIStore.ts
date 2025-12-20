@@ -33,6 +33,9 @@ interface UIStore {
   eventStreamStatus: EventStreamStatus;
   eventStreamHint: string | null;
   showReasoningTraces: boolean;
+  autoDeleteEnabled: boolean;
+  autoDeleteAfterDays: number;
+  autoDeleteLastRunAt: number | null;
 
   toolCallExpansion: 'collapsed' | 'activity' | 'detailed';
   fontSize: number;
@@ -66,6 +69,9 @@ interface UIStore {
   setSidebarSection: (section: SidebarSection) => void;
   setEventStreamStatus: (status: EventStreamStatus, hint?: string | null) => void;
   setShowReasoningTraces: (value: boolean) => void;
+  setAutoDeleteEnabled: (value: boolean) => void;
+  setAutoDeleteAfterDays: (days: number) => void;
+  setAutoDeleteLastRunAt: (timestamp: number | null) => void;
   setToolCallExpansion: (value: 'collapsed' | 'activity' | 'detailed') => void;
   setFontSize: (size: number) => void;
   setPadding: (size: number) => void;
@@ -102,6 +108,9 @@ export const useUIStore = create<UIStore>()(
         eventStreamStatus: 'idle',
         eventStreamHint: null,
         showReasoningTraces: false,
+        autoDeleteEnabled: false,
+        autoDeleteAfterDays: 30,
+        autoDeleteLastRunAt: null,
         toolCallExpansion: 'collapsed',
         fontSize: 100,
         padding: 100,
@@ -220,6 +229,19 @@ export const useUIStore = create<UIStore>()(
 
         setShowReasoningTraces: (value) => {
           set({ showReasoningTraces: value });
+        },
+
+        setAutoDeleteEnabled: (value) => {
+          set({ autoDeleteEnabled: value });
+        },
+
+        setAutoDeleteAfterDays: (days) => {
+          const clampedDays = Math.max(1, Math.min(365, days));
+          set({ autoDeleteAfterDays: clampedDays });
+        },
+
+        setAutoDeleteLastRunAt: (timestamp) => {
+          set({ autoDeleteLastRunAt: timestamp });
         },
 
         setToolCallExpansion: (value) => {
@@ -399,6 +421,9 @@ export const useUIStore = create<UIStore>()(
           isSessionCreateDialogOpen: state.isSessionCreateDialogOpen,
           isSettingsDialogOpen: state.isSettingsDialogOpen,
           showReasoningTraces: state.showReasoningTraces,
+          autoDeleteEnabled: state.autoDeleteEnabled,
+          autoDeleteAfterDays: state.autoDeleteAfterDays,
+          autoDeleteLastRunAt: state.autoDeleteLastRunAt,
           toolCallExpansion: state.toolCallExpansion,
           fontSize: state.fontSize,
           padding: state.padding,

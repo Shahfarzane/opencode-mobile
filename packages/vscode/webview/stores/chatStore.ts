@@ -5,6 +5,65 @@ import type { Session, Message, Part } from '@opencode-ai/sdk';
 const getApiUrl = () => window.__VSCODE_CONFIG__?.apiUrl || 'http://localhost:47339';
 const getWorkspaceFolder = () => window.__VSCODE_CONFIG__?.workspaceFolder || '';
 
+const AUTO_DELETE_STORAGE_KEY = 'oc.vscode.autoDeleteLastRunAt';
+const AUTO_DELETE_DEFAULT_DAYS = 30;
+const AUTO_DELETE_KEEP_RECENT = 5;
+const AUTO_DELETE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+let autoDeleteRunning = false;
+
+const getLastActivity = (session: Session): number => {
+  return session.time?.updated ?? session.time?.created ?? 0;
+};
+
+const readAutoDeleteLastRunAt = (): number | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const value = window.localStorage.getItem(AUTO_DELETE_STORAGE_KEY);
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeAutoDeleteLastRunAt = (timestamp: number) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(AUTO_DELETE_STORAGE_KEY, String(timestamp));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const buildAutoDeleteCandidates = (
+  sessions: Session[],
+  currentSessionId: string | null,
+  cutoffDays: number,
+  now = Date.now()
+): string[] => {
+  if (!Array.isArray(sessions) || cutoffDays <= 0) {
+    return [];
+  }
+
+  const cutoffTime = now - cutoffDays * 24 * 60 * 60 * 1000;
+  const sorted = [...sessions].sort((a, b) => getLastActivity(b) - getLastActivity(a));
+  const protectedIds = new Set(sorted.slice(0, AUTO_DELETE_KEEP_RECENT).map((session) => session.id));
+
+  return sorted
+    .filter((session) => {
+      if (!session?.id) return false;
+      if (protectedIds.has(session.id)) return false;
+      if (session.id === currentSessionId) return false;
+      if (session.share) return false;
+      const lastActivity = getLastActivity(session);
+      if (!lastActivity) return false;
+      return lastActivity < cutoffTime;
+    })
+    .map((session) => session.id);
+};
+
 interface MessageRecord {
   info: Message;
   parts: Part[];
@@ -19,6 +78,9 @@ interface ChatState {
   sessions: Session[];
   currentSessionId: string | null;
   isLoadingSessions: boolean;
+  autoDeleteEnabled: boolean;
+  autoDeleteAfterDays: number;
+  autoDeleteLastRunAt: number | null;
 
   // Messages
   messages: Map<string, MessageRecord[]>;
@@ -28,6 +90,8 @@ interface ChatState {
 
   // Actions
   initialize: () => Promise<void>;
+  loadAutoDeleteSettings: () => Promise<void>;
+  runAutoCleanup: (sessionsOverride?: Session[]) => Promise<void>;
   loadSessions: () => Promise<void>;
   createSession: () => Promise<string | null>;
   selectSession: (sessionId: string) => Promise<void>;
@@ -42,6 +106,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sessions: [],
   currentSessionId: null,
   isLoadingSessions: false,
+  autoDeleteEnabled: false,
+  autoDeleteAfterDays: AUTO_DELETE_DEFAULT_DAYS,
+  autoDeleteLastRunAt: readAutoDeleteLastRunAt(),
   messages: new Map(),
   isLoadingMessages: false,
   isSending: false,
@@ -55,10 +122,104 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       await client.session.list({ query: { directory: getWorkspaceFolder() } });
       set({ client, isConnected: true });
+      await get().loadAutoDeleteSettings();
       await get().loadSessions();
     } catch (error) {
       console.error('Failed to connect to OpenCode API:', error);
       set({ client, isConnected: false });
+    }
+  },
+
+  loadAutoDeleteSettings: async () => {
+    try {
+      const response = await fetch('/api/config/settings', {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) {
+        const lastRunAt = readAutoDeleteLastRunAt();
+        set({ autoDeleteLastRunAt: lastRunAt });
+        return;
+      }
+
+      const payload = await response.json().catch(() => ({}));
+      const enabled = typeof payload.autoDeleteEnabled === 'boolean' ? payload.autoDeleteEnabled : false;
+      const daysRaw = typeof payload.autoDeleteAfterDays === 'number'
+        ? payload.autoDeleteAfterDays
+        : Number(payload.autoDeleteAfterDays);
+      const normalizedDays = Number.isFinite(daysRaw)
+        ? Math.max(1, Math.min(365, daysRaw))
+        : AUTO_DELETE_DEFAULT_DAYS;
+      const lastRunAt = readAutoDeleteLastRunAt();
+
+      set({
+        autoDeleteEnabled: enabled,
+        autoDeleteAfterDays: normalizedDays,
+        autoDeleteLastRunAt: lastRunAt,
+      });
+    } catch {
+      const lastRunAt = readAutoDeleteLastRunAt();
+      set({ autoDeleteLastRunAt: lastRunAt });
+    }
+  },
+
+  runAutoCleanup: async (sessionsOverride) => {
+    const { client, autoDeleteEnabled, autoDeleteAfterDays, currentSessionId } = get();
+    if (!client || !autoDeleteEnabled || autoDeleteAfterDays <= 0) {
+      return;
+    }
+    if (autoDeleteRunning) {
+      return;
+    }
+
+    const now = Date.now();
+    const lastRunAt = readAutoDeleteLastRunAt();
+    if (lastRunAt && now - lastRunAt < AUTO_DELETE_INTERVAL_MS) {
+      set({ autoDeleteLastRunAt: lastRunAt });
+      return;
+    }
+
+    const sessions = sessionsOverride ?? get().sessions;
+    if (!sessions.length) {
+      return;
+    }
+
+    const candidateIds = buildAutoDeleteCandidates(sessions, currentSessionId, autoDeleteAfterDays, now);
+    if (candidateIds.length === 0) {
+      writeAutoDeleteLastRunAt(now);
+      set({ autoDeleteLastRunAt: now });
+      return;
+    }
+
+    autoDeleteRunning = true;
+    const deletedIds: string[] = [];
+
+    try {
+      for (const id of candidateIds) {
+        try {
+          const response = await client.session.delete({
+            path: { id },
+            query: { directory: getWorkspaceFolder() },
+          });
+          if (response.data) {
+            deletedIds.push(id);
+          }
+        } catch {
+          // ignore individual delete failures
+        }
+      }
+    } finally {
+      autoDeleteRunning = false;
+      const finishedAt = Date.now();
+      writeAutoDeleteLastRunAt(finishedAt);
+      set({ autoDeleteLastRunAt: finishedAt });
+    }
+
+    if (deletedIds.length > 0) {
+      set((state) => ({
+        sessions: state.sessions.filter((session) => !deletedIds.includes(session.id)),
+      }));
     }
   },
 
@@ -74,6 +235,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         (a, b) => (b.time?.created || 0) - (a.time?.created || 0)
       );
       set({ sessions, isLoadingSessions: false });
+      void get().runAutoCleanup(sessions);
     } catch (error) {
       console.error('Failed to load sessions:', error);
       set({ isLoadingSessions: false });

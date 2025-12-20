@@ -59,6 +59,15 @@ const applyDesktopUiPreferences = (settings: DesktopSettings) => {
   if (typeof settings.showReasoningTraces === 'boolean' && settings.showReasoningTraces !== store.showReasoningTraces) {
     store.setShowReasoningTraces(settings.showReasoningTraces);
   }
+  if (typeof settings.autoDeleteEnabled === 'boolean' && settings.autoDeleteEnabled !== store.autoDeleteEnabled) {
+    store.setAutoDeleteEnabled(settings.autoDeleteEnabled);
+  }
+  if (typeof settings.autoDeleteAfterDays === 'number' && Number.isFinite(settings.autoDeleteAfterDays)) {
+    const normalized = Math.max(1, Math.min(365, settings.autoDeleteAfterDays));
+    if (normalized !== store.autoDeleteAfterDays) {
+      store.setAutoDeleteAfterDays(normalized);
+    }
+  }
 };
 
 const sanitizeWebSettings = (payload: unknown): DesktopSettings | null => {
@@ -109,6 +118,12 @@ const sanitizeWebSettings = (payload: unknown): DesktopSettings | null => {
   }
   if (typeof candidate.showReasoningTraces === 'boolean') {
     result.showReasoningTraces = candidate.showReasoningTraces;
+  }
+  if (typeof candidate.autoDeleteEnabled === 'boolean') {
+    result.autoDeleteEnabled = candidate.autoDeleteEnabled;
+  }
+  if (typeof candidate.autoDeleteAfterDays === 'number' && Number.isFinite(candidate.autoDeleteAfterDays)) {
+    result.autoDeleteAfterDays = candidate.autoDeleteAfterDays;
   }
 
   return result;

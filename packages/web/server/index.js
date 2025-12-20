@@ -281,6 +281,13 @@ const sanitizeSettingsUpdate = (payload) => {
   if (typeof candidate.showReasoningTraces === 'boolean') {
     result.showReasoningTraces = candidate.showReasoningTraces;
   }
+  if (typeof candidate.autoDeleteEnabled === 'boolean') {
+    result.autoDeleteEnabled = candidate.autoDeleteEnabled;
+  }
+  if (typeof candidate.autoDeleteAfterDays === 'number' && Number.isFinite(candidate.autoDeleteAfterDays)) {
+    const normalizedDays = Math.max(1, Math.min(365, Math.round(candidate.autoDeleteAfterDays)));
+    result.autoDeleteAfterDays = normalizedDays;
+  }
 
   const typography = sanitizeTypographySizesPartial(candidate.typographySizes);
   if (typography) {

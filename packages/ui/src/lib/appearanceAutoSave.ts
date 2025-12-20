@@ -4,6 +4,8 @@ import type { DesktopSettings } from '@/lib/desktop';
 
 type AppearanceSlice = {
   showReasoningTraces: boolean;
+  autoDeleteEnabled: boolean;
+  autoDeleteAfterDays: number;
 };
 
 let initialized = false;
@@ -17,6 +19,8 @@ export const startAppearanceAutoSave = (): void => {
 
   let previous: AppearanceSlice = {
     showReasoningTraces: useUIStore.getState().showReasoningTraces,
+    autoDeleteEnabled: useUIStore.getState().autoDeleteEnabled,
+    autoDeleteAfterDays: useUIStore.getState().autoDeleteAfterDays,
   };
 
   let pending: Partial<DesktopSettings> | null = null;
@@ -42,12 +46,20 @@ export const startAppearanceAutoSave = (): void => {
   useUIStore.subscribe((state) => {
     const current: AppearanceSlice = {
       showReasoningTraces: state.showReasoningTraces,
+      autoDeleteEnabled: state.autoDeleteEnabled,
+      autoDeleteAfterDays: state.autoDeleteAfterDays,
     };
 
     const diff: Partial<DesktopSettings> = {};
 
     if (current.showReasoningTraces !== previous.showReasoningTraces) {
       diff.showReasoningTraces = current.showReasoningTraces;
+    }
+    if (current.autoDeleteEnabled !== previous.autoDeleteEnabled) {
+      diff.autoDeleteEnabled = current.autoDeleteEnabled;
+    }
+    if (current.autoDeleteAfterDays !== previous.autoDeleteAfterDays) {
+      diff.autoDeleteAfterDays = current.autoDeleteAfterDays;
     }
 
     previous = current;
