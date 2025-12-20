@@ -140,6 +140,58 @@ const mergePreferExistingParts = (existing: Part[] = [], incoming: Part[] = []):
     return merged;
 };
 
+const mergeDuplicateMessage = (
+    existing: { info: any; parts: Part[] },
+    incoming: { info: any; parts: Part[] }
+): { info: any; parts: Part[] } => {
+    const existingParts = Array.isArray(existing.parts) ? existing.parts : [];
+    const incomingParts = Array.isArray(incoming.parts) ? incoming.parts : [];
+    const existingLen = computePartsTextLength(existingParts);
+    const incomingLen = computePartsTextLength(incomingParts);
+    const existingStop = hasStopReasonStop(existingParts);
+    const incomingStop = hasStopReasonStop(incomingParts);
+
+    let parts = incomingParts;
+    if (existingStop && existingLen >= incomingLen) {
+        parts = mergePreferExistingParts(existingParts, incomingParts);
+    } else if (incomingStop && incomingLen >= existingLen) {
+        parts = mergePreferExistingParts(incomingParts, existingParts);
+    } else if (existingLen >= incomingLen) {
+        parts = existingParts;
+    }
+
+    return {
+        ...incoming,
+        info: {
+            ...existing.info,
+            ...incoming.info,
+        },
+        parts,
+    };
+};
+
+const dedupeMessagesById = (messages: { info: any; parts: Part[] }[]) => {
+    const deduped: { info: any; parts: Part[] }[] = [];
+    const indexById = new Map<string, number>();
+
+    for (const message of messages) {
+        const messageId = typeof message?.info?.id === "string" ? message.info.id : null;
+        if (!messageId) {
+            deduped.push(message);
+            continue;
+        }
+        const existingIndex = indexById.get(messageId);
+        if (existingIndex === undefined) {
+            indexById.set(messageId, deduped.length);
+            deduped.push(message);
+            continue;
+        }
+        deduped[existingIndex] = mergeDuplicateMessage(deduped[existingIndex], message);
+    }
+
+    return deduped;
+};
+
 const computeMaxTrimmedHeadId = (removed: Array<{ info: any }>, previous?: string): string | undefined => {
     let maxId = previous;
     let maxSortable = previous ? extractSortableId(previous) : null;
@@ -372,7 +424,7 @@ export const useMessageStore = create<MessageStore>()(
                                 };
                             });
 
-                            const mergedMessages = normalizedMessages;
+                            const mergedMessages = dedupeMessagesById(normalizedMessages);
 
                             const previousIds = new Set(previousMessages.map((msg) => msg.info.id));
                             const nextIds = new Set(mergedMessages.map((msg) => msg.info.id));
@@ -1849,7 +1901,7 @@ export const useMessageStore = create<MessageStore>()(
                             };
                         });
 
-                        const mergedMessages = normalizedMessages;
+                        const mergedMessages = dedupeMessagesById(normalizedMessages);
 
                         const previousIds = new Set(previousMessages.map((msg) => msg.info.id));
                         const nextIds = new Set(mergedMessages.map((msg) => msg.info.id));
@@ -2187,13 +2239,15 @@ export const useMessageStore = create<MessageStore>()(
 
                                 set((state) => {
                                     const updatedMessages = [...newMessages, ...currentMessages];
+                                    const dedupedMessages = dedupeMessagesById(updatedMessages);
                                     const newMessagesMap = new Map(state.messages);
-                                    newMessagesMap.set(sessionId, updatedMessages);
+                                    newMessagesMap.set(sessionId, dedupedMessages);
 
+                                    const addedCount = Math.max(0, dedupedMessages.length - currentMessages.length);
                                     const newMemoryState = new Map(state.sessionMemoryState);
                                     newMemoryState.set(sessionId, {
                                         ...memoryState,
-                                        viewportAnchor: memoryState.viewportAnchor + newMessages.length,
+                                        viewportAnchor: memoryState.viewportAnchor + addedCount,
                                         hasMoreAbove: indexInAll - loadCount > 0,
                                         totalAvailableMessages: allMessages.length,
                                     });

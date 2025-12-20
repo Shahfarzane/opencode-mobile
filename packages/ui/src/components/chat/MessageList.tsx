@@ -39,7 +39,17 @@ const MessageList: React.FC<MessageListProps> = ({
     }, [permissions, onMessageContentChange]);
 
     const displayMessages = React.useMemo(() => {
-        return messages.filter((message) => !isFullySyntheticMessage(message.parts));
+        const seenIds = new Set<string>();
+        return messages.filter((message) => {
+            const messageId = message.info?.id;
+            if (typeof messageId === 'string') {
+                if (seenIds.has(messageId)) {
+                    return false;
+                }
+                seenIds.add(messageId);
+            }
+            return !isFullySyntheticMessage(message.parts);
+        });
     }, [messages]);
 
     const { getContextForMessage } = useTurnGrouping(displayMessages);
