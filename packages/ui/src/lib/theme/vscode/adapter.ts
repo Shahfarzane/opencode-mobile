@@ -262,7 +262,7 @@ export const buildVSCodeThemeFromPalette = (palette: VSCodeThemePalette): Theme 
         ...base.colors.surface,
         background,
         foreground,
-        muted: panelBg,
+        muted: activeBg,
         mutedForeground: sidebarFg,
         elevated: panelBg,
         elevatedForeground: panelFg,
