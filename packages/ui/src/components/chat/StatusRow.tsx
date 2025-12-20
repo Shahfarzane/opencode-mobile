@@ -221,7 +221,7 @@ export const StatusRow: React.FC<StatusRowProps> = ({
               className={cn(
                 "absolute right-0 bottom-full mb-1 z-50",
                 "w-max min-w-[200px]",
-                "rounded-xl border border-border bg-muted shadow-md",
+                "rounded-xl border border-border bg-background shadow-md",
                 "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2",
                 "duration-150"
               )}
