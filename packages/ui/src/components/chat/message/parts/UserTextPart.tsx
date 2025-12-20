@@ -29,9 +29,18 @@ const UserTextPart: React.FC<UserTextPartProps> = ({ part, messageId, agentMenti
 
     React.useEffect(() => {
         const el = textRef.current;
-        if (el && !isExpanded) {
+        if (!el || isExpanded) return;
+
+        const checkTruncation = () => {
             setIsTruncated(el.scrollHeight > el.clientHeight);
-        }
+        };
+
+        checkTruncation();
+
+        const resizeObserver = new ResizeObserver(checkTruncation);
+        resizeObserver.observe(el);
+
+        return () => resizeObserver.disconnect();
     }, [textContent, isExpanded]);
 
     const handleClick = React.useCallback(() => {

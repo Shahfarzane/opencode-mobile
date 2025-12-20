@@ -208,68 +208,60 @@ const UserMessageBody: React.FC<{
             style={{ contain: 'layout', transform: 'translateZ(0)' }}
             onTouchStart={isTouchContext && canCopyMessage && hasCopyableText ? revealCopyHint : undefined}
         >
-            {canCopyMessage && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    data-visible={copyHintVisible || isMessageCopied ? 'true' : undefined}
-                    className={cn(
-                        'absolute z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border/40 shadow-none bg-background/95 supports-[backdrop-filter]:bg-background/80 hover:bg-accent duration-150',
-                        'opacity-0 pointer-events-none disabled:opacity-30 disabled:text-muted-foreground/40',
-                        hasCopyableText &&
-                            'group-hover/message:opacity-60 group-hover/message:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto',
-                        (copyHintVisible || isMessageCopied) && 'opacity-100 pointer-events-auto'
-                    )}
-                    style={{ insetInlineEnd: '0.32rem', insetBlockStart: '-0.28rem' }}
-                    disabled={!hasCopyableText}
-                    aria-label="Copy message text"
-                    aria-hidden={!hasCopyableText}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={handleCopyButtonClick}
-                    onFocus={() => {
-                        if (hasCopyableText) {
-                            setCopyHintVisible(true);
+            <div className="leading-normal overflow-hidden text-foreground/85">
+                {textParts.map((part, index) => {
+                    let mentionForPart: AgentMentionInfo | undefined;
+                    if (agentMention && mentionToken && !mentionInjected) {
+                        const candidateText = extractTextContent(part);
+                        if (candidateText.includes(mentionToken)) {
+                            mentionForPart = agentMention;
+                            mentionInjected = true;
                         }
-                    }}
-                    onBlur={() => {
-                        if (!isMessageCopied) {
-                            setCopyHintVisible(false);
-                        }
-                    }}
-                >
-                    {isMessageCopied ? (
-                        <RiCheckLine className="h-3.5 w-3.5 text-[color:var(--status-success)]" />
-                    ) : (
-                        <RiFileCopyLine className="h-3.5 w-3.5 text-foreground hover:text-primary focus-visible:text-primary" />
-                    )}
-                </Button>
-            )}
-            <div className="px-3">
-                <div className="leading-normal overflow-hidden text-foreground/90">
-                    {textParts.map((part, index) => {
-                        let mentionForPart: AgentMentionInfo | undefined;
-                        if (agentMention && mentionToken && !mentionInjected) {
-                            const candidateText = extractTextContent(part);
-                            if (candidateText.includes(mentionToken)) {
-                                mentionForPart = agentMention;
-                                mentionInjected = true;
-                            }
-                        }
-                        return (
-                            <FadeInOnReveal key={`user-text-${index}`}>
-                                <UserTextPart
-                                    part={part}
-                                    messageId={messageId}
-                                    isMobile={isMobile}
-                                    agentMention={mentionForPart}
-                                />
-                            </FadeInOnReveal>
-                        );
-                    })}
-                </div>
-                <MessageFilesDisplay files={parts} onShowPopup={onShowPopup} />
+                    }
+                    return (
+                        <FadeInOnReveal key={`user-text-${index}`}>
+                            <UserTextPart
+                                part={part}
+                                messageId={messageId}
+                                isMobile={isMobile}
+                                agentMention={mentionForPart}
+                            />
+                        </FadeInOnReveal>
+                    );
+                })}
             </div>
+            <MessageFilesDisplay files={parts} onShowPopup={onShowPopup} />
+            {canCopyMessage && hasCopyableText && (
+                <div className="mt-1 flex items-center justify-end gap-2 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/message:opacity-100 group-hover/message:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
+                    <Tooltip delayDuration={1000}>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                data-visible={copyHintVisible || isMessageCopied ? 'true' : undefined}
+                                className="h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50"
+                                aria-label="Copy message text"
+                                onPointerDown={(event) => event.stopPropagation()}
+                                onClick={handleCopyButtonClick}
+                                onFocus={() => setCopyHintVisible(true)}
+                                onBlur={() => {
+                                    if (!isMessageCopied) {
+                                        setCopyHintVisible(false);
+                                    }
+                                }}
+                            >
+                                {isMessageCopied ? (
+                                    <RiCheckLine className="h-3.5 w-3.5 text-[color:var(--status-success)]" />
+                                ) : (
+                                    <RiFileCopyLine className="h-3.5 w-3.5" />
+                                )}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent sideOffset={6}>Copy message</TooltipContent>
+                    </Tooltip>
+                </div>
+            )}
         </div>
     );
 };
@@ -1075,6 +1067,21 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
 
     const footerButtons = (
          <>
+             <Tooltip delayDuration={1000}>
+                 <TooltipTrigger asChild>
+                     <Button
+                         type="button"
+                         size="icon"
+                         variant="ghost"
+                         className="h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50"
+                         onPointerDown={(event) => event.stopPropagation()}
+                         onClick={handleForkClick}
+                     >
+                         <RiChatNewLine className="h-4 w-4" />
+                     </Button>
+                 </TooltipTrigger>
+                 <TooltipContent sideOffset={6}>Start new session from this answer</TooltipContent>
+             </Tooltip>
              {onCopyMessage && (
                  <Tooltip delayDuration={1000}>
                      <TooltipTrigger asChild>
@@ -1085,8 +1092,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                              data-visible={copyHintVisible || isMessageCopied ? 'true' : undefined}
                              className={cn(
                                  'h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50',
-                                 !hasCopyableText && 'opacity-50',
-                                 (copyHintVisible || isMessageCopied) && 'text-primary'
+                                 !hasCopyableText && 'opacity-50'
                              )}
                              disabled={!hasCopyableText}
                              aria-label="Copy message text"
@@ -1114,21 +1120,6 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                      <TooltipContent sideOffset={6}>Copy answer</TooltipContent>
                  </Tooltip>
              )}
-             <Tooltip delayDuration={1000}>
-                 <TooltipTrigger asChild>
-                     <Button
-                         type="button"
-                         size="icon"
-                         variant="ghost"
-                         className="h-8 w-8 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-primary/50"
-                         onPointerDown={(event) => event.stopPropagation()}
-                         onClick={handleForkClick}
-                     >
-                         <RiChatNewLine className="h-4 w-4" />
-                     </Button>
-                 </TooltipTrigger>
-                 <TooltipContent sideOffset={6}>Start new session from this answer</TooltipContent>
-             </Tooltip>
          </>
      );
  
