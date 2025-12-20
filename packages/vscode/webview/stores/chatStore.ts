@@ -10,6 +10,37 @@ const AUTO_DELETE_DEFAULT_DAYS = 30;
 const AUTO_DELETE_KEEP_RECENT = 5;
 const AUTO_DELETE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const waitForApiReady = async (client: OpencodeClient, attempts = 10, delayMs = 500): Promise<boolean> => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      await client.session.list({ query: { directory: getWorkspaceFolder() } });
+      return true;
+    } catch {
+      await sleep(delayMs);
+    }
+  }
+  return false;
+};
+
+const waitForSessionReady = async (client: OpencodeClient, sessionId: string, attempts = 10, delayMs = 500): Promise<boolean> => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await client.session.get({
+        path: { id: sessionId },
+        query: { directory: getWorkspaceFolder() },
+      });
+      if (response.data) {
+        return true;
+      }
+    } catch {
+      await sleep(delayMs);
+    }
+  }
+  return false;
+};
+
 let autoDeleteRunning = false;
 
 const getLastActivity = (session: Session): number => {
@@ -247,9 +278,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!client) return null;
 
     try {
+      const apiReady = await waitForApiReady(client);
+      if (!apiReady) {
+        throw new Error('OpenCode API not ready');
+      }
+
       const response = await client.session.create({ query: { directory: getWorkspaceFolder() }, body: {} });
       const session = response.data;
       if (!session) throw new Error('No session returned');
+      const sessionReady = await waitForSessionReady(client, session.id);
+      if (!sessionReady) {
+        console.warn('Session created but not ready yet; continuing');
+      }
       await get().loadSessions();
       set({ currentSessionId: session.id });
       return session.id;
@@ -295,6 +335,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isSending: true, streamingSessionId: currentSessionId });
 
     try {
+      const apiReady = await waitForApiReady(client);
+      if (!apiReady) {
+        throw new Error('OpenCode API not ready');
+      }
+
+      const sessionReady = await waitForSessionReady(client, currentSessionId);
+      if (!sessionReady) {
+        console.warn('Session not ready yet; attempting to prompt anyway');
+      }
+
       // Add user message optimistically
       const messageId = `temp-${Date.now()}`;
       const partId = `part-${messageId}`;
@@ -320,14 +370,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
       newMessages.set(currentSessionId, [...currentMessages, userMessage]);
       set({ messages: newMessages });
 
-      // Send message via session.prompt
-      await client.session.prompt({
+      const sendPrompt = () => client.session.prompt({
         path: { id: currentSessionId },
         query: { directory: getWorkspaceFolder() },
         body: {
           parts: [{ type: 'text', text: content }],
         },
       });
+
+      try {
+        await sendPrompt();
+      } catch (error) {
+        const recovered = await waitForSessionReady(client, currentSessionId, 6, 500);
+        if (recovered) {
+          await sendPrompt();
+        } else {
+          throw error;
+        }
+      }
 
       // Reload messages to get the actual response
       await get().loadMessages(currentSessionId);
