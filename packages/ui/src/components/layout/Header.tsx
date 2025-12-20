@@ -310,7 +310,7 @@ export const Header: React.FC = () => {
 
             isGitTab && 'border-r',
 
-            isChatTab && !isMobile && 'min-w-[165px]'
+            isChatTab && !isMobile && 'min-w-[165px] max-[1024px]:min-w-0'
           )}
           style={{
             ...(isActive && isChatTab && isSidebarOpen ? {
@@ -319,6 +319,7 @@ export const Header: React.FC = () => {
             } : {}),
             ...((isChatTab && !(isDesktopApp && isMacPlatform && isSidebarOpen)) || isGitTab ? { borderColor: 'var(--interactive-border)' } : {}),
           }}
+          aria-label={tab.label}
           aria-selected={isActive}
           role="tab"
         >
@@ -327,7 +328,7 @@ export const Header: React.FC = () => {
           ) : (
             <>
               <Icon size={16} />
-              <span>{tab.label}</span>
+              <span className="header-tab-label">{tab.label}</span>
             </>
           )}
           {}
