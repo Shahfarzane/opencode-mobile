@@ -884,6 +884,17 @@ html:not(.dark) .chat-scroll {
   }
 }
 
+/* Header tab responsiveness */
+:root:not(.mobile-pointer):not(.vscode-runtime) .header-tab-label {
+  display: inline;
+}
+
+@media (max-width: 820px) {
+  :root:not(.mobile-pointer):not(.vscode-runtime) .header-tab-label {
+    display: none;
+  }
+}
+
 /* Mobile Adaptations - All Devices */
 
 /* Set global device type variables */
