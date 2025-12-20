@@ -24,6 +24,7 @@ declare global {
 
 const ENABLE_EMPTY_RESPONSE_DETECTION = false;
 const TEXT_SHRINK_TOLERANCE = 50;
+const RESYNC_DEBOUNCE_MS = 750;
 
 const textLengthCache = new WeakMap<Part[], number>();
 const computeTextLength = (parts: Part[] | undefined | null): number => {
@@ -160,6 +161,32 @@ export const useEventStream = () => {
     [setEventStreamStatus]
   );
 
+  const resyncMessages = React.useCallback(
+    (sessionId: string, reason: string) => {
+      if (!sessionId) {
+        return Promise.resolve();
+      }
+      const now = Date.now();
+      if (resyncInFlightRef.current) {
+        return resyncInFlightRef.current;
+      }
+      if (now - lastResyncAtRef.current < RESYNC_DEBOUNCE_MS) {
+        return Promise.resolve();
+      }
+      const task = loadMessages(sessionId)
+        .catch((error) => {
+          console.warn(`[useEventStream] Failed to resync messages (${reason}):`, error);
+        })
+        .finally(() => {
+          resyncInFlightRef.current = null;
+          lastResyncAtRef.current = Date.now();
+        });
+      resyncInFlightRef.current = task;
+      return task;
+    },
+    [loadMessages]
+  );
+
   const bootstrapState = React.useCallback(
     async (reason: string) => {
       if (streamDebugEnabled()) {
@@ -168,13 +195,13 @@ export const useEventStream = () => {
       try {
         await Promise.all([
           loadSessions(),
-          currentSessionId ? loadMessages(currentSessionId) : Promise.resolve(),
+          currentSessionId ? resyncMessages(currentSessionId, reason) : Promise.resolve(),
         ]);
       } catch (error) {
         console.warn('[useEventStream] Bootstrap failed:', reason, error);
       }
     },
-    [currentSessionId, loadMessages, loadSessions]
+    [currentSessionId, loadSessions, resyncMessages]
   );
 
   const trackMessage = React.useCallback((messageId: string, event?: string, extraData?: Record<string, unknown>) => {
@@ -196,6 +223,8 @@ export const useEventStream = () => {
   const metadataRefreshTimestampsRef = React.useRef<Map<string, number>>(new Map());
   const sessionRefreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const isCleaningUpRef = React.useRef(false);
+  const resyncInFlightRef = React.useRef<Promise<void> | null>(null);
+  const lastResyncAtRef = React.useRef(0);
 
   const resolveVisibilityState = React.useCallback((): 'visible' | 'hidden' => {
     if (typeof document === 'undefined') return 'visible';
@@ -980,7 +1009,7 @@ export const useEventStream = () => {
         const sessionId = currentSessionIdRef.current;
         if (sessionId) {
           setTimeout(() => {
-            loadMessages(sessionId)
+            resyncMessages(sessionId, 'sse_reconnected')
               .then(() => requestSessionMetadataRefresh(sessionId))
               .catch((error) => {
                 console.warn('[useEventStream] Failed to resync messages after reconnect:', error);
@@ -1029,7 +1058,7 @@ export const useEventStream = () => {
     stopStream,
     publishStatus,
     checkConnection,
-    loadMessages,
+    resyncMessages,
     requestSessionMetadataRefresh,
     requestSessionListRefresh,
     completeStreamingMessage,
@@ -1126,10 +1155,11 @@ export const useEventStream = () => {
       if (pendingResumeRef.current || !unsubscribeRef.current) {
         console.info('[useEventStream] Visibility restored, triggering soft refresh...');
         const sessionId = currentSessionIdRef.current;
-        if (sessionId) {
-          loadMessages(sessionId).catch(() => {});
-          requestSessionMetadataRefresh(sessionId);
-        }
+          if (sessionId) {
+            resyncMessages(sessionId, 'visibility_restore').catch(() => {});
+            requestSessionMetadataRefresh(sessionId);
+          }
+
         void loadSessions();
         void refreshSessionActivityStatus();
         publishStatus('connecting', 'Resuming stream');
@@ -1153,7 +1183,7 @@ export const useEventStream = () => {
           const sessionId = currentSessionIdRef.current;
           if (sessionId) {
             requestSessionMetadataRefresh(sessionId);
-            loadMessages(sessionId)
+            resyncMessages(sessionId, 'window_focus')
               .then(() => console.info('[useEventStream] Messages refreshed on focus'))
               .catch((err) => console.warn('[useEventStream] Failed to refresh messages:', err));
           }
