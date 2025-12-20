@@ -1132,14 +1132,14 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                 title="Select model"
             >
                 <div className="flex flex-col gap-2">
-                    <div className="px-2">
+                    <div>
                         <div className="relative">
                             <RiSearchLine className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
                                 value={mobileModelQuery}
                                 onChange={(event) => setMobileModelQuery(event.target.value)}
                                 placeholder="Search providers or models"
-                                className="pl-7 h-8 typography-meta"
+                                className="pl-7 h-9 rounded-xl border-border/40 bg-background/95 typography-meta"
                             />
                             {mobileModelQuery && (
                                 <button
@@ -1162,7 +1162,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
 
                     {/* Favorites Section for Mobile */}
                     {!mobileModelQuery && favoriteModelsList.length > 0 && (
-                        <div className="rounded-xl border border-border/40 bg-background/95">
+                        <div className="rounded-xl border border-border/40 bg-background/95 overflow-hidden">
                             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 <RiStarFill className="h-3 w-3 inline-block mr-1.5 text-primary" />
                                 Favorites
@@ -1180,6 +1180,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                             className={cn(
                                                 'flex w-full items-start gap-2 border-b border-border/30 px-2 py-1.5 text-left last:border-b-0',
                                                 'focus:outline-none focus-visible:ring-1 focus-visible:ring-primary',
+                                                'first:rounded-t-xl last:rounded-b-xl transition-colors',
                                                 isSelected ? 'bg-primary/15 text-primary' : 'hover:bg-muted'
                                             )}
                                         >
@@ -1207,7 +1208,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
 
                     {/* Recent Section for Mobile */}
                     {!mobileModelQuery && recentModelsList.length > 0 && (
-                        <div className="rounded-xl border border-border/40 bg-background/95">
+                        <div className="rounded-xl border border-border/40 bg-background/95 overflow-hidden">
                             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 <RiTimeLine className="h-3 w-3 inline-block mr-1.5" />
                                 Recent
@@ -1225,6 +1226,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                             className={cn(
                                                 'flex w-full items-start gap-2 border-b border-border/30 px-2 py-1.5 text-left last:border-b-0',
                                                 'focus:outline-none focus-visible:ring-1 focus-visible:ring-primary',
+                                                'first:rounded-t-xl last:rounded-b-xl transition-colors',
                                                 isSelected ? 'bg-primary/15 text-primary' : 'hover:bg-muted'
                                             )}
                                         >
@@ -1259,7 +1261,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                         const isExpanded = expandedMobileProviders.has(provider.id) || normalizedQuery.length > 0;
 
                         return (
-                            <div key={provider.id} className="rounded-xl border border-border/40 bg-background/95">
+                            <div key={provider.id} className="rounded-xl border border-border/40 bg-background/95 overflow-hidden">
                                 <button
                                     type="button"
                                     onClick={() => toggleMobileProviderExpansion(provider.id)}
@@ -1298,6 +1300,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                                     key={model.id}
                                                     className={cn(
                                                         'flex w-full items-start gap-2 border-b border-border/30 px-2 py-1.5 last:border-b-0',
+                                                        'rounded-lg transition-colors',
+                                                        !isSelected && 'hover:bg-muted',
                                                         isSelected
                                                             ? 'bg-primary/15 text-primary'
                                                             : ''
@@ -1308,8 +1312,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                                         onClick={() => handleProviderAndModelChange(provider.id as string, model.id as string)}
                                                         className={cn(
                                                             'flex flex-1 min-w-0 items-start gap-2 text-left',
-                                                            'focus:outline-none focus-visible:ring-1 focus-visible:ring-primary',
-                                                            !isSelected && 'hover:bg-muted'
+                                                            'focus:outline-none focus-visible:ring-1 focus-visible:ring-primary'
                                                         )}
                                                     >
                                                         <div className="flex min-w-0 flex-col">
