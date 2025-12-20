@@ -131,6 +131,25 @@ textarea[data-chat-input="true"]:hover {
   }
 }
 
+@keyframes oc-file-mention-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(calc(-100% + var(--file-mention-marquee-width, 360px)));
+  }
+}
+
+.file-mention-marquee-container {
+  --file-mention-marquee-width: 360px;
+  --file-mention-marquee-duration: 4s;
+}
+
+.file-mention-marquee {
+  animation: oc-file-mention-marquee var(--file-mention-marquee-duration, 4s) linear 0.2s 1 both;
+  will-change: transform;
+}
+
 /* Safari/WebKit fixes for buttons and SVG icons */
 /* Remixicon puts fill="currentColor" on root SVG which WebKit renders as background */
 button svg.remixicon,
