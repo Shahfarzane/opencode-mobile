@@ -1,6 +1,5 @@
 import React from 'react';
 import { RiCodeLine, RiFileImageLine, RiFileLine, RiFilePdfLine, RiRefreshLine } from '@remixicon/react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, truncatePathMiddle } from '@/lib/utils';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -33,8 +32,12 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
   const [files, setFiles] = React.useState<FileInfo[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
-  const [hoveredTooltipIndex, setHoveredTooltipIndex] = React.useState<number | null>(null);
+  const [marqueeWidth, setMarqueeWidth] = React.useState(360);
+  const [overflowMap, setOverflowMap] = React.useState<Record<number, boolean>>({});
+  const [marqueeDurations, setMarqueeDurations] = React.useState<Record<number, number>>({});
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const labelRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
+  const measureRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
 
   const fuzzyScore = React.useCallback((query: string, candidate: string): number | null => {
@@ -159,7 +162,8 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
 
   React.useEffect(() => {
     setSelectedIndex(0);
-    setHoveredTooltipIndex(null);
+    setOverflowMap({});
+    setMarqueeDurations({});
   }, [files]);
 
   React.useEffect(() => {
@@ -167,6 +171,73 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
       behavior: 'smooth',
       block: 'nearest'
     });
+  }, [selectedIndex]);
+
+  React.useEffect(() => {
+    let frameId: number | null = null;
+
+    const updateOverflow = () => {
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
+      frameId = requestAnimationFrame(() => {
+        const next: Record<number, boolean> = {};
+        const durations: Record<number, number> = {};
+        labelRefs.current.forEach((node, index) => {
+          if (!node) {
+            return;
+          }
+          const measureNode = measureRefs.current[index];
+          const fullWidth = measureNode?.offsetWidth ?? node.scrollWidth;
+          const overflowPx = Math.max(0, fullWidth - node.clientWidth);
+          const isOverflowing = overflowPx > 8;
+          next[index] = isOverflowing;
+          if (isOverflowing) {
+            const duration = Math.max(0.6, overflowPx / 110);
+            durations[index] = duration;
+          }
+        });
+        setOverflowMap(next);
+        setMarqueeDurations(durations);
+      });
+    };
+
+    updateOverflow();
+    window.addEventListener('resize', updateOverflow);
+
+    return () => {
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener('resize', updateOverflow);
+    };
+  }, [files]);
+
+  React.useEffect(() => {
+    const labelNode = labelRefs.current[selectedIndex];
+    if (!labelNode) {
+      return;
+    }
+
+    const updateWidth = () => {
+      const width = labelNode.clientWidth;
+      if (width > 0) {
+        setMarqueeWidth(width);
+      }
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(labelNode);
+
+    return () => {
+      observer.disconnect();
+    };
   }, [selectedIndex]);
 
   const handleFileSelect = React.useCallback(async (file: FileInfo) => {
@@ -247,8 +318,8 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
               const relativePath = file.relativePath || file.name;
               const displayPath = truncatePathMiddle(relativePath, { maxLength: 45 });
               const isSelected = selectedIndex === index;
-              const isHovered = hoveredTooltipIndex === index;
-              const tooltipOpen = isSelected || isHovered;
+              const isOverflowing = overflowMap[index] ?? false;
+              const marqueeDuration = marqueeDurations[index] ?? 2.6;
 
               const item = (
                 <div
@@ -261,36 +332,39 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
                   {getFileIcon(file)}
-                  <span className="flex-1 truncate max-w-[360px]" aria-label={relativePath}>
-                    {displayPath}
+                  <span
+                    ref={(el) => { labelRefs.current[index] = el; }}
+                    className="relative flex-1 overflow-hidden max-w-[360px] file-mention-marquee-container"
+                    style={isSelected ? {
+                      ['--file-mention-marquee-width' as string]: `${marqueeWidth}px`,
+                      ['--file-mention-marquee-duration' as string]: `${marqueeDuration}s`
+                    } : undefined}
+                    aria-label={relativePath}
+                  >
+                    <span
+                      ref={(el) => { measureRefs.current[index] = el; }}
+                      className="absolute invisible whitespace-nowrap pointer-events-none"
+                      aria-hidden
+                    >
+                      {relativePath}
+                    </span>
+                    {isOverflowing && isSelected ? (
+                      <span className="inline-block whitespace-nowrap file-mention-marquee">
+                        {relativePath}
+                      </span>
+                    ) : (
+                      <span className="block truncate">
+                        {displayPath}
+                      </span>
+                    )}
                   </span>
                 </div>
               );
 
               return (
-                <Tooltip
-                  key={file.path}
-                  open={tooltipOpen}
-                  delayDuration={tooltipOpen ? 0 : 120}
-                  onOpenChange={(open) => {
-                    setHoveredTooltipIndex((previous) => {
-                      if (!open && previous === index) {
-                        return null;
-                      }
-                      if (open) {
-                        return index;
-                      }
-                      return previous;
-                    });
-                  }}
-                >
-                  <TooltipTrigger asChild>{item}</TooltipTrigger>
-                  <TooltipContent side="right" align="center" className="max-w-xs">
-                    <span className="typography-meta text-foreground/80 whitespace-pre-wrap break-all">
-                      {relativePath}
-                    </span>
-                  </TooltipContent>
-                </Tooltip>
+                <React.Fragment key={file.path}>
+                  {item}
+                </React.Fragment>
               );
             })}
             {}
