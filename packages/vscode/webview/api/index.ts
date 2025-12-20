@@ -1,4 +1,4 @@
-import type { RuntimeAPIs, TerminalAPI, GitAPI, NotificationsAPI } from '@openchamber/ui/lib/api/types';
+import type { RuntimeAPIs, TerminalAPI, GitAPI, NotificationsAPI, GitIdentityProfile } from '../../../ui/src/lib/api/types';
 import { createVSCodeFilesAPI } from './files';
 import { createVSCodeSettingsAPI } from './settings';
 import { createVSCodePermissionsAPI } from './permissions';
@@ -40,8 +40,8 @@ const createStubGitAPI = (): GitAPI => ({
   getCurrentGitIdentity: async () => null,
   setGitIdentity: async () => ({ success: false, profile: { id: '', name: '', userName: '', userEmail: '' } }),
   getGitIdentities: async () => [],
-  createGitIdentity: async (p) => p,
-  updateGitIdentity: async (_, p) => p,
+  createGitIdentity: async (profile: GitIdentityProfile) => profile,
+  updateGitIdentity: async (_id: string, profile: GitIdentityProfile) => profile,
   deleteGitIdentity: async () => {},
 });
 

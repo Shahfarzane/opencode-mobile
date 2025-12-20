@@ -1,12 +1,12 @@
 import { createVSCodeAPIs } from './api';
 import { onThemeChange, sendBridgeMessage } from './api/bridge';
-import type { RuntimeAPIs } from '@openchamber/ui/lib/api/types';
+import type { RuntimeAPIs } from '../../ui/src/lib/api/types';
 import {
   buildVSCodeThemeFromPalette,
   readVSCodeThemePalette,
   type VSCodeThemeKind,
   type VSCodeThemePayload,
-} from '@openchamber/ui/lib/theme/vscode/adapter';
+} from '../../ui/src/lib/theme/vscode/adapter';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'error' | 'disconnected';
 
@@ -22,6 +22,7 @@ declare global {
     __OPENCHAMBER_VSCODE_THEME__?: VSCodeThemePayload['theme'];
     __OPENCHAMBER_VSCODE_SHIKI_THEMES__?: { light?: Record<string, unknown>; dark?: Record<string, unknown> } | null;
     __OPENCHAMBER_CONNECTION__?: { status: ConnectionStatus; error?: string };
+    __OPENCHAMBER_HOME__?: string;
   }
 }
 
@@ -298,4 +299,4 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
   return originalFetch(input as RequestInfo, init);
 };
-import('@openchamber/ui/main');
+import('../../ui/src/main');
