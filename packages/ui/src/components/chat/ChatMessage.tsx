@@ -706,39 +706,33 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 <div className="chat-column">
                     {isUser ? (
                         <FadeInOnReveal>
-                            <div
-                                className={cn(
-                                    'rounded-xl border bg-input/10 dark:bg-input/30 pt-2 pb-2.5 relative'
-                                )}
-                                style={{
-                                    borderColor: 'color-mix(in srgb, var(--primary-muted, var(--primary)) 40%, var(--interactive-border, transparent))'
-                                }}
-                            >
-                                <MessageBody
-                                    messageId={message.info.id}
-                                    parts={visibleParts}
-                                    isUser={isUser}
-                                    isMessageCompleted={isMessageCompleted}
-                                    syntaxTheme={syntaxTheme}
-                                    isMobile={isMobile}
-                                    hasTouchInput={hasTouchInput}
-                                    copiedCode={copiedCode}
-                                    onCopyCode={handleCopyCode}
-                                    expandedTools={expandedTools}
-                                    onToggleTool={handleToggleTool}
-                                    onShowPopup={handleShowPopup}
-                                    streamPhase={streamPhase}
-                                    allowAnimation={allowAnimation}
-                                    onContentChange={onContentChange}
-                                    shouldShowHeader={false}
-                                    hasTextContent={hasTextContent}
-                                    onCopyMessage={handleCopyMessage}
-                                    copiedMessage={copiedMessage}
-                                    showReasoningTraces={showReasoningTraces}
-                                    onAuxiliaryContentComplete={handleAuxiliaryContentComplete}
-                                    agentMention={agentMention}
-                                />
-
+                            <div className="flex justify-end">
+                                <div className="max-w-[85%] rounded-xl rounded-br-xs bg-primary/10 dark:bg-primary/8 px-3.5 pt-2.5 pb-1.5">
+                                    <MessageBody
+                                        messageId={message.info.id}
+                                        parts={visibleParts}
+                                        isUser={isUser}
+                                        isMessageCompleted={isMessageCompleted}
+                                        syntaxTheme={syntaxTheme}
+                                        isMobile={isMobile}
+                                        hasTouchInput={hasTouchInput}
+                                        copiedCode={copiedCode}
+                                        onCopyCode={handleCopyCode}
+                                        expandedTools={expandedTools}
+                                        onToggleTool={handleToggleTool}
+                                        onShowPopup={handleShowPopup}
+                                        streamPhase={streamPhase}
+                                        allowAnimation={allowAnimation}
+                                        onContentChange={onContentChange}
+                                        shouldShowHeader={false}
+                                        hasTextContent={hasTextContent}
+                                        onCopyMessage={handleCopyMessage}
+                                        copiedMessage={copiedMessage}
+                                        showReasoningTraces={showReasoningTraces}
+                                        onAuxiliaryContentComplete={handleAuxiliaryContentComplete}
+                                        agentMention={agentMention}
+                                    />
+                                </div>
                             </div>
                         </FadeInOnReveal>
                     ) : (
