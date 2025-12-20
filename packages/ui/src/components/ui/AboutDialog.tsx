@@ -47,7 +47,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
       <DialogContent className="max-w-xs p-6">
         <div className="flex flex-col items-center text-center space-y-4">
           <OpenChamberLogo width={64} height={64} />
-          
+
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">OpenChamber</h2>
             {displayVersion && (
@@ -58,7 +58,16 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
           </div>
 
           <p className="typography-meta text-muted-foreground">
-            A beautiful interface for OpenCode AI coding agent
+            A fan-made interface for{' '}
+            <a
+              href="https://opencode.ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              OpenCode
+            </a>{' '}
+            agent
           </p>
 
           <div className="flex items-center gap-4 pt-2">
@@ -83,7 +92,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
           </div>
 
           <p className="typography-meta text-muted-foreground/60 pt-2">
-            Made with care for developers
+            Made with love to comunity
           </p>
         </div>
       </DialogContent>
