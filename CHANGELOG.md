@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.9] - 2025-12-20
+
+- Session auto‑cleanup feature with configurable retention for each app version including VSCode extension
+- Ability to update web package from mobile/PWA view in setting
+- A lot of different optimization for a long sessions
+
+
 ## [1.2.8] - 2025-12-19
 
 - Introduced update mechanism for web version that doesn't need any cli interaction

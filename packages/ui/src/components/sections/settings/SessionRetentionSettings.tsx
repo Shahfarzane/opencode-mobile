@@ -24,7 +24,7 @@ export const SessionRetentionSettings: React.FC = () => {
     setMobileDraftDays(String(autoDeleteAfterDays));
   }, [autoDeleteAfterDays]);
 
-  const { candidates, isRunning, runCleanup, keepRecentCount } = useSessionAutoCleanup({ autoRun: false });
+  const { candidates, isRunning, runCleanup } = useSessionAutoCleanup({ autoRun: false });
   const pendingCount = candidates.length;
 
   const handleRunCleanup = React.useCallback(async () => {

@@ -296,15 +296,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       // Add user message optimistically
+      const messageId = `temp-${Date.now()}`;
+      const partId = `part-${messageId}`;
+      const userPart: Part = {
+        id: partId,
+        sessionID: currentSessionId,
+        messageID: messageId,
+        type: 'text',
+        text: content,
+      } as Part;
       const userMessage: MessageRecord = {
         info: {
-          id: `temp-${Date.now()}`,
-          sessionId: currentSessionId,
+          id: messageId,
+          sessionID: currentSessionId,
           role: 'user',
-          parts: [{ type: 'text', text: content }],
           time: { created: Date.now() },
         } as Message,
-        parts: [{ type: 'text', text: content }],
+        parts: [userPart],
       };
 
       const currentMessages = messages.get(currentSessionId) || [];
