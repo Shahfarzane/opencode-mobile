@@ -1,35 +1,67 @@
-<?xml version='1.0' encoding='utf-8'?>
-<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <ns0:defs>
-    <ns0:filter id="iconShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <ns0:feDropShadow dx="0" dy="12" stdDeviation="14" flood-opacity="0.5" flood-color="#000000" />
-    </ns0:filter>
-    <ns0:filter id="glyphShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <ns0:feDropShadow dx="2" dy="4" stdDeviation="6" flood-opacity="0.28" flood-color="#000000" />
-    </ns0:filter>
-    <ns0:linearGradient id="bgGradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1">
-      <ns0:stop offset="0%" stop-color="#151313" />
-      <ns0:stop offset="100%" stop-color="#151313" />
-    </ns0:linearGradient>
-    <ns0:linearGradient id="glyphGradient" x1="0" y1="0" x2="0" y2="1">
-      <ns0:stop offset="0%" stop-color="#F8F8F8" />
-      <ns0:stop offset="55%" stop-color="#DAD6D0" />
-      <ns0:stop offset="100%" stop-color="#BAB4AF" />
-    </ns0:linearGradient>
-    <ns0:linearGradient id="glyphStrokeGradient" x1="0" y1="0" x2="0" y2="1">
-      <ns0:stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08" />
-      <ns0:stop offset="45%" stop-color="#000000" stop-opacity="0.15" />
-      <ns0:stop offset="100%" stop-color="#000000" stop-opacity="0.2" />
-    </ns0:linearGradient>
-  </ns0:defs>
-
-  <ns0:g transform="translate(100, 100)">
-    <ns0:rect x="0" y="0" width="824" height="824" rx="185" ry="185" filter="url(#iconShadow)" fill="url(#bgGradient)" />
-
-    <ns0:g transform="translate(412, 412) scale(8.15) translate(-35, -35.5)" filter="url(#glyphShadow)">
-      <ns0:rect x="8.75" y="31.0" width="17.5" height="20.5" fill="#4B4646" />
-      <ns0:path fill-rule="evenodd" clip-rule="evenodd" d="M0 13H35V58H0V13ZM26.25 22.1957H8.75V48.701H26.25V22.1957Z" fill="url(#glyphGradient)" stroke="url(#glyphStrokeGradient)" stroke-width="1.1" stroke-linejoin="round" />
-      <ns0:path d="M43.75 13H70V22.1957H52.5V48.701H70V57.8967H43.75V13Z" fill="url(#glyphGradient)" stroke="url(#glyphStrokeGradient)" stroke-width="1.1" stroke-linejoin="round" />
-    </ns0:g>
-  </ns0:g>
-</ns0:svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="iconShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-opacity="0.5" flood-color="#000000"/>
+    </filter>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#303030"/>
+      <stop offset="100%" stop-color="#141414"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon with Apple standard padding (100px on each side) -->
+  <g transform="translate(100, 100)">
+    <!-- Background rounded square - 824x824 (Apple standard) - dark gradient -->
+    <rect x="0" y="0" width="824" height="824" rx="185" ry="185" fill="url(#bgGradient)" filter="url(#iconShadow)"/>
+    
+    <!-- OpenChamber logo centered - larger scale (6.5 instead of 5) -->
+    <g transform="translate(412, 412) scale(6.5)">
+      <!-- Left face -->
+      <path d="M0 0 L-41.568 -24 L-41.568 24 L0 48 Z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Left face grid cells -->
+      <path d="M0 0 L-10.392 -6 L-10.392 6 L0 12 Z" fill="white" fill-opacity="0.07"/>
+      <path d="M-10.392 -6 L-20.784 -12 L-20.784 0 L-10.392 6 Z" fill="white" fill-opacity="0.16"/>
+      <path d="M-20.784 -12 L-31.176 -18 L-31.176 -6 L-20.784 0 Z" fill="white" fill-opacity="0.05"/>
+      <path d="M-31.176 -18 L-41.568 -24 L-41.568 -12 L-31.176 -6 Z" fill="white" fill-opacity="0.19"/>
+      <path d="M0 12 L-10.392 6 L-10.392 18 L0 24 Z" fill="white" fill-opacity="0.12"/>
+      <path d="M-10.392 6 L-20.784 0 L-20.784 12 L-10.392 18 Z" fill="white" fill-opacity="0.04"/>
+      <path d="M-20.784 0 L-31.176 -6 L-31.176 6 L-20.784 12 Z" fill="white" fill-opacity="0.18"/>
+      <path d="M-31.176 -6 L-41.568 -12 L-41.568 0 L-31.176 6 Z" fill="white" fill-opacity="0.09"/>
+      <path d="M0 24 L-10.392 18 L-10.392 30 L0 36 Z" fill="white" fill-opacity="0.14"/>
+      <path d="M-10.392 18 L-20.784 12 L-20.784 24 L-10.392 30 Z" fill="white" fill-opacity="0.11"/>
+      <path d="M-20.784 12 L-31.176 6 L-31.176 18 L-20.784 24 Z" fill="white" fill-opacity="0.16"/>
+      <path d="M-31.176 6 L-41.568 0 L-41.568 12 L-31.176 18 Z" fill="white" fill-opacity="0.05"/>
+      <path d="M0 36 L-10.392 30 L-10.392 42 L0 48 Z" fill="white" fill-opacity="0.19"/>
+      <path d="M-10.392 30 L-20.784 24 L-20.784 36 L-10.392 42 Z" fill="white" fill-opacity="0.07"/>
+      <path d="M-20.784 24 L-31.176 18 L-31.176 30 L-20.784 36 Z" fill="white" fill-opacity="0.12"/>
+      <path d="M-31.176 18 L-41.568 12 L-41.568 24 L-31.176 30 Z" fill="white" fill-opacity="0.04"/>
+      <!-- Right face -->
+      <path d="M0 0 L41.568 -24 L41.568 24 L0 48 Z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Right face grid cells -->
+      <path d="M0 0 L10.392 -6 L10.392 6 L0 12 Z" fill="white" fill-opacity="0.11"/>
+      <path d="M10.392 -6 L20.784 -12 L20.784 0 L10.392 6 Z" fill="white" fill-opacity="0.05"/>
+      <path d="M20.784 -12 L31.176 -18 L31.176 -6 L20.784 0 Z" fill="white" fill-opacity="0.16"/>
+      <path d="M31.176 -18 L41.568 -24 L41.568 -12 L31.176 -6 Z" fill="white" fill-opacity="0.09"/>
+      <path d="M0 12 L10.392 6 L10.392 18 L0 24 Z" fill="white" fill-opacity="0.18"/>
+      <path d="M10.392 6 L20.784 0 L20.784 12 L10.392 18 Z" fill="white" fill-opacity="0.12"/>
+      <path d="M20.784 0 L31.176 -6 L31.176 6 L20.784 12 Z" fill="white" fill-opacity="0.04"/>
+      <path d="M31.176 -6 L41.568 -12 L41.568 0 L31.176 6 Z" fill="white" fill-opacity="0.14"/>
+      <path d="M0 24 L10.392 18 L10.392 30 L0 36 Z" fill="white" fill-opacity="0.07"/>
+      <path d="M10.392 18 L20.784 12 L20.784 24 L10.392 30 Z" fill="white" fill-opacity="0.19"/>
+      <path d="M20.784 12 L31.176 6 L31.176 18 L20.784 24 Z" fill="white" fill-opacity="0.11"/>
+      <path d="M31.176 6 L41.568 0 L41.568 12 L31.176 18 Z" fill="white" fill-opacity="0.05"/>
+      <path d="M0 36 L10.392 30 L10.392 42 L0 48 Z" fill="white" fill-opacity="0.16"/>
+      <path d="M10.392 30 L20.784 24 L20.784 36 L10.392 42 Z" fill="white" fill-opacity="0.09"/>
+      <path d="M20.784 24 L31.176 18 L31.176 30 L20.784 36 Z" fill="white" fill-opacity="0.14"/>
+      <path d="M31.176 18 L41.568 12 L41.568 24 L31.176 30 Z" fill="white" fill-opacity="0.07"/>
+      <!-- Top face - open -->
+      <path d="M0 -48 L-41.568 -24 L0 0 L41.568 -24 Z" fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- OpenCode logo on top face -->
+      <g transform="matrix(0.866, 0.5, -0.866, 0.5, 0, -24) scale(0.75)">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M-16 -20 L16 -20 L16 20 L-16 20 Z M-8 -12 L-8 12 L8 12 L8 -12 Z" fill="white"/>
+        <path d="M-8 -4 L8 -4 L8 12 L-8 12 Z" fill="white" fill-opacity="0.4"/>
+      </g>
+    </g>
+  </g>
+</svg>

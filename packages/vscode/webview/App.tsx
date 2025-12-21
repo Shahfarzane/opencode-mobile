@@ -1,6 +1,7 @@
 import React from 'react';
 import { useChatStore } from './stores/chatStore';
 import { useNavigation } from './hooks/useNavigation';
+import { OpenChamberLogo } from './components/OpenChamberLogo';
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -11,9 +12,18 @@ function ConnectionStatusBanner({ status, error, onRetry }: {
 }) {
   if (status === 'connected') return null;
 
+  // Show full-screen logo for connecting state
+  if (status === 'connecting') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <OpenChamberLogo width={80} height={80} isAnimated />
+      </div>
+    );
+  }
+
   const messages: Record<ConnectionStatus, string> = {
     disconnected: 'Not connected to OpenCode API',
-    connecting: 'Connecting...',
+    connecting: '',
     connected: '',
     error: error || 'Connection error',
   };
@@ -22,9 +32,6 @@ function ConnectionStatusBanner({ status, error, onRetry }: {
     <div className={`flex items-center justify-center gap-2 px-4 py-2 text-sm border-b ${
       status === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'
     }`}>
-      {status === 'connecting' && (
-        <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-      )}
       <span>{messages[status]}</span>
       {(status === 'disconnected' || status === 'error') && (
         <button onClick={onRetry} className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90">
@@ -265,8 +272,6 @@ export function VSCodeApp() {
       <div className="flex-1 min-h-0">
         {currentView === 'sessions' ? (
           <SessionsList />
-        ) : currentView === 'settings' ? (
-          <SettingsView />
         ) : (
           <ChatPanel />
         )}

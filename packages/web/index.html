@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/logo-dark.svg" />
-    <link rel="icon" type="image/svg+xml" href="/logo-light.svg" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
     <link rel="icon" type="image/png" href="/favicon-16.png" sizes="16x16" />
-    <link rel="mask-icon" href="/logo-dark.svg" color="#edb449" />
+    <link rel="mask-icon" href="/favicon.svg" color="#edb449" />
 
     <!-- Apple touch icon - PNG format required for iOS PWA support -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
@@ -31,18 +30,30 @@
         "icons": [
           {
             "src": baseUrl + "/logo-dark.svg",
-            "sizes": "any",
+            "sizes": "512x512",
             "type": "image/svg+xml",
             "purpose": "any maskable"
           },
           {
-            "src": baseUrl + "/favicon-16.png",
-            "sizes": "16x16",
-            "type": "image/png"
+            "src": baseUrl + "/apple-touch-icon-180x180.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any"
+          },
+          {
+            "src": baseUrl + "/apple-touch-icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "any"
           },
           {
             "src": baseUrl + "/favicon-32.png",
             "sizes": "32x32",
+            "type": "image/png"
+          },
+          {
+            "src": baseUrl + "/favicon-16.png",
+            "sizes": "16x16",
             "type": "image/png"
           }
         ],
@@ -112,32 +123,24 @@
     <style>
       :root {
         --splash-background: #151313;
-        --splash-foreground: #cdccc3;
-        --splash-rect: #4B4646;
-        --splash-grad-stop1: #F8F8F8;
-        --splash-grad-stop2: #DAD6D0;
-        --splash-grad-stop3: #BAB4AF;
-        --splash-stroke1: rgba(255, 255, 255, 0.08);
-        --splash-stroke2: rgba(0, 0, 0, 0.15);
-        --splash-stroke3: rgba(0, 0, 0, 0.2);
+        --splash-stroke: white;
+        --splash-face-fill: rgba(255, 255, 255, 0.15);
+        --splash-cell-fill: rgba(255, 255, 255, 0.35);
+        --splash-logo-fill: white;
       }
       html[data-splash-variant='light'] {
         --splash-background: #F6F4EF;
-        --splash-foreground: #453f37;
-        --splash-rect: #CFCDCD;
-        --splash-grad-stop1: #B3AEA6;
-        --splash-grad-stop2: #928E86;
-        --splash-grad-stop3: #6E6A63;
-        --splash-stroke1: rgba(255, 255, 255, 0.22);
-        --splash-stroke2: rgba(60, 56, 47, 0.25);
-        --splash-stroke3: rgba(43, 39, 34, 0.4);
+        --splash-stroke: black;
+        --splash-face-fill: rgba(0, 0, 0, 0.15);
+        --splash-cell-fill: rgba(0, 0, 0, 0.4);
+        --splash-logo-fill: black;
       }
-      @keyframes pulse {
+      @keyframes logo-pulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.4; }
       }
-      .loading-pulse {
-        animation: pulse 2s ease-in-out infinite;
+      .logo-pulse {
+        animation: logo-pulse 3s ease-in-out infinite;
       }
       #initial-loading {
         background-color: var(--splash-background);
@@ -163,22 +166,60 @@
       <!-- Loading fallback while React initializes -->
       <div id="initial-loading">
         <div style="display: flex; align-items: center; justify-content: center;">
-          <svg class="loading-pulse" width="96" height="96" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OpenChamber loading icon">
-            <defs>
-              <linearGradient id="loadingGlyphGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="var(--splash-grad-stop1)"/>
-                <stop offset="55%" stop-color="var(--splash-grad-stop2)"/>
-                <stop offset="100%" stop-color="var(--splash-grad-stop3)"/>
-              </linearGradient>
-              <linearGradient id="loadingGlyphStroke" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="var(--splash-stroke1)"/>
-                <stop offset="45%" stop-color="var(--splash-stroke2)"/>
-                <stop offset="100%" stop-color="var(--splash-stroke3)"/>
-              </linearGradient>
-            </defs>
-            <rect x="8.75" y="31" width="17.5" height="20.5" fill="var(--splash-rect)" />
-            <path d="M0 13H35V58H0V13ZM26.25 22.1957H8.75V48.701H26.25V22.1957Z" fill="url(#loadingGlyphGradient)" stroke="url(#loadingGlyphStroke)" stroke-width="1.1" stroke-linejoin="round" />
-            <path d="M43.75 13H70V22.1957H52.5V48.701H70V57.8967H43.75V13Z" fill="url(#loadingGlyphGradient)" stroke="url(#loadingGlyphStroke)" stroke-width="1.1" stroke-linejoin="round" />
+          <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OpenChamber loading icon">
+            <!-- Isometric cube: edge=48, centerY=50 -->
+            <!-- Points: top(50,2), left(8.432,26), right(91.568,26), center(50,50), bottomLeft(8.432,74), bottomRight(91.568,74), bottom(50,98) -->
+            
+            <!-- Left face - base fill with stroke -->
+            <path d="M50 50 L8.432 26 L8.432 74 L50 98 Z" fill="var(--splash-face-fill)" stroke="var(--splash-stroke)" stroke-width="2" stroke-linejoin="round"/>
+            
+            <!-- Left face grid cells (4x4) with varying opacity -->
+            <path d="M50 50 L39.608 44 L39.608 56 L50 62 Z" fill="var(--splash-cell-fill)" opacity="0.2"/>
+            <path d="M39.608 44 L29.216 38 L29.216 50 L39.608 56 Z" fill="var(--splash-cell-fill)" opacity="0.45"/>
+            <path d="M29.216 38 L18.824 32 L18.824 44 L29.216 50 Z" fill="var(--splash-cell-fill)" opacity="0.15"/>
+            <path d="M18.824 32 L8.432 26 L8.432 38 L18.824 44 Z" fill="var(--splash-cell-fill)" opacity="0.55"/>
+            <path d="M50 62 L39.608 56 L39.608 68 L50 74 Z" fill="var(--splash-cell-fill)" opacity="0.35"/>
+            <path d="M39.608 56 L29.216 50 L29.216 62 L39.608 68 Z" fill="var(--splash-cell-fill)" opacity="0.1"/>
+            <path d="M29.216 50 L18.824 44 L18.824 56 L29.216 62 Z" fill="var(--splash-cell-fill)" opacity="0.5"/>
+            <path d="M18.824 44 L8.432 38 L8.432 50 L18.824 56 Z" fill="var(--splash-cell-fill)" opacity="0.25"/>
+            <path d="M50 74 L39.608 68 L39.608 80 L50 86 Z" fill="var(--splash-cell-fill)" opacity="0.4"/>
+            <path d="M39.608 68 L29.216 62 L29.216 74 L39.608 80 Z" fill="var(--splash-cell-fill)" opacity="0.3"/>
+            <path d="M29.216 62 L18.824 56 L18.824 68 L29.216 74 Z" fill="var(--splash-cell-fill)" opacity="0.45"/>
+            <path d="M18.824 56 L8.432 50 L8.432 62 L18.824 68 Z" fill="var(--splash-cell-fill)" opacity="0.15"/>
+            <path d="M50 86 L39.608 80 L39.608 92 L50 98 Z" fill="var(--splash-cell-fill)" opacity="0.55"/>
+            <path d="M39.608 80 L29.216 74 L29.216 86 L39.608 92 Z" fill="var(--splash-cell-fill)" opacity="0.2"/>
+            <path d="M29.216 74 L18.824 68 L18.824 80 L29.216 86 Z" fill="var(--splash-cell-fill)" opacity="0.35"/>
+            <path d="M18.824 68 L8.432 62 L8.432 74 L18.824 80 Z" fill="var(--splash-cell-fill)" opacity="0.1"/>
+            
+            <!-- Right face - base fill with stroke -->
+            <path d="M50 50 L91.568 26 L91.568 74 L50 98 Z" fill="var(--splash-face-fill)" stroke="var(--splash-stroke)" stroke-width="2" stroke-linejoin="round"/>
+            
+            <!-- Right face grid cells (4x4) with varying opacity -->
+            <path d="M50 50 L60.392 44 L60.392 56 L50 62 Z" fill="var(--splash-cell-fill)" opacity="0.3"/>
+            <path d="M60.392 44 L70.784 38 L70.784 50 L60.392 56 Z" fill="var(--splash-cell-fill)" opacity="0.15"/>
+            <path d="M70.784 38 L81.176 32 L81.176 44 L70.784 50 Z" fill="var(--splash-cell-fill)" opacity="0.45"/>
+            <path d="M81.176 32 L91.568 26 L91.568 38 L81.176 44 Z" fill="var(--splash-cell-fill)" opacity="0.25"/>
+            <path d="M50 62 L60.392 56 L60.392 68 L50 74 Z" fill="var(--splash-cell-fill)" opacity="0.5"/>
+            <path d="M60.392 56 L70.784 50 L70.784 62 L60.392 68 Z" fill="var(--splash-cell-fill)" opacity="0.35"/>
+            <path d="M70.784 50 L81.176 44 L81.176 56 L70.784 62 Z" fill="var(--splash-cell-fill)" opacity="0.1"/>
+            <path d="M81.176 44 L91.568 38 L91.568 50 L81.176 56 Z" fill="var(--splash-cell-fill)" opacity="0.4"/>
+            <path d="M50 74 L60.392 68 L60.392 80 L50 86 Z" fill="var(--splash-cell-fill)" opacity="0.2"/>
+            <path d="M60.392 68 L70.784 62 L70.784 74 L60.392 80 Z" fill="var(--splash-cell-fill)" opacity="0.55"/>
+            <path d="M70.784 62 L81.176 56 L81.176 68 L70.784 74 Z" fill="var(--splash-cell-fill)" opacity="0.3"/>
+            <path d="M81.176 56 L91.568 50 L91.568 62 L81.176 68 Z" fill="var(--splash-cell-fill)" opacity="0.15"/>
+            <path d="M50 86 L60.392 80 L60.392 92 L50 98 Z" fill="var(--splash-cell-fill)" opacity="0.45"/>
+            <path d="M60.392 80 L70.784 74 L70.784 86 L60.392 92 Z" fill="var(--splash-cell-fill)" opacity="0.25"/>
+            <path d="M70.784 74 L81.176 68 L81.176 80 L70.784 86 Z" fill="var(--splash-cell-fill)" opacity="0.4"/>
+            <path d="M81.176 68 L91.568 62 L91.568 74 L81.176 80 Z" fill="var(--splash-cell-fill)" opacity="0.2"/>
+            
+            <!-- Top face - open (no fill), only stroke -->
+            <path d="M50 2 L8.432 26 L50 50 L91.568 26 Z" fill="none" stroke="var(--splash-stroke)" stroke-width="2" stroke-linejoin="round"/>
+            
+            <!-- OpenCode logo on top face -->
+            <g class="logo-pulse" transform="matrix(0.866, 0.5, -0.866, 0.5, 50, 26) scale(0.75)">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M-16 -20 L16 -20 L16 20 L-16 20 Z M-8 -12 L-8 12 L8 12 L8 -12 Z" fill="var(--splash-logo-fill)"/>
+              <path d="M-8 -4 L8 -4 L8 12 L-8 12 Z" fill="var(--splash-logo-fill)" fill-opacity="0.4"/>
+            </g>
           </svg>
         </div>
       </div>
