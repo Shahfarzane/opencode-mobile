@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   RiCheckboxLine,
   RiCheckboxBlankLine,
@@ -7,6 +7,38 @@ import {
 } from '@remixicon/react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { GitStatus } from '@/lib/api/types';
+
+type ChangeDescriptor = {
+  code: string;
+  color: string;
+  description: string;
+};
+
+const CHANGE_DESCRIPTORS: Record<string, ChangeDescriptor> = {
+  '?': { code: '?', color: 'var(--status-info)', description: 'Untracked file' },
+  A: { code: 'A', color: 'var(--status-success)', description: 'New file' },
+  D: { code: 'D', color: 'var(--status-error)', description: 'Deleted file' },
+  R: { code: 'R', color: 'var(--status-info)', description: 'Renamed file' },
+  C: { code: 'C', color: 'var(--status-info)', description: 'Copied file' },
+  M: { code: 'M', color: 'var(--status-warning)', description: 'Modified file' },
+};
+
+const DEFAULT_DESCRIPTOR = CHANGE_DESCRIPTORS.M;
+
+function getChangeSymbol(file: GitStatus['files'][number]): string {
+  const indexCode = file.index?.trim();
+  const workingCode = file.working_dir?.trim();
+
+  if (indexCode && indexCode !== '?') return indexCode.charAt(0);
+  if (workingCode) return workingCode.charAt(0);
+
+  return indexCode?.charAt(0) || workingCode?.charAt(0) || 'M';
+}
+
+function describeChange(file: GitStatus['files'][number]): ChangeDescriptor {
+  const symbol = getChangeSymbol(file);
+  return CHANGE_DESCRIPTORS[symbol] ?? DEFAULT_DESCRIPTOR;
+}
 
 interface ChangeRowProps {
   file: GitStatus['files'][number];
@@ -18,33 +50,7 @@ interface ChangeRowProps {
   stats?: { insertions: number; deletions: number };
 }
 
-function describeChange(file: GitStatus['files'][number]) {
-  const rawCode =
-    file.index && file.index.trim() && file.index.trim() !== '?'
-      ? file.index.trim()
-      : file.working_dir && file.working_dir.trim()
-        ? file.working_dir.trim()
-        : file.index || file.working_dir || ' ';
-
-  const symbol = rawCode.trim().charAt(0) || rawCode.trim() || '·';
-
-  switch (symbol) {
-    case '?':
-      return { code: '?', color: 'var(--status-info)', description: 'Untracked file' };
-    case 'A':
-      return { code: 'A', color: 'var(--status-success)', description: 'New file' };
-    case 'D':
-      return { code: 'D', color: 'var(--status-error)', description: 'Deleted file' };
-    case 'R':
-      return { code: 'R', color: 'var(--status-info)', description: 'Renamed file' };
-    case 'C':
-      return { code: 'C', color: 'var(--status-info)', description: 'Copied file' };
-    default:
-      return { code: 'M', color: 'var(--status-warning)', description: 'Modified file' };
-  }
-}
-
-export const ChangeRow: React.FC<ChangeRowProps> = ({
+export const ChangeRow = React.memo<ChangeRowProps>(function ChangeRow({
   file,
   checked,
   onToggle,
@@ -52,11 +58,42 @@ export const ChangeRow: React.FC<ChangeRowProps> = ({
   onRevert,
   isReverting,
   stats,
-}) => {
-  const descriptor = React.useMemo(() => describeChange(file), [file]);
-  const indicatorLabel = descriptor.description ?? descriptor.code;
+}) {
+  const descriptor = useMemo(() => describeChange(file), [file]);
+  const indicatorLabel = descriptor.description;
   const insertions = stats?.insertions ?? 0;
   const deletions = stats?.deletions ?? 0;
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === ' ') {
+        event.preventDefault();
+        onToggle();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        onViewDiff();
+      }
+    },
+    [onToggle, onViewDiff]
+  );
+
+  const handleToggleClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onToggle();
+    },
+    [onToggle]
+  );
+
+  const handleRevertClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onRevert();
+    },
+    [onRevert]
+  );
 
   return (
     <li>
@@ -65,23 +102,11 @@ export const ChangeRow: React.FC<ChangeRowProps> = ({
         role="button"
         tabIndex={0}
         onClick={onViewDiff}
-        onKeyDown={(event) => {
-          if (event.key === ' ') {
-            event.preventDefault();
-            onToggle();
-          } else if (event.key === 'Enter') {
-            event.preventDefault();
-            onViewDiff();
-          }
-        }}
+        onKeyDown={handleKeyDown}
       >
         <button
           type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onToggle();
-          }}
+          onClick={handleToggleClick}
           aria-pressed={checked}
           aria-label={`Select ${file.path}`}
           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -116,11 +141,7 @@ export const ChangeRow: React.FC<ChangeRowProps> = ({
           <TooltipTrigger asChild>
             <button
               type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onRevert();
-              }}
+              onClick={handleRevertClick}
               disabled={isReverting}
               className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
               aria-label={`Revert changes for ${file.path}`}
@@ -137,4 +158,4 @@ export const ChangeRow: React.FC<ChangeRowProps> = ({
       </div>
     </li>
   );
-};
+});
