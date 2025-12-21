@@ -11,7 +11,6 @@ import { useChatScrollManager } from '@/hooks/useChatScrollManager';
 import { useDeviceInfo } from '@/lib/device';
 import { Button } from '@/components/ui/button';
 import { OverlayScrollbar } from '@/components/ui/OverlayScrollbar';
-import { isVSCodeRuntime } from '@/lib/desktop';
 
 export const ChatContainer: React.FC = () => {
     const {
@@ -41,14 +40,10 @@ export const ChatContainer: React.FC = () => {
     const draftOpen = Boolean(newSessionDraft?.open);
 
     React.useEffect(() => {
-        if (isMobile || isVSCodeRuntime()) {
-            return;
-        }
-
         if (!currentSessionId && !draftOpen) {
             openNewSessionDraft();
         }
-    }, [currentSessionId, draftOpen, isMobile, openNewSessionDraft]);
+    }, [currentSessionId, draftOpen, openNewSessionDraft]);
 
     const sessionMessages = React.useMemo(() => {
 

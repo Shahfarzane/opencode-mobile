@@ -46,12 +46,12 @@ export const VSCodeLayout: React.FC = () => {
     }
   }, [currentSessionId]);
 
-  // If the active session disappears (e.g., deleted), stay on the sessions list
+  // If the active session disappears (e.g., deleted), show a new chat view
   React.useEffect(() => {
-    if (!currentSessionId && !newSessionDraftOpen && currentView === 'chat') {
-      setCurrentView('sessions');
+    if (!currentSessionId && !newSessionDraftOpen) {
+      openNewSessionDraft();
     }
-  }, [currentSessionId, currentView, newSessionDraftOpen]);
+  }, [currentSessionId, newSessionDraftOpen, openNewSessionDraft]);
 
   const handleBackToSessions = React.useCallback(() => {
     setCurrentView('sessions');
