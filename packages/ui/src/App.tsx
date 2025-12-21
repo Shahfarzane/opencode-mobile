@@ -42,7 +42,7 @@ type AppProps = {
 };
 
 function App({ apis }: AppProps) {
-  const { initializeApp, loadProviders, isInitialized } = useConfigStore();
+  const { initializeApp, isInitialized } = useConfigStore();
   const { error, clearError, loadSessions } = useSessionStore();
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
   const isSwitchingDirectory = useDirectoryStore((state) => state.isSwitchingDirectory);
@@ -120,11 +120,10 @@ function App({ apis }: AppProps) {
   React.useEffect(() => {
     const init = async () => {
       await initializeApp();
-      await loadProviders();
     };
 
     init();
-  }, [initializeApp, loadProviders]);
+  }, [initializeApp]);
 
   React.useEffect(() => {
     if (isSwitchingDirectory) {

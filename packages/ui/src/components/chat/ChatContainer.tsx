@@ -27,6 +27,7 @@ export const ChatContainer: React.FC = () => {
         messageStreamStates,
         trimToViewportWindow,
         sessionActivityPhase,
+        newSessionDraft,
     } = useSessionStore();
 
     const streamingMessageId = React.useMemo(() => {
@@ -35,6 +36,7 @@ export const ChatContainer: React.FC = () => {
     }, [currentSessionId, streamingMessageIds]);
 
     const { isMobile } = useDeviceInfo();
+    const draftOpen = Boolean(newSessionDraft?.open);
 
     const sessionMessages = React.useMemo(() => {
 
@@ -143,7 +145,7 @@ export const ChatContainer: React.FC = () => {
         void load();
     }, [currentSessionId, loadMessages, messages, scrollToBottom]);
 
-    if (!currentSessionId) {
+    if (!currentSessionId && !draftOpen) {
         return (
             <div
                 className="flex flex-col h-full bg-background"
@@ -154,6 +156,26 @@ export const ChatContainer: React.FC = () => {
                 </div>
             </div>
         );
+    }
+
+    if (!currentSessionId && draftOpen) {
+        return (
+            <div
+                className="flex flex-col h-full bg-background transform-gpu"
+                style={isMobile ? { paddingBottom: 'var(--oc-keyboard-inset, 0px)' } : undefined}
+            >
+                <div className="flex-1 flex items-center justify-center">
+                    <OpenChamberLogo width={140} height={140} className="opacity-20" isAnimated />
+                </div>
+                <div className="relative bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-10">
+                    <ChatInput scrollToBottom={scrollToBottom} />
+                </div>
+            </div>
+        );
+    }
+
+    if (!currentSessionId) {
+        return null;
     }
 
     if (isLoading && sessionMessages.length === 0 && !streamingMessageId) {

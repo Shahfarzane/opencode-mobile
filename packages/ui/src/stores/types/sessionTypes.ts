@@ -56,6 +56,13 @@ export const MEMORY_LIMITS = {
 
 export const ACTIVE_SESSION_WINDOW = 180;
 
+export type NewSessionDraftState = {
+    open: boolean;
+    directoryOverride: string | null;
+    parentID: string | null;
+    title?: string;
+};
+
 export interface SessionStore {
 
     sessions: Session[];
@@ -98,10 +105,16 @@ export interface SessionStore {
 
     pendingInputText: string | null;
 
+    newSessionDraft: NewSessionDraftState;
+
     getSessionAgentEditMode: (sessionId: string, agentName: string | undefined, defaultMode?: EditPermissionMode) => EditPermissionMode;
     toggleSessionAgentEditMode: (sessionId: string, agentName: string | undefined, defaultMode?: EditPermissionMode) => void;
     setSessionAgentEditMode: (sessionId: string, agentName: string | undefined, mode: EditPermissionMode, defaultMode?: EditPermissionMode) => void;
     loadSessions: () => Promise<void>;
+
+    openNewSessionDraft: (options?: { directoryOverride?: string | null; parentID?: string | null; title?: string }) => void;
+    closeNewSessionDraft: () => void;
+
     createSession: (title?: string, directoryOverride?: string | null, parentID?: string | null) => Promise<Session | null>;
     createSessionFromAssistantMessage: (sourceMessageId: string) => Promise<void>;
 

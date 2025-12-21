@@ -28,7 +28,7 @@ import { sessionEvents } from '@/lib/sessionEvents';
 import { formatDirectoryName, formatPathForDisplay, cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { useUIStore } from '@/stores/useUIStore';
 import type { WorktreeMetadata } from '@/types/worktree';
 import { opencodeClient } from '@/lib/opencode/client';
 import { checkIsGitRepository } from '@/lib/gitApi';
@@ -126,7 +126,6 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
   );
   const checkingDirectories = React.useRef<Set<string>>(new Set());
   const safeStorage = React.useMemo(() => getSafeStorage(), []);
-  const [isCreatingSession, setIsCreatingSession] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
   const [isGitRepo, setIsGitRepo] = React.useState<boolean | null>(null);
   const [expandedSessionGroups, setExpandedSessionGroups] = React.useState<Set<string>>(new Set());
@@ -136,7 +135,8 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
   const homeDirectory = useDirectoryStore((state) => state.homeDirectory);
   const setDirectory = useDirectoryStore((state) => state.setDirectory);
 
-  const agents = useConfigStore((state) => state.agents);
+  const setActiveMainTab = useUIStore((state) => state.setActiveMainTab);
+  const setSessionSwitcherOpen = useUIStore((state) => state.setSessionSwitcherOpen);
 
   const getSessionsByDirectory = useSessionStore((state) => state.getSessionsByDirectory);
   const currentSessionId = useSessionStore((state) => state.currentSessionId);
@@ -148,9 +148,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
   const sessionActivityPhase = useSessionStore((state) => state.sessionActivityPhase);
   const worktreeMetadata = useSessionStore((state) => state.worktreeMetadata);
   const availableWorktrees = useSessionStore((state) => state.availableWorktrees);
-  const createSession = useSessionStore((state) => state.createSession);
-  const initializeNewOpenChamberSession = useSessionStore((state) => state.initializeNewOpenChamberSession);
-  const setSessionDirectory = useSessionStore((state) => state.setSessionDirectory);
+  const openNewSessionDraft = useSessionStore((state) => state.openNewSessionDraft);
 
   const [isDesktopRuntime, setIsDesktopRuntime] = React.useState<boolean>(() => {
     if (typeof window === 'undefined') {
@@ -342,6 +340,12 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
       if (disabled) {
         return;
       }
+
+      if (mobileVariant) {
+        setActiveMainTab('chat');
+        setSessionSwitcherOpen(false);
+      }
+
       if (!allowReselect && sessionId === currentSessionId) {
         onSessionSelected?.(sessionId);
         return;
@@ -349,7 +353,15 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
       setCurrentSession(sessionId);
       onSessionSelected?.(sessionId);
     },
-    [allowReselect, currentSessionId, onSessionSelected, setCurrentSession],
+    [
+      allowReselect,
+      currentSessionId,
+      mobileVariant,
+      onSessionSelected,
+      setActiveMainTab,
+      setCurrentSession,
+      setSessionSwitcherOpen,
+    ],
   );
 
   const handleSaveEdit = React.useCallback(async () => {
@@ -455,31 +467,14 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
   );
 
   const handleCreateSessionInGroup = React.useCallback(
-    async (directory: string | null) => {
-      if (!directory) {
-        toast.error('No directory available for session creation');
-        return;
+    (directory: string | null) => {
+      setActiveMainTab('chat');
+      if (mobileVariant) {
+        setSessionSwitcherOpen(false);
       }
-      if (isCreatingSession) {
-        return;
-      }
-      try {
-        setIsCreatingSession(true);
-        const session = await createSession(undefined, directory);
-        if (!session) {
-          toast.error('Failed to create session');
-          return;
-        }
-        initializeNewOpenChamberSession(session.id, agents);
-        setSessionDirectory(session.id, directory);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create session';
-        toast.error(message);
-      } finally {
-        setIsCreatingSession(false);
-      }
+      openNewSessionDraft({ directoryOverride: directory ?? null });
     },
-    [createSession, initializeNewOpenChamberSession, setSessionDirectory, agents, isCreatingSession],
+    [openNewSessionDraft, setActiveMainTab, setSessionSwitcherOpen, mobileVariant],
   );
 
   const handleOpenWorktreeManager = React.useCallback(() => {
@@ -1016,13 +1011,46 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
           emptyState
         ) : hideDirectoryControls && groupedSessions.length === 1 && groupedSessions[0].isMain ? (
           <div className="space-y-[0.6rem] py-1">
-            {groupedSessions[0].sessions.length === 0 ? (
-              <div className="py-1 text-left typography-micro text-muted-foreground">
-                No sessions yet.
-              </div>
-            ) : (
-              groupedSessions[0].sessions.map((node) => renderSessionNode(node, 0, groupedSessions[0].directory))
-            )}
+            {(() => {
+              const group = groupedSessions[0];
+              const maxVisible = hideDirectoryControls ? 10 : 7;
+              const totalSessions = group.sessions.length;
+              const isExpanded = expandedSessionGroups.has(group.id);
+              const visibleSessions = isExpanded ? group.sessions : group.sessions.slice(0, maxVisible);
+              const remainingCount = totalSessions - visibleSessions.length;
+
+              if (totalSessions === 0) {
+                return (
+                  <div className="py-1 text-left typography-micro text-muted-foreground">
+                    No sessions yet.
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {visibleSessions.map((node) => renderSessionNode(node, 0, group.directory))}
+                  {remainingCount > 0 && !isExpanded ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleGroupSessionLimit(group.id)}
+                      className="mt-0.5 flex items-center justify-start rounded-md px-1.5 py-0.5 text-left text-xs text-muted-foreground/70 leading-tight hover:text-foreground hover:underline"
+                    >
+                      Show {remainingCount} more {remainingCount === 1 ? 'session' : 'sessions'}
+                    </button>
+                  ) : null}
+                  {isExpanded && totalSessions > maxVisible ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleGroupSessionLimit(group.id)}
+                      className="mt-0.5 flex items-center justify-start rounded-md px-1.5 py-0.5 text-left text-xs text-muted-foreground/70 leading-tight hover:text-foreground hover:underline"
+                    >
+                      Show fewer sessions
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()}
           </div>
         ) : (
           groupedSessions.map((group) => (
@@ -1054,19 +1082,15 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
                     <span
                       role="button"
                       tabIndex={0}
-                      aria-disabled={isCreatingSession}
                       className={cn(
                         'inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:text-foreground',
-                        isCreatingSession && 'opacity-40 cursor-default',
                       )}
                       aria-label="Create session in this group"
                       onClick={(e) => {
-                        if (isCreatingSession) return;
                         e.stopPropagation();
                         handleCreateSessionInGroup(group.directory);
                       }}
                       onKeyDown={(e) => {
-                        if (isCreatingSession) return;
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.stopPropagation();
                           handleCreateSessionInGroup(group.directory);
@@ -1084,7 +1108,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
                 <div className="space-y-[0.6rem] py-1">
                   {(() => {
                     const isExpanded = expandedSessionGroups.has(group.id);
-                    const maxVisible = 7;
+                    const maxVisible = hideDirectoryControls ? 10 : 7;
                     const totalSessions = group.sessions.length;
                     const visibleSessions = isExpanded ? group.sessions : group.sessions.slice(0, maxVisible);
                     const remainingCount = totalSessions - visibleSessions.length;

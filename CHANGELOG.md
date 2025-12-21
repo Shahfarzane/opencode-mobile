@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- New chats no longer create a session until you send your first message.
+- The app opens to a new chat by default.
+- Fixed mobile and VSCode sessions handling
+
 
 ## [1.3.0] - 2025-12-21
 

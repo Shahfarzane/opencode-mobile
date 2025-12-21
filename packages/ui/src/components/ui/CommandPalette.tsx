@@ -12,7 +12,6 @@ import {
 import { useUIStore } from '@/stores/useUIStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
-import { useConfigStore } from '@/stores/useConfigStore';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { useDeviceInfo } from '@/lib/device';
 import { RiAddLine, RiChatAi3Line, RiCheckLine, RiCodeLine, RiComputerLine, RiGitBranchLine, RiLayoutLeftLine, RiMoonLine, RiQuestionLine, RiRestartLine, RiSettings3Line, RiSunLine, RiTerminalBoxLine } from '@remixicon/react';
@@ -31,14 +30,12 @@ export const CommandPalette: React.FC = () => {
   } = useUIStore();
 
   const {
-    createSession,
+    openNewSessionDraft,
     setCurrentSession,
     getSessionsByDirectory,
-    initializeNewOpenChamberSession,
   } = useSessionStore();
 
   const { currentDirectory } = useDirectoryStore();
-  const { agents } = useConfigStore();
   const { themeMode, setThemeMode } = useThemeSystem();
 
   const handleClose = () => {
@@ -46,10 +43,9 @@ export const CommandPalette: React.FC = () => {
   };
 
   const handleCreateSession = async () => {
-    const session = await createSession();
-    if (session) {
-      initializeNewOpenChamberSession(session.id, agents);
-    }
+    setActiveMainTab('chat');
+    setSessionSwitcherOpen(false);
+    openNewSessionDraft();
     handleClose();
   };
 
