@@ -1,9 +1,9 @@
 # OpenChamber
 
-[![GitHub stars](https://img.shields.io/github/stars/btriapitsyn/openchamber?style=flat&logo=github&logoColor=black&labelColor=c0c0c0&color=c0c0c0)](https://github.com/btriapitsyn/openchamber/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/btriapitsyn/openchamber?style=flat&logo=github&logoColor=black&labelColor=c0c0c0&color=c0c0c0)](https://github.com/btriapitsyn/openchamber/network/members)
-[![GitHub release](https://img.shields.io/github/v/release/btriapitsyn/openchamber?style=flat&logo=github&logoColor=black&labelColor=c0c0c0&color=c0c0c0)](https://github.com/btriapitsyn/openchamber/releases/latest)
-[![Created with OpenCode](https://img.shields.io/badge/created_with-OpenCode-c0c0c0?style=flat&labelColor=ff5722)](https://opencode.ai)
+[![GitHub stars](https://img.shields.io/github/stars/btriapitsyn/openchamber?style=flat&logo=github&logoColor=FFFCF0&labelColor=100F0F&color=DA702C)](https://github.com/btriapitsyn/openchamber/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/btriapitsyn/openchamber?style=flat&logo=github&logoColor=FFFCF0&labelColor=100F0F&color=4385BE)](https://github.com/btriapitsyn/openchamber/network/members)
+[![GitHub release](https://img.shields.io/github/v/release/btriapitsyn/openchamber?style=flat&logo=github&logoColor=FFFCF0&labelColor=100F0F&color=3AA99F)](https://github.com/btriapitsyn/openchamber/releases/latest)
+[![Created with](https://img.shields.io/badge/created_with-OpenCode-EC8B49?style=flat&logo=https://raw.githubusercontent.com/btriapitsyn/openchamber/main/docs/references/badges/opencode-icon.svg&labelColor=100F0F)](https://opencode.ai)
 
 Web and desktop interface for the [OpenCode](https://opencode.ai) AI coding agent. Works alongside the OpenCode TUI.
 
@@ -23,6 +23,7 @@ The whole project was built entirely with AI coding agents under my supervision.
 ![Web Version](docs/references/web_version_example.png)
 ![Diff View](docs/references/diff_example.png)
 ![VS Code Extension](packages/vscode/extension.jpg)
+
 <p>
 <img src="docs/references/pwa_chat_example.png" width="45%" alt="PWA Chat">
 <img src="docs/references/pwa_terminal_example.png" width="45%" alt="PWA Terminal">
