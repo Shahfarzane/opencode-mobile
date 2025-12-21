@@ -61,6 +61,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
 
     const sendMessage = useSessionStore((state) => state.sendMessage);
     const currentSessionId = useSessionStore((state) => state.currentSessionId);
+    const newSessionDraftOpen = useSessionStore((state) => state.newSessionDraft?.open);
     const abortCurrentOperation = useSessionStore((state) => state.abortCurrentOperation);
     const acknowledgeSessionAbort = useSessionStore((state) => state.acknowledgeSessionAbort);
     const abortPromptSessionId = useSessionStore((state) => state.abortPromptSessionId);
@@ -229,7 +230,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
 
-        if (!hasContent || !currentSessionId) return;
+        if (!hasContent || (!currentSessionId && !newSessionDraftOpen)) return;
 
         const messageToSend = message.replace(/^\n+|\n+$/g, '');
 
@@ -542,7 +543,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             return;
         }
 
-        if (!currentSessionId) {
+        if (!currentSessionId && !newSessionDraftOpen) {
             return;
         }
 
@@ -572,7 +573,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         if (attachedCount > 0) {
             toast.success(`Attached ${attachedCount} image${attachedCount > 1 ? 's' : ''} from clipboard`);
         }
-    }, [addAttachedFile, currentSessionId, insertTextAtSelection]);
+    }, [addAttachedFile, currentSessionId, newSessionDraftOpen, insertTextAtSelection]);
 
     const handleFileSelect = (file: { name: string; path: string }) => {
 
@@ -660,7 +661,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (currentSessionId && !isDragging) {
+        if ((currentSessionId || newSessionDraftOpen) && !isDragging) {
             setIsDragging(true);
         }
     };
@@ -678,7 +679,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         e.stopPropagation();
         setIsDragging(false);
 
-        if (!currentSessionId) return;
+        if (!currentSessionId && !newSessionDraftOpen) return;
 
         const files = Array.from(e.dataTransfer.files);
         let attachedCount = 0;
@@ -838,13 +839,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     ) : (
         <button
             type={isMobile ? 'button' : 'submit'}
-            disabled={!hasContent || !currentSessionId}
+            disabled={!hasContent || (!currentSessionId && !newSessionDraftOpen)}
             onPointerDownCapture={(event) => {
                 if (!isMobile || event.pointerType !== 'touch') {
                     return;
                 }
 
-                if (!hasContent || !currentSessionId) {
+                if (!hasContent || (!currentSessionId && !newSessionDraftOpen)) {
                     return;
                 }
 
@@ -868,7 +869,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             }}
             className={cn(
                 iconButtonBaseClass,
-                hasContent && currentSessionId
+                hasContent && (currentSessionId || newSessionDraftOpen)
                     ? 'text-primary hover:text-primary'
                     : 'opacity-30'
             )}
@@ -1080,8 +1081,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                             onKeyDown={handleKeyDown}
                             onPaste={handlePaste}
                             onPointerDownCapture={handleTextareaPointerDownCapture}
-                            placeholder={currentSessionId ? "# for agents; @ for files; / for commands" : "Select or create a session to start chatting"}
-                            disabled={!currentSessionId}
+                            placeholder={currentSessionId
+                                ? "# for agents; @ for files; / for commands"
+                                : newSessionDraftOpen
+                                    ? "Type your first message..."
+                                    : "Select or create a session to start chatting"}
+                            disabled={!currentSessionId && !newSessionDraftOpen}
 
                         className={cn(
                             'min-h-[52px] resize-none border-0 px-3 shadow-none rounded-t-xl rounded-b-none appearance-none focus:shadow-none focus-visible:shadow-none focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-transparent hover:border-transparent bg-transparent',

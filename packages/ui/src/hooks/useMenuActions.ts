@@ -2,7 +2,6 @@ import React from 'react';
 import { toast } from 'sonner';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
-import { useConfigStore } from '@/stores/useConfigStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
@@ -32,17 +31,17 @@ type MenuAction =
 export const useMenuActions = (
   onToggleMemoryDebug?: () => void
 ) => {
-  const { createSession, initializeNewOpenChamberSession } = useSessionStore();
+  const { openNewSessionDraft } = useSessionStore();
   const {
     toggleCommandPalette,
     toggleHelpDialog,
     toggleSidebar,
+    setSessionSwitcherOpen,
     setSessionCreateDialogOpen,
     setActiveMainTab,
     setSettingsDialogOpen,
     setAboutDialogOpen,
   } = useUIStore();
-  const { agents } = useConfigStore();
   const { setDirectory } = useDirectoryStore();
   const { setThemeMode } = useThemeSystem();
   const isDownloadingLogsRef = React.useRef(false);
@@ -87,11 +86,9 @@ export const useMenuActions = (
           break;
 
         case 'new-session':
-          createSession().then(session => {
-            if (session) {
-              initializeNewOpenChamberSession(session.id, agents);
-            }
-          });
+          setActiveMainTab('chat');
+          setSessionSwitcherOpen(false);
+          openNewSessionDraft();
           break;
 
         case 'worktree-creator':
@@ -183,17 +180,16 @@ export const useMenuActions = (
     window.addEventListener(MENU_ACTION_EVENT, handleMenuAction);
     return () => window.removeEventListener(MENU_ACTION_EVENT, handleMenuAction);
   }, [
-    createSession,
-    initializeNewOpenChamberSession,
+    openNewSessionDraft,
     toggleCommandPalette,
     toggleHelpDialog,
     toggleSidebar,
+    setSessionSwitcherOpen,
     setSessionCreateDialogOpen,
     setActiveMainTab,
     setSettingsDialogOpen,
     setAboutDialogOpen,
     setThemeMode,
-    agents,
     onToggleMemoryDebug,
     handleChangeWorkspace,
   ]);

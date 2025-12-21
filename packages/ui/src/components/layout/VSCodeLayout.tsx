@@ -12,11 +12,11 @@ import { SettingsPage } from '@/components/sections/settings/SettingsPage';
 type VSCodeView = 'sessions' | 'chat' | 'settings';
 
 export const VSCodeLayout: React.FC = () => {
-  const [currentView, setCurrentView] = React.useState<VSCodeView>('sessions');
+  const [currentView, setCurrentView] = React.useState<VSCodeView>('chat');
   const currentSessionId = useSessionStore((state) => state.currentSessionId);
   const sessions = useSessionStore((state) => state.sessions);
-  const createSession = useSessionStore((state) => state.createSession);
-  const setCurrentSession = useSessionStore((state) => state.setCurrentSession);
+  const newSessionDraftOpen = useSessionStore((state) => Boolean(state.newSessionDraft?.open));
+  const openNewSessionDraft = useSessionStore((state) => state.openNewSessionDraft);
   const [connectionStatus, setConnectionStatus] = React.useState<'connecting' | 'connected' | 'error' | 'disconnected'>(
     () => (typeof window !== 'undefined'
       ? (window as { __OPENCHAMBER_CONNECTION__?: { status?: string } }).__OPENCHAMBER_CONNECTION__?.status as
@@ -38,8 +38,6 @@ export const VSCodeLayout: React.FC = () => {
   const messages = useSessionStore((state) => state.messages);
   const [hasInitializedOnce, setHasInitializedOnce] = React.useState<boolean>(() => configInitialized);
   const [isInitializing, setIsInitializing] = React.useState<boolean>(false);
-  const autoSelectedRef = React.useRef<boolean>(false);
-  const startedFreshSessionRef = React.useRef<boolean>(false);
 
   // Navigate to chat when a session is selected
   React.useEffect(() => {
@@ -50,21 +48,19 @@ export const VSCodeLayout: React.FC = () => {
 
   // If the active session disappears (e.g., deleted), stay on the sessions list
   React.useEffect(() => {
-    if (!currentSessionId && currentView === 'chat') {
+    if (!currentSessionId && !newSessionDraftOpen && currentView === 'chat') {
       setCurrentView('sessions');
     }
-  }, [currentSessionId, currentView]);
+  }, [currentSessionId, currentView, newSessionDraftOpen]);
 
   const handleBackToSessions = React.useCallback(() => {
     setCurrentView('sessions');
   }, []);
 
-  const handleNewSession = React.useCallback(async () => {
-    const result = await createSession();
-    if (result?.id) {
-      setCurrentView('chat');
-    }
-  }, [createSession]);
+  const handleNewSession = React.useCallback(() => {
+    openNewSessionDraft();
+    setCurrentView('chat');
+  }, [openNewSessionDraft]);
 
   React.useEffect(() => {
     const handler = (event: Event) => {
@@ -137,65 +133,26 @@ export const VSCodeLayout: React.FC = () => {
 
   React.useEffect(() => {
     const hydrateMessages = async () => {
-      if (!hasInitializedOnce || connectionStatus !== 'connected' || currentView !== 'chat') {
+      if (!hasInitializedOnce || connectionStatus !== 'connected' || currentView !== 'chat' || newSessionDraftOpen) {
         return;
       }
-      const targetSessionId = currentSessionId || sessions[0]?.id;
-      if (!targetSessionId) return;
 
-      const hasMessages = messages.has(targetSessionId) && (messages.get(targetSessionId)?.length || 0) > 0;
+      if (!currentSessionId) {
+        return;
+      }
+
+      const hasMessages = messages.has(currentSessionId) && (messages.get(currentSessionId)?.length || 0) > 0;
       if (!hasMessages) {
-        if (!currentSessionId) {
-          setCurrentSession(targetSessionId);
-        }
         try {
-          await loadMessages(targetSessionId);
+          await loadMessages(currentSessionId);
         } catch { /* ignored */ }
       }
     };
 
     void hydrateMessages();
-  }, [connectionStatus, currentSessionId, currentView, hasInitializedOnce, loadMessages, messages, sessions, setCurrentSession]);
+  }, [connectionStatus, currentSessionId, currentView, hasInitializedOnce, loadMessages, messages, newSessionDraftOpen]);
 
-  React.useEffect(() => {
-    if (!hasInitializedOnce || autoSelectedRef.current) {
-      return;
-    }
-    if (!currentSessionId && sessions.length > 0) {
-      setCurrentSession(sessions[0].id);
-      autoSelectedRef.current = true;
-    }
-  }, [currentSessionId, hasInitializedOnce, sessions, setCurrentSession]);
 
-  React.useEffect(() => {
-    const ensureFreshSession = async () => {
-      if (connectionStatus !== 'connected' || !hasInitializedOnce || startedFreshSessionRef.current) {
-        return;
-      }
-      
-      const current = sessions.find((s) => s.id === currentSessionId);
-      const isCurrentPlaceholder = current?.title?.toLowerCase()?.startsWith('new session');
-
-      if (current && isCurrentPlaceholder) {
-        setCurrentSession(current.id);
-      } else {
-        // Look for an existing empty session to reuse before creating a new one
-        const reusableSession = sessions.find((s) => s.title?.toLowerCase()?.startsWith('new session'));
-        
-        if (reusableSession) {
-          setCurrentSession(reusableSession.id);
-        } else {
-          const newSession = await createSession();
-          if (newSession?.id) {
-            setCurrentSession(newSession.id);
-          }
-        }
-      }
-      startedFreshSessionRef.current = true;
-    };
-
-    void ensureFreshSession();
-  }, [connectionStatus, createSession, currentSessionId, hasInitializedOnce, sessions, setCurrentSession]);
 
   return (
     <div className="h-full w-full bg-background text-foreground flex flex-col">
@@ -229,7 +186,9 @@ export const VSCodeLayout: React.FC = () => {
       ) : (
         <div className="flex flex-col h-full">
           <VSCodeHeader
-            title={sessions.find(s => s.id === currentSessionId)?.title || 'Chat'}
+            title={newSessionDraftOpen && !currentSessionId
+              ? 'New session'
+              : sessions.find(s => s.id === currentSessionId)?.title || 'Chat'}
             showBack
             onBack={handleBackToSessions}
             showContextUsage

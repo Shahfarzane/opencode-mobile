@@ -721,7 +721,7 @@ export const useSessionStore = create<SessionStore>()(
                     set((state) => {
                         const filteredSessions = state.sessions.filter((session) => !deletedSet.has(session.id));
                         if (state.currentSessionId && deletedSet.has(state.currentSessionId)) {
-                            nextCurrentId = filteredSessions.length > 0 ? filteredSessions[0].id : null;
+                            nextCurrentId = null;
                         } else {
                             nextCurrentId = state.currentSessionId;
                         }

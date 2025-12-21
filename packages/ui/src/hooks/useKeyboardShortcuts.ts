@@ -1,13 +1,12 @@
 import React from 'react';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
-import { useConfigStore } from '@/stores/useConfigStore';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { useAssistantStatus } from '@/hooks/useAssistantStatus';
 import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 
 export const useKeyboardShortcuts = () => {
-  const { createSession, abortCurrentOperation, initializeNewOpenChamberSession, armAbortPrompt, clearAbortPrompt, currentSessionId } = useSessionStore();
+  const { openNewSessionDraft, abortCurrentOperation, armAbortPrompt, clearAbortPrompt, currentSessionId } = useSessionStore();
   const {
     toggleCommandPalette,
     toggleHelpDialog,
@@ -17,7 +16,6 @@ export const useKeyboardShortcuts = () => {
     setActiveMainTab,
     setSettingsDialogOpen,
   } = useUIStore();
-  const { agents } = useConfigStore();
   const { themeMode, setThemeMode } = useThemeSystem();
   const { working } = useAssistantStatus();
   const abortPrimedUntilRef = React.useRef<number | null>(null);
@@ -86,11 +84,9 @@ export const useKeyboardShortcuts = () => {
           return;
         }
 
-        createSession().then(session => {
-          if (session) {
-            initializeNewOpenChamberSession(session.id, agents);
-          }
-        });
+        setActiveMainTab('chat');
+        setSessionSwitcherOpen(false);
+        openNewSessionDraft();
       }
 
        if ((e.metaKey || e.ctrlKey) && e.key === '/') {
@@ -189,7 +185,7 @@ export const useKeyboardShortcuts = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
-    createSession,
+    openNewSessionDraft,
     abortCurrentOperation,
     toggleCommandPalette,
     toggleHelpDialog,
@@ -200,8 +196,6 @@ export const useKeyboardShortcuts = () => {
     setSettingsDialogOpen,
     setThemeMode,
     themeMode,
-    initializeNewOpenChamberSession,
-    agents,
     working,
     armAbortPrompt,
     resetAbortPriming,

@@ -95,6 +95,7 @@ export const useSessionStore = create<SessionStore>()(
             sessionActivityPhase: new Map(),
             userSummaryTitles: new Map(),
             pendingInputText: null,
+            newSessionDraft: { open: true, directoryOverride: null, parentID: null },
 
                 getSessionAgentEditMode: (sessionId: string, agentName: string | undefined, defaultMode?: EditPermissionMode) => {
                     return useContextStore.getState().getSessionAgentEditMode(sessionId, agentName, defaultMode);
@@ -109,7 +110,46 @@ export const useSessionStore = create<SessionStore>()(
                 },
 
                 loadSessions: () => useSessionManagementStore.getState().loadSessions(),
+
+                openNewSessionDraft: (options) => {
+                    set({
+                        newSessionDraft: {
+                            open: true,
+                            directoryOverride: options?.directoryOverride ?? null,
+                            parentID: options?.parentID ?? null,
+                            title: options?.title,
+                        },
+                        currentSessionId: null,
+                        error: null,
+                    });
+
+                    try {
+                        const configState = useConfigStore.getState();
+                        const visibleAgents = configState.getVisibleAgents();
+                        const agentName =
+                            configState.currentAgentName ||
+                            visibleAgents.find((agent) => agent.name === 'build')?.name ||
+                            visibleAgents[0]?.name;
+
+                        if (agentName) {
+                            configState.setAgent(agentName);
+                        }
+                    } catch {
+                        // ignored
+                    }
+                },
+
+                closeNewSessionDraft: () => {
+                    const realCurrentSessionId = useSessionManagementStore.getState().currentSessionId;
+                    set({
+                        newSessionDraft: { open: false, directoryOverride: null, parentID: null, title: undefined },
+                        currentSessionId: realCurrentSessionId,
+                    });
+                },
+
                 createSession: async (title?: string, directoryOverride?: string | null, parentID?: string | null) => {
+                    get().closeNewSessionDraft();
+
                     const result = await useSessionManagementStore.getState().createSession(title, directoryOverride, parentID);
 
                     if (result?.id) {
@@ -179,7 +219,11 @@ export const useSessionStore = create<SessionStore>()(
                 shareSession: (id: string) => useSessionManagementStore.getState().shareSession(id),
                 unshareSession: (id: string) => useSessionManagementStore.getState().unshareSession(id),
                 setCurrentSession: async (id: string | null) => {
-                    const previousSessionId = get().currentSessionId;
+                    if (id) {
+                        get().closeNewSessionDraft();
+                    }
+
+                    const previousSessionId = useSessionManagementStore.getState().currentSessionId;
 
                     const sessionDirectory = resolveSessionDirectory(
                         useSessionManagementStore.getState().sessions,
@@ -224,7 +268,64 @@ export const useSessionStore = create<SessionStore>()(
                     get().evictLeastRecentlyUsed();
                 },
                 loadMessages: (sessionId: string) => useMessageStore.getState().loadMessages(sessionId),
-                sendMessage: (content: string, providerID: string, modelID: string, agent?: string, attachments?: AttachedFile[], agentMentionName?: string) => {
+                sendMessage: async (content: string, providerID: string, modelID: string, agent?: string, attachments?: AttachedFile[], agentMentionName?: string) => {
+                    const draft = get().newSessionDraft;
+
+                    if (draft?.open) {
+                        const created = await useSessionManagementStore
+                            .getState()
+                            .createSession(draft.title, draft.directoryOverride ?? null, draft.parentID ?? null);
+
+                        if (!created?.id) {
+                            throw new Error('Failed to create session');
+                        }
+
+                        const configState = useConfigStore.getState();
+                        const draftAgentName = configState.currentAgentName;
+                        const draftProviderId = configState.currentProviderId;
+                        const draftModelId = configState.currentModelId;
+
+                        if (draftProviderId && draftModelId) {
+                            try {
+                                useContextStore.getState().saveSessionModelSelection(created.id, draftProviderId, draftModelId);
+                            } catch {
+                                // ignored
+                            }
+                        }
+
+                        if (draftAgentName) {
+                            try {
+                                useContextStore.getState().saveSessionAgentSelection(created.id, draftAgentName);
+                            } catch {
+                                // ignored
+                            }
+
+                            if (draftProviderId && draftModelId) {
+                                try {
+                                    useContextStore
+                                        .getState()
+                                        .saveAgentModelForSession(created.id, draftAgentName, draftProviderId, draftModelId);
+                                } catch {
+                                    // ignored
+                                }
+                            }
+                        }
+
+                        try {
+                            useSessionManagementStore
+                                .getState()
+                                .initializeNewOpenChamberSession(created.id, configState.agents);
+                        } catch {
+                            // ignored
+                        }
+
+                        get().closeNewSessionDraft();
+
+                        return useMessageStore
+                            .getState()
+                            .sendMessage(content, providerID, modelID, agent, created.id, attachments, agentMentionName);
+                    }
+
                     const currentSessionId = useSessionManagementStore.getState().currentSessionId;
                     return useMessageStore.getState().sendMessage(content, providerID, modelID, agent, currentSessionId || undefined, attachments, agentMentionName);
                 },
@@ -309,6 +410,10 @@ export const useSessionStore = create<SessionStore>()(
                 setSessionDirectory: (sessionId: string, directory: string | null) => useSessionManagementStore.getState().setSessionDirectory(sessionId, directory),
                 getWorktreeMetadata: (sessionId: string) => useSessionManagementStore.getState().getWorktreeMetadata(sessionId),
                 getContextUsage: (contextLimit: number, outputLimit: number) => {
+                    if (get().newSessionDraft?.open) {
+                        return null;
+                    }
+
                     const currentSessionId = useSessionManagementStore.getState().currentSessionId;
                     if (!currentSessionId) return null;
                     const messages = useMessageStore.getState().messages;
@@ -420,9 +525,11 @@ useSessionManagementStore.subscribe((state, prevState) => {
         return;
     }
 
+    const draftOpen = useSessionStore.getState().newSessionDraft?.open;
+
     useSessionStore.setState({
         sessions: state.sessions,
-        currentSessionId: state.currentSessionId,
+        currentSessionId: draftOpen ? null : state.currentSessionId,
         lastLoadedDirectory: state.lastLoadedDirectory,
         isLoading: state.isLoading,
         error: state.error,
@@ -535,9 +642,11 @@ usePermissionStore.subscribe((state, prevState) => {
     });
 });
 
+const bootDraftOpen = useSessionStore.getState().newSessionDraft?.open;
+
 useSessionStore.setState({
     sessions: useSessionManagementStore.getState().sessions,
-    currentSessionId: useSessionManagementStore.getState().currentSessionId,
+    currentSessionId: bootDraftOpen ? null : useSessionManagementStore.getState().currentSessionId,
     lastLoadedDirectory: useSessionManagementStore.getState().lastLoadedDirectory,
     isLoading: useSessionManagementStore.getState().isLoading,
     error: useSessionManagementStore.getState().error,
