@@ -4,7 +4,7 @@ import { RiArrowDownLine } from '@remixicon/react';
 import { ChatInput } from './ChatInput';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { OpenChamberLogo } from '@/components/ui/OpenChamberLogo';
+import ChatEmptyState from './ChatEmptyState';
 import MessageList from './MessageList';
 import { ScrollShadow } from '@/components/ui/ScrollShadow';
 import { useChatScrollManager } from '@/hooks/useChatScrollManager';
@@ -151,9 +151,7 @@ export const ChatContainer: React.FC = () => {
                 className="flex flex-col h-full bg-background"
                 style={isMobile ? { paddingBottom: 'var(--oc-keyboard-inset, 0px)' } : undefined}
             >
-                <div className="flex-1 flex items-center justify-center">
-                    <OpenChamberLogo width={140} height={140} className="opacity-20" isAnimated />
-                </div>
+                <ChatEmptyState />
             </div>
         );
     }
@@ -165,7 +163,7 @@ export const ChatContainer: React.FC = () => {
                 style={isMobile ? { paddingBottom: 'var(--oc-keyboard-inset, 0px)' } : undefined}
             >
                 <div className="flex-1 flex items-center justify-center">
-                    <OpenChamberLogo width={140} height={140} className="opacity-20" isAnimated />
+                    <ChatEmptyState />
                 </div>
                 <div className="relative bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-10">
                     <ChatInput scrollToBottom={scrollToBottom} />
@@ -212,7 +210,7 @@ export const ChatContainer: React.FC = () => {
                 style={isMobile ? { paddingBottom: 'var(--oc-keyboard-inset, 0px)' } : undefined}
             >
                 <div className="flex-1 flex items-center justify-center">
-                    <OpenChamberLogo width={140} height={140} className="opacity-20" isAnimated />
+                    <ChatEmptyState />
                 </div>
                 <div className="relative bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-10">
                     <ChatInput scrollToBottom={scrollToBottom} />

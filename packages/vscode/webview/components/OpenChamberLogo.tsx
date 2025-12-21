@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useOptionalThemeSystem } from '@/contexts/useThemeSystem';
 
 interface OpenChamberLogoProps {
   className?: string;
@@ -9,7 +8,6 @@ interface OpenChamberLogoProps {
 }
 
 // Generate grid cells for a face (4x4 grid)
-// Returns array of parallelogram paths in isometric projection
 const generateFaceGrid = (
   topLeft: { x: number; y: number },
   topRight: { x: number; y: number },
@@ -21,13 +19,11 @@ const generateFaceGrid = (
   
   for (let row = 0; row < gridSize; row++) {
     for (let col = 0; col < gridSize; col++) {
-      // Interpolate corners for this cell
       const t1 = col / gridSize;
       const t2 = (col + 1) / gridSize;
       const s1 = row / gridSize;
       const s2 = (row + 1) / gridSize;
       
-      // Bilinear interpolation for each corner of the cell
       const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
       const bilinear = (tl: number, tr: number, br: number, bl: number, t: number, s: number) => {
         const top = lerp(tl, tr, t);
@@ -69,60 +65,36 @@ export const OpenChamberLogo: React.FC<OpenChamberLogoProps> = ({
   height = 70,
   isAnimated = false,
 }) => {
-  const themeContext = useOptionalThemeSystem();
+  // VSCode uses CSS variables for theming
+  const strokeColor = 'var(--vscode-foreground)';
+  const fillColor = 'var(--vscode-foreground)';
+  const logoFillColor = 'var(--vscode-foreground)';
+  const cellHighlightColor = 'var(--vscode-foreground)';
 
-  let isDark = true;
-  if (themeContext) {
-    isDark = themeContext.currentTheme.metadata.variant !== 'light';
-  } else if (typeof window !== 'undefined') {
-    isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-
-  const strokeColor = isDark ? 'white' : 'black';
-  const fillColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
-  const logoFillColor = isDark ? 'white' : 'black';
-  const cellHighlightColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)';
-
-
-
-  // Isometric cube geometry (mathematically correct)
-  // For true isometric: horizontal edges at ±30° from horizontal
-  // cos(30°) ≈ 0.866, sin(30°) = 0.5
-  // Cube edge length = 46, center at (50, 52) - larger cube, slightly lower
+  // Isometric cube geometry
   const edge = 48;
   const cos30 = 0.866;
   const sin30 = 0.5;
   const centerY = 50;
   
-  // Key points of the isometric cube
-  const top = { x: 50, y: centerY - edge };                           // top vertex
-  const left = { x: 50 - edge * cos30, y: centerY - edge * sin30 };   // top-left
-  const right = { x: 50 + edge * cos30, y: centerY - edge * sin30 };  // top-right  
-  const center = { x: 50, y: centerY };                                // center (front vertex of top face)
-  const bottomLeft = { x: 50 - edge * cos30, y: centerY + edge * sin30 };  // bottom-left
-  const bottomRight = { x: 50 + edge * cos30, y: centerY + edge * sin30 }; // bottom-right
-  const bottom = { x: 50, y: centerY + edge };                         // bottom vertex
+  const top = { x: 50, y: centerY - edge };
+  const left = { x: 50 - edge * cos30, y: centerY - edge * sin30 };
+  const right = { x: 50 + edge * cos30, y: centerY - edge * sin30 };
+  const center = { x: 50, y: centerY };
+  const bottomLeft = { x: 50 - edge * cos30, y: centerY + edge * sin30 };
+  const bottomRight = { x: 50 + edge * cos30, y: centerY + edge * sin30 };
+  const bottom = { x: 50, y: centerY + edge };
 
-  // Isometric transformation matrix for top face
-  // Maps a flat square to the isometric rhombus (top face)
-  // Center of top face rhombus: average of top, left, center, right vertices
-  // topFaceCenter.x = (top.x + left.x + center.x + right.x) / 4 = 50
-  // topFaceCenter.y = (top.y + left.y + center.y + right.y) / 4
   const topFaceCenterY = (top.y + left.y + center.y + right.y) / 4;
   const isoMatrix = `matrix(0.866, 0.5, -0.866, 0.5, 50, ${topFaceCenterY})`;
 
-  // Generate grid cells for both faces
-  // Left face: center -> left -> bottomLeft -> bottom
   const leftFaceCells = generateFaceGrid(left, center, bottom, bottomLeft);
-  
-  // Right face: center -> right -> bottomRight -> bottom  
   const rightFaceCells = generateFaceGrid(center, right, bottomRight, bottom);
 
-  // Generate random opacity values for cells (stable per component instance)
   const cellOpacities = useMemo(() => {
     const opacities: number[] = [];
-    for (let i = 0; i < 32; i++) { // 16 cells per face * 2 faces
-      opacities.push(0.1 + Math.random() * 0.5); // Random opacity 0.1-0.6
+    for (let i = 0; i < 32; i++) {
+      opacities.push(0.1 + Math.random() * 0.5);
     }
     return opacities;
   }, []);
@@ -138,45 +110,47 @@ export const OpenChamberLogo: React.FC<OpenChamberLogoProps> = ({
       role="img"
       aria-label="OpenChamber logo"
     >
-      {/* Left face - base fill */}
+      {/* Left face */}
       <path
         d={`M${center.x} ${center.y} L${left.x} ${left.y} L${bottomLeft.x} ${bottomLeft.y} L${bottom.x} ${bottom.y} Z`}
         fill={fillColor}
+        fillOpacity="0.15"
         stroke={strokeColor}
         strokeWidth="2"
         strokeLinejoin="round"
       />
       
-      {/* Left face - grid cells with varying opacity */}
+      {/* Left face grid cells */}
       {leftFaceCells.map((cell, i) => (
         <path
           key={`left-${i}`}
           d={cell.path}
           fill={cellHighlightColor}
-          opacity={cellOpacities[i]}
+          fillOpacity={0.35 * cellOpacities[i]}
         />
       ))}
       
-      {/* Right face - base fill */}
+      {/* Right face */}
       <path
         d={`M${center.x} ${center.y} L${right.x} ${right.y} L${bottomRight.x} ${bottomRight.y} L${bottom.x} ${bottom.y} Z`}
         fill={fillColor}
+        fillOpacity="0.15"
         stroke={strokeColor}
         strokeWidth="2"
         strokeLinejoin="round"
       />
       
-      {/* Right face - grid cells with varying opacity */}
+      {/* Right face grid cells */}
       {rightFaceCells.map((cell, i) => (
         <path
           key={`right-${i}`}
           d={cell.path}
           fill={cellHighlightColor}
-          opacity={cellOpacities[i + 16]}
+          fillOpacity={0.35 * cellOpacities[i + 16]}
         />
       ))}
       
-      {/* Top face - open (no fill), only stroke */}
+      {/* Top face - open */}
       <path
         d={`M${top.x} ${top.y} L${left.x} ${left.y} L${center.x} ${center.y} L${right.x} ${right.y} Z`}
         fill="none"
@@ -197,20 +171,13 @@ export const OpenChamberLogo: React.FC<OpenChamberLogoProps> = ({
             keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
           />
         )}
-        {/* 
-          Isometric transform for top face:
-          OpenCode logo (32x40 viewBox) centered and projected to isometric plane
-        */}
         <g transform={`${isoMatrix} scale(0.75)`}>
-          {/* OpenCode logo - outer frame with inner square */}
-          {/* Outer frame (centered at origin, original: 0,0 to 32,40) */}
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M-16 -20 L16 -20 L16 20 L-16 20 Z M-8 -12 L-8 12 L8 12 L8 -12 Z"
             fill={logoFillColor}
           />
-          {/* Inner square */}
           <path
             d="M-8 -4 L8 -4 L8 12 L-8 12 Z"
             fill={logoFillColor}
@@ -221,3 +188,5 @@ export const OpenChamberLogo: React.FC<OpenChamberLogoProps> = ({
     </svg>
   );
 };
+
+export default OpenChamberLogo;
