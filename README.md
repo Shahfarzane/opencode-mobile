@@ -1,9 +1,9 @@
 # OpenChamber
 
-[![GitHub stars](https://img.shields.io/github/stars/btriapitsyn/openchamber?style=flat&logo=github&logoColor=FFFCF0&labelColor=100F0F&color=DA702C)](https://github.com/btriapitsyn/openchamber/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/btriapitsyn/openchamber?style=flat&logo=github&logoColor=FFFCF0&labelColor=100F0F&color=4385BE)](https://github.com/btriapitsyn/openchamber/network/members)
-[![GitHub release](https://img.shields.io/github/v/release/btriapitsyn/openchamber?style=flat&logo=github&logoColor=FFFCF0&labelColor=100F0F&color=3AA99F)](https://github.com/btriapitsyn/openchamber/releases/latest)
-[![Created with](https://img.shields.io/badge/created_with-OpenCode-EC8B49?style=flat&logo=https://raw.githubusercontent.com/btriapitsyn/openchamber/main/docs/references/badges/opencode-icon.svg&labelColor=100F0F)](https://opencode.ai)
+[![GitHub stars](https://img.shields.io/github/stars/btriapitsyn/openchamber?style=flat&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fbtriapitsyn%2Fopenchamber%2Fmain%2Fdocs%2Freferences%2Fbadges%2Fstar.svg&logoColor=FFFCF0&labelColor=100F0F&color=66800B)](https://github.com/btriapitsyn/openchamber/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/btriapitsyn/openchamber?style=flat&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fbtriapitsyn%2Fopenchamber%2Fmain%2Fdocs%2Freferences%2Fbadges%2Fgit-fork.svg&logoColor=FFFCF0&labelColor=100F0F&color=BC5215)](https://github.com/btriapitsyn/openchamber/network/members)
+[![GitHub release](https://img.shields.io/github/v/release/btriapitsyn/openchamber?style=flat&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fbtriapitsyn%2Fopenchamber%2Fmain%2Fdocs%2Freferences%2Fbadges%2Frelease.svg&logoColor=FFFCF0&labelColor=100F0F&color=205EA6)](https://github.com/btriapitsyn/openchamber/releases/latest)
+[![Created with OpenCode](docs/references/badges/created-with-opencode.svg)](https://opencode.ai)
 
 Web and desktop interface for the [OpenCode](https://opencode.ai) AI coding agent. Works alongside the OpenCode TUI.
 
