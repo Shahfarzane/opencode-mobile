@@ -1,60 +1,15 @@
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bgGradient" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#303030"/>
-      <stop offset="100%" stop-color="#141414"/>
-    </linearGradient>
-  </defs>
-  
-  <!-- Background -->
-  <rect x="0" y="0" width="128" height="128" rx="26" ry="26" fill="url(#bgGradient)"/>
-  
-  <!-- OpenChamber logo centered -->
-  <g transform="translate(64, 64) scale(1)">
-    <!-- Left face -->
-    <path d="M0 0 L-41.568 -24 L-41.568 24 L0 48 Z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-    <!-- Left face grid cells -->
-    <path d="M0 0 L-10.392 -6 L-10.392 6 L0 12 Z" fill="white" fill-opacity="0.07"/>
-    <path d="M-10.392 -6 L-20.784 -12 L-20.784 0 L-10.392 6 Z" fill="white" fill-opacity="0.16"/>
-    <path d="M-20.784 -12 L-31.176 -18 L-31.176 -6 L-20.784 0 Z" fill="white" fill-opacity="0.05"/>
-    <path d="M-31.176 -18 L-41.568 -24 L-41.568 -12 L-31.176 -6 Z" fill="white" fill-opacity="0.19"/>
-    <path d="M0 12 L-10.392 6 L-10.392 18 L0 24 Z" fill="white" fill-opacity="0.12"/>
-    <path d="M-10.392 6 L-20.784 0 L-20.784 12 L-10.392 18 Z" fill="white" fill-opacity="0.04"/>
-    <path d="M-20.784 0 L-31.176 -6 L-31.176 6 L-20.784 12 Z" fill="white" fill-opacity="0.18"/>
-    <path d="M-31.176 -6 L-41.568 -12 L-41.568 0 L-31.176 6 Z" fill="white" fill-opacity="0.09"/>
-    <path d="M0 24 L-10.392 18 L-10.392 30 L0 36 Z" fill="white" fill-opacity="0.14"/>
-    <path d="M-10.392 18 L-20.784 12 L-20.784 24 L-10.392 30 Z" fill="white" fill-opacity="0.11"/>
-    <path d="M-20.784 12 L-31.176 6 L-31.176 18 L-20.784 24 Z" fill="white" fill-opacity="0.16"/>
-    <path d="M-31.176 6 L-41.568 0 L-41.568 12 L-31.176 18 Z" fill="white" fill-opacity="0.05"/>
-    <path d="M0 36 L-10.392 30 L-10.392 42 L0 48 Z" fill="white" fill-opacity="0.19"/>
-    <path d="M-10.392 30 L-20.784 24 L-20.784 36 L-10.392 42 Z" fill="white" fill-opacity="0.07"/>
-    <path d="M-20.784 24 L-31.176 18 L-31.176 30 L-20.784 36 Z" fill="white" fill-opacity="0.12"/>
-    <path d="M-31.176 18 L-41.568 12 L-41.568 24 L-31.176 30 Z" fill="white" fill-opacity="0.04"/>
-    <!-- Right face -->
-    <path d="M0 0 L41.568 -24 L41.568 24 L0 48 Z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-    <!-- Right face grid cells -->
-    <path d="M0 0 L10.392 -6 L10.392 6 L0 12 Z" fill="white" fill-opacity="0.11"/>
-    <path d="M10.392 -6 L20.784 -12 L20.784 0 L10.392 6 Z" fill="white" fill-opacity="0.05"/>
-    <path d="M20.784 -12 L31.176 -18 L31.176 -6 L20.784 0 Z" fill="white" fill-opacity="0.16"/>
-    <path d="M31.176 -18 L41.568 -24 L41.568 -12 L31.176 -6 Z" fill="white" fill-opacity="0.09"/>
-    <path d="M0 12 L10.392 6 L10.392 18 L0 24 Z" fill="white" fill-opacity="0.18"/>
-    <path d="M10.392 6 L20.784 0 L20.784 12 L10.392 18 Z" fill="white" fill-opacity="0.12"/>
-    <path d="M20.784 0 L31.176 -6 L31.176 6 L20.784 12 Z" fill="white" fill-opacity="0.04"/>
-    <path d="M31.176 -6 L41.568 -12 L41.568 0 L31.176 6 Z" fill="white" fill-opacity="0.14"/>
-    <path d="M0 24 L10.392 18 L10.392 30 L0 36 Z" fill="white" fill-opacity="0.07"/>
-    <path d="M10.392 18 L20.784 12 L20.784 24 L10.392 30 Z" fill="white" fill-opacity="0.19"/>
-    <path d="M20.784 12 L31.176 6 L31.176 18 L20.784 24 Z" fill="white" fill-opacity="0.11"/>
-    <path d="M31.176 6 L41.568 0 L41.568 12 L31.176 18 Z" fill="white" fill-opacity="0.05"/>
-    <path d="M0 36 L10.392 30 L10.392 42 L0 48 Z" fill="white" fill-opacity="0.16"/>
-    <path d="M10.392 30 L20.784 24 L20.784 36 L10.392 42 Z" fill="white" fill-opacity="0.09"/>
-    <path d="M20.784 24 L31.176 18 L31.176 30 L20.784 36 Z" fill="white" fill-opacity="0.14"/>
-    <path d="M31.176 18 L41.568 12 L41.568 24 L31.176 30 Z" fill="white" fill-opacity="0.07"/>
+<svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- OpenChamber logo - simplified for VSCode activity bar -->
+  <g transform="translate(16, 16) scale(0.48)">
+    <!-- Left face - no fill -->
+    <path d="M0 0 L-26 -15 L-26 15 L0 30 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+    <!-- Right face - no fill -->
+    <path d="M0 0 L26 -15 L26 15 L0 30 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
     <!-- Top face - open -->
-    <path d="M0 -48 L-41.568 -24 L0 0 L41.568 -24 Z" fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-    <!-- OpenCode logo on top face -->
-    <g transform="matrix(0.866, 0.5, -0.866, 0.5, 0, -24) scale(0.75)">
-      <path fill-rule="evenodd" clip-rule="evenodd" d="M-16 -20 L16 -20 L16 20 L-16 20 Z M-8 -12 L-8 12 L8 12 L8 -12 Z" fill="white"/>
-      <path d="M-8 -4 L8 -4 L8 12 L-8 12 Z" fill="white" fill-opacity="0.4"/>
+    <path d="M0 -30 L-26 -15 L0 0 L26 -15 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+    <!-- O logo - hollow rectangle frame on top face with gray fill inside -->
+    <g transform="matrix(0.866, 0.5, -0.866, 0.5, 0, -15) scale(0.55)">
+      <rect x="-12" y="-14" width="24" height="28" fill="currentColor" fill-opacity="0.4" stroke="currentColor" stroke-width="8"/>
     </g>
   </g>
 </svg>
