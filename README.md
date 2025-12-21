@@ -22,7 +22,7 @@ The whole project was built entirely with AI coding agents under my supervision.
 ![Settings](docs/references/settings_example.png)
 ![Web Version](docs/references/web_version_example.png)
 ![Diff View](docs/references/diff_example.png)
-![VS Code Extension](docs/references/vscode_extension.png)
+![VS Code Extension](packages/vscode/extension.jpg)
 <p>
 <img src="docs/references/pwa_chat_example.png" width="45%" alt="PWA Chat">
 <img src="docs/references/pwa_terminal_example.png" width="45%" alt="PWA Terminal">
