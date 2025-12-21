@@ -102,26 +102,6 @@ Download from [Releases](https://github.com/btriapitsyn/openchamber/releases).
 - [OpenCode CLI](https://opencode.ai) installed
 - Node.js 20+ (for web version)
 
-## Development
-
-```bash
-git clone https://github.com/btriapitsyn/openchamber.git
-cd openchamber
-pnpm install
-
-# Web development
-pnpm run dev:web:full
-
-# Desktop app (Tauri)
-pnpm desktop:dev
-
-# VS Code extension
-pnpm vscode:build && code --extensionDevelopmentPath="$(pwd)/packages/vscode"
-
-# Production build
-pnpm run build
-```
-
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## Tech Stack
