@@ -1081,11 +1081,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                             onKeyDown={handleKeyDown}
                             onPaste={handlePaste}
                             onPointerDownCapture={handleTextareaPointerDownCapture}
-                            placeholder={currentSessionId
+                            placeholder={currentSessionId || newSessionDraftOpen
                                 ? "# for agents; @ for files; / for commands"
-                                : newSessionDraftOpen
-                                    ? "Type your first message..."
-                                    : "Select or create a session to start chatting"}
+                                : "Select or create a session to start chatting"}
                             disabled={!currentSessionId && !newSessionDraftOpen}
 
                         className={cn(
