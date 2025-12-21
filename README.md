@@ -38,17 +38,35 @@ The whole project was built entirely with AI coding agents under my supervision.
 
 ## Features
 
+### Core (all apps versions)
+
 - Integrated terminal
 - Git operations with identity management and AI commit message generation
-- Beautiful themes (Flexoki Light/Dark) with dynamic CSS variable system
-- Mobile-optimized with edge-swipe gestures, terminal control and optimizations all around
-- Git worktrees operations with isolating sessions within them
-- Memory optimizations with LRU eviction
-- Rich permission cards with syntax-highlighted operation previews
 - Smart tool visualization (inline diffs, file trees, results highlighting)
-- Per-agent permission mode control (ask, allow, full) adjustable per-session
-- Beautiful diff viewer with syntax highlighting, line wrap, and responsive layout
-- Built-in OpenCode agent/command management
+- Rich permission cards with syntax-highlighted operation previews
+- Per-agent permission modes (ask/allow/full) per session
+- Branchable conversations: start a new session from any assistant response
+- Task tracker UI with live progress and tool summaries
+- Model selection UX: favorites, recents, and configurable tool output density
+- UI scaling controls (font size and spacing)
+- Session auto-cleanup with configurable retention
+- Memory optimizations with LRU eviction
+
+### Web / PWA
+
+- Mobile-first UI with gestures and optimized terminal controls
+- Self-serve web updates (no CLI required)
+- Update and restart keeps previous server settings (port/password)
+
+### Desktop (macOS)
+
+- Native macOS menu bar integration with app actions
+- First-launch directory picker to minimize permission prompts
+
+### VS Code Extension
+
+- Editor-integrated file picker and click-to-open from tool output
+- In-extension Settings access and theme mapping
 
 ## Installation
 
@@ -81,8 +99,8 @@ Download from [Releases](https://github.com/btriapitsyn/openchamber/releases).
 
 ## Prerequisites
 
-- [OpenCode CLI](https://opencode.ai) installed and running (`opencode serve`)
-- Node.js 20+
+- [OpenCode CLI](https://opencode.ai) installed
+- Node.js 20+ (for web version)
 
 ## Development
 
@@ -126,5 +144,3 @@ Independent project, not affiliated with OpenCode team.
 ## License
 
 MIT
-
-
