@@ -1,13 +1,23 @@
 # Contributing to OpenChamber
 
-## Quick Start
+## Development
 
 ```bash
 git clone https://github.com/btriapitsyn/openchamber.git
 cd openchamber
 pnpm install
-pnpm run dev:web:full    # Web development
-pnpm run desktop:dev     # Desktop development (Tauri)
+
+# Web development
+pnpm run dev:web:full
+
+# Desktop app (Tauri)
+pnpm desktop:dev
+
+# VS Code extension
+pnpm vscode:build && code --extensionDevelopmentPath="$(pwd)/packages/vscode"
+
+# Production build
+pnpm run build
 ```
 
 ## Before Submitting
