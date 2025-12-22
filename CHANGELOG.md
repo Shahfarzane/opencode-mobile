@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+
+## [1.3.2] - 2025-12-22
+
+- Fixed new bug session when switching directories
+- Updated Opencode SDK to the latest version
+
+
 ## [1.3.1] - 2025-12-22
 
 - New chats no longer create a session until you send your first message.
