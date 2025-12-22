@@ -642,6 +642,32 @@ usePermissionStore.subscribe((state, prevState) => {
     });
 });
 
+useDirectoryStore.subscribe((state, prevState) => {
+    const nextDirectory = normalizePath(state.currentDirectory ?? null);
+    const prevDirectory = normalizePath(prevState.currentDirectory ?? null);
+    if (nextDirectory === prevDirectory) {
+        return;
+    }
+
+    const draft = useSessionStore.getState().newSessionDraft;
+    if (!draft?.open) {
+        return;
+    }
+
+    const draftDirectory = normalizePath(draft.directoryOverride);
+    if (draftDirectory && draftDirectory !== prevDirectory) {
+        return;
+    }
+
+    useSessionStore.setState((store) => ({
+        newSessionDraft: {
+            ...store.newSessionDraft,
+            directoryOverride: nextDirectory,
+            parentID: null,
+        },
+    }));
+});
+
 const bootDraftOpen = useSessionStore.getState().newSessionDraft?.open;
 
 useSessionStore.setState({
