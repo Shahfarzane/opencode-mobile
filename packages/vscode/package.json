@@ -63,8 +63,8 @@
       "properties": {
         "openchamber.apiUrl": {
           "type": "string",
-          "default": "http://localhost:47339",
-          "description": "URL of the OpenCode API server"
+          "default": "",
+          "description": "URL of an external OpenCode API server. Leave empty to auto-start a local instance."
         }
       }
     }
@@ -92,7 +92,7 @@
   },
   "dependencies": {
     "@openchamber/ui": "workspace:*",
-    "@opencode-ai/sdk": "^1.0.133",
+    "@opencode-ai/sdk": "^1.0.185",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   }

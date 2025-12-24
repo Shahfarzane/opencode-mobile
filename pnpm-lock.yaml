@@ -260,8 +260,8 @@ importers:
         specifier: ^6.4.1
         version: 6.4.1
       '@opencode-ai/sdk':
-        specifier: ^1.0.65
-        version: 1.0.65
+        specifier: ^1.0.185
+        version: 1.0.185
       '@pierre/diffs':
         specifier: ^1.0.0
         version: 1.0.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -438,8 +438,8 @@ importers:
         specifier: workspace:*
         version: link:../ui
       '@opencode-ai/sdk':
-        specifier: ^1.0.133
-        version: 1.0.133
+        specifier: ^1.0.185
+        version: 1.0.185
       react:
         specifier: ^19.1.1
         version: 19.1.1
@@ -481,8 +481,8 @@ importers:
         specifier: ^6.4.1
         version: 6.4.1
       '@opencode-ai/sdk':
-        specifier: ^1.0.65
-        version: 1.0.65
+        specifier: ^1.0.185
+        version: 1.0.185
       '@radix-ui/react-collapsible':
         specifier: ^1.1.12
         version: 1.1.12(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -1360,14 +1360,8 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@opencode-ai/sdk@1.0.133':
-    resolution: {integrity: sha512-kM+VJJ09SU51aruQ78DSy+6CjNc4wMytvGBrZ1IIJ8etUIdGA59wrnIOSxBVs4u/Gb9pjjgsF8sWp59UdLWP9w==}
-
   '@opencode-ai/sdk@1.0.185':
     resolution: {integrity: sha512-Er3SdPWWZgSXCy1hUCqya1wj4kD2nbbqywyoLgvo1BvpZqASJmtqSCZoO2wWrg6UZU+ME4YcddeTriQPb0ygyw==}
-
-  '@opencode-ai/sdk@1.0.65':
-    resolution: {integrity: sha512-35aOmXhRHNPlx0ThhYwudfZhP1Sg8y94Wsqm+XsgGfHATllQvQjNVOVPfSp3TW3xCAoJ0/PXJlcYjPS3kZDeNA==}
 
   '@pierre/diffs@1.0.0':
     resolution: {integrity: sha512-aF/hbdGI46HMTOMNYhEyXpiyb1J0Ldf2o2dBa1fYxI688t7SfCfzvBIlJm74O6+GuMg20EWhhQM+Nky7LuwLIg==}
@@ -6665,11 +6659,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@opencode-ai/sdk@1.0.133': {}
-
   '@opencode-ai/sdk@1.0.185': {}
-
-  '@opencode-ai/sdk@1.0.65': {}
 
   '@pierre/diffs@1.0.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
