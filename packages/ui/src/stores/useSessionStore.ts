@@ -270,6 +270,23 @@ export const useSessionStore = create<SessionStore>()(
                 loadMessages: (sessionId: string) => useMessageStore.getState().loadMessages(sessionId),
                 sendMessage: async (content: string, providerID: string, modelID: string, agent?: string, attachments?: AttachedFile[], agentMentionName?: string) => {
                     const draft = get().newSessionDraft;
+                    const trimmedAgent = typeof agent === 'string' && agent.trim().length > 0 ? agent.trim() : undefined;
+
+                    const setBusyPhase = (sessionId: string) => {
+                        set((state) => {
+                            const next = new Map(state.sessionActivityPhase ?? new Map());
+                            next.set(sessionId, 'busy');
+                            return { sessionActivityPhase: next };
+                        });
+                    };
+
+                    const setIdlePhase = (sessionId: string) => {
+                        set((state) => {
+                            const next = new Map(state.sessionActivityPhase ?? new Map());
+                            next.set(sessionId, 'idle');
+                            return { sessionActivityPhase: next };
+                        });
+                    };
 
                     if (draft?.open) {
                         const created = await useSessionManagementStore
@@ -282,6 +299,7 @@ export const useSessionStore = create<SessionStore>()(
 
                         const configState = useConfigStore.getState();
                         const draftAgentName = configState.currentAgentName;
+                        const effectiveDraftAgent = trimmedAgent ?? draftAgentName;
                         const draftProviderId = configState.currentProviderId;
                         const draftModelId = configState.currentModelId;
 
@@ -293,9 +311,9 @@ export const useSessionStore = create<SessionStore>()(
                             }
                         }
 
-                        if (draftAgentName) {
+                        if (effectiveDraftAgent) {
                             try {
-                                useContextStore.getState().saveSessionAgentSelection(created.id, draftAgentName);
+                                useContextStore.getState().saveSessionAgentSelection(created.id, effectiveDraftAgent);
                             } catch {
                                 // ignored
                             }
@@ -304,7 +322,7 @@ export const useSessionStore = create<SessionStore>()(
                                 try {
                                     useContextStore
                                         .getState()
-                                        .saveAgentModelForSession(created.id, draftAgentName, draftProviderId, draftModelId);
+                                        .saveAgentModelForSession(created.id, effectiveDraftAgent, draftProviderId, draftModelId);
                                 } catch {
                                     // ignored
                                 }
@@ -320,14 +338,45 @@ export const useSessionStore = create<SessionStore>()(
                         }
 
                         get().closeNewSessionDraft();
+                        setBusyPhase(created.id);
 
-                        return useMessageStore
-                            .getState()
-                            .sendMessage(content, providerID, modelID, agent, created.id, attachments, agentMentionName);
+                        try {
+                            return await useMessageStore
+                                .getState()
+                                .sendMessage(content, providerID, modelID, effectiveDraftAgent, created.id, attachments, agentMentionName);
+                        } catch (error) {
+                            setIdlePhase(created.id);
+                            throw error;
+                        }
                     }
 
                     const currentSessionId = useSessionManagementStore.getState().currentSessionId;
-                    return useMessageStore.getState().sendMessage(content, providerID, modelID, agent, currentSessionId || undefined, attachments, agentMentionName);
+                    const sessionAgentSelection = currentSessionId
+                        ? useContextStore.getState().getSessionAgentSelection(currentSessionId)
+                        : null;
+                    const configAgentName = useConfigStore.getState().currentAgentName;
+                    const effectiveAgent = trimmedAgent || sessionAgentSelection || configAgentName || undefined;
+
+                    if (currentSessionId && effectiveAgent) {
+                        try {
+                            useContextStore.getState().saveSessionAgentSelection(currentSessionId, effectiveAgent);
+                        } catch {
+                            // ignored
+                        }
+                    }
+
+                    if (currentSessionId) {
+                        setBusyPhase(currentSessionId);
+                    }
+
+                    try {
+                        return await useMessageStore.getState().sendMessage(content, providerID, modelID, effectiveAgent, currentSessionId || undefined, attachments, agentMentionName);
+                    } catch (error) {
+                        if (currentSessionId) {
+                            setIdlePhase(currentSessionId);
+                        }
+                        throw error;
+                    }
                 },
                 abortCurrentOperation: () => {
                     const currentSessionId = useSessionManagementStore.getState().currentSessionId;
