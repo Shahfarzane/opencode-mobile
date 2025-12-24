@@ -16,6 +16,17 @@ import { extractTextFromPart, normalizeStreamingPart } from "./utils/messageUtil
 import { getSafeStorage } from "./utils/safeStorage";
 import { useFileStore } from "./fileStore";
 import { useSessionStore } from "./sessionStore";
+import { useContextStore } from "./contextStore";
+
+// Helper function to clean up pending user message metadata
+const cleanupPendingUserMessageMeta = (
+    currentPending: Map<string, { mode?: string; providerID?: string; modelID?: string }>,
+    sessionId: string
+): Map<string, { mode?: string; providerID?: string; modelID?: string }> => {
+    const nextPending = new Map(currentPending);
+    nextPending.delete(sessionId);
+    return nextPending;
+};
 
 interface QueuedPart {
     sessionId: string;
@@ -339,6 +350,8 @@ interface MessageState {
     pendingAssistantParts: Map<string, { sessionId: string; parts: Part[] }>;
     sessionCompactionUntil: Map<string, number>;
     sessionAbortFlags: Map<string, SessionAbortRecord>;
+    pendingAssistantHeaderSessions: Set<string>;
+    pendingUserMessageMetaBySession: Map<string, { mode?: string; providerID?: string; modelID?: string }>;
 }
 
 interface MessageActions {
@@ -379,6 +392,8 @@ export const useMessageStore = create<MessageStore>()(
                 pendingAssistantParts: new Map(),
                 sessionCompactionUntil: new Map(),
                 sessionAbortFlags: new Map(),
+                pendingAssistantHeaderSessions: new Set(),
+                pendingUserMessageMetaBySession: new Map(),
 
                 loadMessages: async (sessionId: string, limit: number = MEMORY_LIMITS.VIEWPORT_MESSAGES) => {
                         const allMessages = await executeWithSessionDirectory(sessionId, () => opencodeClient.getSessionMessages(sessionId));
@@ -654,6 +669,18 @@ export const useMessageStore = create<MessageStore>()(
                                     url: file.dataUrl,
                                 }));
 
+                                set((state) => {
+                                    const next = new Set(state.pendingAssistantHeaderSessions);
+                                    next.add(sessionId);
+                                    const nextUserMeta = new Map(state.pendingUserMessageMetaBySession);
+                                    nextUserMeta.set(sessionId, {
+                                        mode: typeof agent === 'string' && agent.trim().length > 0 ? agent.trim() : undefined,
+                                        providerID,
+                                        modelID,
+                                    });
+                                    return { pendingAssistantHeaderSessions: next, pendingUserMessageMetaBySession: nextUserMeta };
+                                });
+
                                 await opencodeClient.sendMessage({
                                     id: sessionId,
                                     providerID,
@@ -696,7 +723,11 @@ export const useMessageStore = create<MessageStore>()(
                                 set((state) => {
                                     const nextControllers = new Map(state.abortControllers);
                                     nextControllers.delete(sessionId);
-                                    return { abortControllers: nextControllers };
+                                    const nextHeaders = new Set(state.pendingAssistantHeaderSessions);
+                                    nextHeaders.delete(sessionId);
+                                    const nextUserMeta = new Map(state.pendingUserMessageMetaBySession);
+                                    nextUserMeta.delete(sessionId);
+                                    return { abortControllers: nextControllers, pendingAssistantHeaderSessions: nextHeaders, pendingUserMessageMetaBySession: nextUserMeta };
                                 });
 
                                 throw new Error(errorMessage);
@@ -719,7 +750,11 @@ export const useMessageStore = create<MessageStore>()(
                             set((state) => {
                                 const nextControllers = new Map(state.abortControllers);
                                 nextControllers.delete(sessionId);
-                                return { abortControllers: nextControllers };
+                                const nextHeaders = new Set(state.pendingAssistantHeaderSessions);
+                                nextHeaders.delete(sessionId);
+                                const nextUserMeta = new Map(state.pendingUserMessageMetaBySession);
+                                nextUserMeta.delete(sessionId);
+                                return { abortControllers: nextControllers, pendingAssistantHeaderSessions: nextHeaders, pendingUserMessageMetaBySession: nextUserMeta };
                             });
 
                             throw new Error(errorMessage);
@@ -1145,6 +1180,22 @@ export const useMessageStore = create<MessageStore>()(
                                 const normalizedPart = normalizeStreamingPart(part);
                                 (window as any).__messageTracker?.(messageId, `new_user_part_type:${(normalizedPart as any).type || 'unknown'}`);
 
+                                const pendingMeta = state.pendingUserMessageMetaBySession.get(sessionId);
+                                const contextStore = useContextStore.getState();
+                                const sessionAgent =
+                                    pendingMeta?.mode ??
+                                    contextStore.getSessionAgentSelection(sessionId) ??
+                                    contextStore.getCurrentAgent(sessionId);
+                                const agentMode = typeof sessionAgent === 'string' && sessionAgent.trim().length > 0
+                                    ? sessionAgent.trim()
+                                    : undefined;
+                                const providerID = pendingMeta?.providerID ?? (state.lastUsedProvider?.providerID || undefined);
+                                const modelID = pendingMeta?.modelID ?? (state.lastUsedProvider?.modelID || undefined);
+
+                                if (pendingMeta) {
+                                    updates.pendingUserMessageMetaBySession = cleanupPendingUserMessageMeta(state.pendingUserMessageMetaBySession, sessionId);
+                                }
+
                                 const newUserMessage = {
                                     info: {
                                         id: messageId,
@@ -1152,6 +1203,9 @@ export const useMessageStore = create<MessageStore>()(
                                         role: 'user' as const,
                                         clientRole: 'user',
                                         userMessageMarker: true,
+                                        ...(agentMode ? { mode: agentMode } : {}),
+                                        ...(providerID ? { providerID } : {}),
+                                        ...(modelID ? { modelID } : {}),
                                         time: {
                                             created: Date.now(),
                                         },
@@ -1212,19 +1266,58 @@ export const useMessageStore = create<MessageStore>()(
                             const newPending = new Map(state.pendingAssistantParts);
                             newPending.set(messageId, { sessionId, parts: pendingParts });
 
-                            const placeholderInfo = {
-                                id: messageId,
-                                sessionID: sessionId,
-                                role: actualRole as "user" | "assistant",
-                                clientRole: actualRole,
-                                providerID: state.lastUsedProvider?.providerID || "",
-                                modelID: state.lastUsedProvider?.modelID || "",
-                                time: {
-                                    created: Date.now(),
-                                },
-                                animationSettled: actualRole === "assistant" ? false : undefined,
-                                streaming: actualRole === "assistant" ? true : undefined,
-                            } as Message;
+                            const providerID = state.lastUsedProvider?.providerID || "";
+                            const modelID = state.lastUsedProvider?.modelID || "";
+                            const now = Date.now();
+                            const cwd = opencodeClient.getDirectory() ?? "/";
+                            const contextStore = useContextStore.getState();
+                            const sessionAgent = contextStore.getSessionAgentSelection(sessionId)
+                                ?? contextStore.getCurrentAgent(sessionId);
+                            const agentMode = typeof sessionAgent === "string" && sessionAgent.trim().length > 0
+                                ? sessionAgent.trim()
+                                : undefined;
+
+                            const shouldAnchorHeader = state.pendingAssistantHeaderSessions.has(sessionId);
+                            if (shouldAnchorHeader) {
+                                const nextPendingHeaders = new Set(state.pendingAssistantHeaderSessions);
+                                nextPendingHeaders.delete(sessionId);
+                                updates.pendingAssistantHeaderSessions = nextPendingHeaders;
+                            }
+
+                            const placeholderInfo = (actualRole === "user"
+                                ? {
+                                    id: messageId,
+                                    sessionID: sessionId,
+                                    role: "user",
+                                    time: { created: now },
+                                    agent: agentMode || "default",
+                                    model: { providerID, modelID },
+                                    clientRole: actualRole,
+                                    animationSettled: undefined,
+                                    streaming: undefined,
+                                }
+                                : {
+                                    id: messageId,
+                                    sessionID: sessionId,
+                                    role: "assistant",
+                                    time: { created: now },
+                                    parentID: messageId,
+                                    modelID,
+                                    providerID,
+                                    mode: agentMode || "default",
+                                    ...(shouldAnchorHeader ? { openchamberHeaderAnchor: true } : {}),
+                                    path: { cwd, root: cwd },
+                                    cost: 0,
+                                    tokens: {
+                                        input: 0,
+                                        output: 0,
+                                        reasoning: 0,
+                                        cache: { read: 0, write: 0 },
+                                    },
+                                    clientRole: actualRole,
+                                    animationSettled: false,
+                                    streaming: true,
+                                }) as unknown as Message;
 
                             const placeholderMessage = {
                                 info: placeholderInfo,
@@ -1603,11 +1696,15 @@ export const useMessageStore = create<MessageStore>()(
 
                             if (incomingInfo && incomingInfo.role === 'user') {
                                 const pendingParts = pendingEntry?.parts ?? [];
+                                const pendingMeta = state.pendingUserMessageMetaBySession.get(sessionId);
                                 const newUserMessage = {
                                     info: {
                                         ...incomingInfo,
                                         userMessageMarker: true,
                                         clientRole: 'user',
+                                        ...(pendingMeta?.mode ? { mode: pendingMeta.mode } : {}),
+                                        ...(pendingMeta?.providerID ? { providerID: pendingMeta.providerID } : {}),
+                                        ...(pendingMeta?.modelID ? { modelID: pendingMeta.modelID } : {}),
                                     } as Message,
                                     parts: pendingParts.length > 0 ? [...pendingParts] : [],
                                 };
@@ -1625,6 +1722,11 @@ export const useMessageStore = create<MessageStore>()(
 
                                 const updates: Partial<MessageState> = {
                                     messages: newMessages,
+                              ...(pendingMeta
+                                 ? {
+                                      pendingUserMessageMetaBySession: cleanupPendingUserMessageMeta(state.pendingUserMessageMetaBySession, sessionId),
+                                  }
+                                 : {}),
                                 };
 
                                 const nextIndex = upsertMessageSessionIndex(
@@ -1650,10 +1752,13 @@ export const useMessageStore = create<MessageStore>()(
                             }
 
                             const pendingParts = pendingEntry?.parts ?? [];
+
+                            const shouldAnchorHeader = state.pendingAssistantHeaderSessions.has(sessionId);
                             const newMessage = {
                                 info: {
                                     ...incomingInfo,
                                     animationSettled: (incomingInfo as any)?.animationSettled ?? false,
+                                    ...(shouldAnchorHeader ? { openchamberHeaderAnchor: true } : {}),
                                 } as Message,
                                 parts: pendingParts.length > 0 ? [...pendingParts] : [],
                             };
@@ -1665,6 +1770,15 @@ export const useMessageStore = create<MessageStore>()(
 
                             const updates: Partial<MessageState> = {
                                 messages: newMessages,
+                                ...(shouldAnchorHeader
+                                    ? {
+                                        pendingAssistantHeaderSessions: (() => {
+                                            const nextPendingHeaders = new Set(state.pendingAssistantHeaderSessions);
+                                            nextPendingHeaders.delete(sessionId);
+                                            return nextPendingHeaders;
+                                        })(),
+                                    }
+                                    : {}),
                             };
 
                             const nextIndex = upsertMessageSessionIndex(
@@ -1693,32 +1807,44 @@ export const useMessageStore = create<MessageStore>()(
                             existingInfo.clientRole === 'user' ||
                             existingInfo.role === 'user';
 
-                        if (isUserMessage) {
+                         if (isUserMessage) {
+ 
+                             const updatedInfo = {
+                                 ...existingMessage.info,
+                                 ...messageInfo,
+ 
+                                 role: 'user',
+                                 clientRole: 'user',
+                                 userMessageMarker: true,
+ 
+                                 providerID: existingInfo.providerID || undefined,
+                                 modelID: existingInfo.modelID || undefined,
+                             } as any;
 
-                            const updatedInfo = {
-                                ...existingMessage.info,
-                                ...messageInfo,
+                             const pendingMeta = state.pendingUserMessageMetaBySession.get(sessionId);
+                             if (pendingMeta && !updatedInfo.mode && pendingMeta.mode) {
+                                 updatedInfo.mode = pendingMeta.mode;
+                             }
+ 
+                             const updatedMessage = {
+                                 ...existingMessage,
+                                 info: updatedInfo
+                             };
+ 
+                             const newMessages = new Map(state.messages);
+                             const updatedSessionMessages = [...normalizedSessionMessages];
+                             updatedSessionMessages[messageIndex] = updatedMessage;
+                             newMessages.set(sessionId, updatedSessionMessages);
 
-                                role: 'user',
-                                clientRole: 'user',
-                                userMessageMarker: true,
+                             if (pendingMeta) {
+                                 const nextPending = new Map(state.pendingUserMessageMetaBySession);
+                                 nextPending.delete(sessionId);
+                                 return { messages: newMessages, pendingUserMessageMetaBySession: nextPending };
+                             }
+ 
+                             return { messages: newMessages };
+                         }
 
-                                providerID: existingInfo.providerID || undefined,
-                                modelID: existingInfo.modelID || undefined,
-                            } as any;
-
-                            const updatedMessage = {
-                                ...existingMessage,
-                                info: updatedInfo
-                            };
-
-                            const newMessages = new Map(state.messages);
-                            const updatedSessionMessages = [...normalizedSessionMessages];
-                            updatedSessionMessages[messageIndex] = updatedMessage;
-                            newMessages.set(sessionId, updatedSessionMessages);
-
-                            return { messages: newMessages };
-                        }
 
                         const updatedInfo = {
                             ...existingMessage.info,
