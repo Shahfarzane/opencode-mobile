@@ -37,6 +37,27 @@ const FILE_SEARCH_EXCLUDED_DIRS = new Set([
   'logs'
 ]);
 
+const normalizeDirectoryPath = (value) => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (trimmed === '~') {
+    return os.homedir();
+  }
+
+  if (trimmed.startsWith('~/') || trimmed.startsWith('~\\')) {
+    return path.join(os.homedir(), trimmed.slice(2));
+  }
+
+  return trimmed;
+};
+
 const normalizeRelativeSearchPath = (rootPath, targetPath) => {
   const relative = path.relative(rootPath, targetPath) || path.basename(targetPath);
   return relative.split(path.sep).join('/') || targetPath;
@@ -2675,8 +2696,11 @@ async function main(options = {}) {
       const worktrees = await getWorktrees(directory);
       res.json(worktrees);
     } catch (error) {
-      console.error('Failed to get worktrees:', error);
-      res.status(500).json({ error: error.message || 'Failed to get worktrees' });
+      // Worktrees are an optional feature. Avoid repeated 500s (and repeated client retries)
+      // when the directory isn't a git repo or uses shell shorthand like "~/".
+      console.warn('Failed to get worktrees, returning empty list:', error?.message || error);
+      res.setHeader('X-OpenChamber-Warning', 'git worktrees unavailable');
+      res.json([]);
     }
   });
 
@@ -2815,15 +2839,17 @@ async function main(options = {}) {
         return res.status(400).json({ error: 'Path is required' });
       }
 
-      const normalizedPath = path.normalize(dirPath);
+      const expandedPath = normalizeDirectoryPath(dirPath);
+      const normalizedPath = path.normalize(expandedPath);
       if (normalizedPath.includes('..')) {
         return res.status(400).json({ error: 'Invalid path: path traversal not allowed' });
       }
 
-      fs.mkdirSync(dirPath, { recursive: true });
-      console.log(`Created directory: ${dirPath}`);
+      const resolvedPath = path.resolve(expandedPath);
+      fs.mkdirSync(resolvedPath, { recursive: true });
+      console.log(`Created directory: ${resolvedPath}`);
 
-      res.json({ success: true, path: dirPath });
+      res.json({ success: true, path: resolvedPath });
     } catch (error) {
       console.error('Failed to create directory:', error);
       res.status(500).json({ error: error.message || 'Failed to create directory' });
@@ -2837,7 +2863,7 @@ async function main(options = {}) {
         return res.status(400).json({ error: 'Path is required' });
       }
 
-      const resolvedPath = path.resolve(requestedPath);
+      const resolvedPath = path.resolve(normalizeDirectoryPath(requestedPath));
       let stats;
       try {
         stats = await fsPromises.stat(resolvedPath);
@@ -2883,7 +2909,7 @@ async function main(options = {}) {
       : os.homedir();
 
     try {
-      const resolvedPath = path.resolve(rawPath);
+      const resolvedPath = path.resolve(normalizeDirectoryPath(rawPath));
 
       const stats = await fsPromises.stat(resolvedPath);
       if (!stats.isDirectory()) {
@@ -2948,7 +2974,7 @@ async function main(options = {}) {
     const limit = Math.max(1, Math.min(parsedLimit, MAX_FILE_SEARCH_LIMIT));
 
     try {
-      const resolvedRoot = path.resolve(rawRoot);
+      const resolvedRoot = path.resolve(normalizeDirectoryPath(rawRoot));
       const stats = await fsPromises.stat(resolvedRoot);
       if (!stats.isDirectory()) {
         return res.status(400).json({ error: 'Specified root is not a directory' });

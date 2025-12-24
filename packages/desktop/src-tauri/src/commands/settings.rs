@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use tauri::State;
 
 use crate::DesktopRuntime;
+use crate::path_utils::expand_tilde_path;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -105,12 +106,14 @@ fn sanitize_settings_update(payload: &Value) -> Value {
         }
         if let Some(Value::String(s)) = obj.get("lastDirectory") {
             if !s.is_empty() {
-                result_obj.insert("lastDirectory".to_string(), json!(s));
+                let expanded = expand_tilde_path(s).to_string_lossy().to_string();
+                result_obj.insert("lastDirectory".to_string(), json!(expanded));
             }
         }
         if let Some(Value::String(s)) = obj.get("homeDirectory") {
             if !s.is_empty() {
-                result_obj.insert("homeDirectory".to_string(), json!(s));
+                let expanded = expand_tilde_path(s).to_string_lossy().to_string();
+                result_obj.insert("homeDirectory".to_string(), json!(expanded));
             }
         }
         if let Some(Value::String(s)) = obj.get("uiFont") {

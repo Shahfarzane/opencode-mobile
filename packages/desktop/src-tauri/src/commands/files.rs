@@ -1,4 +1,5 @@
 use crate::{DesktopRuntime, SettingsStore};
+use crate::path_utils::expand_tilde_path;
 use serde::Serialize;
 use std::{
     collections::{HashSet, VecDeque},
@@ -346,7 +347,7 @@ async fn resolve_sandboxed_path(
         .filter(|value| !value.is_empty());
 
     let candidate_path = match (candidate_input, workspace_root) {
-        (Some(value), _) => PathBuf::from(value),
+        (Some(value), _) => expand_tilde_path(value),
         (None, Some(root)) => root.clone(),
         (None, None) => default_home_directory(),
     };
@@ -376,7 +377,7 @@ async fn resolve_creatable_path(
     path: &str,
     workspace_root: Option<&PathBuf>,
 ) -> Result<PathBuf, FsCommandError> {
-    let candidate = PathBuf::from(path);
+    let candidate = expand_tilde_path(path);
     if candidate.as_os_str().is_empty() {
         return Err(FsCommandError::Other("Path is required".to_string()));
     }
