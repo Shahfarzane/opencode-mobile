@@ -407,7 +407,6 @@ export const useEventStream = () => {
         break;
       }
       case 'openchamber:session-activity': {
-        if (!isDesktopRuntimeRef.current) break;
         const sessionId = typeof props.sessionId === 'string' ? props.sessionId : null;
         const phase = typeof props.phase === 'string' ? props.phase : null;
         if (sessionId && (phase === 'idle' || phase === 'busy' || phase === 'cooldown')) {
@@ -804,16 +803,21 @@ export const useEventStream = () => {
 
           completeStreamingMessage(sessionId, messageId);
 
+          // For web/vscode: trigger cooldown only when assistant message has finish === "stop"
+          // This matches the desktop backend logic in session_activity.rs
           if (!isDesktopRuntimeRef.current) {
-            const rawCompletedSessionId = (message as { sessionID?: string }).sessionID;
-            const completedSessionId: string =
-              typeof rawCompletedSessionId === 'string' && rawCompletedSessionId.length > 0
-                ? rawCompletedSessionId
-                : sessionId;
+            const finish = (message as { finish?: string }).finish;
+            if (finish === 'stop') {
+              const rawCompletedSessionId = (message as { sessionID?: string }).sessionID;
+              const completedSessionId: string =
+                typeof rawCompletedSessionId === 'string' && rawCompletedSessionId.length > 0
+                  ? rawCompletedSessionId
+                  : sessionId;
 
-            const currentPhase = sessionActivityPhaseRef.current.get(completedSessionId);
-            if (currentPhase === 'busy') {
-              updateSessionActivityPhase(completedSessionId, 'cooldown');
+              const currentPhase = sessionActivityPhaseRef.current.get(completedSessionId);
+              if (currentPhase === 'busy') {
+                updateSessionActivityPhase(completedSessionId, 'cooldown');
+              }
             }
           }
 
