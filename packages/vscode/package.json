@@ -56,6 +56,10 @@
       {
         "command": "openchamber.restartApi",
         "title": "OpenChamber: Restart API Connection"
+      },
+      {
+        "command": "openchamber.showOpenCodeStatus",
+        "title": "OpenChamber: Show OpenCode Status"
       }
     ],
     "configuration": {

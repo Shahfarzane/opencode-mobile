@@ -34,12 +34,13 @@ OpenChamber inside VS Code: embeds the OpenChamber chat UI in the activity bar a
 |---------|-------------|
 | `OpenChamber: Focus on Chat View` | Focus chat panel |
 | `OpenChamber: Restart API Connection` | Restart OpenCode API process |
+| `OpenChamber: Show OpenCode Status` | Provide debug info useful for development or bug report |
 
 ## Configuration
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `openchamber.apiUrl` | `http://localhost:47339` | OpenCode API server URL |
+| `openchamber.apiUrl` | `http://localhost:47339` | OpenCode API server URL. Not required by default. Spawns its own process when not set. |
 
 ## Requirements
 

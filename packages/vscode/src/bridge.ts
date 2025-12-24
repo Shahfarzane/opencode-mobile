@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
 import type { OpenCodeManager } from './opencode';
+import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand } from './opencodeConfig';
 
 export interface BridgeRequest {
   id: string;
@@ -16,6 +17,19 @@ export interface BridgeResponse {
   data?: unknown;
   error?: string;
 }
+
+type ApiProxyRequestPayload = {
+  method?: string;
+  path?: string;
+  headers?: Record<string, string>;
+  bodyBase64?: string;
+};
+
+type ApiProxyResponsePayload = {
+  status: number;
+  headers: Record<string, string>;
+  bodyBase64: string;
+};
 
 interface FileEntry {
   name: string;
@@ -34,6 +48,7 @@ export interface BridgeContext {
 }
 
 const SETTINGS_KEY = 'openchamber.settings';
+const CLIENT_RELOAD_DELAY_MS = 800;
 
 const readSettings = (ctx?: BridgeContext) => {
   const stored = ctx?.context?.globalState.get<Record<string, unknown>>(SETTINGS_KEY) || {};
@@ -230,11 +245,86 @@ const fetchModelsMetadata = async () => {
   }
 };
 
+const base64EncodeUtf8 = (text: string) => Buffer.from(text, 'utf8').toString('base64');
+
+const collectHeaders = (headers: Headers): Record<string, string> => {
+  const result: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
+};
+
 export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeContext): Promise<BridgeResponse> {
   const { id, type, payload } = message;
 
   try {
     switch (type) {
+      case 'api:proxy': {
+        const apiUrl = ctx?.manager?.getApiUrl();
+        if (!apiUrl) {
+          const body = JSON.stringify({ error: 'OpenCode API unavailable' });
+          const data: ApiProxyResponsePayload = {
+            status: 503,
+            headers: { 'content-type': 'application/json' },
+            bodyBase64: base64EncodeUtf8(body),
+          };
+          return { id, type, success: true, data };
+        }
+
+        const { method, path: requestPath, headers, bodyBase64 } = (payload || {}) as ApiProxyRequestPayload;
+        const normalizedMethod = typeof method === 'string' && method.trim() ? method.trim().toUpperCase() : 'GET';
+        const normalizedPath =
+          typeof requestPath === 'string' && requestPath.trim().length > 0
+            ? requestPath.trim().startsWith('/')
+              ? requestPath.trim()
+              : `/${requestPath.trim()}`
+            : '/';
+
+        const base = `${apiUrl.replace(/\/+$/, '')}/`;
+        const targetUrl = new URL(normalizedPath.replace(/^\/+/, ''), base).toString();
+        const requestHeaders: Record<string, string> = { ...(headers || {}) };
+
+        // Ensure SSE requests are negotiated correctly.
+        if (normalizedPath === '/event' || normalizedPath === '/global/event') {
+          if (!requestHeaders.Accept) {
+            requestHeaders.Accept = 'text/event-stream';
+          }
+          requestHeaders['Cache-Control'] = requestHeaders['Cache-Control'] || 'no-cache';
+          requestHeaders.Connection = requestHeaders.Connection || 'keep-alive';
+        }
+
+        try {
+          const response = await fetch(targetUrl, {
+            method: normalizedMethod,
+            headers: requestHeaders,
+            body:
+              typeof bodyBase64 === 'string' && bodyBase64.length > 0 && normalizedMethod !== 'GET' && normalizedMethod !== 'HEAD'
+                ? Buffer.from(bodyBase64, 'base64')
+                : undefined,
+          });
+
+          const arrayBuffer = await response.arrayBuffer();
+          const data: ApiProxyResponsePayload = {
+            status: response.status,
+            headers: collectHeaders(response.headers),
+            bodyBase64: Buffer.from(arrayBuffer).toString('base64'),
+          };
+
+          return { id, type, success: true, data };
+        } catch (error) {
+          const body = JSON.stringify({
+            error: error instanceof Error ? error.message : 'Failed to reach OpenCode API',
+          });
+          const data: ApiProxyResponsePayload = {
+            status: 502,
+            headers: { 'content-type': 'application/json' },
+            bodyBase64: base64EncodeUtf8(body),
+          };
+          return { id, type, success: true, data };
+        }
+      }
+
       case 'files:list': {
         const { path: dirPath } = payload as { path: string };
         const uri = vscode.Uri.file(dirPath);
@@ -380,6 +470,144 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
       case 'api:config/reload': {
         await ctx?.manager?.restart();
         return { id, type, success: true, data: { restarted: true } };
+      }
+
+      case 'api:config/agents': {
+        const { method, name, body } = (payload || {}) as { method?: string; name?: string; body?: Record<string, unknown> };
+        const agentName = typeof name === 'string' ? name.trim() : '';
+        if (!agentName) {
+          return { id, type, success: false, error: 'Agent name is required' };
+        }
+
+        const normalizedMethod = typeof method === 'string' && method.trim() ? method.trim().toUpperCase() : 'GET';
+        if (normalizedMethod === 'GET') {
+          const sources = getAgentSources(agentName);
+          return {
+            id,
+            type,
+            success: true,
+            data: { name: agentName, sources, isBuiltIn: !sources.md.exists && !sources.json.exists },
+          };
+        }
+
+        if (normalizedMethod === 'POST') {
+          createAgent(agentName, (body || {}) as Record<string, unknown>);
+          await ctx?.manager?.restart();
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: true,
+              message: `Agent ${agentName} created successfully. Reloading interface…`,
+              reloadDelayMs: CLIENT_RELOAD_DELAY_MS,
+            },
+          };
+        }
+
+        if (normalizedMethod === 'PATCH') {
+          updateAgent(agentName, (body || {}) as Record<string, unknown>);
+          await ctx?.manager?.restart();
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: true,
+              message: `Agent ${agentName} updated successfully. Reloading interface…`,
+              reloadDelayMs: CLIENT_RELOAD_DELAY_MS,
+            },
+          };
+        }
+
+        if (normalizedMethod === 'DELETE') {
+          deleteAgent(agentName);
+          await ctx?.manager?.restart();
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: true,
+              message: `Agent ${agentName} deleted successfully. Reloading interface…`,
+              reloadDelayMs: CLIENT_RELOAD_DELAY_MS,
+            },
+          };
+        }
+
+        return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+      }
+
+      case 'api:config/commands': {
+        const { method, name, body } = (payload || {}) as { method?: string; name?: string; body?: Record<string, unknown> };
+        const commandName = typeof name === 'string' ? name.trim() : '';
+        if (!commandName) {
+          return { id, type, success: false, error: 'Command name is required' };
+        }
+
+        const normalizedMethod = typeof method === 'string' && method.trim() ? method.trim().toUpperCase() : 'GET';
+        if (normalizedMethod === 'GET') {
+          const sources = getCommandSources(commandName);
+          return {
+            id,
+            type,
+            success: true,
+            data: { name: commandName, sources, isBuiltIn: !sources.md.exists && !sources.json.exists },
+          };
+        }
+
+        if (normalizedMethod === 'POST') {
+          createCommand(commandName, (body || {}) as Record<string, unknown>);
+          await ctx?.manager?.restart();
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: true,
+              message: `Command ${commandName} created successfully. Reloading interface…`,
+              reloadDelayMs: CLIENT_RELOAD_DELAY_MS,
+            },
+          };
+        }
+
+        if (normalizedMethod === 'PATCH') {
+          updateCommand(commandName, (body || {}) as Record<string, unknown>);
+          await ctx?.manager?.restart();
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: true,
+              message: `Command ${commandName} updated successfully. Reloading interface…`,
+              reloadDelayMs: CLIENT_RELOAD_DELAY_MS,
+            },
+          };
+        }
+
+        if (normalizedMethod === 'DELETE') {
+          deleteCommand(commandName);
+          await ctx?.manager?.restart();
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: true,
+              message: `Command ${commandName} deleted successfully. Reloading interface…`,
+              reloadDelayMs: CLIENT_RELOAD_DELAY_MS,
+            },
+          };
+        }
+
+        return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
       }
 
       case 'api:opencode/directory': {

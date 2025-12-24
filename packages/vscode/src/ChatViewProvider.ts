@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { handleBridgeMessage, type BridgeRequest } from './bridge';
+import { handleBridgeMessage, type BridgeRequest, type BridgeResponse } from './bridge';
 import { getThemeKindName } from './theme';
 import type { OpenCodeManager, ConnectionStatus } from './opencode';
 import { getWebviewShikiThemes } from './shikiThemes';
@@ -12,7 +12,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   // Cache latest status/URL for when webview is resolved after connection is ready
   private _cachedStatus: ConnectionStatus = 'connecting';
   private _cachedError?: string;
-  private _cachedApiUrl?: string;
+  private _sseCounter = 0;
+  private _sseStreams = new Map<string, AbortController>();
 
   constructor(
     private readonly _context: vscode.ExtensionContext,
@@ -44,6 +45,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await this._openCodeManager?.restart();
         return;
       }
+
+      if (message.type === 'api:sse:start') {
+        const response = await this._startSseProxy(message);
+        webviewView.webview.postMessage(response);
+        return;
+      }
+
+      if (message.type === 'api:sse:stop') {
+        const response = await this._stopSseProxy(message);
+        webviewView.webview.postMessage(response);
+        return;
+      }
+
       const response = await handleBridgeMessage(message, {
         manager: this._openCodeManager,
         context: this._context,
@@ -68,7 +82,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Cache the latest state
     this._cachedStatus = status;
     this._cachedError = error;
-    this._cachedApiUrl = this._openCodeManager?.getApiUrl() || undefined;
     
     // Send to webview if it exists
     this._sendCachedState();
@@ -84,14 +97,159 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       status: this._cachedStatus,
       error: this._cachedError,
     });
-    
-    // Send API URL update if we have one
-    if (this._cachedApiUrl) {
-      this._view.webview.postMessage({
-        type: 'apiUrlUpdate',
-        url: this._cachedApiUrl,
-      });
+  }
+
+  private _buildSseHeaders(extra?: Record<string, string>): Record<string, string> {
+    return {
+      Accept: 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      ...(extra || {}),
+    };
+  }
+
+  private _collectHeaders(headers: Headers): Record<string, string> {
+    const result: Record<string, string> = {};
+    headers.forEach((value, key) => {
+      result[key] = value;
+    });
+    return result;
+  }
+
+  private async _startSseProxy(message: BridgeRequest): Promise<BridgeResponse> {
+    const { id, type, payload } = message;
+    const apiBaseUrl = this._openCodeManager?.getApiUrl();
+
+    const { path, headers } = (payload || {}) as { path?: string; headers?: Record<string, string> };
+    const normalizedPath = typeof path === 'string' && path.trim().length > 0 ? path.trim() : '/event';
+
+    if (!apiBaseUrl) {
+      return {
+        id,
+        type,
+        success: true,
+        data: { status: 503, headers: { 'content-type': 'application/json' }, streamId: null },
+      };
     }
+
+    const streamId = `sse_${++this._sseCounter}_${Date.now()}`;
+    const controller = new AbortController();
+
+    const base = `${apiBaseUrl.replace(/\/+$/, '')}/`;
+    const targetUrl = new URL(normalizedPath.replace(/^\/+/, ''), base).toString();
+
+    let response: Response;
+    try {
+      response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: this._buildSseHeaders(headers || {}),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        id,
+        type,
+        success: true,
+        data: { status: 502, headers: { 'content-type': 'application/json' }, streamId: null, error: message },
+      };
+    }
+
+    const responseHeaders = this._collectHeaders(response.headers);
+    const responseBody = response.body;
+    if (!response.ok || !responseBody) {
+      return {
+        id,
+        type,
+        success: true,
+        data: {
+          status: response.status,
+          headers: responseHeaders,
+          streamId: null,
+          error: `SSE failed: ${response.status}`,
+        },
+      };
+    }
+
+    this._sseStreams.set(streamId, controller);
+
+    (async () => {
+      try {
+        const reader = responseBody.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (controller.signal.aborted) break;
+            if (value && value.length > 0) {
+              const chunk = decoder.decode(value, { stream: true });
+              if (!chunk) continue;
+
+              // Reduce webview message pressure by forwarding complete SSE blocks.
+              // The SDK SSE parser is block-based (\n\n delimited) and can consume
+              // partial chunks, but VS Code's postMessage channel can be a bottleneck.
+              sseBuffer += chunk;
+              const blocks = sseBuffer.split('\n\n');
+              sseBuffer = blocks.pop() ?? '';
+              if (blocks.length > 0) {
+                const joined = blocks.map((block) => `${block}\n\n`).join('');
+                this._view?.webview.postMessage({ type: 'api:sse:chunk', streamId, chunk: joined });
+              }
+            }
+          }
+
+          const tail = decoder.decode();
+          if (tail) {
+            sseBuffer += tail;
+          }
+          if (sseBuffer) {
+            this._view?.webview.postMessage({ type: 'api:sse:chunk', streamId, chunk: sseBuffer });
+          }
+        } finally {
+          try {
+            reader.releaseLock();
+          } catch {
+            // ignore
+          }
+        }
+
+        this._view?.webview.postMessage({ type: 'api:sse:end', streamId });
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          const message = error instanceof Error ? error.message : String(error);
+          this._view?.webview.postMessage({ type: 'api:sse:end', streamId, error: message });
+        }
+      } finally {
+        this._sseStreams.delete(streamId);
+      }
+    })();
+
+    return {
+      id,
+      type,
+      success: true,
+      data: {
+        status: response.status,
+        headers: responseHeaders,
+        streamId,
+      },
+    };
+  }
+
+  private async _stopSseProxy(message: BridgeRequest): Promise<BridgeResponse> {
+    const { id, type, payload } = message;
+    const { streamId } = (payload || {}) as { streamId?: string };
+    if (typeof streamId === 'string' && streamId.length > 0) {
+      const controller = this._sseStreams.get(streamId);
+      if (controller) {
+        controller.abort();
+        this._sseStreams.delete(streamId);
+      }
+    }
+    return { id, type, success: true, data: { stopped: true } };
   }
 
   private _getHtmlForWebview(webview: vscode.Webview) {
@@ -102,7 +260,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const themeKind = getThemeKindName(vscode.window.activeColorTheme.kind);
     // Use cached values which are updated by onStatusChange callback
     const initialStatus = this._cachedStatus;
-    const apiUrl = this._cachedApiUrl || '';
     const cliAvailable = this._openCodeManager?.isCliAvailable() ?? false;
 
     // Use VS Code CSS variables for proper theme integration
@@ -211,7 +368,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     window.process = window.process || { env: { NODE_ENV: 'production' }, platform: '', version: '', browser: true };
 
     window.__VSCODE_CONFIG__ = {
-      apiUrl: "${apiUrl}",
       workspaceFolder: "${workspaceFolder.replace(/\\/g, '\\\\')}",
       theme: "${themeKind}",
       connectionStatus: "${initialStatus}",
@@ -224,21 +380,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       var msg = event.data;
       if (msg && msg.type === 'connectionStatus') {
         var statusEl = document.getElementById('loading-status');
-        var loadingEl = document.getElementById('initial-loading');
         if (statusEl) {
           if (msg.status === 'connecting') {
             statusEl.textContent = 'Starting OpenCode API…';
+            statusEl.classList.remove('error-text');
           } else if (msg.status === 'connected') {
             statusEl.textContent = 'Connected!';
-            // Fade out loading screen once connected and UI is ready
-            setTimeout(function() {
-              if (loadingEl) loadingEl.classList.add('fade-out');
-            }, 300);
+            statusEl.classList.remove('error-text');
           } else if (msg.status === 'error') {
             statusEl.textContent = msg.error || 'Connection error';
             statusEl.classList.add('error-text');
           } else {
             statusEl.textContent = 'Reconnecting…';
+            statusEl.classList.remove('error-text');
           }
         }
       }

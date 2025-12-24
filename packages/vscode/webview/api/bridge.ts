@@ -59,6 +59,14 @@ window.addEventListener('message', (event: MessageEvent<BridgeResponse>) => {
 });
 
 export function sendBridgeMessage<T = unknown>(type: string, payload?: unknown): Promise<T> {
+  return sendBridgeMessageWithOptions<T>(type, payload);
+}
+
+export function sendBridgeMessageWithOptions<T = unknown>(
+  type: string,
+  payload?: unknown,
+  options?: { timeoutMs?: number }
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const id = `req_${++requestIdCounter}_${Date.now()}`;
     const request: BridgeRequest = { id, type, payload };
@@ -68,15 +76,53 @@ export function sendBridgeMessage<T = unknown>(type: string, payload?: unknown):
       reject,
     });
 
-    setTimeout(() => {
-      if (pendingRequests.has(id)) {
-        pendingRequests.delete(id);
-        reject(new Error(`Request ${type} timed out`));
-      }
-    }, 30000);
+    const timeoutMs = typeof options?.timeoutMs === 'number' ? options.timeoutMs : 30000;
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+      setTimeout(() => {
+        if (pendingRequests.has(id)) {
+          pendingRequests.delete(id);
+          reject(new Error(`Request ${type} timed out`));
+        }
+      }, timeoutMs);
+    }
 
     getVSCodeAPI().postMessage(request);
   });
+}
+
+export type ProxiedApiResponse = {
+  status: number;
+  headers: Record<string, string>;
+  bodyBase64: string;
+};
+
+export async function proxyApiRequest(options: {
+  method: string;
+  path: string;
+  headers?: Record<string, string>;
+  bodyBase64?: string;
+}): Promise<ProxiedApiResponse> {
+  // Do not impose a bridge-level timeout. Let the original fetch's AbortSignal
+  // (or OpenCode server response timing) control the lifecycle.
+  return sendBridgeMessageWithOptions<ProxiedApiResponse>('api:proxy', options, { timeoutMs: 0 });
+}
+
+export type ProxiedSseStartResponse = {
+  status: number;
+  headers: Record<string, string>;
+  streamId: string | null;
+  error?: string;
+};
+
+export async function startSseProxy(options: {
+  path: string;
+  headers?: Record<string, string>;
+}): Promise<ProxiedSseStartResponse> {
+  return sendBridgeMessage<ProxiedSseStartResponse>('api:sse:start', options);
+}
+
+export async function stopSseProxy(options: { streamId: string }): Promise<{ stopped: boolean }> {
+  return sendBridgeMessage<{ stopped: boolean }>('api:sse:stop', options);
 }
 
 type CommandHandler = (payload: unknown) => void;

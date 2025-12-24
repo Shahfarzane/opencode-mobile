@@ -1,5 +1,5 @@
 import { createVSCodeAPIs } from './api';
-import { onThemeChange, sendBridgeMessage } from './api/bridge';
+import { onThemeChange, proxyApiRequest, sendBridgeMessage, startSseProxy, stopSseProxy } from './api/bridge';
 import type { RuntimeAPIs } from '../../ui/src/lib/api/types';
 import {
   buildVSCodeThemeFromPalette,
@@ -14,7 +14,7 @@ declare global {
   interface Window {
     __OPENCHAMBER_RUNTIME_APIS__?: RuntimeAPIs;
     __VSCODE_CONFIG__?: {
-      apiUrl: string;
+      apiUrl?: string;
       workspaceFolder: string;
       theme: string;
       connectionStatus: string;
@@ -48,19 +48,124 @@ const handleConnectionMessage = (event: MessageEvent) => {
     const prevCliAvailable = window.__OPENCHAMBER_CONNECTION__?.cliAvailable ?? true;
     window.__OPENCHAMBER_CONNECTION__ = { status: payload, error, cliAvailable: prevCliAvailable };
     window.dispatchEvent(new CustomEvent('openchamber:connection-status', { detail: { status: payload, error } }));
-    
-    // Hide loading screen when connected
-    if (payload === 'connected') {
-      const loadingEl = document.getElementById('initial-loading');
-      if (loadingEl) {
-        loadingEl.classList.add('fade-out');
-        setTimeout(() => loadingEl.remove(), 300);
-      }
-    }
   }
 };
 
 window.addEventListener('message', handleConnectionMessage);
+window.addEventListener('openchamber:connection-status', () => {
+  maybeHideLoadingOverlay();
+});
+
+const fadeOutLoadingScreen = () => {
+  const loadingEl = document.getElementById('initial-loading');
+  if (!loadingEl) return;
+  loadingEl.classList.add('fade-out');
+  setTimeout(() => {
+    try {
+      loadingEl.remove();
+    } catch {
+      // ignore
+    }
+  }, 300);
+};
+
+const setLoadingStatusText = (text: string, variant: 'normal' | 'error' = 'normal') => {
+  const statusEl = document.getElementById('loading-status');
+  if (!statusEl) return;
+  statusEl.textContent = text;
+  if (variant === 'error') {
+    statusEl.classList.add('error-text');
+  } else {
+    statusEl.classList.remove('error-text');
+  }
+};
+
+const waitForUiMount = (timeoutMs = 8000): Promise<boolean> => {
+  if (typeof document === 'undefined') return Promise.resolve(false);
+  const root = document.getElementById('root');
+  if (!root) return Promise.resolve(false);
+
+  const hasContent = () => root.childNodes.length > 0;
+  if (hasContent()) return Promise.resolve(true);
+
+  return new Promise((resolve) => {
+    const observer = new MutationObserver(() => {
+      if (hasContent()) {
+        observer.disconnect();
+        clearTimeout(timeout);
+        resolve(true);
+      }
+    });
+
+    observer.observe(root, { childList: true, subtree: true });
+
+    const timeout = setTimeout(() => {
+      observer.disconnect();
+      resolve(false);
+    }, timeoutMs);
+  });
+};
+
+let uiMounted = false;
+let bootstrapProvidersReady = false;
+let bootstrapAgentsReady = false;
+let bootstrapFailed = false;
+
+const recordBootstrapFetch = (pathname: string, ok: boolean) => {
+  if (!pathname.startsWith('/api/')) return;
+
+  if (pathname.startsWith('/api/config/providers')) {
+    if (ok) bootstrapProvidersReady = true;
+    else bootstrapFailed = true;
+    return;
+  }
+
+  if (pathname === '/api/agent' || pathname.startsWith('/api/agent?')) {
+    if (ok) bootstrapAgentsReady = true;
+    else bootstrapFailed = true;
+  }
+};
+
+const maybeHideLoadingOverlay = () => {
+  const connectionStatus = window.__OPENCHAMBER_CONNECTION__?.status ?? 'connecting';
+
+  if (!uiMounted) {
+    return;
+  }
+
+  if (connectionStatus === 'connected') {
+    if (bootstrapFailed) {
+      setLoadingStatusText('OpenCode connected, but initial data load failed.', 'error');
+      fadeOutLoadingScreen();
+      return;
+    }
+
+    if (bootstrapProvidersReady && bootstrapAgentsReady) {
+      fadeOutLoadingScreen();
+      return;
+    }
+
+    const providersText = bootstrapProvidersReady ? '✓ Providers' : '… Providers';
+    const agentsText = bootstrapAgentsReady ? '✓ Agents' : '… Agents';
+    setLoadingStatusText(`Loading data (${providersText}, ${agentsText})…`);
+    return;
+  }
+
+  if (connectionStatus === 'error') {
+    const error = window.__OPENCHAMBER_CONNECTION__?.error;
+    setLoadingStatusText(error || 'Connection error', 'error');
+    fadeOutLoadingScreen();
+    return;
+  }
+
+  if (connectionStatus === 'disconnected') {
+    setLoadingStatusText('Disconnected', 'error');
+    fadeOutLoadingScreen();
+    return;
+  }
+
+  setLoadingStatusText('Starting OpenCode API…');
+};
 
 const applyInitialTheme = (theme: { metadata?: { variant?: string }; colors?: { surface?: { background?: string; foreground?: string } } }) => {
   if (typeof document === 'undefined' || !theme) return;
@@ -133,9 +238,6 @@ if (workspaceFolder) {
   } catch (error) {
     console.warn('Failed to persist workspace folder', error);
   }
-  sendBridgeMessage('api:opencode/directory', { path: workspaceFolder }).catch((error) => {
-    console.warn('Failed to set OpenCode working directory from VS Code workspace', error);
-  });
 }
 
 const normalizeUrl = (input: string | URL) => {
@@ -146,41 +248,66 @@ const normalizeUrl = (input: string | URL) => {
   }
 };
 
-// API URL may be empty during initial load while port is being detected
-// The extension will broadcast the URL once it's known
-let apiBaseUrl = window.__VSCODE_CONFIG__?.apiUrl?.replace(/\/+$/, '') || '';
-
-// Promise that resolves when API URL is available
-let apiUrlResolver: ((url: string) => void) | null = null;
-const apiUrlPromise = apiBaseUrl 
-  ? Promise.resolve(apiBaseUrl)
-  : new Promise<string>((resolve) => { apiUrlResolver = resolve; });
-
-// Listen for API URL updates from extension
-window.addEventListener('message', (event: MessageEvent) => {
-  const msg = event.data;
-  if (msg?.type === 'apiUrlUpdate' && typeof msg.url === 'string') {
-    const newUrl = msg.url.replace(/\/+$/, '');
-    apiBaseUrl = newUrl;
-    console.log('[OpenChamber] API URL updated:', apiBaseUrl);
-    // Resolve the promise if waiting
-    if (apiUrlResolver) {
-      apiUrlResolver(newUrl);
-      apiUrlResolver = null;
-    }
-  }
-});
-
-// Helper to wait for API URL with timeout
-const waitForApiUrl = async (timeoutMs = 15000): Promise<string> => {
-  if (apiBaseUrl) return apiBaseUrl;
-  
-  const timeout = new Promise<string>((_, reject) => 
-    setTimeout(() => reject(new Error('Timeout waiting for API URL')), timeoutMs)
-  );
-  
-  return Promise.race([apiUrlPromise, timeout]);
+const headersToRecord = (headers: HeadersInit | undefined): Record<string, string> => {
+  if (!headers) return {};
+  const normalized = headers instanceof Headers ? headers : new Headers(headers);
+  const result: Record<string, string> = {};
+  normalized.forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
 };
+
+const decodeBase64 = (value: string): Uint8Array => {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const encodeBase64 = (bytes: Uint8Array): string => {
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+};
+
+const extractBodyBase64 = async (input: RequestInfo | URL, init: RequestInit | undefined, method: string): Promise<string | undefined> => {
+  if (method === 'GET' || method === 'HEAD') return undefined;
+
+  if (input instanceof Request) {
+    const cloned = input.clone();
+    const buffer = await cloned.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    return bytes.length > 0 ? encodeBase64(bytes) : undefined;
+  }
+
+  const body = init?.body;
+  if (!body) return undefined;
+
+  if (typeof body === 'string') {
+    return encodeBase64(new TextEncoder().encode(body));
+  }
+
+  if (body instanceof URLSearchParams) {
+    return encodeBase64(new TextEncoder().encode(body.toString()));
+  }
+
+  if (body instanceof Blob) {
+    const buffer = await body.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    return bytes.length > 0 ? encodeBase64(bytes) : undefined;
+  }
+
+  console.warn('[OpenChamber] Unsupported request body type for proxy request:', body);
+  return undefined;
+};
+
+const isSseApiPath = (pathname: string) => pathname === '/api/event' || pathname === '/api/global/event';
 
 const handleLocalApiRequest = async (url: URL, init?: RequestInit) => {
   const pathname = url.pathname;
@@ -198,33 +325,6 @@ const handleLocalApiRequest = async (url: URL, init?: RequestInit) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  }
-
-  if (pathname.startsWith('/api/openchamber/models-metadata')) {
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
-    const timeout = controller ? setTimeout(() => controller.abort(), 8000) : undefined;
-    try {
-      const response = await fetch('https://models.dev/api.json', {
-        signal: controller?.signal,
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error(`models.dev responded with ${response.status}`);
-      }
-      const data = await response.json();
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    } catch (error) {
-      console.warn('[OpenChamber] Failed to fetch models metadata, returning empty set:', error);
-      return new Response(JSON.stringify({}), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    } finally {
-      if (timeout) clearTimeout(timeout);
-    }
   }
 
   if (pathname.startsWith('/api/fs/list')) {
@@ -257,6 +357,34 @@ const handleLocalApiRequest = async (url: URL, init?: RequestInit) => {
   if (pathname.startsWith('/api/vscode/pick-files')) {
     const data = await sendBridgeMessage('api:files/pick');
     return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  if (pathname.startsWith('/api/config/agents/')) {
+    const encodedName = pathname.slice('/api/config/agents/'.length);
+    const name = decodeURIComponent(encodedName);
+    const verb = ((init?.method || 'GET') as string).toUpperCase();
+    const body = init?.body ? JSON.parse(init.body as string) : {};
+    try {
+      const data = await sendBridgeMessage('api:config/agents', { method: verb, name, body });
+      return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
+  if (pathname.startsWith('/api/config/commands/')) {
+    const encodedName = pathname.slice('/api/config/commands/'.length);
+    const name = decodeURIComponent(encodedName);
+    const verb = ((init?.method || 'GET') as string).toUpperCase();
+    const body = init?.body ? JSON.parse(init.body as string) : {};
+    try {
+      const data = await sendBridgeMessage('api:config/commands', { method: verb, name, body });
+      return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
   }
 
   if (pathname.startsWith('/api/config/settings')) {
@@ -327,27 +455,89 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   if (targetUrl && targetUrl.pathname.startsWith('/api/')) {
     const localResponse = await handleLocalApiRequest(targetUrl, init);
     if (localResponse) {
+      recordBootstrapFetch(targetUrl.pathname, localResponse.ok);
+      maybeHideLoadingOverlay();
       return localResponse;
     }
 
-    // Wait for API URL to be available before making requests
-    const baseUrl = await waitForApiUrl();
-    
-    const rewritten = new URL(targetUrl.href);
-    rewritten.pathname = targetUrl.pathname.replace(/^\/api/, '');
-    const fetchTarget = `${baseUrl}${rewritten.pathname}${rewritten.search}`;
+    const suffixPath = `${targetUrl.pathname.replace(/^\/api/, '')}${targetUrl.search}`;
 
-    if (input instanceof Request) {
-      const cloned = input.clone();
-      const requestInit: RequestInit = {
-        method: method,
-        headers: cloned.headers,
-        body: method === 'GET' || method === 'HEAD' ? undefined : await cloned.blob(),
-      };
-      return originalFetch(fetchTarget, requestInit);
+    const headersFromRequest = input instanceof Request ? headersToRecord(input.headers) : {};
+    const headersFromInit = headersToRecord(init?.headers);
+    const headers = { ...headersFromRequest, ...headersFromInit };
+
+    if (isSseApiPath(targetUrl.pathname)) {
+      const start = await startSseProxy({ path: suffixPath, headers });
+      if (!start.streamId) {
+        return new Response(null, { status: start.status || 503, headers: start.headers || {} });
+      }
+
+      const streamId = start.streamId;
+      const signal = (input instanceof Request ? input.signal : init?.signal) as AbortSignal | undefined;
+      const encoder = new TextEncoder();
+      let unsubscribe: (() => void) | null = null;
+
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const onMessage = (event: MessageEvent) => {
+            const msg = event.data as { type?: string; streamId?: string; chunk?: string; error?: string };
+            if (!msg || msg.streamId !== streamId) return;
+
+            if (msg.type === 'api:sse:chunk' && typeof msg.chunk === 'string') {
+              controller.enqueue(encoder.encode(msg.chunk));
+              return;
+            }
+
+            if (msg.type === 'api:sse:end') {
+              unsubscribe?.();
+              unsubscribe = null;
+              if (typeof msg.error === 'string' && msg.error.length > 0) {
+                controller.error(new Error(msg.error));
+              } else {
+                controller.close();
+              }
+              void stopSseProxy({ streamId }).catch(() => {});
+            }
+          };
+
+          window.addEventListener('message', onMessage);
+          unsubscribe = () => window.removeEventListener('message', onMessage);
+
+          if (signal) {
+            const onAbort = () => {
+              unsubscribe?.();
+              unsubscribe = null;
+              try {
+                controller.error(new DOMException('Aborted', 'AbortError'));
+              } catch {
+                controller.close();
+              }
+              void stopSseProxy({ streamId }).catch(() => {});
+            };
+            if (signal.aborted) {
+              onAbort();
+              return;
+            }
+            signal.addEventListener('abort', onAbort, { once: true });
+          }
+        },
+        cancel() {
+          unsubscribe?.();
+          unsubscribe = null;
+          void stopSseProxy({ streamId }).catch(() => {});
+        },
+      });
+
+      return new Response(stream, { status: start.status || 200, headers: start.headers || { 'content-type': 'text/event-stream' } });
     }
 
-    return originalFetch(fetchTarget, init);
+    const bodyBase64 = await extractBodyBase64(input, init, method);
+    const proxied = await proxyApiRequest({ method, path: suffixPath, headers, bodyBase64 });
+    const body = proxied.bodyBase64 ? decodeBase64(proxied.bodyBase64) : new Uint8Array();
+    const response = new Response(body, { status: proxied.status, headers: proxied.headers });
+    recordBootstrapFetch(targetUrl.pathname, response.ok);
+    maybeHideLoadingOverlay();
+    return response;
   }
 
   if (targetUrl && targetUrl.hostname.includes('models.dev')) {
@@ -362,4 +552,16 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
   return originalFetch(input as RequestInfo, init);
 };
-import('../../ui/src/main');
+
+import('../../ui/src/main')
+  .then(async () => {
+    await waitForUiMount();
+    uiMounted = true;
+    maybeHideLoadingOverlay();
+  })
+  .catch((error) => {
+    console.error('[OpenChamber] Failed to bootstrap UI:', error);
+    // If the UI bundle fails to load, remove the overlay so the user at least sees errors in the root.
+    uiMounted = true;
+    fadeOutLoadingScreen();
+  });
