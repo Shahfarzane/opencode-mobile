@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createOpencodeClient, type OpencodeClient } from '@opencode-ai/sdk';
 import type { Session, Message, Part } from '@opencode-ai/sdk';
 
-const getApiUrl = () => window.__VSCODE_CONFIG__?.apiUrl || 'http://localhost:47339';
+const getApiUrl = () => '/api';
 const getWorkspaceFolder = () => window.__VSCODE_CONFIG__?.workspaceFolder || '';
 
 const AUTO_DELETE_STORAGE_KEY = 'oc.vscode.autoDeleteLastRunAt';
