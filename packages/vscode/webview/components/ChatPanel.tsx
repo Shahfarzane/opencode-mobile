@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSessionStore } from '@openchamber/ui/stores/useSessionStore';
+import { useConfigStore } from '@openchamber/ui/stores/useConfigStore';
 import { useNavigation } from '../hooks/useNavigation';
 import { VSCodeHeader } from './VSCodeHeader';
 import { SimpleMessageRenderer } from './SimpleMessageRenderer';
@@ -15,6 +16,7 @@ export function ChatPanel() {
   const sendMessage = useSessionStore((s) => s.sendMessage);
   const abortCurrentOperation = useSessionStore((s) => s.abortCurrentOperation);
   const streamingMessageIds = useSessionStore((s) => s.streamingMessageIds);
+  const { currentProviderId, currentModelId, currentAgentName } = useConfigStore();
 
   const [inputValue, setInputValue] = React.useState('');
   const [isSending, setIsSending] = React.useState(false);
@@ -33,11 +35,17 @@ export function ChatPanel() {
     if (!inputValue.trim() || !currentSessionId || isSending) return;
 
     const messageText = inputValue.trim();
+
+    if (!currentProviderId || !currentModelId) {
+      console.warn('Missing provider or model selection for sendMessage');
+      return;
+    }
+
     setInputValue('');
     setIsSending(true);
 
     try {
-      await sendMessage(messageText);
+      await sendMessage(messageText, currentProviderId, currentModelId, currentAgentName);
     } catch (error) {
       console.error('Failed to send message:', error);
       setInputValue(messageText); // Restore input on error
@@ -55,7 +63,7 @@ export function ChatPanel() {
 
   const handleAbort = () => {
     if (currentSessionId) {
-      abortCurrentOperation(currentSessionId);
+      void abortCurrentOperation();
     }
   };
 

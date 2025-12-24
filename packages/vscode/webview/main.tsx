@@ -18,10 +18,11 @@ declare global {
       workspaceFolder: string;
       theme: string;
       connectionStatus: string;
+      cliAvailable?: boolean;
     };
     __OPENCHAMBER_VSCODE_THEME__?: VSCodeThemePayload['theme'];
     __OPENCHAMBER_VSCODE_SHIKI_THEMES__?: { light?: Record<string, unknown>; dark?: Record<string, unknown> } | null;
-    __OPENCHAMBER_CONNECTION__?: { status: ConnectionStatus; error?: string };
+    __OPENCHAMBER_CONNECTION__?: { status: ConnectionStatus; error?: string; cliAvailable?: boolean };
     __OPENCHAMBER_HOME__?: string;
   }
 }
@@ -33,7 +34,8 @@ window.__OPENCHAMBER_RUNTIME_APIS__ = createVSCodeAPIs();
 
 const bootstrapConnectionStatus = () => {
   const initialStatus = (window.__VSCODE_CONFIG__?.connectionStatus as ConnectionStatus | undefined) || 'connecting';
-  window.__OPENCHAMBER_CONNECTION__ = { status: initialStatus };
+  const cliAvailable = window.__VSCODE_CONFIG__?.cliAvailable ?? true;
+  window.__OPENCHAMBER_CONNECTION__ = { status: initialStatus, cliAvailable };
 };
 
 bootstrapConnectionStatus();
@@ -43,8 +45,18 @@ const handleConnectionMessage = (event: MessageEvent) => {
   if (msg?.type === 'connectionStatus') {
     const payload: ConnectionStatus = msg.status;
     const error: string | undefined = msg.error;
-    window.__OPENCHAMBER_CONNECTION__ = { status: payload, error };
+    const prevCliAvailable = window.__OPENCHAMBER_CONNECTION__?.cliAvailable ?? true;
+    window.__OPENCHAMBER_CONNECTION__ = { status: payload, error, cliAvailable: prevCliAvailable };
     window.dispatchEvent(new CustomEvent('openchamber:connection-status', { detail: { status: payload, error } }));
+    
+    // Hide loading screen when connected
+    if (payload === 'connected') {
+      const loadingEl = document.getElementById('initial-loading');
+      if (loadingEl) {
+        loadingEl.classList.add('fade-out');
+        setTimeout(() => loadingEl.remove(), 300);
+      }
+    }
   }
 };
 
@@ -134,14 +146,55 @@ const normalizeUrl = (input: string | URL) => {
   }
 };
 
-const apiBaseUrl = window.__VSCODE_CONFIG__?.apiUrl?.replace(/\/+$/, '') || 'http://localhost:47339';
+// API URL may be empty during initial load while port is being detected
+// The extension will broadcast the URL once it's known
+let apiBaseUrl = window.__VSCODE_CONFIG__?.apiUrl?.replace(/\/+$/, '') || '';
+
+// Promise that resolves when API URL is available
+let apiUrlResolver: ((url: string) => void) | null = null;
+const apiUrlPromise = apiBaseUrl 
+  ? Promise.resolve(apiBaseUrl)
+  : new Promise<string>((resolve) => { apiUrlResolver = resolve; });
+
+// Listen for API URL updates from extension
+window.addEventListener('message', (event: MessageEvent) => {
+  const msg = event.data;
+  if (msg?.type === 'apiUrlUpdate' && typeof msg.url === 'string') {
+    const newUrl = msg.url.replace(/\/+$/, '');
+    apiBaseUrl = newUrl;
+    console.log('[OpenChamber] API URL updated:', apiBaseUrl);
+    // Resolve the promise if waiting
+    if (apiUrlResolver) {
+      apiUrlResolver(newUrl);
+      apiUrlResolver = null;
+    }
+  }
+});
+
+// Helper to wait for API URL with timeout
+const waitForApiUrl = async (timeoutMs = 15000): Promise<string> => {
+  if (apiBaseUrl) return apiBaseUrl;
+  
+  const timeout = new Promise<string>((_, reject) => 
+    setTimeout(() => reject(new Error('Timeout waiting for API URL')), timeoutMs)
+  );
+  
+  return Promise.race([apiUrlPromise, timeout]);
+};
 
 const handleLocalApiRequest = async (url: URL, init?: RequestInit) => {
   const pathname = url.pathname;
 
-  // Health endpoints: always return OK to avoid blocking VS Code UX
+  // Health endpoints: reflect actual connection status
   if (pathname === '/health' || pathname === '/api/health') {
-    return new Response(JSON.stringify({ status: 'ok', isOpenCodeReady: true }), {
+    const connectionStatus = window.__OPENCHAMBER_CONNECTION__?.status;
+    const isReady = connectionStatus === 'connected';
+    const cliAvailable = window.__OPENCHAMBER_CONNECTION__?.cliAvailable ?? true;
+    return new Response(JSON.stringify({ 
+      status: isReady ? 'ok' : 'connecting', 
+      isOpenCodeReady: isReady,
+      cliAvailable,
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -258,7 +311,14 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const pathname = targetUrl?.pathname || '';
   const normalizedPathname = pathname.replace(/\/+/, '/');
   if (targetUrl && normalizedPathname === '/health') {
-    return new Response(JSON.stringify({ status: 'ok', isOpenCodeReady: true }), {
+    const connectionStatus = window.__OPENCHAMBER_CONNECTION__?.status;
+    const isReady = connectionStatus === 'connected';
+    const cliAvailable = window.__OPENCHAMBER_CONNECTION__?.cliAvailable ?? true;
+    return new Response(JSON.stringify({ 
+      status: isReady ? 'ok' : 'connecting', 
+      isOpenCodeReady: isReady,
+      cliAvailable,
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -270,9 +330,12 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       return localResponse;
     }
 
+    // Wait for API URL to be available before making requests
+    const baseUrl = await waitForApiUrl();
+    
     const rewritten = new URL(targetUrl.href);
     rewritten.pathname = targetUrl.pathname.replace(/^\/api/, '');
-    const fetchTarget = `${apiBaseUrl}${rewritten.pathname}${rewritten.search}`;
+    const fetchTarget = `${baseUrl}${rewritten.pathname}${rewritten.search}`;
 
     if (input instanceof Request) {
       const cloned = input.clone();
