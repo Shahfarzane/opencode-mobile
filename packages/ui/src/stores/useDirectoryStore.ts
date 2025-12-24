@@ -128,11 +128,45 @@ const invalidateFileSearchCache = (scope?: string | null) => {
   }
 };
 
+const normalizeDirectoryPath = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const normalized = trimmed.replace(/\\/g, '/');
+  if (normalized.length > 1) {
+    return normalized.replace(/\/+$/, '');
+  }
+  return normalized;
+};
+
+const resolveTildePath = (path: string, homeDir?: string | null): string => {
+  const trimmed = path.trim();
+  if (!trimmed.startsWith('~')) {
+    return trimmed;
+  }
+  if (trimmed === '~') {
+    return homeDir || trimmed;
+  }
+  if (trimmed.startsWith('~/') || trimmed.startsWith('~\\')) {
+    return homeDir ? `${homeDir}${trimmed.slice(1)}` : trimmed;
+  }
+  return trimmed;
+};
+
+const resolveDirectoryPath = (path: string, homeDir?: string | null): string => {
+  const expanded = resolveTildePath(path, homeDir);
+  return normalizeDirectoryPath(expanded);
+};
+
 const getHomeDirectory = () => {
 
   if (typeof window !== 'undefined') {
+    const storedHome = safeStorage.getItem('homeDirectory') || cachedHomeDirectory || null;
     const saved = safeStorage.getItem('lastDirectory');
-    if (saved) return saved;
+    if (saved) {
+      return resolveDirectoryPath(saved, storedHome);
+    }
 
     if (cachedHomeDirectory) return cachedHomeDirectory;
 
@@ -149,7 +183,6 @@ const getHomeDirectory = () => {
       return desktopHome;
     }
 
-    const storedHome = safeStorage.getItem('homeDirectory');
     if (storedHome) {
       cachedHomeDirectory = storedHome;
       return storedHome;
@@ -162,6 +195,7 @@ const getHomeDirectory = () => {
   }
   return process?.cwd?.() || '/';
 };
+
 
 const normalizeHomeCandidate = (value?: string | null) => {
   if (typeof value !== 'string') {
@@ -260,24 +294,26 @@ export const useDirectoryStore = create<DirectoryStore>()(
       isSwitchingDirectory: false,
 
       setDirectory: (path: string, options?: { showOverlay?: boolean }) => {
-        console.log('[DirectoryStore] setDirectory called with path:', path);
+        const homeDir = cachedHomeDirectory || get().homeDirectory || safeStorage.getItem('homeDirectory');
+        const resolvedPath = resolveDirectoryPath(path, homeDir);
+        console.log('[DirectoryStore] setDirectory called with path:', resolvedPath);
         const showOverlay = options?.showOverlay ?? true;
 
-        opencodeClient.setDirectory(path);
+        opencodeClient.setDirectory(resolvedPath);
         invalidateFileSearchCache();
-        const restartPromise = notifyOpenCodeWorkingDirectory(path, { showOverlay });
+        const restartPromise = notifyOpenCodeWorkingDirectory(resolvedPath, { showOverlay });
         console.log('[DirectoryStore] notifyOpenCodeWorkingDirectory initiated');
 
         set((state) => {
 
-          const newHistory = [...state.directoryHistory.slice(0, state.historyIndex + 1), path];
+          const newHistory = [...state.directoryHistory.slice(0, state.historyIndex + 1), resolvedPath];
 
-          safeStorage.setItem('lastDirectory', path);
+          safeStorage.setItem('lastDirectory', resolvedPath);
 
-          void updateDesktopSettings({ lastDirectory: path });
+          void updateDesktopSettings({ lastDirectory: resolvedPath });
 
           return {
-            currentDirectory: path,
+            currentDirectory: resolvedPath,
             directoryHistory: newHistory,
             historyIndex: newHistory.length - 1,
             hasPersistedDirectory: true,
@@ -288,7 +324,7 @@ export const useDirectoryStore = create<DirectoryStore>()(
 
         scheduleDirectoryFollowUp(restartPromise, { showOverlay }, () => {
           set((state) => {
-            if (state.currentDirectory !== path) {
+            if (state.currentDirectory !== resolvedPath) {
               return {};
             }
             if (!state.isSwitchingDirectory) {
@@ -426,6 +462,13 @@ export const useDirectoryStore = create<DirectoryStore>()(
 
         const resolvedReady = typeof resolvedHome === 'string' && resolvedHome !== '' && resolvedHome !== '/';
 
+        const resolvedCurrent = state.currentDirectory
+          ? resolveDirectoryPath(state.currentDirectory, resolvedHome)
+          : state.currentDirectory;
+        const resolvedHistory = state.directoryHistory.map((entry) => resolveDirectoryPath(entry, resolvedHome));
+        const historyChanged = resolvedHistory.some((entry, index) => entry !== state.directoryHistory[index]);
+        const currentChanged = Boolean(resolvedCurrent && resolvedCurrent !== state.currentDirectory);
+
         const updates: Partial<DirectoryStore> = {
           homeDirectory: resolvedHome,
           hasPersistedDirectory: hasSavedLastDirectory,
@@ -437,20 +480,26 @@ export const useDirectoryStore = create<DirectoryStore>()(
           updates.directoryHistory = [resolvedHome];
           updates.historyIndex = 0;
           updates.isSwitchingDirectory = true;
+        } else if (currentChanged || historyChanged) {
+          updates.currentDirectory = resolvedCurrent as string;
+          updates.directoryHistory = resolvedHistory;
+          updates.historyIndex = Math.min(state.historyIndex, resolvedHistory.length - 1);
+          updates.isSwitchingDirectory = true;
         }
 
         set(() => updates as Partial<DirectoryStore>);
 
-        if (shouldReplaceCurrent && resolvedReady) {
-          opencodeClient.setDirectory(resolvedHome);
+        if ((shouldReplaceCurrent || currentChanged) && resolvedReady) {
+          const nextDirectory = shouldReplaceCurrent ? resolvedHome : (resolvedCurrent as string);
+          opencodeClient.setDirectory(nextDirectory);
           invalidateFileSearchCache();
-          safeStorage.setItem('lastDirectory', resolvedHome);
-          void updateDesktopSettings({ lastDirectory: resolvedHome });
+          safeStorage.setItem('lastDirectory', nextDirectory);
+          void updateDesktopSettings({ lastDirectory: nextDirectory });
 
-          const restartPromise = notifyOpenCodeWorkingDirectory(resolvedHome, { showOverlay: false });
+          const restartPromise = notifyOpenCodeWorkingDirectory(nextDirectory, { showOverlay: false });
           scheduleDirectoryFollowUp(restartPromise, { showOverlay: false }, () => {
             set((state) => {
-              if (state.currentDirectory !== resolvedHome) {
+              if (state.currentDirectory !== nextDirectory) {
                 return {};
               }
               if (!state.isSwitchingDirectory) {

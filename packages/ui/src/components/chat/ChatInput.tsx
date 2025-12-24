@@ -1000,6 +1000,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             <StatusRow
                 isWorking={working.isWorking}
                 statusText={workingStatusText}
+                isGenericStatus={working.isGenericStatus}
                 isWaitingForPermission={working.isWaitingForPermission}
                 wasAborted={working.wasAborted}
                 abortActive={working.abortActive}

@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useSessionStore } from '@/stores/useSessionStore';
+import { useDirectoryStore } from '@/stores/useDirectoryStore';
+import { opencodeClient } from '@/lib/opencode/client';
+import { checkIsGitRepository } from '@/lib/gitApi';
 
 export interface DebugMessageInfo {
   messageId: string;
@@ -167,6 +170,174 @@ export const debugUtils = {
     });
 
     return truncate ? this.truncateMessages(messages) : messages;
+  },
+
+  async getAppStatus() {
+    const directoryState = useDirectoryStore.getState();
+    const sessionState = useSessionStore.getState();
+    const currentDirectory = directoryState.currentDirectory || null;
+    const opencodeDirectory = opencodeClient.getDirectory() ?? null;
+
+    const sessions = sessionState.sessions || [];
+    const sessionDirectories = new Set<string>();
+    const sessionDirectoryCounts: Record<string, number> = {};
+
+    sessions.forEach((session) => {
+      const directory = (session as { directory?: string | null }).directory;
+      if (typeof directory === 'string' && directory.trim().length > 0) {
+        sessionDirectories.add(directory);
+        sessionDirectoryCounts[directory] = (sessionDirectoryCounts[directory] ?? 0) + 1;
+      } else {
+        sessionDirectoryCounts['(none)'] = (sessionDirectoryCounts['(none)'] ?? 0) + 1;
+      }
+    });
+
+    const localStorageSnapshot = (() => {
+      if (typeof window === 'undefined') {
+        return { available: false };
+      }
+      try {
+        return {
+          available: true,
+          lastDirectory: window.localStorage.getItem('lastDirectory'),
+          homeDirectory: window.localStorage.getItem('homeDirectory'),
+        };
+      } catch (error) {
+        return {
+          available: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    })();
+
+    const runtimeApis = typeof window !== 'undefined'
+      ? (window as any).__OPENCHAMBER_RUNTIME_APIS__
+      : null;
+    const desktopServer = typeof window !== 'undefined'
+      ? (window as any).__OPENCHAMBER_DESKTOP_SERVER__
+      : null;
+    const isDesktopRuntime = Boolean(
+      runtimeApis?.runtime?.isDesktop ||
+      (typeof window !== 'undefined' && (window as any).opencodeDesktop)
+    );
+
+    const safeJson = async (resp: Response) => {
+      try {
+        return await resp.json();
+      } catch {
+        return null;
+      }
+    };
+
+    const safeText = async (resp: Response) => {
+      try {
+        return await resp.text();
+      } catch {
+        return null;
+      }
+    };
+
+    const safeFetchJson = async (url: string): Promise<unknown> => {
+      try {
+        const resp = await fetch(url);
+        return resp.ok ? await safeJson(resp) : { status: resp.status };
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : String(error) };
+      }
+    };
+
+    let pathInfo: unknown = null;
+    let projectInfo: unknown = null;
+    let settingsInfo: unknown = null;
+    let opencodeHealth: unknown = null;
+
+    const pathUrl = currentDirectory
+      ? `/api/path?directory=${encodeURIComponent(currentDirectory)}`
+      : '/api/path';
+    pathInfo = await safeFetchJson(pathUrl);
+
+    const projectUrl = currentDirectory
+      ? `/api/project/current?directory=${encodeURIComponent(currentDirectory)}`
+      : '/api/project/current';
+    projectInfo = await safeFetchJson(projectUrl);
+
+    settingsInfo = await safeFetchJson('/api/config/settings');
+
+    try {
+      const resp = await fetch('/api/health');
+      const contentType = resp.headers.get('content-type') || '';
+      const body = await safeText(resp);
+      opencodeHealth = {
+        status: resp.status,
+        ok: resp.ok,
+        contentType,
+        type: contentType.includes('application/json') ? 'json' : 'html',
+        preview: body ? body.slice(0, 120) : null,
+      };
+    } catch (error) {
+      opencodeHealth = { error: error instanceof Error ? error.message : String(error) };
+    }
+
+    let gitCheck: { isGitRepo: boolean | null; error?: string } = { isGitRepo: null };
+    if (currentDirectory) {
+      try {
+        gitCheck.isGitRepo = await checkIsGitRepository(currentDirectory);
+      } catch (error) {
+        gitCheck = {
+          isGitRepo: null,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
+
+    const report = {
+      runtime: {
+        isDesktop: isDesktopRuntime,
+        hasRuntimeApis: Boolean(runtimeApis),
+        desktopServerOrigin: desktopServer?.origin ?? null,
+      },
+      location: typeof window !== 'undefined'
+        ? {
+            href: window.location?.href ?? null,
+            origin: window.location?.origin ?? null,
+          }
+        : null,
+      directories: {
+        currentDirectory,
+        opencodeDirectory: (pathInfo as { directory?: string; worktree?: string } | null)?.directory
+          || (pathInfo as { worktree?: string } | null)?.worktree
+          || opencodeDirectory,
+        homeDirectory: directoryState.homeDirectory || null,
+        isHomeReady: directoryState.isHomeReady,
+        hasPersistedDirectory: directoryState.hasPersistedDirectory,
+        isSwitchingDirectory: directoryState.isSwitchingDirectory,
+      },
+      sessions: {
+        total: sessions.length,
+        currentSessionId: sessionState.currentSessionId,
+        lastLoadedDirectory: sessionState.lastLoadedDirectory,
+        uniqueDirectories: sessionDirectories.size,
+        directorySamples: Array.from(sessionDirectories).slice(0, 5),
+        directoryCounts: sessionDirectoryCounts,
+      },
+      worktrees: {
+        available: sessionState.availableWorktrees.length,
+        metadataEntries: sessionState.worktreeMetadata.size,
+      },
+      git: gitCheck,
+      localStorage: localStorageSnapshot,
+      opencode: {
+        pathInfo,
+        projectInfo,
+        health: opencodeHealth,
+      },
+      openchamber: {
+        settingsInfo,
+      },
+    };
+
+    console.log('[DEBUG] App status snapshot:', report);
+    return report;
   },
 
    checkLastMessage() {
@@ -465,6 +636,7 @@ if (typeof window !== 'undefined') {
   console.log('  __opencodeDebug.getLastAssistantMessage() - Get last assistant message details');
   console.log('  __opencodeDebug.getAllMessages(truncate?) - List all messages (truncate=true for short preview)');
   console.log('  __opencodeDebug.truncateMessages(messages) - Truncate long fields in messages array');
+  console.log('  __opencodeDebug.getAppStatus() - Show app status snapshot');
    console.log('  __opencodeDebug.checkLastMessage() - Check if last message is problematic');
    console.log('  __opencodeDebug.findEmptyMessages() - Find all empty assistant messages');
    console.log('  __opencodeDebug.showRetryHelp() - Show instructions for handling empty responses');

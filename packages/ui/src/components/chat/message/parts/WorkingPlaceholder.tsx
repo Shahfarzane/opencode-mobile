@@ -1,427 +1,251 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Text } from '@/components/ui/text';
 
 interface WorkingPlaceholderProps {
     statusText: string | null;
+    isGenericStatus?: boolean;
     isWaitingForPermission?: boolean;
     wasAborted?: boolean;
     completionId?: string | null;
     isComplete?: boolean;
+    onResultVisibilityChange?: (isShowingResult: boolean) => void;
 }
 
-const MIN_DISPLAY_TIME = 2000;
-const DONE_DISPLAY_TIME = 1500;
+const STATUS_DISPLAY_TIME = 1500; // Minimum time to show each status
+const DONE_DISPLAY_TIME = 2000; // Time to show Done/Aborted status
 
-type ResultState = 'success' | 'aborted' | null;
+type PlaceholderState = 'idle' | 'showing' | 'done' | 'aborted';
 
 export function WorkingPlaceholder({
     statusText,
+    isGenericStatus,
     isWaitingForPermission,
     wasAborted,
     completionId,
     isComplete,
+    onResultVisibilityChange,
 }: WorkingPlaceholderProps) {
-    const [displayedStatus, setDisplayedStatus] = useState<string | null>(null);
+    // Internal state machine
+    const [state, setState] = useState<PlaceholderState>('idle');
+    const [displayedText, setDisplayedText] = useState<string | null>(null);
     const [displayedPermission, setDisplayedPermission] = useState<boolean>(false);
-    const [isVisible, setIsVisible] = useState<boolean>(false);
-    const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
-    const [resultState, setResultState] = useState<ResultState>(null);
 
-
-    const displayStartTimeRef = useRef<number>(0);
-    const statusQueueRef = useRef<Array<{ status: string; permission: boolean }>>([]);
-    const removalPendingRef = useRef<boolean>(false);
-    const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const rafIdRef = useRef<number | null>(null);
-    const lastCheckTimeRef = useRef<number>(0);
-    const lastActiveStatusRef = useRef<string | null>(null);
+    // Refs for timing
+    const statusShownAtRef = useRef<number>(0);
+    const queuedStatusRef = useRef<{ text: string; permission: boolean } | null>(null);
+    const processQueueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastCompletionIdRef = useRef<string | null>(null);
+    // Track if we've ever shown activity in this turn
     const hasShownActivityRef = useRef<boolean>(false);
-    const wasAbortedRef = useRef<boolean>(false);
-    const isCompleteRef = useRef<boolean>(false);
-    const windowFocusRef = useRef<boolean>(true);
-    const lastCompletionShownRef = useRef<string | null>(null);
-    const resultShownAtRef = useRef<number | null>(null);
+    // Track the previous isComplete value to detect edges
+    const prevIsCompleteRef = useRef<boolean>(false);
+    const prevWasAbortedRef = useRef<boolean>(false);
 
-    const activateStatus = (status: string, permission: boolean) => {
-        if (fadeTimeoutRef.current) {
-            clearTimeout(fadeTimeoutRef.current);
-            fadeTimeoutRef.current = null;
+    // Clear all timers
+    const clearTimers = useCallback(() => {
+        if (processQueueTimerRef.current) {
+            clearTimeout(processQueueTimerRef.current);
+            processQueueTimerRef.current = null;
         }
-        if (resultTimeoutRef.current) {
-            clearTimeout(resultTimeoutRef.current);
-            resultTimeoutRef.current = null;
+        if (doneTimerRef.current) {
+            clearTimeout(doneTimerRef.current);
+            doneTimerRef.current = null;
         }
-        if (status === 'aborted') {
-            setDisplayedStatus(null);
-            setDisplayedPermission(false);
-            setIsFadingOut(false);
-            setResultState('aborted');
-            lastActiveStatusRef.current = 'aborted';
-            hasShownActivityRef.current = true;
-            wasAbortedRef.current = true;
+    }, []);
 
-            if (typeof requestAnimationFrame === 'function') {
-                requestAnimationFrame(() => setIsVisible(true));
-            } else {
-                setIsVisible(true);
-            }
-
-            return;
-        }
-
-        setResultState(null);
-        setIsFadingOut(false);
-        lastActiveStatusRef.current = status;
-        hasShownActivityRef.current = true;
-
-        setDisplayedStatus(status);
+    // Show a status immediately
+    const showStatus = useCallback((text: string, permission: boolean) => {
+        clearTimers();
+        queuedStatusRef.current = null;
+        setDisplayedText(text);
         setDisplayedPermission(permission);
+        setState('showing');
+        statusShownAtRef.current = Date.now();
+        hasShownActivityRef.current = true;
+    }, [clearTimers]);
 
-        if (!isVisible) {
-
-            if (typeof requestAnimationFrame === 'function') {
-                requestAnimationFrame(() => {
-                    setIsVisible(true);
-                });
-            } else {
-                setIsVisible(true);
+    // Schedule processing of queued status
+    const scheduleQueueProcess = useCallback(() => {
+        if (processQueueTimerRef.current) return; // Already scheduled
+        
+        const elapsed = Date.now() - statusShownAtRef.current;
+        const remaining = Math.max(0, STATUS_DISPLAY_TIME - elapsed);
+        
+        processQueueTimerRef.current = setTimeout(() => {
+            processQueueTimerRef.current = null;
+            const queued = queuedStatusRef.current;
+            if (queued) {
+                showStatus(queued.text, queued.permission);
             }
-        }
-    };
+            // If nothing queued, keep showing current status
+        }, remaining);
+    }, [showStatus]);
 
-    useEffect(() => {
-        const now = Date.now();
-
-        if (statusText) {
-            removalPendingRef.current = false;
-
-            if (!displayedStatus) {
-                activateStatus(statusText, !!isWaitingForPermission);
-                displayStartTimeRef.current = now;
-                statusQueueRef.current = [];
-            } else if (
-                statusText !== displayedStatus ||
-                !!isWaitingForPermission !== displayedPermission
-            ) {
-                statusQueueRef.current.push({
-                    status: statusText,
-                    permission: !!isWaitingForPermission,
-                });
-            }
-        } else {
-            removalPendingRef.current = true;
-        }
-
-    }, [statusText, isWaitingForPermission, displayedStatus, displayedPermission, wasAborted]);
-
-    useEffect(() => {
-        if (wasAborted) {
-            wasAbortedRef.current = true;
-        }
-    }, [wasAborted]);
-
-    useEffect(() => {
-        isCompleteRef.current = !!isComplete;
-    }, [isComplete]);
-
-    useEffect(() => {
-        if (isComplete) {
-            removalPendingRef.current = true;
-        }
-    }, [isComplete]);
-
-    useEffect(() => {
-        const startFadeOut = (result: ResultState) => {
-            if (isFadingOut) {
-                return;
-            }
-
-            const hadActiveStatus =
-                lastActiveStatusRef.current !== null || hasShownActivityRef.current;
-
-            if (result && hadActiveStatus) {
-
-                setIsFadingOut(false);
-                setIsVisible(true);
-
-                setDisplayedStatus(null);
-                setDisplayedPermission(false);
-                setResultState(result);
-                lastActiveStatusRef.current = null;
-
-                if (result === 'success' && completionId) {
-                    lastCompletionShownRef.current = completionId;
-                }
-
-                resultShownAtRef.current = Date.now();
-
-                if (resultTimeoutRef.current) {
-                    clearTimeout(resultTimeoutRef.current);
-                }
-
-                resultTimeoutRef.current = setTimeout(() => {
-                    setIsVisible(false);
-                    setResultState(null);
-                    hasShownActivityRef.current = false;
-                    resultTimeoutRef.current = null;
-                }, DONE_DISPLAY_TIME);
-            } else {
-
-                setIsFadingOut(true);
-                setIsVisible(false);
-                setResultState(null);
-
-                if (fadeTimeoutRef.current) {
-                    clearTimeout(fadeTimeoutRef.current);
-                }
-
-                fadeTimeoutRef.current = setTimeout(() => {
-                    setDisplayedStatus(null);
-                    setDisplayedPermission(false);
-                    setIsFadingOut(false);
-                    hasShownActivityRef.current = false;
-                    lastActiveStatusRef.current = null;
-                    fadeTimeoutRef.current = null;
-                }, 180);
-            }
-
-            wasAbortedRef.current = false;
-        };
-
-        const CHECK_THROTTLE_MS = 150; // Throttle checks to ~6-7 times per second
-
-        const hasInitialWork = Boolean(
-            statusText ||
-            displayedStatus ||
-            resultState !== null ||
-            removalPendingRef.current ||
-            statusQueueRef.current.length > 0 ||
-            wasAbortedRef.current ||
-            isCompleteRef.current
-        );
-
-        if (!hasInitialWork) {
-            if (rafIdRef.current !== null) {
-                cancelAnimationFrame(rafIdRef.current);
-                rafIdRef.current = null;
-            }
+    // Show done/aborted result
+    const showResult = useCallback((result: 'done' | 'aborted') => {
+        clearTimers();
+        queuedStatusRef.current = null;
+        
+        // Only show result if we had activity
+        if (!hasShownActivityRef.current) {
+            setState('idle');
+            setDisplayedText(null);
+            onResultVisibilityChange?.(false);
             return;
         }
 
-        const checkLoop = (timestamp: number) => {
-            if (timestamp - lastCheckTimeRef.current < CHECK_THROTTLE_MS) {
-                rafIdRef.current = requestAnimationFrame(checkLoop);
-                return;
-            }
-            lastCheckTimeRef.current = timestamp;
+        // Skip duplicate completion for same completionId
+        if (result === 'done' && completionId && lastCompletionIdRef.current === completionId) {
+            setState('idle');
+            setDisplayedText(null);
+            hasShownActivityRef.current = false;
+            onResultVisibilityChange?.(false);
+            return;
+        }
 
+        if (result === 'done' && completionId) {
+            lastCompletionIdRef.current = completionId;
+        }
+
+        setState(result);
+        setDisplayedText(null);
+        onResultVisibilityChange?.(true);
+        
+        // Auto-hide after DONE_DISPLAY_TIME
+        doneTimerRef.current = setTimeout(() => {
+            doneTimerRef.current = null;
+            setState('idle');
+            hasShownActivityRef.current = false;
+            onResultVisibilityChange?.(false);
+        }, DONE_DISPLAY_TIME);
+    }, [clearTimers, completionId, onResultVisibilityChange]);
+
+    // Main effect: handle prop changes
+    useEffect(() => {
+        // Detect abort edge (false -> true)
+        if (wasAborted && !prevWasAbortedRef.current) {
+            prevWasAbortedRef.current = true;
+            showResult('aborted');
+            return;
+        }
+        prevWasAbortedRef.current = !!wasAborted;
+
+        // Detect completion edge (false -> true)
+        if (isComplete && !prevIsCompleteRef.current) {
+            prevIsCompleteRef.current = true;
+            showResult('done');
+            return;
+        }
+        // Reset edge detection when isComplete goes back to false
+        if (!isComplete && prevIsCompleteRef.current) {
+            prevIsCompleteRef.current = false;
+        }
+
+        // If we're showing done/aborted, don't process new status
+        if (state === 'done' || state === 'aborted') {
+            return;
+        }
+
+        // Handle new status text
+        if (statusText) {
             const now = Date.now();
-            const elapsed = now - displayStartTimeRef.current;
-
-            const isDone = removalPendingRef.current && isCompleteRef.current;
-            const shouldWaitForMinTime = !isDone && statusQueueRef.current.length > 0;
-
-            if (shouldWaitForMinTime && elapsed < MIN_DISPLAY_TIME) {
-                rafIdRef.current = requestAnimationFrame(checkLoop);
-                return;
-            }
-
-            if (removalPendingRef.current && wasAbortedRef.current) {
-                removalPendingRef.current = false;
-                statusQueueRef.current = [];
-                startFadeOut('aborted');
-            } else if (!isDone && statusQueueRef.current.length > 0) {
-                const latest = statusQueueRef.current[statusQueueRef.current.length - 1];
-                activateStatus(latest.status, latest.permission);
-                displayStartTimeRef.current = now;
-                statusQueueRef.current = [];
-            } else if (removalPendingRef.current) {
-
-                removalPendingRef.current = false;
-
-                if (statusQueueRef.current.length > 0) {
-                    hasShownActivityRef.current = true;
-                }
-                statusQueueRef.current = [];
-
-                let result: ResultState = null;
-                if (wasAbortedRef.current) {
-                    result = 'aborted';
-                } else if (isCompleteRef.current) {
-                    result = 'success';
-
-                    hasShownActivityRef.current = true;
-                }
-
-                if (result === 'success' && completionId && lastCompletionShownRef.current === completionId) {
-                    setDisplayedStatus(null);
-                    setDisplayedPermission(false);
-                    setIsFadingOut(false);
-                    setIsVisible(false);
-                    setResultState(null);
-                    statusQueueRef.current = [];
-                    hasShownActivityRef.current = false;
-                    lastActiveStatusRef.current = null;
-                    removalPendingRef.current = false;
-                    wasAbortedRef.current = false;
-                    rafIdRef.current = null;
+            const elapsed = now - statusShownAtRef.current;
+            
+            if (state === 'idle' || !displayedText) {
+                // Not showing anything - show immediately (generic OK at turn start)
+                showStatus(statusText, !!isWaitingForPermission);
+            } else if (statusText !== displayedText || !!isWaitingForPermission !== displayedPermission) {
+                // Already showing something - ignore generic statuses
+                if (isGenericStatus) {
                     return;
                 }
-
-                startFadeOut(result);
+                
+                // Different specific status
+                if (elapsed >= STATUS_DISPLAY_TIME) {
+                    // Minimum time passed - show immediately
+                    showStatus(statusText, !!isWaitingForPermission);
+                } else {
+                    // Queue the latest (overwrites previous queued)
+                    queuedStatusRef.current = { text: statusText, permission: !!isWaitingForPermission };
+                    scheduleQueueProcess();
+                }
             }
-
-            const hasPendingWork = Boolean(
-                displayedStatus ||
-                resultState !== null ||
-                statusQueueRef.current.length > 0 ||
-                removalPendingRef.current ||
-                wasAbortedRef.current ||
-                isCompleteRef.current
-            );
-
-            if (hasPendingWork) {
-                rafIdRef.current = requestAnimationFrame(checkLoop);
-            } else {
-                rafIdRef.current = null;
-            }
-        };
-
-        rafIdRef.current = requestAnimationFrame(checkLoop);
-
-        return () => {
-            if (rafIdRef.current !== null) {
-                cancelAnimationFrame(rafIdRef.current);
-                rafIdRef.current = null;
-            }
-        };
-
-    }, [statusText, displayedStatus, resultState, isComplete, wasAborted, isFadingOut]);
-
-    useEffect(() => {
-        return () => {
-            if (fadeTimeoutRef.current) {
-                clearTimeout(fadeTimeoutRef.current);
-            }
-            if (resultTimeoutRef.current) {
-                clearTimeout(resultTimeoutRef.current);
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
+            // Same status - keep showing
         }
+        // IMPORTANT: When statusText becomes null, we do NOT clear the display
+        // Only done/abort signals clear the display
+        
+    }, [statusText, isWaitingForPermission, wasAborted, isComplete, state, displayedText, displayedPermission, showStatus, showResult, scheduleQueueProcess]);
 
-        windowFocusRef.current = typeof document !== 'undefined' && typeof document.hasFocus === 'function'
-            ? document.hasFocus()
-            : true;
-
-        const handleFocus = () => {
-            windowFocusRef.current = true;
-        };
-
-        const handleBlur = () => {
-            windowFocusRef.current = false;
-        };
-
-        window.addEventListener('focus', handleFocus);
-        window.addEventListener('blur', handleBlur);
-
-        return () => {
-            window.removeEventListener('focus', handleFocus);
-            window.removeEventListener('blur', handleBlur);
-        };
-    }, []);
-
+    // Cleanup on unmount
     useEffect(() => {
-        const handleVisibilityRestore = () => {
-            if (typeof document === 'undefined' || typeof Date === 'undefined') {
-                return;
-            }
-            if (document.visibilityState !== 'visible') {
-                return;
-            }
+        return () => clearTimers();
+    }, [clearTimers]);
 
-            const shownAt = resultShownAtRef.current;
-            const isCompletionVisible = resultState !== null || displayedStatus !== null;
-
-            if (isCompletionVisible && shownAt && Date.now() - shownAt > 500) {
-                setDisplayedStatus(null);
-                setDisplayedPermission(false);
-                setIsFadingOut(false);
-                setIsVisible(false);
-                setResultState(null);
-                statusQueueRef.current = [];
+    // Handle tab visibility changes
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (typeof document === 'undefined') return;
+            if (document.visibilityState !== 'visible') return;
+            
+            // If showing done/aborted when user returns, hide it
+            if (state === 'done' || state === 'aborted') {
+                clearTimers();
+                setState('idle');
+                setDisplayedText(null);
                 hasShownActivityRef.current = false;
-                lastActiveStatusRef.current = null;
-                removalPendingRef.current = false;
-                wasAbortedRef.current = false;
             }
         };
 
-        document.addEventListener('visibilitychange', handleVisibilityRestore);
-        window.addEventListener('focus', handleVisibilityRestore);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [state, clearTimers]);
 
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityRestore);
-            window.removeEventListener('focus', handleVisibilityRestore);
-        };
-    }, [displayedStatus, resultState]);
-
-    if (!displayedStatus && resultState === null) {
+    // Render nothing if idle with no text
+    if (state === 'idle' && !displayedText) {
         return null;
     }
 
+    // Determine what to show
     let label: string;
-    if (resultState === 'success') {
+    let showEllipsis = true;
+    
+    if (state === 'done') {
         label = 'Done';
-    } else if (resultState === 'aborted') {
+        showEllipsis = false;
+    } else if (state === 'aborted') {
         label = 'Aborted';
-    } else if (displayedStatus) {
-        label = displayedStatus.charAt(0).toUpperCase() + displayedStatus.slice(1);
+        showEllipsis = false;
+    } else if (displayedText) {
+        label = displayedText.charAt(0).toUpperCase() + displayedText.slice(1);
     } else {
         label = 'Working';
     }
 
-    const ariaLive = displayedPermission ? 'assertive' : 'polite';
-
-    const displayText = resultState === null ? `${label}...` : label;
+    const displayText = showEllipsis ? `${label}...` : label;
+    const isVisible = state !== 'idle';
 
     return (
         <div
-            className={`flex h-full items-center text-muted-foreground pl-[2ch] transition-opacity duration-200 ${isVisible && !isFadingOut ? 'opacity-100' : 'opacity-0'}`}
+            className={`flex h-full items-center text-muted-foreground pl-[2ch] transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
             role="status"
-            aria-live={ariaLive}
+            aria-live={displayedPermission ? 'assertive' : 'polite'}
             aria-label={label}
             data-waiting={displayedPermission ? 'true' : undefined}
         >
             <span className="flex items-center gap-1.5">
-                {resultState === null && (
-                    <Text
-                        variant="shine"
-                        className="typography-ui-header"
-                    >
-                        {displayText}
-                    </Text>
-                )}
-                {resultState === 'success' && (
-                    <Text
-                        variant="hover-enter"
-                        className="typography-ui-header"
-                    >
+                {state === 'done' ? (
+                    <Text variant="hover-enter" className="typography-ui-header">
                         Done
                     </Text>
-                )}
-                {resultState === 'aborted' && (
-                    <Text
-                        variant="hover-enter"
-                        className="typography-ui-header text-status-error"
-                    >
+                ) : state === 'aborted' ? (
+                    <Text variant="hover-enter" className="typography-ui-header text-status-error">
                         Aborted
+                    </Text>
+                ) : (
+                    <Text variant="shine" className="typography-ui-header">
+                        {displayText}
                     </Text>
                 )}
             </span>

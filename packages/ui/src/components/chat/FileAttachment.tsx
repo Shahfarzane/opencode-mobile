@@ -310,7 +310,7 @@ export const MessageFilesDisplay = memo(({ files, onShowPopup }: MessageFilesDis
                     <button
                       type="button"
                       onClick={() => handleImageClick(file)}
-                      className="relative flex-none w-32 sm:w-36 md:w-40 aspect-square rounded-xl border border-border/40 bg-muted/10 overflow-hidden snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary"
+                      className="relative flex-none w-16 sm:w-20 md:w-24 aspect-square rounded-xl border border-border/40 bg-muted/10 overflow-hidden snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary"
                       aria-label={filename}
                     >
                       {file.url ? (

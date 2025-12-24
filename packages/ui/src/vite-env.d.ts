@@ -5,6 +5,7 @@ interface Window {
         getLastAssistantMessage: () => unknown;
         getAllMessages: (truncate?: boolean) => unknown[];
         truncateMessages: (messages: unknown[]) => unknown[];
+        getAppStatus: () => Promise<unknown>;
         checkLastMessage: () => boolean;
         findEmptyMessages: () => unknown[];
         showRetryHelp: () => void;
