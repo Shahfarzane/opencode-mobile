@@ -5,11 +5,12 @@ import { createOpenCodeManager, type OpenCodeManager } from './opencode';
 let chatViewProvider: ChatViewProvider | undefined;
 let openCodeManager: OpenCodeManager | undefined;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   // Create OpenCode manager first
   openCodeManager = createOpenCodeManager(context);
 
   // Create chat view provider with manager reference
+  // The webview will show a loading state until OpenCode is ready
   chatViewProvider = new ChatViewProvider(context, context.extensionUri, openCodeManager);
 
   context.subscriptions.push(
@@ -52,19 +53,20 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Subscribe to status changes
+  // Subscribe to status changes - this broadcasts to webview
   context.subscriptions.push(
     openCodeManager.onStatusChange((status, error) => {
       chatViewProvider?.updateConnectionStatus(status, error);
     })
   );
 
-  // Auto-start OpenCode API
-  openCodeManager.start();
+  // Start OpenCode API and wait for it to be ready
+  // The webview will show loading state during this time
+  await openCodeManager.start();
 }
 
-export function deactivate() {
-  openCodeManager?.stop();
+export async function deactivate() {
+  await openCodeManager?.stop();
   openCodeManager = undefined;
   chatViewProvider = undefined;
 }

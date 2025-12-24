@@ -351,17 +351,24 @@ export const useConfigStore = create<ConfigStore>()(
                             const buildAgent = primaryAgents.find((agent) => agent.name === "build");
                             const defaultAgent = buildAgent || primaryAgents[0] || safeAgents[0];
 
-                            set({ currentAgentName: defaultAgent.name });
+                             const existingAgentName = get().currentAgentName;
+                             const existingAgent = existingAgentName ? safeAgents.find((agent) => agent.name === existingAgentName) : undefined;
+                             const resolvedAgentName = existingAgent ? existingAgentName : defaultAgent.name;
 
-                            if (defaultAgent?.model?.providerID && defaultAgent?.model?.modelID) {
-                                const agentProvider = providers.find((p) => p.id === defaultAgent.model!.providerID);
+                             if (resolvedAgentName !== existingAgentName) {
+                                 set({ currentAgentName: resolvedAgentName });
+                             }
+
+                             const agentForDefaults = existingAgent || defaultAgent;
+                            if (agentForDefaults?.model?.providerID && agentForDefaults?.model?.modelID) {
+                                const agentProvider = providers.find((p) => p.id === agentForDefaults.model!.providerID);
                                 if (agentProvider) {
-                                    const agentModel = agentProvider.models.find((model) => model.id === defaultAgent.model!.modelID);
+                                    const agentModel = agentProvider.models.find((model) => model.id === agentForDefaults.model!.modelID);
 
                                     if (agentModel) {
                                         set({
-                                            currentProviderId: defaultAgent.model!.providerID,
-                                            currentModelId: defaultAgent.model!.modelID,
+                                            currentProviderId: agentForDefaults.model!.providerID,
+                                            currentModelId: agentForDefaults.model!.modelID,
                                         });
                                     }
                                 }

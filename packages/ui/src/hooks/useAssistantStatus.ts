@@ -18,6 +18,7 @@ interface WorkingSummary {
     isCooldown: boolean;
     lifecyclePhase: MessageStreamPhase | null;
     statusText: string | null;
+    isGenericStatus: boolean;
     isWaitingForPermission: boolean;
     canAbort: boolean;
     compactionDeadline: number | null;
@@ -59,6 +60,7 @@ const DEFAULT_WORKING: WorkingSummary = {
     isCooldown: false,
     lifecyclePhase: null,
     statusText: null,
+    isGenericStatus: true,
     isWaitingForPermission: false,
     canAbort: false,
     compactionDeadline: null,
@@ -133,11 +135,12 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
         activePartType: 'text' | 'tool' | 'reasoning' | 'editing' | undefined;
         activeToolName: string | undefined;
         statusText: string;
+        isGenericStatus: boolean;
     };
 
     const parsedStatus = React.useMemo<ParsedStatusResult>(() => {
         if (sessionMessages.length === 0) {
-            return { activePartType: undefined, activeToolName: undefined, statusText: 'working' };
+            return { activePartType: undefined, activeToolName: undefined, statusText: 'working', isGenericStatus: true };
         }
 
         const assistantMessages = sessionMessages
@@ -147,7 +150,7 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             );
 
         if (assistantMessages.length === 0) {
-            return { activePartType: undefined, activeToolName: undefined, statusText: 'working' };
+            return { activePartType: undefined, activeToolName: undefined, statusText: 'working', isGenericStatus: true };
         }
 
         const sortedAssistantMessages = [...assistantMessages].sort((a, b) => {
@@ -252,6 +255,7 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             return WORKING_PHRASES[Math.floor(Math.random() * WORKING_PHRASES.length)];
         };
 
+        const isGenericStatus = activePartType === undefined;
         const statusText = (() => {
             if (activePartType === 'editing') return 'editing file';
             if (activePartType === 'tool' && activeToolName) return getToolStatusPhrase(activeToolName);
@@ -260,7 +264,7 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             return getRandomWorkingPhrase();
         })();
 
-        return { activePartType, activeToolName, statusText };
+        return { activePartType, activeToolName, statusText, isGenericStatus };
     }, [sessionMessages]);
 
     const abortState = React.useMemo(() => {
@@ -309,6 +313,7 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             isCooldown,
             lifecyclePhase: isStreaming ? 'streaming' : isCooldown ? 'cooldown' : null,
             statusText: isWorking ? parsedStatus.statusText : null,
+            isGenericStatus: isWorking ? parsedStatus.isGenericStatus : true,
             isWaitingForPermission: false,
             canAbort: isWorking,
             compactionDeadline: null,
@@ -317,7 +322,6 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             wasAborted: false,
             abortActive: false,
             lastCompletionId: null,
-
             isComplete: isCooldown,
         };
     }, [activityPhase, isPhaseWorking, isPhaseCooldown, parsedStatus, abortState]);
