@@ -434,6 +434,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         return freshnessDetector.shouldAnimateMessage(message.info, currentSessionId || message.info.sessionID);
     }, [message.info, currentSessionId, isUser]);
 
+    // Track if this message should show header to prevent flickering
+    const shouldShowHeaderRef = React.useRef(false);
+
     const previousRole = React.useMemo(() => {
         if (!previousMessage) return null;
         return deriveMessageRole(previousMessage.info);
@@ -443,12 +446,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         if (!nextMessage) return null;
         return deriveMessageRole(nextMessage.info);
     }, [nextMessage]);
-
-    const shouldShowHeader = React.useMemo(() => {
-        if (isUser) return true;
-        if (!previousRole) return true;
-        return previousRole.isUser;
-    }, [isUser, previousRole]);
 
     const isFollowedByAssistant = React.useMemo(() => {
         if (isUser) return false;
@@ -465,6 +462,43 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         }
         return isStreamingMessage ? 'streaming' : 'completed';
     }, [isMessageCompleted, lifecyclePhase, isStreamingMessage]);
+
+    const shouldShowHeader = React.useMemo(() => {
+        if (isUser) return true;
+        
+        // Use turn grouping context if available for more precise control
+        const headerMessageId = turnGroupingContext?.headerMessageId;
+        if (headerMessageId) {
+            // For turn grouping: only show header for the first assistant message in the turn
+            const isFirstAssistantInTurn = message.info.id === headerMessageId;
+            
+            if (isFirstAssistantInTurn) {
+                // For completed messages, always show header (historical messages)
+                if (streamPhase === 'completed') {
+                    return true;
+                }
+                
+                // For streaming messages: show header when streaming starts and keep it visible
+                const isCurrentlyStreaming = streamPhase === 'streaming' || streamPhase === 'cooldown';
+                const hasStartedStreaming = shouldShowHeaderRef.current;
+                
+                // Update the ref when streaming starts
+                if (isCurrentlyStreaming && !hasStartedStreaming) {
+                    shouldShowHeaderRef.current = true;
+                }
+                
+                // Show header if streaming has started or is currently active
+                return hasStartedStreaming || isCurrentlyStreaming;
+            }
+            
+            // For non-first assistant messages, don't show header
+            return false;
+        }
+        
+        // Fallback to original logic when turn grouping is not available
+        if (!previousRole) return true;
+        return previousRole.isUser;
+    }, [isUser, previousRole, turnGroupingContext, streamPhase, message.info]);
 
     const handleCopyCode = React.useCallback((code: string) => {
         navigator.clipboard.writeText(code);

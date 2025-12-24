@@ -31,6 +31,13 @@ interface TurnDiffStats {
     files: number;
 }
 
+export interface TurnActivityGroup {
+    id: string;
+    anchorMessageId: string;
+    afterToolPartId: string | null;
+    parts: TurnActivityPart[];
+}
+
 export interface TurnGroupingContext {
     turnId: string;
     isFirstAssistantInTurn: boolean;
@@ -39,13 +46,11 @@ export interface TurnGroupingContext {
     summaryBody?: string;
 
     activityParts: TurnActivityPart[];
+    activityGroupSegments: TurnActivityGroup[];
+    headerMessageId?: string;
     hasTools: boolean;
     hasReasoning: boolean;
     diffStats?: TurnDiffStats;
-
-    // Message that should render the Activity group for this turn.
-    // Chosen as the first assistant message where the turn reaches 2+ activities.
-    activityGroupAnchorMessageId?: string;
 
     isWorking: boolean;
     isGroupExpanded: boolean;
@@ -63,11 +68,11 @@ interface TurnUiState {
 
 interface TurnActivityInfo {
     activityParts: TurnActivityPart[];
+    activityGroupSegments: TurnActivityGroup[];
     hasTools: boolean;
     hasReasoning: boolean;
     summaryBody?: string;
     diffStats?: TurnDiffStats;
-    activityGroupAnchorMessageId?: string;
 }
 
 const ENABLE_TEXT_JUSTIFICATION_ACTIVITY = false;
@@ -266,36 +271,112 @@ const getTurnActivityInfo = (turn: Turn): TurnActivityInfo => {
         });
     });
 
-    // Pick the first assistant message where the turn reaches 2+ activities.
-    // Excludes standalone tools (rendered outside Activity group).
-    const activityCountByMessage = new Map<string, number>();
+    const activityGroupSegments: TurnActivityGroup[] = [];
+
+    const activityByPart = new WeakMap<Part, TurnActivityPart>();
     activityParts.forEach((activity) => {
-        if (activity.kind === 'tool') {
-            const toolName = (activity.part as { tool?: unknown }).tool;
-            if (isActivityStandaloneTool(toolName)) {
-                return;
-            }
-        }
-        activityCountByMessage.set(activity.messageId, (activityCountByMessage.get(activity.messageId) ?? 0) + 1);
+        activityByPart.set(activity.part, activity);
     });
 
-    let activityGroupAnchorMessageId: string | undefined;
-    let cumulative = 0;
-    for (const msg of turn.assistantMessages) {
-        cumulative += activityCountByMessage.get(msg.info.id) ?? 0;
-        if (cumulative >= 2) {
-            activityGroupAnchorMessageId = msg.info.id;
-            break;
+    const taskMessageById = new Map<string, string>();
+    const taskOrder: string[] = [];
+    const partsByAfterTool = new Map<string | null, TurnActivityPart[]>();
+
+    let currentAfterToolPartId: string | null = null;
+
+    turn.assistantMessages.forEach((msg) => {
+        const messageId = msg.info.id;
+
+        msg.parts.forEach((part) => {
+            if (part.type === 'tool') {
+                const toolName = (part as { tool?: unknown }).tool;
+                if (isActivityStandaloneTool(toolName)) {
+                    const toolPartId = typeof part.id === 'string' && part.id.trim().length > 0
+                        ? part.id
+                        : `${messageId}-task-${taskOrder.length + 1}`;
+
+                    if (!taskMessageById.has(toolPartId)) {
+                        taskMessageById.set(toolPartId, messageId);
+                        taskOrder.push(toolPartId);
+                    }
+
+                    currentAfterToolPartId = toolPartId;
+                    return;
+                }
+            }
+
+            const activity = activityByPart.get(part);
+            if (!activity) {
+                return;
+            }
+
+            if (activity.kind === 'tool') {
+                const toolName = (activity.part as { tool?: unknown }).tool;
+                if (isActivityStandaloneTool(toolName)) {
+                    return;
+                }
+            }
+
+            const list = partsByAfterTool.get(currentAfterToolPartId) ?? [];
+            list.push(activity);
+            partsByAfterTool.set(currentAfterToolPartId, list);
+        });
+    });
+
+    const pickAnchorForStartSegment = (segmentParts: TurnActivityPart[]): string | undefined => {
+        if (segmentParts.length === 0) return undefined;
+
+        const countByMessage = new Map<string, number>();
+        segmentParts.forEach((activity) => {
+            countByMessage.set(activity.messageId, (countByMessage.get(activity.messageId) ?? 0) + 1);
+        });
+
+        let firstWithAny: string | undefined;
+        let cumulative = 0;
+        for (const msg of turn.assistantMessages) {
+            const count = countByMessage.get(msg.info.id) ?? 0;
+            if (count > 0 && !firstWithAny) {
+                firstWithAny = msg.info.id;
+            }
+            cumulative += count;
+            if (cumulative >= 2) {
+                return msg.info.id;
+            }
         }
-    }
+        return firstWithAny;
+    };
+
+    const orderedKeys: Array<string | null> = [null, ...taskOrder];
+
+    orderedKeys.forEach((afterToolPartId) => {
+        const segmentParts = partsByAfterTool.get(afterToolPartId) ?? [];
+        if (segmentParts.length === 0) {
+            return;
+        }
+
+        const anchorMessageId = afterToolPartId === null
+            ? pickAnchorForStartSegment(segmentParts)
+            : taskMessageById.get(afterToolPartId);
+
+        if (!anchorMessageId) {
+            return;
+        }
+
+        activityGroupSegments.push({
+            id: `${turn.turnId}:${anchorMessageId}:${afterToolPartId ?? 'start'}`,
+            anchorMessageId,
+            afterToolPartId,
+            parts: segmentParts,
+        });
+    });
 
     return {
         activityParts,
+        activityGroupSegments,
         hasTools,
         hasReasoning,
         summaryBody,
         diffStats,
-        activityGroupAnchorMessageId,
     };
 };
 
@@ -396,6 +477,7 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
 
             const activityInfo = turnActivityInfo.get(turn.turnId);
             const activityParts = activityInfo?.activityParts ?? [];
+            const activityGroupSegments = activityInfo?.activityGroupSegments ?? [];
             const hasTools = Boolean(activityInfo?.hasTools);
             const hasReasoning = Boolean(activityInfo?.hasReasoning);
             const summaryBody = activityInfo?.summaryBody;
@@ -405,6 +487,7 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
             const isFirstAssistantInTurn = messageId === firstAssistantId;
             const lastAssistantId = turn.assistantMessages[turn.assistantMessages.length - 1]?.info.id;
             const isLastAssistantInTurn = messageId === lastAssistantId;
+            const headerMessageId = firstAssistantId;
 
             const uiState = getOrCreateTurnState(turn.turnId);
             const isTurnWorking = sessionIsWorking && lastTurnId === turn.turnId;
@@ -415,10 +498,11 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
                 isLastAssistantInTurn,
                 summaryBody,
                 activityParts,
+                activityGroupSegments,
+                headerMessageId,
                 hasTools,
                 hasReasoning,
                 diffStats,
-                activityGroupAnchorMessageId: activityInfo?.activityGroupAnchorMessageId,
                 isWorking: isTurnWorking,
                 isGroupExpanded: uiState.isExpanded,
                 previewedPartIds: uiState.previewedPartIds,

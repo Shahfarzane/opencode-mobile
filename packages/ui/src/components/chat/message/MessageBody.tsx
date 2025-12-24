@@ -597,6 +597,11 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         return activityPartsForTurn.filter((activity) => activity.messageId === messageId);
     }, [activityPartsForTurn, messageId, turnGroupingContext]);
 
+    const activityGroupSegmentsForMessage = React.useMemo(() => {
+        if (!turnGroupingContext) return [];
+        return turnGroupingContext.activityGroupSegments.filter((segment) => segment.anchorMessageId === messageId);
+    }, [messageId, turnGroupingContext]);
+
     const activityPartsByPart = React.useMemo(() => {
         const map = new Map<Part, (typeof activityPartsForMessage)[number]>();
         activityPartsForMessage.forEach((activity) => {
@@ -604,6 +609,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         });
         return map;
     }, [activityPartsForMessage]);
+
 
     const visibleActivityPartsForTurn = React.useMemo(() => {
         if (!turnGroupingContext) return [];
@@ -628,7 +634,12 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         if (!turnGroupingContext) {
             return;
         }
-        if (visibleActivityPartsForTurn.length > 1) {
+
+        const hasTaskSplitSegments = turnGroupingContext.activityGroupSegments.some(
+            (segment) => segment.afterToolPartId !== null
+        );
+
+        if (visibleActivityPartsForTurn.length > 1 || (hasTaskSplitSegments && visibleActivityPartsForTurn.length > 0)) {
             setHasEverHadMultipleVisibleActivities(true);
         }
     }, [turnGroupingContext, visibleActivityPartsForTurn.length]);
@@ -701,81 +712,58 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
 
     const shouldRenderActivityGroup = Boolean(
         turnGroupingContext &&
-            turnGroupingContext.activityGroupAnchorMessageId === messageId &&
             shouldShowActivityGroup &&
-            visibleActivityPartsForTurn.length > 0
+            visibleActivityPartsForTurn.length > 0 &&
+            activityGroupSegmentsForMessage.length > 0
     );
 
     const standaloneToolParts = React.useMemo(() => {
         return toolParts.filter((toolPart) => isActivityStandaloneTool(toolPart.tool));
     }, [toolParts]);
 
-    const isActivityGroupVisibleNow = React.useMemo(() => {
-        if (!turnGroupingContext || !shouldRenderActivityGroup) {
-            return false;
-        }
-        if (!turnGroupingContext.isWorking) {
-            return true;
-        }
-        const previewed = turnGroupingContext.previewedPartIds;
-        return visibleActivityPartsForTurn.some((activity) => previewed.has(activity.id));
-    }, [shouldRenderActivityGroup, turnGroupingContext, visibleActivityPartsForTurn]);
-
-    const standaloneToolsFirstVisibleAtRef = React.useRef<number | null>(null);
-    const activityGroupFirstVisibleAtRef = React.useRef<number | null>(null);
-
-    React.useEffect(() => {
-        standaloneToolsFirstVisibleAtRef.current = null;
-        activityGroupFirstVisibleAtRef.current = null;
-    }, [messageId]);
-
-    const now = Date.now();
-    if (standaloneToolParts.length > 0 && standaloneToolsFirstVisibleAtRef.current === null) {
-        standaloneToolsFirstVisibleAtRef.current = now;
-    }
-    if (isActivityGroupVisibleNow && activityGroupFirstVisibleAtRef.current === null) {
-        activityGroupFirstVisibleAtRef.current = now;
-    }
-
-    const shouldPlaceActivityAfterStandaloneTools = Boolean(
-        standaloneToolParts.length > 0 &&
-            isActivityGroupVisibleNow &&
-            typeof standaloneToolsFirstVisibleAtRef.current === 'number' &&
-            typeof activityGroupFirstVisibleAtRef.current === 'number' &&
-            activityGroupFirstVisibleAtRef.current > standaloneToolsFirstVisibleAtRef.current
-    );
 
     const renderedParts = React.useMemo(() => {
         const rendered: React.ReactNode[] = [];
 
-        const pushActivityGroup = () => {
+        const renderActivitySegments = (afterToolPartId: string | null) => {
             if (!turnGroupingContext || !shouldRenderActivityGroup) {
                 return;
             }
-            rendered.push(
-                <ProgressiveGroup
-                    key="progressive-group"
-                    parts={visibleActivityPartsForTurn}
-                    isExpanded={turnGroupingContext.isGroupExpanded}
-                    onToggle={turnGroupingContext.toggleGroup}
-                    syntaxTheme={syntaxTheme}
-                    isMobile={isMobile}
-                    expandedTools={expandedTools}
-                    onToggleTool={onToggleTool}
-                    onShowPopup={onShowPopup}
-                    onContentChange={onContentChange}
-                    isWorking={turnGroupingContext.isWorking}
-                    previewedPartIds={turnGroupingContext.previewedPartIds}
-                    diffStats={turnGroupingContext.diffStats}
-                />
-            );
+
+            activityGroupSegmentsForMessage
+                .filter((segment) => (segment.afterToolPartId ?? null) === afterToolPartId)
+                .forEach((segment) => {
+                    const visibleSegmentParts = !showReasoningTraces
+                        ? segment.parts.filter((activity) => activity.kind === 'tool')
+                        : segment.parts;
+
+                    if (visibleSegmentParts.length === 0) {
+                        return;
+                    }
+
+                    rendered.push(
+                        <ProgressiveGroup
+                            key={`progressive-group-${segment.id}`}
+                            parts={visibleSegmentParts}
+                            isExpanded={turnGroupingContext.isGroupExpanded}
+                            onToggle={turnGroupingContext.toggleGroup}
+                            syntaxTheme={syntaxTheme}
+                            isMobile={isMobile}
+                            expandedTools={expandedTools}
+                            onToggleTool={onToggleTool}
+                            onShowPopup={onShowPopup}
+                            onContentChange={onContentChange}
+                            isWorking={turnGroupingContext.isWorking}
+                            previewedPartIds={turnGroupingContext.previewedPartIds}
+                            diffStats={turnGroupingContext.diffStats}
+                        />
+                    );
+                });
         };
 
-        if (!shouldPlaceActivityAfterStandaloneTools) {
-            pushActivityGroup();
-        }
+        // Activity groups and standalone tasks are interleaved in message order.
+        renderActivitySegments(null);
 
-        // Standalone tools: rendered outside Activity group
         standaloneToolParts.forEach((standaloneToolPart) => {
             rendered.push(
                 <FadeInOnReveal key={`standalone-tool-${standaloneToolPart.id}`}>
@@ -791,11 +779,9 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                     />
                 </FadeInOnReveal>
             );
-        });
 
-        if (shouldPlaceActivityAfterStandaloneTools) {
-            pushActivityGroup();
-        }
+            renderActivitySegments(standaloneToolPart.id);
+        });
 
         const partsWithTime: Array<{
             part: Part;
@@ -1026,6 +1012,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         return rendered;
     }, [
         activityPartsByPart,
+        activityGroupSegmentsForMessage,
         copiedCode,
         copiedMessage,
         expandedTools,
@@ -1054,7 +1041,6 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         toolParts,
         standaloneToolParts,
         shouldRenderActivityGroup,
-        shouldPlaceActivityAfterStandaloneTools,
     ]);
 
     const userMessageId = turnGroupingContext?.turnId;

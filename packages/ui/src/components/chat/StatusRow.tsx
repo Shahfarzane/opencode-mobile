@@ -49,6 +49,7 @@ interface StatusRowProps {
   // Working state
   isWorking: boolean;
   statusText: string | null;
+  isGenericStatus?: boolean;
   isWaitingForPermission?: boolean;
   wasAborted?: boolean;
   abortActive?: boolean;
@@ -64,6 +65,7 @@ interface StatusRowProps {
 export const StatusRow: React.FC<StatusRowProps> = ({
   isWorking,
   statusText,
+  isGenericStatus,
   isWaitingForPermission,
   wasAborted,
   abortActive,
@@ -122,7 +124,17 @@ export const StatusRow: React.FC<StatusRowProps> = ({
   const hasTodos = visibleTodos.length > 0;
   // Original logic from ChatInput
   const shouldRenderPlaceholder = !showAbortStatus && (wasAborted || !abortActive);
-  const hasContent = isWorking || hasTodos || showAbortStatus;
+  
+  // Track if placeholder is showing result (done/aborted) to keep StatusRow mounted
+  const [placeholderShowingResult, setPlaceholderShowingResult] = React.useState(false);
+  
+  // Keep StatusRow rendered while:
+  // - isWorking (active session)
+  // - isComplete (showing "Done" result)
+  // - wasAborted (showing "Aborted" result)
+  // - placeholderShowingResult (placeholder still displaying result)
+  // - hasTodos or showAbortStatus
+  const hasContent = isWorking || isComplete || wasAborted || placeholderShowingResult || hasTodos || showAbortStatus;
 
   // Close popover when clicking outside
   const popoverRef = React.useRef<HTMLDivElement>(null);
@@ -201,10 +213,12 @@ export const StatusRow: React.FC<StatusRowProps> = ({
             <WorkingPlaceholder
               key={currentSessionId ?? "no-session"}
               statusText={statusText}
+              isGenericStatus={isGenericStatus}
               isWaitingForPermission={isWaitingForPermission}
               wasAborted={wasAborted}
               completionId={completionId ?? null}
               isComplete={isComplete}
+              onResultVisibilityChange={setPlaceholderShowingResult}
             />
           ) : null}
         </div>
