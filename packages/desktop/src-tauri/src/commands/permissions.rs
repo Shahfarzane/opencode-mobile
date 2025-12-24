@@ -4,6 +4,7 @@ use tauri::AppHandle;
 use tauri::State;
 
 use crate::DesktopRuntime;
+use crate::path_utils::expand_tilde_path;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,10 +35,12 @@ pub async fn process_directory_selection(
     path: String,
     state: State<'_, DesktopRuntime>,
 ) -> Result<DirectoryPermissionResult, String> {
-    use std::path::PathBuf;
-
     // Validate directory exists
-    let path_buf = PathBuf::from(&path);
+    let mut path_buf = expand_tilde_path(&path);
+    if let Ok(canonicalized) = std::fs::canonicalize(&path_buf) {
+        path_buf = canonicalized;
+    }
+    let normalized_path = path_buf.to_string_lossy().to_string();
     if !path_buf.exists() {
         return Ok(DirectoryPermissionResult {
             success: false,
@@ -64,7 +67,7 @@ pub async fn process_directory_selection(
     if let Some(obj) = settings.as_object_mut() {
         obj.insert(
             "lastDirectory".to_string(),
-            serde_json::Value::String(path.clone()),
+            serde_json::Value::String(normalized_path.clone()),
         );
     }
 
@@ -76,12 +79,12 @@ pub async fn process_directory_selection(
 
     info!(
         "[permissions] Updated settings with lastDirectory: {}",
-        path
+        normalized_path
     );
 
     Ok(DirectoryPermissionResult {
         success: true,
-        path: Some(path),
+        path: Some(normalized_path),
         error: None,
     })
 }
@@ -110,7 +113,11 @@ pub async fn request_directory_access(
 ) -> Result<DirectoryPermissionResult, String> {
     let path = request.path;
 
-    let path_buf = std::path::PathBuf::from(&path);
+    let mut path_buf = expand_tilde_path(&path);
+    if let Ok(canonicalized) = std::fs::canonicalize(&path_buf) {
+        path_buf = canonicalized;
+    }
+    let normalized_path = path_buf.to_string_lossy().to_string();
     if !path_buf.exists() {
         return Ok(DirectoryPermissionResult {
             success: false,
@@ -131,7 +138,7 @@ pub async fn request_directory_access(
     match std::fs::read_dir(&path_buf) {
         Ok(_) => Ok(DirectoryPermissionResult {
             success: true,
-            path: Some(path),
+            path: Some(normalized_path),
             error: None,
         }),
         Err(e) => Ok(DirectoryPermissionResult {

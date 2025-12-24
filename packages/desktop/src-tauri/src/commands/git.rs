@@ -1,4 +1,5 @@
 use crate::{DesktopRuntime, SettingsStore};
+use crate::path_utils::expand_tilde_path;
 use anyhow::{anyhow, Context, Result};
 use log::{error, info, warn};
 use regex::Regex;
@@ -357,7 +358,7 @@ fn append_git_option_map(args: &mut Vec<String>, map: &serde_json::Map<String, V
 // Removed unused resolve_workspace_root function
 
 async fn validate_git_path(path: &str, _settings: &SettingsStore) -> Result<PathBuf> {
-    let path_buf = PathBuf::from(path);
+    let path_buf = expand_tilde_path(path);
     if !path_buf.exists() {
         return Err(anyhow!("Directory does not exist: {}", path));
     }

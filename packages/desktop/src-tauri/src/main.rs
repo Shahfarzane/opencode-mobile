@@ -7,6 +7,7 @@ mod session_activity;
 mod opencode_config;
 mod opencode_manager;
 mod window_state;
+mod path_utils;
 
 use std::{collections::HashMap, path::PathBuf, sync::Arc, time::{Duration, Instant}};
 
@@ -63,6 +64,7 @@ use tokio::{
 };
 use tower_http::cors::CorsLayer;
 use window_state::{load_window_state, persist_window_state, WindowStateManager};
+use path_utils::expand_tilde_path;
 
 #[cfg(target_os = "macos")]
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -1485,7 +1487,10 @@ async fn change_directory_handler(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    let resolved_path = PathBuf::from(requested_path);
+    let mut resolved_path = expand_tilde_path(requested_path);
+    if !resolved_path.is_absolute() {
+        resolved_path = state.opencode.get_working_directory().join(resolved_path);
+    }
 
     // Validate directory exists and is accessible
     match fs::metadata(&resolved_path).await {
@@ -1505,6 +1510,10 @@ async fn change_directory_handler(
             );
             return Err(StatusCode::NOT_FOUND);
         }
+    }
+
+    if let Ok(canonicalized) = fs::canonicalize(&resolved_path).await {
+        resolved_path = canonicalized;
     }
 
     let current_dir = state.opencode.get_working_directory();
@@ -1682,7 +1691,7 @@ impl SettingsStore {
             .and_then(|value| value.as_str())
             .map(str::trim)
             .filter(|value| !value.is_empty())
-            .map(PathBuf::from);
+            .map(expand_tilde_path);
         Ok(candidate)
     }
 }

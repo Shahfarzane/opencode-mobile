@@ -79,6 +79,34 @@ const persistSettings = async (changes: Record<string, unknown>, ctx?: BridgeCon
 
 const normalizeFsPath = (value: string) => value.replace(/\\/g, '/');
 
+const expandTildePath = (value: string) => {
+  const trimmed = (value || '').trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (trimmed === '~') {
+    return os.homedir();
+  }
+
+  if (trimmed.startsWith('~/') || trimmed.startsWith('~\\')) {
+    return path.join(os.homedir(), trimmed.slice(2));
+  }
+
+  return trimmed;
+};
+
+const resolveUserPath = (value: string, baseDirectory: string) => {
+  const expanded = expandTildePath(value);
+  if (!expanded) {
+    return expanded;
+  }
+  if (path.isAbsolute(expanded)) {
+    return expanded;
+  }
+  return path.resolve(baseDirectory, expanded);
+};
+
 const listDirectoryEntries = async (dirPath: string) => {
   const uri = vscode.Uri.file(dirPath);
   const entries = await vscode.workspace.fs.readDirectory(uri);
@@ -187,7 +215,10 @@ const searchFilesystemFiles = async (rootPath: string, query: string, limit: num
 };
 
 const searchDirectory = async (directory: string, query: string, limit = 60) => {
-  const rootPath = directory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
+  const rootPath = directory
+    ? resolveUserPath(directory, workspaceRoot)
+    : vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   if (!rootPath) return [];
 
   const sanitizedQuery = query?.trim() || '';
@@ -327,14 +358,16 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
 
       case 'files:list': {
         const { path: dirPath } = payload as { path: string };
-        const uri = vscode.Uri.file(dirPath);
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
+        const resolvedPath = resolveUserPath(dirPath, workspaceRoot);
+        const uri = vscode.Uri.file(resolvedPath);
         const entries = await vscode.workspace.fs.readDirectory(uri);
         const result: FileEntry[] = entries.map(([name, fileType]) => ({
           name,
           path: vscode.Uri.joinPath(uri, name).fsPath,
           isDirectory: fileType === vscode.FileType.Directory,
         }));
-        return { id, type, success: true, data: { directory: dirPath, entries: result } };
+        return { id, type, success: true, data: { directory: normalizeFsPath(resolvedPath), entries: result } };
       }
 
       case 'files:search': {
@@ -360,9 +393,12 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
       }
 
       case 'api:fs:list': {
-        const target = (payload as { path?: string })?.path || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
-        const entries = await listDirectoryEntries(target);
-        return { id, type, success: true, data: { entries, directory: target } };
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
+        const target = (payload as { path?: string })?.path || workspaceRoot;
+        const resolvedPath = resolveUserPath(target, workspaceRoot) || workspaceRoot;
+        const entries = await listDirectoryEntries(resolvedPath);
+        const normalized = normalizeFsPath(resolvedPath);
+        return { id, type, success: true, data: { entries, directory: normalized, path: normalized } };
       }
 
       case 'api:fs:search': {
@@ -376,8 +412,10 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         if (!target) {
           return { id, type, success: false, error: 'Path is required' };
         }
-        await vscode.workspace.fs.createDirectory(vscode.Uri.file(target));
-        return { id, type, success: true, data: { success: true, path: normalizeFsPath(target) } };
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
+        const resolvedPath = resolveUserPath(target, workspaceRoot);
+        await vscode.workspace.fs.createDirectory(vscode.Uri.file(resolvedPath));
+        return { id, type, success: true, data: { success: true, path: normalizeFsPath(resolvedPath) } };
       }
 
       case 'api:fs/home': {
@@ -615,7 +653,10 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         if (!target) {
           return { id, type, success: false, error: 'Path is required' };
         }
-        const result = await ctx?.manager?.setWorkingDirectory(target);
+        const baseDirectory =
+          ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
+        const resolvedPath = resolveUserPath(target, baseDirectory);
+        const result = await ctx?.manager?.setWorkingDirectory(resolvedPath);
         if (!result) {
           return { id, type, success: false, error: 'OpenCode manager unavailable' };
         }

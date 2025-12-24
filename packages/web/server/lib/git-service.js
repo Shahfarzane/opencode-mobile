@@ -1,27 +1,51 @@
 import simpleGit from 'simple-git';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 
 const fsp = fs.promises;
 const execFileAsync = promisify(execFile);
 
+const normalizeDirectoryPath = (value) => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (trimmed === '~') {
+    return os.homedir();
+  }
+
+  if (trimmed.startsWith('~/') || trimmed.startsWith('~\\')) {
+    return path.join(os.homedir(), trimmed.slice(2));
+  }
+
+  return trimmed;
+};
+
 export async function isGitRepository(directory) {
-  if (!directory || !fs.existsSync(directory)) {
+  const directoryPath = normalizeDirectoryPath(directory);
+  if (!directoryPath || !fs.existsSync(directoryPath)) {
     return false;
   }
 
-  const gitDir = path.join(directory, '.git');
+  const gitDir = path.join(directoryPath, '.git');
   return fs.existsSync(gitDir);
 }
 
 export async function ensureOpenChamberIgnored(directory) {
-  if (!directory || !fs.existsSync(directory)) {
+  const directoryPath = normalizeDirectoryPath(directory);
+  if (!directoryPath || !fs.existsSync(directoryPath)) {
     return false;
   }
 
-  const gitDir = path.join(directory, '.git');
+  const gitDir = path.join(directoryPath, '.git');
   if (!fs.existsSync(gitDir)) {
     return false;
   }
@@ -78,7 +102,7 @@ export async function getGlobalIdentity() {
 }
 
 export async function getCurrentIdentity(directory) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
 
@@ -110,7 +134,7 @@ export async function getCurrentIdentity(directory) {
 }
 
 export async function setLocalIdentity(directory, profile) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
 
@@ -134,7 +158,8 @@ export async function setLocalIdentity(directory, profile) {
 }
 
 export async function getStatus(directory) {
-  const git = simpleGit(directory);
+  const directoryPath = normalizeDirectoryPath(directory);
+  const git = simpleGit(directoryPath);
 
   try {
     // Use -uall to show all untracked files individually, not just directories
@@ -194,7 +219,7 @@ export async function getStatus(directory) {
           return null;
         }
 
-        const absolutePath = path.join(directory, file.path);
+        const absolutePath = path.join(directoryPath, file.path);
 
         try {
           const stat = await fsp.stat(absolutePath);
@@ -266,7 +291,7 @@ export async function getStatus(directory) {
 }
 
 export async function getDiff(directory, { path, staged = false, contextLines = 3 } = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const args = ['diff', '--no-color'];
@@ -338,7 +363,8 @@ export async function getFileDiff(directory, { path: filePath, staged = false } 
     throw new Error('directory and path are required for getFileDiff');
   }
 
-  const git = simpleGit(directory);
+  const directoryPath = normalizeDirectoryPath(directory);
+  const git = simpleGit(directoryPath);
   const isImage = isImageFile(filePath);
   const mimeType = isImage ? getImageMimeType(filePath) : null;
 
@@ -348,7 +374,7 @@ export async function getFileDiff(directory, { path: filePath, staged = false } 
       // For images, use git show with raw output and convert to base64
       try {
         const { stdout } = await execFileAsync('git', ['show', `HEAD:${filePath}`], {
-          cwd: directory,
+          cwd: directoryPath,
           encoding: 'buffer',
           maxBuffer: 50 * 1024 * 1024, // 50MB max
         });
@@ -365,7 +391,7 @@ export async function getFileDiff(directory, { path: filePath, staged = false } 
     original = '';
   }
 
-  const fullPath = path.join(directory, filePath);
+  const fullPath = path.join(directoryPath, filePath);
   let modified = '';
   try {
     const stat = await fsp.stat(fullPath);
@@ -395,8 +421,9 @@ export async function getFileDiff(directory, { path: filePath, staged = false } 
 }
 
 export async function revertFile(directory, filePath) {
-  const git = simpleGit(directory);
-  const repoRoot = path.resolve(directory);
+  const directoryPath = normalizeDirectoryPath(directory);
+  const git = simpleGit(directoryPath);
+  const repoRoot = path.resolve(directoryPath);
   const absoluteTarget = path.resolve(repoRoot, filePath);
 
   if (!absoluteTarget.startsWith(repoRoot + path.sep) && absoluteTarget !== repoRoot) {
@@ -460,7 +487,7 @@ export async function collectDiffs(directory, files = []) {
 }
 
 export async function pull(directory, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const result = await git.pull(
@@ -483,7 +510,7 @@ export async function pull(directory, options = {}) {
 }
 
 export async function push(directory, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const result = await git.push(
@@ -510,7 +537,7 @@ export async function deleteRemoteBranch(directory, options = {}) {
     throw new Error('branch is required to delete remote branch');
   }
 
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
   const targetBranch = branch.startsWith('refs/heads/')
     ? branch.substring('refs/heads/'.length)
     : branch;
@@ -526,7 +553,7 @@ export async function deleteRemoteBranch(directory, options = {}) {
 }
 
 export async function fetch(directory, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     await git.fetch(
@@ -543,7 +570,7 @@ export async function fetch(directory, options = {}) {
 }
 
 export async function commit(directory, message, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
 
@@ -573,7 +600,7 @@ export async function commit(directory, message, options = {}) {
 }
 
 export async function getBranches(directory) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const result = await git.branch();
@@ -627,7 +654,7 @@ async function filterActiveRemoteBranches(git, remoteBranches) {
 }
 
 export async function createBranch(directory, branchName, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     await git.checkoutBranch(branchName, options.startPoint || 'HEAD');
@@ -639,7 +666,7 @@ export async function createBranch(directory, branchName, options = {}) {
 }
 
 export async function checkoutBranch(directory, branchName) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     await git.checkout(branchName);
@@ -651,7 +678,12 @@ export async function checkoutBranch(directory, branchName) {
 }
 
 export async function getWorktrees(directory) {
-  const git = simpleGit(directory);
+  const directoryPath = normalizeDirectoryPath(directory);
+  if (!directoryPath || !fs.existsSync(directoryPath) || !fs.existsSync(path.join(directoryPath, '.git'))) {
+    return [];
+  }
+
+  const git = simpleGit(directoryPath);
 
   try {
     const result = await git.raw(['worktree', 'list', '--porcelain']);
@@ -684,13 +716,13 @@ export async function getWorktrees(directory) {
 
     return worktrees;
   } catch (error) {
-    console.error('Failed to list worktrees:', error);
-    throw error;
+    console.warn('Failed to list worktrees, returning empty list:', error?.message || error);
+    return [];
   }
 }
 
 export async function addWorktree(directory, worktreePath, branch, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const args = ['worktree', 'add'];
@@ -719,7 +751,7 @@ export async function addWorktree(directory, worktreePath, branch, options = {})
 }
 
 export async function removeWorktree(directory, worktreePath, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const args = ['worktree', 'remove', worktreePath];
@@ -738,7 +770,7 @@ export async function removeWorktree(directory, worktreePath, options = {}) {
 }
 
 export async function deleteBranch(directory, branch, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const branchName = branch.startsWith('refs/heads/')
@@ -754,7 +786,7 @@ export async function deleteBranch(directory, branch, options = {}) {
 }
 
 export async function getLog(directory, options = {}) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
     const maxCount = options.maxCount || 50;
@@ -852,7 +884,7 @@ export async function getLog(directory, options = {}) {
 }
 
 export async function isLinkedWorktree(directory) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
   try {
     const [gitDir, gitCommonDir] = await Promise.all([
       git.raw(['rev-parse', '--git-dir']).then((output) => output.trim()),
@@ -866,7 +898,7 @@ export async function isLinkedWorktree(directory) {
 }
 
 export async function getCommitFiles(directory, commitHash) {
-  const git = simpleGit(directory);
+  const git = simpleGit(normalizeDirectoryPath(directory));
 
   try {
 
