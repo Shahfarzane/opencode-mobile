@@ -140,6 +140,77 @@ const shouldSkipSearchDirectory = (name: string) => {
   return FILE_SEARCH_EXCLUDED_DIRS.has(name.toLowerCase());
 };
 
+/**
+ * Fuzzy match scoring function.
+ * Returns a score > 0 if the query fuzzy-matches the candidate, null otherwise.
+ * Higher scores indicate better matches.
+ */
+const fuzzyMatchScore = (query: string, candidate: string): number | null => {
+  if (!query) return 0;
+
+  const q = query.toLowerCase();
+  const c = candidate.toLowerCase();
+
+  // Fast path: exact substring match gets high score
+  if (c.includes(q)) {
+    const idx = c.indexOf(q);
+    let bonus = 0;
+    if (idx === 0) {
+      bonus = 20;
+    } else {
+      const prev = c[idx - 1];
+      if (prev === '/' || prev === '_' || prev === '-' || prev === '.' || prev === ' ') {
+        bonus = 15;
+      }
+    }
+    return 100 + bonus - Math.min(idx, 20) - Math.floor(c.length / 5);
+  }
+
+  // Fuzzy match: all query chars must appear in order
+  let score = 0;
+  let lastIndex = -1;
+  let consecutive = 0;
+
+  for (let i = 0; i < q.length; i++) {
+    const ch = q[i];
+    if (!ch || ch === ' ') continue;
+
+    const idx = c.indexOf(ch, lastIndex + 1);
+    if (idx === -1) {
+      return null; // No match
+    }
+
+    const gap = idx - lastIndex - 1;
+    if (gap === 0) {
+      consecutive++;
+    } else {
+      consecutive = 0;
+    }
+
+    score += 10;
+    score += Math.max(0, 18 - idx); // Prefer matches near start
+    score -= Math.min(gap, 10); // Penalize gaps
+
+    // Bonus for word boundary matches
+    if (idx === 0) {
+      score += 12;
+    } else {
+      const prev = c[idx - 1];
+      if (prev === '/' || prev === '_' || prev === '-' || prev === '.' || prev === ' ') {
+        score += 10;
+      }
+    }
+
+    score += consecutive > 0 ? 12 : 0; // Bonus for consecutive matches
+    lastIndex = idx;
+  }
+
+  // Prefer shorter paths
+  score += Math.max(0, 24 - Math.floor(c.length / 3));
+
+  return score;
+};
+
 const searchFilesystemFiles = async (rootPath: string, query: string, limit: number) => {
   const normalizedQuery = (query || '').trim().toLowerCase();
   const matchAll = normalizedQuery.length === 0;
@@ -147,10 +218,12 @@ const searchFilesystemFiles = async (rootPath: string, query: string, limit: num
   const rootUri = vscode.Uri.file(rootPath);
   const queue: vscode.Uri[] = [rootUri];
   const visited = new Set<string>([normalizeFsPath(rootUri.fsPath)]);
-  const results: Array<{ name: string; path: string; relativePath: string; extension?: string }> = [];
+  // Collect more candidates for fuzzy matching, then sort and trim
+  const collectLimit = matchAll ? limit : Math.max(limit * 3, 200);
+  const candidates: Array<{ name: string; path: string; relativePath: string; extension?: string; score: number }> = [];
   const MAX_CONCURRENCY = 5;
 
-  while (queue.length > 0 && results.length < limit) {
+  while (queue.length > 0 && candidates.length < collectLimit) {
     const batch = queue.splice(0, MAX_CONCURRENCY);
     const dirLists = await Promise.all(
       batch.map((dir) => Promise.resolve(vscode.workspace.fs.readDirectory(dir)).catch(() => [] as [string, vscode.FileType][]))
@@ -184,34 +257,60 @@ const searchFilesystemFiles = async (rootPath: string, query: string, limit: num
         }
 
         const relativePath = normalizeFsPath(path.relative(rootPath, absolute) || path.basename(absolute));
-        if (!matchAll) {
-          const lowercaseName = entryName.toLowerCase();
-          const lowercasePath = relativePath.toLowerCase();
-          if (!lowercaseName.includes(normalizedQuery) && !lowercasePath.includes(normalizedQuery)) {
-            continue;
+        const extension = entryName.includes('.') ? entryName.split('.').pop()?.toLowerCase() : undefined;
+
+        if (matchAll) {
+          candidates.push({
+            name: entryName,
+            path: absolute,
+            relativePath,
+            extension,
+            score: 0,
+          });
+        } else {
+          // Try fuzzy match against relative path (includes filename)
+          const score = fuzzyMatchScore(normalizedQuery, relativePath);
+          if (score !== null) {
+            candidates.push({
+              name: entryName,
+              path: absolute,
+              relativePath,
+              extension,
+              score,
+            });
           }
         }
 
-        results.push({
-          name: entryName,
-          path: absolute,
-          relativePath,
-          extension: entryName.includes('.') ? entryName.split('.').pop()?.toLowerCase() : undefined,
-        });
-
-        if (results.length >= limit) {
+        if (candidates.length >= collectLimit) {
           queue.length = 0;
           break;
         }
       }
 
-      if (results.length >= limit) {
+      if (candidates.length >= collectLimit) {
         break;
       }
     }
   }
 
-  return results;
+  // Sort by score descending, then by path length, then alphabetically
+  if (!matchAll) {
+    candidates.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (a.relativePath.length !== b.relativePath.length) {
+        return a.relativePath.length - b.relativePath.length;
+      }
+      return a.relativePath.localeCompare(b.relativePath);
+    });
+  }
+
+  // Return top results without the score field
+  return candidates.slice(0, limit).map(({ name, path: filePath, relativePath, extension }) => ({
+    name,
+    path: filePath,
+    relativePath,
+    extension,
+  }));
 };
 
 const searchDirectory = async (directory: string, query: string, limit = 60) => {

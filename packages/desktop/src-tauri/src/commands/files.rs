@@ -211,6 +211,11 @@ pub async fn list_directory(
     })
 }
 
+struct ScoredFileHit {
+    hit: FileSearchHit,
+    score: i32,
+}
+
 #[tauri::command]
 pub async fn search_files(
     directory: Option<String>,
@@ -227,14 +232,17 @@ pub async fn search_files(
     let normalized_query = query.unwrap_or_default().trim().to_lowercase();
     let match_all = normalized_query.is_empty();
 
-    let mut files = Vec::new();
+    // Collect more candidates for fuzzy matching, then sort and trim
+    let collect_limit = if match_all { limit } else { (limit * 3).max(200) };
+
+    let mut candidates: Vec<ScoredFileHit> = Vec::new();
     let mut queue = VecDeque::new();
     let mut visited = HashSet::new();
 
     queue.push_back(resolved_root.clone());
     visited.insert(resolved_root.clone());
 
-    while !queue.is_empty() && files.len() < limit {
+    while !queue.is_empty() && candidates.len() < collect_limit {
         for _ in 0..FILE_SEARCH_MAX_CONCURRENCY {
             let Some(dir) = queue.pop_front() else {
                 break;
@@ -261,7 +269,7 @@ pub async fn search_files(
                     if should_skip_directory(&name_str) {
                         continue;
                     }
-                    if visited.insert(entry_path.clone()) && files.len() < limit {
+                    if visited.insert(entry_path.clone()) && candidates.len() < collect_limit {
                         queue.push_back(entry_path);
                     }
                     continue;
@@ -272,38 +280,58 @@ pub async fn search_files(
                 }
 
                 let relative_path = relative_path(&resolved_root, &entry_path);
-                if !match_all {
-                    let lowercase_name = name_str.to_lowercase();
-                    let lowercase_path = relative_path.to_lowercase();
-                    if !lowercase_name.contains(&normalized_query)
-                        && !lowercase_path.contains(&normalized_query)
-                    {
-                        continue;
-                    }
-                }
-
                 let extension = entry_path
                     .extension()
                     .and_then(|ext| ext.to_str())
                     .map(|ext| ext.to_lowercase());
 
-                files.push(FileSearchHit {
+                let hit = FileSearchHit {
                     name: name_str.to_string(),
                     path: normalize_path(&entry_path),
                     relative_path: relative_path.replace('\\', "/"),
                     extension,
-                });
+                };
 
-                if files.len() >= limit {
+                if match_all {
+                    candidates.push(ScoredFileHit { hit, score: 0 });
+                } else {
+                    // Try fuzzy match against relative path (includes filename)
+                    if let Some(score) = fuzzy_match_score(&normalized_query, &relative_path) {
+                        candidates.push(ScoredFileHit { hit, score });
+                    }
+                }
+
+                if candidates.len() >= collect_limit {
                     break;
                 }
             }
 
-            if files.len() >= limit {
+            if candidates.len() >= collect_limit {
                 break;
             }
         }
     }
+
+    // Sort by score descending, then by path length, then alphabetically
+    if !match_all {
+        candidates.sort_by(|a, b| {
+            match b.score.cmp(&a.score) {
+                std::cmp::Ordering::Equal => {
+                    match a.hit.relative_path.len().cmp(&b.hit.relative_path.len()) {
+                        std::cmp::Ordering::Equal => a.hit.relative_path.cmp(&b.hit.relative_path),
+                        other => other,
+                    }
+                }
+                other => other,
+            }
+        });
+    }
+
+    let files: Vec<FileSearchHit> = candidates
+        .into_iter()
+        .take(limit)
+        .map(|scored| scored.hit)
+        .collect();
 
     Ok(SearchFilesResponse {
         root: normalize_path(&resolved_root),
@@ -430,6 +458,83 @@ fn should_skip_directory(name: &str) -> bool {
     FILE_SEARCH_EXCLUDED_DIRS
         .iter()
         .any(|dir| dir.eq_ignore_ascii_case(name))
+}
+
+/// Fuzzy match scoring function.
+/// Returns Some(score) if the query fuzzy-matches the candidate, None otherwise.
+/// Higher scores indicate better matches.
+fn fuzzy_match_score(query: &str, candidate: &str) -> Option<i32> {
+    if query.is_empty() {
+        return Some(0);
+    }
+
+    let q: Vec<char> = query.to_lowercase().chars().collect();
+    let c: Vec<char> = candidate.to_lowercase().chars().collect();
+    let c_str = candidate.to_lowercase();
+
+    // Fast path: exact substring match gets high score
+    if c_str.contains(query) {
+        if let Some(idx) = c_str.find(query) {
+            let mut bonus: i32 = 0;
+            if idx == 0 {
+                bonus = 20;
+            } else if let Some(prev) = c.get(idx.saturating_sub(1)) {
+                if *prev == '/' || *prev == '_' || *prev == '-' || *prev == '.' || *prev == ' ' {
+                    bonus = 15;
+                }
+            }
+            return Some(100 + bonus - (idx.min(20) as i32) - (c.len() as i32 / 5));
+        }
+    }
+
+    // Fuzzy match: all query chars must appear in order
+    let mut score: i32 = 0;
+    let mut last_index: i32 = -1;
+    let mut consecutive: i32 = 0;
+
+    for ch in &q {
+        if *ch == ' ' {
+            continue;
+        }
+
+        let search_start = if last_index < 0 { 0 } else { (last_index + 1) as usize };
+        let idx = c[search_start..].iter().position(|&c_char| c_char == *ch);
+
+        match idx {
+            None => return None, // No match
+            Some(relative_idx) => {
+                let idx = search_start + relative_idx;
+                let gap = idx as i32 - last_index - 1;
+
+                if gap == 0 {
+                    consecutive += 1;
+                } else {
+                    consecutive = 0;
+                }
+
+                score += 10;
+                score += (18 - idx as i32).max(0); // Prefer matches near start
+                score -= gap.min(10); // Penalize gaps
+
+                // Bonus for word boundary matches
+                if idx == 0 {
+                    score += 12;
+                } else if let Some(prev) = c.get(idx - 1) {
+                    if *prev == '/' || *prev == '_' || *prev == '-' || *prev == '.' || *prev == ' ' {
+                        score += 10;
+                    }
+                }
+
+                score += if consecutive > 0 { 12 } else { 0 }; // Bonus for consecutive matches
+                last_index = idx as i32;
+            }
+        }
+    }
+
+    // Prefer shorter paths
+    score += (24 - c.len() as i32 / 3).max(0);
+
+    Some(score)
 }
 
 fn normalize_path(path: &Path) -> String {
