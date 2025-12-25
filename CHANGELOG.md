@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.4] - 2025-12-25
+
+- Diff view now loads reliably even with large files and slow networks.
+- Fixed getting diffs for worktree files
+- VS Code extension: improved type checking and editor integration.
+
+
 ## [1.3.3] - 2025-12-25
 
 - Updated OpenCode SDK to 1.0.185 across all app versions.
