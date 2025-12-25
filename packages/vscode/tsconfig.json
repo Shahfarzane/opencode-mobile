@@ -11,14 +11,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["../ui/src/*"],
-      "@vscode/*": ["./webview/*"],
-      "@openchamber/ui/*": ["../ui/src/*"]
-    }
+    "outDir": "dist"
   },
-  "include": ["src/**/*", "webview/**/*", "../ui/src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "webview"]
 }
