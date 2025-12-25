@@ -273,7 +273,14 @@ export const useSessionStore = create<SessionStore>()(
                             const worktreeRoot = `${normalizedProject}/${WORKTREE_ROOT}`;
                             try {
                                 const candidates = new Set<string>();
-                                if (worktreeRoot) {
+                                
+                                // Check if .openchamber directory exists before trying to list it
+                                const projectEntries = await opencodeClient.listLocalDirectory(normalizedProject);
+                                const worktreeDirExists = projectEntries.some(
+                                    (entry) => entry.isDirectory && entry.name === WORKTREE_ROOT
+                                );
+                                
+                                if (worktreeDirExists) {
                                     const entries = await opencodeClient.listLocalDirectory(worktreeRoot);
                                     entries
                                         .filter((entry) => entry.isDirectory)
