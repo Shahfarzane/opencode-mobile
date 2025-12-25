@@ -259,42 +259,61 @@ export const useConfigStore = create<ConfigStore>()(
                 modelsMetadata: new Map<string, ModelMetadata>(),
 
                 loadProviders: async () => {
-                    try {
-                        const metadataPromise = fetchModelsDevMetadata();
-                        const apiResult = await opencodeClient.getProviders();
-                        const providers = Array.isArray(apiResult?.providers) ? apiResult.providers : [];
-                        const defaults = apiResult?.default || {};
+                    const previousProviders = get().providers;
+                    const previousDefaults = get().defaultProviders;
+                    const previousProviderId = get().currentProviderId;
+                    const previousModelId = get().currentModelId;
+                    let lastError: unknown = null;
 
-                        const processedProviders: ProviderWithModelList[] = providers.map((provider) => {
-                            const modelRecord = provider.models ?? {};
-                            const models: ProviderModel[] = Object.keys(modelRecord).map((modelId) => modelRecord[modelId]);
-                            return {
-                                ...provider,
-                                models,
-                            };
-                        });
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        try {
+                            const metadataPromise = fetchModelsDevMetadata();
+                            const apiResult = await opencodeClient.getProviders();
+                            const providers = Array.isArray(apiResult?.providers) ? apiResult.providers : [];
+                            const defaults = apiResult?.default || {};
 
-                        const defaultProviderId = defaults.provider || processedProviders[0]?.id || "";
-                        const provider = processedProviders.find((p) => p.id === defaultProviderId);
-                        const defaultModelId = defaults.model || provider?.models?.[0]?.id || "";
+                            const processedProviders: ProviderWithModelList[] = providers.map((provider) => {
+                                const modelRecord = provider.models ?? {};
+                                const models: ProviderModel[] = Object.keys(modelRecord).map((modelId) => modelRecord[modelId]);
+                                return {
+                                    ...provider,
+                                    models,
+                                };
+                            });
 
-                        set({
-                            providers: processedProviders,
-                            defaultProviders: defaults,
+                            const defaultProviderId = defaults.provider || processedProviders[0]?.id || "";
+                            const provider = processedProviders.find((p) => p.id === defaultProviderId);
+                            const defaultModelId = defaults.model || provider?.models?.[0]?.id || "";
 
-                            currentProviderId: defaultProviderId,
-                            currentModelId: defaultModelId,
-                        });
+                            set({
+                                providers: processedProviders,
+                                defaultProviders: defaults,
 
-                        const metadata = await metadataPromise;
-                        if (metadata.size > 0) {
-                            set({ modelsMetadata: metadata });
+                                currentProviderId: defaultProviderId,
+                                currentModelId: defaultModelId,
+                            });
+
+                            const metadata = await metadataPromise;
+                            if (metadata.size > 0) {
+                                set({ modelsMetadata: metadata });
+                            }
+                            return;
+                        } catch (error) {
+                            lastError = error;
+                            const waitMs = 200 * (attempt + 1);
+                            await new Promise((resolve) => setTimeout(resolve, waitMs));
                         }
-                    } catch (error) {
-                            console.error("Failed to load providers:", error);
-                            set({ providers: [], defaultProviders: {}, currentProviderId: "", currentModelId: "" });
-                        }
-                    },
+                    }
+
+                    console.error("Failed to load providers:", lastError);
+                    // Preserve previous state on failure instead of clearing it
+                    set({
+                        providers: previousProviders,
+                        defaultProviders: previousDefaults,
+                        currentProviderId: previousProviderId,
+                        currentModelId: previousModelId,
+                    });
+                },
 
                 setProvider: (providerId: string) => {
                     const { providers } = get();
