@@ -552,8 +552,16 @@ function getLoginShellPath() {
   }
 
   const shell = process.env.SHELL || '/bin/zsh';
+  const shellName = path.basename(shell);
+
+  // Nushell requires different flag syntax and PATH access
+  const isNushell = shellName === 'nu' || shellName === 'nushell';
+  const args = isNushell
+    ? ['-l', '-i', '-c', '$env.PATH | str join (char esep)']
+    : ['-lic', 'echo -n "$PATH"'];
+
   try {
-    const result = spawnSync(shell, ['-lic', 'echo -n "$PATH"'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const result = spawnSync(shell, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     if (result.status === 0 && typeof result.stdout === 'string') {
       const value = result.stdout.trim();
       if (value) {
