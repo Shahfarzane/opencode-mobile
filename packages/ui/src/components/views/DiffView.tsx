@@ -293,9 +293,12 @@ export const DiffView: React.FC = () => {
     const isGitRepo = useIsGitRepo(effectiveDirectory ?? null);
     const status = useGitStatus(effectiveDirectory ?? null);
     const isLoadingStatus = useGitStore((state) => state.isLoadingStatus);
-    const { setActiveDirectory, fetchStatus } = useGitStore();
- 
+    const { setActiveDirectory, fetchStatus, setDiff } = useGitStore();
+	 
     const [selectedFile, setSelectedFile] = React.useState<string | null>(null);
+    const [diffRetryNonce, setDiffRetryNonce] = React.useState(0);
+    const [diffLoadError, setDiffLoadError] = React.useState<string | null>(null);
+    const lastDiffRequestRef = React.useRef<string | null>(null);
 
     const pendingDiffFile = useUIStore((state) => state.pendingDiffFile);
     const setPendingDiffFile = useUIStore((state) => state.setPendingDiffFile);
@@ -399,6 +402,57 @@ export const DiffView: React.FC = () => {
     const hasCurrentDiff = !!selectedCachedDiff;
     const isCurrentFileLoading = !!selectedFile && !hasCurrentDiff;
 
+    React.useEffect(() => {
+        setDiffLoadError(null);
+
+        if (!effectiveDirectory || !selectedFile) {
+            lastDiffRequestRef.current = null;
+            return;
+        }
+
+        if (selectedCachedDiff) {
+            lastDiffRequestRef.current = null;
+            return;
+        }
+
+        const requestKey = `${effectiveDirectory}::${selectedFile}::${diffRetryNonce}`;
+        if (lastDiffRequestRef.current === requestKey) {
+            return;
+        }
+        lastDiffRequestRef.current = requestKey;
+
+        let cancelled = false;
+        void (async () => {
+            try {
+                const fetchPromise = git.getGitFileDiff(effectiveDirectory, { path: selectedFile });
+                const timeoutMs = 15000;
+                const timeoutPromise = new Promise<never>((_, reject) => {
+                    setTimeout(() => reject(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
+                });
+
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
+                if (cancelled) return;
+
+                setDiff(effectiveDirectory, selectedFile, {
+                    original: response.original ?? '',
+                    modified: response.modified ?? '',
+                });
+            } catch (error) {
+                if (cancelled) return;
+                const message = error instanceof Error ? error.message : String(error);
+                setDiffLoadError(message);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+            if (lastDiffRequestRef.current === requestKey) {
+                // Allow a retry if this request was cancelled due to directory/path churn.
+                lastDiffRequestRef.current = null;
+            }
+        };
+    }, [effectiveDirectory, selectedFile, selectedCachedDiff, git, setDiff, diffRetryNonce]);
+
     // Render all diff viewers - they stay mounted
     const renderAllDiffViewers = () => {
         if (!effectiveDirectory || changedFiles.length === 0) return null;
@@ -455,8 +509,31 @@ export const DiffView: React.FC = () => {
                 {renderAllDiffViewers()}
                 {isCurrentFileLoading && !hasCurrentDiff && (
                     <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <RiLoader4Line size={16} className="animate-spin" />
-                        Loading diff…
+                        {diffLoadError ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="typography-ui-label font-semibold text-foreground">
+                                    Failed to load diff
+                                </div>
+                                <div className="typography-meta text-muted-foreground max-w-[32rem] text-center">
+                                    {diffLoadError}
+                                </div>
+                                <button
+                                    type="button"
+                                    className="typography-ui-label text-primary hover:underline"
+                                    onClick={() => {
+                                        setDiffLoadError(null);
+                                        setDiffRetryNonce((n) => n + 1);
+                                    }}
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <RiLoader4Line size={16} className="animate-spin" />
+                                Loading diff…
+                            </>
+                        )}
                     </div>
                 )}
             </div>
