@@ -376,9 +376,30 @@ export const useSessionStore = create<SessionStore>()(
 
                         const validSessionIds = new Set(dedupedSessions.map((session) => session.id));
 
+                        const resolveSelectionDirectory = (sessionId: string | null): string | null => {
+                            if (!sessionId) {
+                                return null;
+                            }
+                            const sessionDir = getSessionDirectory(dedupedSessions, sessionId);
+                            if (sessionDir) {
+                                return sessionDir;
+                            }
+                            const persistedDir = getSessionDirectory(stateSnapshot.sessions, sessionId);
+                            if (persistedDir) {
+                                return persistedDir;
+                            }
+                            return null;
+                        };
+
+                        const selectionDirectoryKey = resolveSelectionDirectory(nextCurrentId) ?? normalizedProject ?? projectDirectory ?? null;
+
                         if (projectDirectory) {
                             clearInvalidSessionSelection(projectDirectory, validSessionIds);
-                            const storedSelection = getStoredSessionForDirectory(projectDirectory);
+                        }
+
+                        if (selectionDirectoryKey) {
+                            clearInvalidSessionSelection(selectionDirectoryKey, validSessionIds);
+                            const storedSelection = getStoredSessionForDirectory(selectionDirectoryKey);
                             if (storedSelection && validSessionIds.has(storedSelection)) {
                                 nextCurrentId = storedSelection;
                             }

@@ -263,6 +263,8 @@ export const useEventStream = () => {
 
   const sessionCooldownTimersRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
   const sessionActivityPhaseRef = React.useRef<Map<string, 'idle' | 'busy' | 'cooldown'>>(new Map());
+  const sessionStatusLastRefreshAtRef = React.useRef<number>(0);
+  const sessionStatusRefreshInFlightRef = React.useRef<Promise<void> | null>(null);
   const currentSessionIdRef = React.useRef<string | null>(currentSessionId);
   React.useEffect(() => {
     currentSessionIdRef.current = currentSessionId;
@@ -317,8 +319,11 @@ export const useEventStream = () => {
   }, [loadSessions]);
 
   const updateSessionActivityPhase = React.useCallback((sessionId: string, phase: 'idle' | 'busy' | 'cooldown') => {
-    const currentPhase = sessionActivityPhaseRef.current.get(sessionId);
-    if (currentPhase === phase) return;
+    const storePhase = useSessionStore.getState().sessionActivityPhase?.get(sessionId);
+    if (storePhase === phase) {
+      sessionActivityPhaseRef.current = new Map(useSessionStore.getState().sessionActivityPhase ?? new Map());
+      return;
+    }
 
     const existingTimer = sessionCooldownTimersRef.current.get(sessionId);
     if (existingTimer) {
@@ -326,16 +331,20 @@ export const useEventStream = () => {
       sessionCooldownTimersRef.current.delete(sessionId);
     }
 
-    sessionActivityPhaseRef.current.set(sessionId, phase);
-    useSessionStore.setState({ sessionActivityPhase: new Map(sessionActivityPhaseRef.current) });
+    const next = new Map(useSessionStore.getState().sessionActivityPhase ?? new Map());
+    next.set(sessionId, phase);
+    sessionActivityPhaseRef.current = next;
+    useSessionStore.setState({ sessionActivityPhase: next });
 
     if (phase === 'cooldown') {
       const timer = setTimeout(() => {
         sessionCooldownTimersRef.current.delete(sessionId);
-        const current = sessionActivityPhaseRef.current.get(sessionId);
+        const current = useSessionStore.getState().sessionActivityPhase?.get(sessionId);
         if (current === 'cooldown') {
-          sessionActivityPhaseRef.current.set(sessionId, 'idle');
-          useSessionStore.setState({ sessionActivityPhase: new Map(sessionActivityPhaseRef.current) });
+          const latest = new Map(useSessionStore.getState().sessionActivityPhase ?? new Map());
+          latest.set(sessionId, 'idle');
+          sessionActivityPhaseRef.current = latest;
+          useSessionStore.setState({ sessionActivityPhase: latest });
         }
       }, 2000);
       sessionCooldownTimersRef.current.set(sessionId, timer);
@@ -343,19 +352,94 @@ export const useEventStream = () => {
   }, []);
 
   const refreshSessionActivityStatus = React.useCallback(async () => {
-    try {
-      const statusMap = await opencodeClient.getSessionStatus();
-      if (!statusMap) return;
+    const now = Date.now();
+    if (sessionStatusRefreshInFlightRef.current) {
+      return sessionStatusRefreshInFlightRef.current;
+    }
+    if (now - sessionStatusLastRefreshAtRef.current < 1500) {
+      return;
+    }
+    sessionStatusLastRefreshAtRef.current = now;
 
+    const normalizeDirectory = (value: string | null | undefined): string | null => {
+      if (typeof value !== 'string') return null;
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const normalized = trimmed.replace(/\\/g, '/');
+      return normalized.length > 1 ? normalized.replace(/\/+$/, '') : normalized;
+    };
+
+    const resolveSessionDirectoryForStatus = (sessionId: string): string | null => {
+      try {
+        const metadata = getWorktreeMetadata?.(sessionId);
+        const metaPath = normalizeDirectory(metadata?.path ?? null);
+        if (metaPath) return metaPath;
+      } catch {
+        // ignored
+      }
+
+      const record = sessions.find((entry) => entry.id === sessionId);
+      const recordPath = normalizeDirectory((record as { directory?: string | null })?.directory ?? null);
+      return recordPath;
+    };
+
+    const applyStatusMap = (statusMap: Record<string, { type?: string }>) => {
       Object.entries(statusMap).forEach(([sessionId, raw]) => {
         if (!sessionId || !raw) return;
-        const status = raw as { type?: string };
-        const phase: 'idle' | 'busy' = 
-          status.type === 'busy' || status.type === 'retry' ? 'busy' : 'idle';
+        const phase: 'idle' | 'busy' =
+          raw.type === 'busy' || raw.type === 'retry' ? 'busy' : 'idle';
         updateSessionActivityPhase(sessionId, phase);
       });
-    } catch { /* ignored */ }
-  }, [updateSessionActivityPhase]);
+    };
+
+    const task = (async (): Promise<void> => {
+      try {
+        const globalStatusMap = await opencodeClient.getGlobalSessionStatus();
+        if (globalStatusMap && Object.keys(globalStatusMap).length > 0) {
+          applyStatusMap(globalStatusMap);
+          return;
+        }
+
+        const directories = new Set<string>();
+        sessions.forEach((session) => {
+          const directory = resolveSessionDirectoryForStatus(session.id);
+          if (directory) directories.add(directory);
+        });
+
+        const effective = normalizeDirectory(effectiveDirectory ?? null);
+        if (effective) directories.add(effective);
+
+        const queries = Array.from(directories);
+        if (queries.length === 0) {
+          // Fall back to scoped status for whatever the OpenCode client currently tracks.
+          const scoped = await opencodeClient.getSessionStatus();
+          if (scoped) {
+            applyStatusMap(scoped);
+          }
+          return;
+        }
+
+        const results = await Promise.allSettled(
+          queries.map((directory) => opencodeClient.getSessionStatusForDirectory(directory))
+        );
+
+        const merged: Record<string, { type?: string }> = {};
+        results.forEach((result) => {
+          if (result.status !== 'fulfilled' || !result.value) return;
+          Object.assign(merged, result.value);
+        });
+
+        applyStatusMap(merged);
+      } catch {
+        // ignored
+      }
+    })().finally(() => {
+      sessionStatusRefreshInFlightRef.current = null;
+    });
+
+    sessionStatusRefreshInFlightRef.current = task;
+    return task;
+  }, [effectiveDirectory, getWorktreeMetadata, sessions, updateSessionActivityPhase]);
 
   const handleEvent = React.useCallback((event: EventData) => {
     lastEventTimestampRef.current = Date.now();
@@ -685,12 +769,21 @@ export const useEventStream = () => {
           }
         }
 
-        const messageTime = (message as { time?: { completed?: number } }).time;
-        const isCompleted =
-          (message as { role?: string }).role === 'assistant' &&
-          (messageTime?.completed as number | undefined) !== undefined;
+        const messageTime = (message as { time?: { completed?: unknown } }).time;
+        const completedCandidate = (messageTime as { completed?: unknown } | undefined)?.completed;
+        const hasCompletedTimestamp = typeof completedCandidate === 'number' && Number.isFinite(completedCandidate);
+        const finishCandidate = (message as { finish?: unknown }).finish;
+        const finish = typeof finishCandidate === 'string' ? finishCandidate : null;
 
-          if (isCompleted && (message as { role?: string }).role === 'assistant') {
+        const stopMarkerPresent = partsArray.some(
+          (p) => p?.type === 'step-finish' && (p as { reason?: string }).reason === 'stop'
+        ) || existingStopMarker;
+
+        const shouldFinalizeAssistantMessage =
+          (message as { role?: string }).role === 'assistant' &&
+          (hasCompletedTimestamp || finish === 'stop' || stopMarkerPresent);
+
+          if (shouldFinalizeAssistantMessage && (message as { role?: string }).role === 'assistant') {
 
             const storeState = useSessionStore.getState();
             const sessionMessages = storeState.messages.get(sessionId) || [];
@@ -707,20 +800,17 @@ export const useEventStream = () => {
 
           if (messageId !== latestAssistantMessageId) break;
 
-          const stopMarkerPresent = partsArray.some(
-            (p) => p?.type === 'step-finish' && (p as { reason?: string }).reason === 'stop'
-          ) || existingStopMarker;
           if (!stopMarkerPresent && isDesktopRuntimeRef.current) {
             trackMessage(messageId, 'desktop_completion_without_stop');
             break;
           }
 
           const timeCompleted =
-            (messageTime?.completed as number | undefined) !== undefined
-              ? (messageTime?.completed as number)
+            hasCompletedTimestamp
+              ? (completedCandidate as number)
               : Date.now();
 
-          if (!messageTime?.completed) {
+          if (!hasCompletedTimestamp) {
             updateMessageInfo(sessionId, messageId, {
               ...message,
               time: { ...(messageTime ?? {}), completed: timeCompleted },
@@ -801,29 +891,33 @@ export const useEventStream = () => {
             }
           }
 
-          completeStreamingMessage(sessionId, messageId);
+	          completeStreamingMessage(sessionId, messageId);
 
-          // For web/vscode: trigger cooldown only when assistant message has finish === "stop"
-          // This matches the desktop backend logic in session_activity.rs
-          if (!isDesktopRuntimeRef.current) {
-            const finish = (message as { finish?: string }).finish;
-            if (finish === 'stop') {
-              const rawCompletedSessionId = (message as { sessionID?: string }).sessionID;
-              const completedSessionId: string =
-                typeof rawCompletedSessionId === 'string' && rawCompletedSessionId.length > 0
-                  ? rawCompletedSessionId
-                  : sessionId;
+	          // For web/vscode: trigger cooldown only when assistant message has finish === "stop"
+	          // (or we can infer a stop marker) to match desktop backend semantics.
+	          if (!isDesktopRuntimeRef.current) {
+	            const finishCandidate = (message as { finish?: unknown }).finish;
+	            const finish = typeof finishCandidate === 'string' ? finishCandidate : null;
 
-              const currentPhase = sessionActivityPhaseRef.current.get(completedSessionId);
-              if (currentPhase === 'busy') {
-                updateSessionActivityPhase(completedSessionId, 'cooldown');
-              }
-            }
-          }
+	            const inferredStopMarkerPresent =
+	              Array.isArray(partsArray) &&
+	              partsArray.some((part) => {
+	                if (!part || typeof part !== 'object') return false;
+	                const partAny = part as { type?: string; reason?: string };
+	                return partAny.type === 'step-finish' && partAny.reason === 'stop';
+	              });
 
-          const rawMessageSessionId = (message as { sessionID?: string }).sessionID;
-          const messageSessionId: string =
-            typeof rawMessageSessionId === 'string' && rawMessageSessionId.length > 0
+	            if (finish === 'stop' || inferredStopMarkerPresent) {
+	              const currentPhase = useSessionStore.getState().sessionActivityPhase?.get(sessionId);
+	              if (currentPhase === 'busy') {
+	                updateSessionActivityPhase(sessionId, 'cooldown');
+	              }
+	            }
+	          }
+
+	          const rawMessageSessionId = (message as { sessionID?: string }).sessionID;
+	          const messageSessionId: string =
+	            typeof rawMessageSessionId === 'string' && rawMessageSessionId.length > 0
               ? rawMessageSessionId
               : sessionId;
           requestSessionMetadataRefresh(messageSessionId);
@@ -1007,6 +1101,13 @@ export const useEventStream = () => {
       publishStatus('connected', null);
       checkConnection();
 
+      const hasBusySessions = Array.from(useSessionStore.getState().sessionActivityPhase?.values?.() ?? []).some(
+        (phase) => phase === 'busy'
+      );
+      if (hasBusySessions) {
+        void refreshSessionActivityStatus();
+      }
+
       if (shouldRefresh) {
         void bootstrapState('sse_reconnected');
       } else {
@@ -1069,6 +1170,7 @@ export const useEventStream = () => {
     handleEvent,
     effectiveDirectory,
     updateSessionActivityPhase,
+    refreshSessionActivityStatus,
     waitForDesktopBridge,
     debugConnectionState,
     bootstrapState
@@ -1238,6 +1340,12 @@ export const useEventStream = () => {
       if (!shouldHoldConnection()) return;
 
       const now = Date.now();
+      const hasBusySessions = Array.from(useSessionStore.getState().sessionActivityPhase?.values?.() ?? []).some(
+        (phase) => phase === 'busy'
+      );
+      if (hasBusySessions) {
+        void refreshSessionActivityStatus();
+      }
       if (now - lastEventTimestampRef.current > 25000) {
         Promise.resolve().then(async () => {
           try {
