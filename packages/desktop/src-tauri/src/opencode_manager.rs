@@ -628,6 +628,12 @@ fn build_shell_env_command(shell: &str) -> Vec<String> {
         .unwrap_or("sh");
 
     match shell_name {
+        "nu" | "nushell" => vec![
+            "-l".to_string(),
+            "-i".to_string(),
+            "-c".to_string(),
+            "echo $\"__PATH__=($env.PATH | str join (char esep))\"; echo $\"__OPENCODE_BINARY__=($env.OPENCODE_BINARY? | default '')\"".to_string(),
+        ],
         "bash" => vec![
             "-lic".to_string(),
             "source ~/.bashrc 2>/dev/null; echo \"__PATH__=$PATH\"; echo \"__OPENCODE_BINARY__=$OPENCODE_BINARY\"".to_string(),

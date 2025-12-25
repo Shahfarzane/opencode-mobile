@@ -78,8 +78,16 @@ function getLoginShellPath(): string | null {
   }
 
   const shell = process.env.SHELL || '/bin/zsh';
+  const shellName = path.basename(shell);
+
+  // Nushell requires different flag syntax and PATH access
+  const isNushell = shellName === 'nu' || shellName === 'nushell';
+  const args = isNushell
+    ? ['-l', '-i', '-c', '$env.PATH | str join (char esep)']
+    : ['-lic', 'echo -n "$PATH"'];
+
   try {
-    const result = spawnSync(shell, ['-lic', 'echo -n "$PATH"'], {
+    const result = spawnSync(shell, args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -144,7 +152,13 @@ function resolveCliPath(): string | null {
     for (const shellPath of shellCandidates) {
       if (!isExecutable(shellPath)) continue;
       try {
-        const result = spawnSync(shellPath, ['-lic', 'command -v opencode'], {
+        const shellName = path.basename(shellPath);
+        const isNushell = shellName === 'nu' || shellName === 'nushell';
+        const args = isNushell
+          ? ['-l', '-i', '-c', 'which opencode']
+          : ['-lic', 'command -v opencode'];
+
+        const result = spawnSync(shellPath, args, {
           encoding: 'utf8',
           stdio: ['ignore', 'pipe', 'pipe'],
         });
