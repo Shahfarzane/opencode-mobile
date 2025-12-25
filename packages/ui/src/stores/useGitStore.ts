@@ -11,6 +11,9 @@ const GIT_POLL_BASE_INTERVAL = 5000;
 const GIT_POLL_MAX_INTERVAL = 10000;
 const GIT_POLL_BACKOFF_STEP = 5000;
 const LOG_STALE_THRESHOLD = 10000;
+const DIFF_PREFETCH_MAX_FILES = 25;
+const DIFF_PREFETCH_CONCURRENCY = 4;
+const DIFF_PREFETCH_TIMEOUT_MS = 15000;
 
 interface DirectoryGitState {
   isGitRepo: boolean | null;
@@ -394,7 +397,7 @@ export const useGitStore = create<GitStore>()(
         await get().fetchIdentity(directory, git);
 
         // Pre-fetch all diffs so they're ready when user opens Diff tab
-        await get().fetchAllDiffs(directory, git);
+        void get().fetchAllDiffs(directory, git);
       },
 
       getDiff: (directory, filePath) => {
@@ -429,18 +432,44 @@ export const useGitStore = create<GitStore>()(
         // Find files that need fetching (no cache)
         const filesToFetch = files.filter((file) => !dirState.diffCache.has(file.path));
 
-        if (filesToFetch.length === 0) return;
+        const limitedFilesToFetch = filesToFetch.slice(0, DIFF_PREFETCH_MAX_FILES);
+        if (limitedFilesToFetch.length === 0) return;
 
-        // Fetch all diffs in parallel
-        const results = await Promise.allSettled(
-          filesToFetch.map(async (file) => {
-            const response = await git.getGitFileDiff(directory, { path: file.path });
-            return {
-              path: file.path,
-              diff: { original: response.original ?? '', modified: response.modified ?? '' }
-            };
-          })
-        );
+        let nextIndex = 0;
+        const results: Array<{ path: string; diff: { original: string; modified: string } }> = [];
+
+        const takeNext = () => {
+          const current = nextIndex;
+          nextIndex += 1;
+          return current < limitedFilesToFetch.length ? limitedFilesToFetch[current] : null;
+        };
+
+        const fetchWithTimeout = async (filePath: string) => {
+          const fetchPromise = git.getGitFileDiff(directory, { path: filePath });
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error(`Timed out after ${DIFF_PREFETCH_TIMEOUT_MS}ms`)), DIFF_PREFETCH_TIMEOUT_MS);
+          });
+          const response = await Promise.race([fetchPromise, timeoutPromise]);
+          return {
+            path: filePath,
+            diff: { original: response.original ?? '', modified: response.modified ?? '' },
+          };
+        };
+
+        const worker = async () => {
+          for (;;) {
+            const next = takeNext();
+            if (!next) return;
+            try {
+              results.push(await fetchWithTimeout(next.path));
+            } catch {
+              // Ignore individual failures/timeouts during prefetch.
+            }
+          }
+        };
+
+        const workerCount = Math.min(DIFF_PREFETCH_CONCURRENCY, limitedFilesToFetch.length);
+        await Promise.allSettled(Array.from({ length: workerCount }, () => worker()));
 
         // Update diff cache with results
         const newDirectories = new Map(get().directories);
@@ -451,12 +480,10 @@ export const useGitStore = create<GitStore>()(
         const now = Date.now();
 
         results.forEach((result) => {
-          if (result.status === 'fulfilled') {
-            newDiffCache.set(result.value.path, {
-              ...result.value.diff,
-              fetchedAt: now
-            });
-          }
+          newDiffCache.set(result.path, {
+            ...result.diff,
+            fetchedAt: now
+          });
         });
 
         newDirectories.set(directory, { ...currentDirState, diffCache: newDiffCache });
@@ -493,7 +520,7 @@ export const useGitStore = create<GitStore>()(
             if (statusChanged) {
               await get().fetchLog(activeDirectory, git);
               // Pre-fetch all diffs so they're ready when user opens Diff tab
-              await get().fetchAllDiffs(activeDirectory, git);
+              void get().fetchAllDiffs(activeDirectory, git);
               // Reset to base interval on changes
               set({ currentPollInterval: GIT_POLL_BASE_INTERVAL });
             } else {
