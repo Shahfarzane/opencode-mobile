@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.3] - 2025-12-25
+
 - Updated OpenCode SDK to 1.0.185 across all app versions.
 - VS Code extension: fixed startup, more reliable OpenCode CLI/API management, and stabilized API proxying/streaming.
 - VS Code extension: added an animated loading screen and introduced command for status/debug output.
