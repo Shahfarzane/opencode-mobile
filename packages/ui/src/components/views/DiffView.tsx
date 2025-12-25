@@ -259,7 +259,7 @@ const DiffViewerEntry = React.memo<DiffViewerEntryProps>(({
     const diffData = React.useMemo(() => {
         if (!cachedDiff) return null;
         return { original: cachedDiff.original, modified: cachedDiff.modified };
-    }, [cachedDiff?.original, cachedDiff?.modified]);
+    }, [cachedDiff]);
 
     if (!diffData) return null;
 
