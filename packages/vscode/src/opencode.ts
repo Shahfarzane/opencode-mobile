@@ -264,7 +264,6 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
     if (!apiPrefixDetected || apiPrefix !== normalized) {
       apiPrefix = normalized;
       apiPrefixDetected = true;
-      console.log(`[OpenCode] Detected API prefix: ${apiPrefix || '(root)'}`);
     }
   };
 
@@ -354,7 +353,6 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
   function setDetectedPort(port: number) {
     if (detectedPort !== port) {
       detectedPort = port;
-      console.log(`[OpenCode] Detected port: ${port}`);
       
       // Notify all waiters
       const waiters = portWaiters;
@@ -362,8 +360,8 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
       for (const notify of waiters) {
         try {
           notify(port);
-        } catch (e) {
-          console.warn('[OpenCode] Port waiter error:', e);
+        } catch {
+          // Ignore waiter errors
         }
       }
     }
@@ -536,14 +534,12 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
 
       childProcess.stdout?.on('data', (data) => {
         const text = data.toString();
-        console.log('[OpenCode]', text.trim());
         detectPortFromOutput(text);
         detectApiPrefixFromOutput(text);
       });
 
       childProcess.stderr?.on('data', (data) => {
         const text = data.toString();
-        console.error('[OpenCode]', text.trim());
         detectPortFromOutput(text);
         detectApiPrefixFromOutput(text);
       });

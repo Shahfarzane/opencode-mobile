@@ -2875,7 +2875,6 @@ async function main(options = {}) {
 
       const resolvedPath = path.resolve(expandedPath);
       fs.mkdirSync(resolvedPath, { recursive: true });
-      console.log(`Created directory: ${resolvedPath}`);
 
       res.json({ success: true, path: resolvedPath });
     } catch (error) {

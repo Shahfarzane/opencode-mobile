@@ -10,6 +10,7 @@ import { refreshAfterOpenCodeRestart } from '@/stores/useAgentsStore';
 import { useCommandsStore } from '@/stores/useCommandsStore';
 import { useFileSearchStore } from '@/stores/useFileSearchStore';
 import { emitConfigChange } from '@/lib/configSync';
+import { streamDebugEnabled } from '@/stores/utils/streamDebug';
 import { getSafeStorage } from './utils/safeStorage';
 
 interface DirectoryStore {
@@ -296,13 +297,17 @@ export const useDirectoryStore = create<DirectoryStore>()(
       setDirectory: (path: string, options?: { showOverlay?: boolean }) => {
         const homeDir = cachedHomeDirectory || get().homeDirectory || safeStorage.getItem('homeDirectory');
         const resolvedPath = resolveDirectoryPath(path, homeDir);
-        console.log('[DirectoryStore] setDirectory called with path:', resolvedPath);
+        if (streamDebugEnabled()) {
+          console.log('[DirectoryStore] setDirectory called with path:', resolvedPath);
+        }
         const showOverlay = options?.showOverlay ?? true;
 
         opencodeClient.setDirectory(resolvedPath);
         invalidateFileSearchCache();
         const restartPromise = notifyOpenCodeWorkingDirectory(resolvedPath, { showOverlay });
-        console.log('[DirectoryStore] notifyOpenCodeWorkingDirectory initiated');
+        if (streamDebugEnabled()) {
+          console.log('[DirectoryStore] notifyOpenCodeWorkingDirectory initiated');
+        }
 
         set((state) => {
 

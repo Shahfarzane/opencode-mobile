@@ -37,7 +37,9 @@ export function ChatPanel() {
     const messageText = inputValue.trim();
 
     if (!currentProviderId || !currentModelId) {
-      console.warn('Missing provider or model selection for sendMessage');
+      if (import.meta.env.DEV) {
+        console.warn('Missing provider or model selection for sendMessage');
+      }
       return;
     }
 
