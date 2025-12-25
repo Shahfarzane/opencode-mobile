@@ -3,6 +3,7 @@ import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { opencodeClient } from '@/lib/opencode/client';
 import { checkIsGitRepository } from '@/lib/gitApi';
+import { streamDebugEnabled } from '@/stores/utils/streamDebug';
 
 export interface DebugMessageInfo {
   messageId: string;
@@ -631,18 +632,20 @@ export const debugUtils = {
 
 if (typeof window !== 'undefined') {
   (window as any).__opencodeDebug = debugUtils;
-  console.log('[DEBUG] OpenCode Debug Utils loaded! Use window.__opencodeDebug in console');
-  console.log('Available commands:');
-  console.log('  __opencodeDebug.getLastAssistantMessage() - Get last assistant message details');
-  console.log('  __opencodeDebug.getAllMessages(truncate?) - List all messages (truncate=true for short preview)');
-  console.log('  __opencodeDebug.truncateMessages(messages) - Truncate long fields in messages array');
-  console.log('  __opencodeDebug.getAppStatus() - Show app status snapshot');
-   console.log('  __opencodeDebug.checkLastMessage() - Check if last message is problematic');
-   console.log('  __opencodeDebug.findEmptyMessages() - Find all empty assistant messages');
-   console.log('  __opencodeDebug.showRetryHelp() - Show instructions for handling empty responses');
-  console.log('  __opencodeDebug.getStreamingState() - Get streaming state info');
-  console.log('  __opencodeDebug.analyzeMessageCompletionConsistency(opts?) - Compare time.completed vs part timings');
-  console.log('  __opencodeDebug.checkCompletionStatus() - Check completion status of last message');
+  if (streamDebugEnabled()) {
+    console.log('[DEBUG] OpenCode Debug Utils loaded! Use window.__opencodeDebug in console');
+    console.log('Available commands:');
+    console.log('  __opencodeDebug.getLastAssistantMessage() - Get last assistant message details');
+    console.log('  __opencodeDebug.getAllMessages(truncate?) - List all messages (truncate=true for short preview)');
+    console.log('  __opencodeDebug.truncateMessages(messages) - Truncate long fields in messages array');
+    console.log('  __opencodeDebug.getAppStatus() - Show app status snapshot');
+    console.log('  __opencodeDebug.checkLastMessage() - Check if last message is problematic');
+    console.log('  __opencodeDebug.findEmptyMessages() - Find all empty assistant messages');
+    console.log('  __opencodeDebug.showRetryHelp() - Show instructions for handling empty responses');
+    console.log('  __opencodeDebug.getStreamingState() - Get streaming state info');
+    console.log('  __opencodeDebug.analyzeMessageCompletionConsistency(opts?) - Compare time.completed vs part timings');
+    console.log('  __opencodeDebug.checkCompletionStatus() - Check completion status of last message');
+  }
 
   window.addEventListener('error', (event) => {
     try {
