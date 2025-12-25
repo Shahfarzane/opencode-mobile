@@ -500,12 +500,19 @@ class OpencodeService {
   async getSessionStatus(): Promise<
     Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }>
   > {
+    return this.getSessionStatusForDirectory(this.currentDirectory ?? null);
+  }
+
+  async getSessionStatusForDirectory(
+    directory: string | null | undefined
+  ): Promise<Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }>> {
     try {
       const base = this.baseUrl.replace(/\/$/, "");
       const url = new URL(`${base}/session/status`);
 
-      if (this.currentDirectory && this.currentDirectory.length > 0) {
-        url.searchParams.set("directory", this.currentDirectory);
+      const trimmedDirectory = typeof directory === "string" ? directory.trim() : "";
+      if (trimmedDirectory.length > 0) {
+        url.searchParams.set("directory", trimmedDirectory);
       }
 
       const response = await fetch(url.toString(), {
@@ -531,6 +538,12 @@ class OpencodeService {
     } catch {
       return {};
     }
+  }
+
+  async getGlobalSessionStatus(): Promise<
+    Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }>
+  > {
+    return this.getSessionStatusForDirectory(null);
   }
 
   // Permissions
