@@ -1165,11 +1165,8 @@ export const useEventStream = () => {
     checkConnection,
     resyncMessages,
     requestSessionMetadataRefresh,
-    requestSessionListRefresh,
-    completeStreamingMessage,
     handleEvent,
     effectiveDirectory,
-    updateSessionActivityPhase,
     refreshSessionActivityStatus,
     waitForDesktopBridge,
     debugConnectionState,
@@ -1209,6 +1206,7 @@ export const useEventStream = () => {
   }, [shouldHoldConnection, stopStream, publishStatus, startStream]);
 
   React.useEffect(() => {
+    const cooldownTimers = sessionCooldownTimersRef.current;
 
     if (typeof window !== 'undefined') {
       window.__messageTracker = trackMessage;
@@ -1387,8 +1385,6 @@ export const useEventStream = () => {
         staleCheckIntervalRef.current = null;
       }
 
-      const cooldownTimers = sessionCooldownTimersRef.current;
-
       cooldownTimers.forEach((timer) => clearTimeout(timer));
       cooldownTimers.clear();
       messageCache.clear();
@@ -1416,8 +1412,12 @@ export const useEventStream = () => {
     scheduleReconnect,
     loadMessages,
     requestSessionMetadataRefresh,
+    requestSessionListRefresh,
     updateSessionActivityPhase,
     refreshSessionActivityStatus,
-    shouldHoldConnection
+    shouldHoldConnection,
+    loadSessions,
+    maybeBootstrapIfStale,
+    resyncMessages
   ]);
 };

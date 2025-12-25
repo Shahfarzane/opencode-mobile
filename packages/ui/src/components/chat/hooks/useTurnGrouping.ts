@@ -456,7 +456,7 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
             next.set(turnId, { ...state, previewedPartIds: newPreviewed });
             return next;
         });
-    }, []);
+    }, [defaultActivityExpanded]);
 
     const getTurnForMessage = React.useCallback(
         (messageId: string): Turn | undefined => {

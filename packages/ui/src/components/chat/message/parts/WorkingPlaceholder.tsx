@@ -176,7 +176,7 @@ export function WorkingPlaceholder({
         // IMPORTANT: When statusText becomes null, we do NOT clear the display
         // Only done/abort signals clear the display
         
-    }, [statusText, isWaitingForPermission, wasAborted, isComplete, state, displayedText, displayedPermission, showStatus, showResult, scheduleQueueProcess]);
+    }, [statusText, isWaitingForPermission, wasAborted, isComplete, state, displayedText, displayedPermission, showStatus, showResult, scheduleQueueProcess, isGenericStatus]);
 
     // Cleanup on unmount
     useEffect(() => {

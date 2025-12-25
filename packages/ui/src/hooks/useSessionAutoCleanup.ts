@@ -167,6 +167,7 @@ export const useSessionAutoCleanup = (options?: CleanupOptions) => {
     autoDeleteLastRunAt,
     autoRun,
     isLoading,
+    sessions.length,
     runCleanup,
   ]);
 

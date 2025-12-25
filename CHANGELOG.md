@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Updated OpenCode SDK to 1.0.185 across all app versions.
+- VS Code extension: fixed startup, more reliable OpenCode CLI/API management, and stabilized API proxying/streaming.
+- VS Code extension: added an animated loading screen and introduced command for status/debug output.
+- Fixed session activity tracking so it correctly handles transitions through states (including worktree sessions).
+- Fixed directory path handling (including `~` expansion) to prevent invalid paths and related Git/worktree errors.
+- Chat UI: improved turn grouping/activity rendering and fixed message metadata/agent selection propagation.
+- Chat UI: improved agent activity status behavior and reduced image thumbnail sizes for better readability.
+
 
 ## [1.3.2] - 2025-12-22
 
