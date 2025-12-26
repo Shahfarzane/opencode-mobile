@@ -1356,29 +1356,18 @@ async function waitForOpenCodeReady(timeoutMs = 20000, intervalMs = 400) {
     for (const prefix of prefixes) {
       try {
         const normalizedPrefix = normalizeApiPrefix(prefix);
-        const healthPromise = fetch(buildOpenCodeUrl('/health', normalizedPrefix), {
-          method: 'GET',
-          headers: { Accept: 'application/json' }
-        }).catch((error) => error);
 
         const configPromise = fetch(buildOpenCodeUrl('/config', normalizedPrefix), {
           method: 'GET',
           headers: { Accept: 'application/json' }
         }).catch((error) => error);
 
-        const [healthResult, configResult] = await Promise.all([healthPromise, configPromise]);
+        const agentPromise = fetch(buildOpenCodeUrl('/agent', normalizedPrefix), {
+          method: 'GET',
+          headers: { Accept: 'application/json' }
+        }).catch((error) => error);
 
-        if (healthResult instanceof Error) {
-          lastError = healthResult;
-        } else if (healthResult.ok) {
-          const healthData = await healthResult.json().catch(() => null);
-          if (healthData && healthData.isOpenCodeReady === false) {
-            lastError = new Error('OpenCode health indicates not ready');
-            continue;
-          }
-        } else {
-          lastError = new Error(`OpenCode health endpoint responded with status ${healthResult.status}`);
-        }
+        const [configResult, agentResult] = await Promise.all([configPromise, agentPromise]);
 
         if (configResult instanceof Error) {
           lastError = configResult;
@@ -1402,30 +1391,21 @@ async function waitForOpenCodeReady(timeoutMs = 20000, intervalMs = 400) {
           setDetectedOpenCodeApiPrefix(normalizedPrefix);
         }
 
+        if (agentResult instanceof Error) {
+          lastError = agentResult;
+          continue;
+        }
+
+        if (!agentResult.ok) {
+          lastError = new Error(`Agent endpoint responded with status ${agentResult.status}`);
+          continue;
+        }
+
+        await agentResult.json().catch(() => []);
+
         const effectivePrefix = detectedPrefix !== null ? detectedPrefix : normalizedPrefix;
-
-        const agentResponse = await fetch(
-          buildOpenCodeUrl('/agent', effectivePrefix),
-          {
-            method: 'GET',
-            headers: { Accept: 'application/json' }
-          }
-        ).catch((error) => error);
-
-        if (agentResponse instanceof Error) {
-          lastError = agentResponse;
-          continue;
-        }
-
-        if (!agentResponse.ok) {
-          lastError = new Error(`Agent endpoint responded with status ${agentResponse.status}`);
-          continue;
-        }
-
-        await agentResponse.json().catch(() => []);
-
         if (detectedPrefix === null) {
-          const agentPrefix = extractApiPrefixFromUrl(agentResponse.url, '/agent');
+          const agentPrefix = extractApiPrefixFromUrl(agentResult.url, '/agent');
           if (agentPrefix !== null) {
             setDetectedOpenCodeApiPrefix(agentPrefix);
           } else if (normalizedPrefix) {

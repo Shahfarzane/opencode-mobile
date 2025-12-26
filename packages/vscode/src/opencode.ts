@@ -182,15 +182,9 @@ async function checkHealth(apiUrl: string, quick = false): Promise<boolean> {
     const controller = new AbortController();
     const timeoutMs = quick ? 1500 : 3000;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     const normalized = apiUrl.replace(/\/+$/, '');
     const candidates: string[] = [`${normalized}/config`];
-
-    // Some deployments expose a /health endpoint (not guaranteed for OpenCode).
-    if (!quick) {
-      const healthUrl = normalized.endsWith('/api') ? `${normalized.slice(0, -4)}/health` : `${normalized}/health`;
-      candidates.push(healthUrl);
-    }
 
     for (const target of candidates) {
       try {
@@ -227,7 +221,7 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
   let lastStartAt: number | null = null;
   let lastConnectedAt: number | null = null;
   let lastExitCode: number | null = null;
-  
+
   // Port detection state (like desktop)
   let detectedPort: number | null = null;
   let portWaiters: Array<(port: number) => void> = [];
@@ -235,12 +229,12 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
   // OpenCode API prefix detection (some versions serve under /api)
   let apiPrefix: string = '';
   let apiPrefixDetected = false;
-  
+
   // Check if user configured a specific API URL
   const config = vscode.workspace.getConfiguration('openchamber');
   const configuredApiUrl = config.get<string>('apiUrl') || '';
   const useConfiguredUrl = configuredApiUrl && configuredApiUrl.trim().length > 0;
-  
+
   // Parse configured URL to extract port if specified
   let configuredPort: number | null = null;
   if (useConfiguredUrl) {
@@ -367,7 +361,7 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
   function setDetectedPort(port: number) {
     if (detectedPort !== port) {
       detectedPort = port;
-      
+
       // Notify all waiters
       const waiters = portWaiters;
       portWaiters = [];
@@ -429,7 +423,7 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
 
   async function waitForReady(apiUrl: string, timeoutMs: number): Promise<boolean> {
     const deadline = Date.now() + timeoutMs;
-    
+
     while (Date.now() < deadline) {
       // Use quick health check during startup for faster response
       if (await checkHealth(apiUrl, true)) {
@@ -437,7 +431,7 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
       }
       await new Promise(r => setTimeout(r, READY_CHECK_INTERVAL_MS));
     }
-    
+
     return false;
   }
 
@@ -461,7 +455,7 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
         }
         return;
       }
-      
+
       const healthy = await checkHealth(apiUrl);
       if (healthy && status !== 'connected') {
         setStatus('connected');
@@ -529,7 +523,7 @@ export function createOpenCodeManager(_context: vscode.ExtensionContext): OpenCo
     lastExitCode = null;
 
     const spawnCwd = workingDirectory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
-    
+
     // Use port 0 for dynamic assignment unless user configured a specific port
     const portArg = configuredPort !== null ? configuredPort.toString() : '0';
 
