@@ -125,6 +125,12 @@ const sanitizeWebSettings = (payload: unknown): DesktopSettings | null => {
   if (typeof candidate.autoDeleteAfterDays === 'number' && Number.isFinite(candidate.autoDeleteAfterDays)) {
     result.autoDeleteAfterDays = candidate.autoDeleteAfterDays;
   }
+  if (typeof candidate.defaultModel === 'string' && candidate.defaultModel.length > 0) {
+    result.defaultModel = candidate.defaultModel;
+  }
+  if (typeof candidate.defaultAgent === 'string' && candidate.defaultAgent.length > 0) {
+    result.defaultAgent = candidate.defaultAgent;
+  }
 
   return result;
 };

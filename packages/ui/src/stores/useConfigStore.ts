@@ -8,9 +8,77 @@ import type { ModelMetadata } from "@/types";
 import { getSafeStorage } from "./utils/safeStorage";
 import type { SessionStore } from "./types/sessionTypes";
 import { filterVisibleAgents } from "./useAgentsStore";
+import { isDesktopRuntime, getDesktopSettings } from "@/lib/desktop";
+import { getRegisteredRuntimeAPIs } from "@/contexts/runtimeAPIRegistry";
+import { updateDesktopSettings } from "@/lib/persistence";
 
 const MODELS_DEV_API_URL = "https://models.dev/api.json";
 const MODELS_DEV_PROXY_URL = "/api/openchamber/models-metadata";
+
+const FALLBACK_PROVIDER_ID = "opencode";
+const FALLBACK_MODEL_ID = "big-pickle";
+
+interface OpenChamberDefaults {
+    defaultModel?: string;
+    defaultAgent?: string;
+}
+
+const fetchOpenChamberDefaults = async (): Promise<OpenChamberDefaults> => {
+    try {
+        // 1. Desktop runtime (Tauri)
+        if (isDesktopRuntime()) {
+            const settings = await getDesktopSettings();
+            return {
+                defaultModel: settings?.defaultModel,
+                defaultAgent: settings?.defaultAgent,
+            };
+        }
+
+        // 2. Runtime settings API (VSCode)
+        const runtimeSettings = getRegisteredRuntimeAPIs()?.settings;
+        if (runtimeSettings) {
+            try {
+                const result = await runtimeSettings.load();
+                const data = result?.settings;
+                if (data) {
+                    return {
+                        defaultModel: typeof data?.defaultModel === 'string' ? data.defaultModel : undefined,
+                        defaultAgent: typeof data?.defaultAgent === 'string' ? data.defaultAgent : undefined,
+                    };
+                }
+            } catch {
+                // Fall through to fetch
+            }
+        }
+
+        // 3. Fetch API (Web)
+        const response = await fetch('/api/config/settings', {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) {
+            return {};
+        }
+        const data = await response.json();
+        return {
+            defaultModel: typeof data?.defaultModel === 'string' ? data.defaultModel : undefined,
+            defaultAgent: typeof data?.defaultAgent === 'string' ? data.defaultAgent : undefined,
+        };
+    } catch {
+        return {};
+    }
+};
+
+const parseModelString = (modelString: string): { providerId: string; modelId: string } | null => {
+    if (!modelString || typeof modelString !== 'string') {
+        return null;
+    }
+    const parts = modelString.split('/');
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        return null;
+    }
+    return { providerId: parts[0], modelId: parts[1] };
+};
 
 const normalizeProviderId = (value: string) => value?.toLowerCase?.() ?? '';
 
@@ -217,12 +285,17 @@ interface ConfigStore {
     isConnected: boolean;
     isInitialized: boolean;
     modelsMetadata: Map<string, ModelMetadata>;
+    // OpenChamber settings-based defaults (take precedence over agent preferences)
+    settingsDefaultModel: string | undefined; // format: "provider/model"
+    settingsDefaultAgent: string | undefined;
 
     loadProviders: () => Promise<void>;
     loadAgents: () => Promise<boolean>;
     setProvider: (providerId: string) => void;
     setModel: (modelId: string) => void;
     setAgent: (agentName: string | undefined) => void;
+    setSettingsDefaultModel: (model: string | undefined) => void;
+    setSettingsDefaultAgent: (agent: string | undefined) => void;
     saveAgentModelSelection: (agentName: string, providerId: string, modelId: string) => void;
     getAgentModelSelection: (agentName: string) => { providerId: string; modelId: string } | null;
     checkConnection: () => Promise<boolean>;
@@ -257,12 +330,12 @@ export const useConfigStore = create<ConfigStore>()(
                 isConnected: false,
                 isInitialized: false,
                 modelsMetadata: new Map<string, ModelMetadata>(),
+                settingsDefaultModel: undefined,
+                settingsDefaultAgent: undefined,
 
                 loadProviders: async () => {
                     const previousProviders = get().providers;
                     const previousDefaults = get().defaultProviders;
-                    const previousProviderId = get().currentProviderId;
-                    const previousModelId = get().currentModelId;
                     let lastError: unknown = null;
 
                     for (let attempt = 0; attempt < 3; attempt++) {
@@ -281,16 +354,10 @@ export const useConfigStore = create<ConfigStore>()(
                                 };
                             });
 
-                            const defaultProviderId = defaults.provider || processedProviders[0]?.id || "";
-                            const provider = processedProviders.find((p) => p.id === defaultProviderId);
-                            const defaultModelId = defaults.model || provider?.models?.[0]?.id || "";
-
+                            // Only store providers and defaults - model/agent selection handled in loadAgents
                             set({
                                 providers: processedProviders,
                                 defaultProviders: defaults,
-
-                                currentProviderId: defaultProviderId,
-                                currentModelId: defaultModelId,
                             });
 
                             const metadata = await metadataPromise;
@@ -310,8 +377,6 @@ export const useConfigStore = create<ConfigStore>()(
                     set({
                         providers: previousProviders,
                         defaultProviders: previousDefaults,
-                        currentProviderId: previousProviderId,
-                        currentModelId: previousModelId,
                     });
                 },
 
@@ -355,9 +420,18 @@ export const useConfigStore = create<ConfigStore>()(
 
                     for (let attempt = 0; attempt < 3; attempt++) {
                         try {
-                            const agents = await opencodeClient.listAgents();
+                            // Fetch agents and OpenChamber settings in parallel
+                            const [agents, openChamberDefaults] = await Promise.all([
+                                opencodeClient.listAgents(),
+                                fetchOpenChamberDefaults(),
+                            ]);
                             const safeAgents = Array.isArray(agents) ? agents : [];
-                            set({ agents: safeAgents });
+                            set({
+                                agents: safeAgents,
+                                // Store settings defaults so setAgent can respect them
+                                settingsDefaultModel: openChamberDefaults.defaultModel,
+                                settingsDefaultAgent: openChamberDefaults.defaultAgent,
+                            });
 
                             const { providers } = get();
 
@@ -366,31 +440,99 @@ export const useConfigStore = create<ConfigStore>()(
                                 return true;
                             }
 
+                            // --- Agent Selection ---
+                            // Priority: settings.defaultAgent → build → first primary → first agent
                             const primaryAgents = safeAgents.filter((agent) => isPrimaryMode(agent.mode));
                             const buildAgent = primaryAgents.find((agent) => agent.name === "build");
-                            const defaultAgent = buildAgent || primaryAgents[0] || safeAgents[0];
+                            const fallbackAgent = buildAgent || primaryAgents[0] || safeAgents[0];
 
-                             const existingAgentName = get().currentAgentName;
-                             const existingAgent = existingAgentName ? safeAgents.find((agent) => agent.name === existingAgentName) : undefined;
-                             const resolvedAgentName = existingAgent ? existingAgentName : defaultAgent.name;
+                            let resolvedAgent: Agent | undefined;
 
-                             if (resolvedAgentName !== existingAgentName) {
-                                 set({ currentAgentName: resolvedAgentName });
-                             }
+                            // Helper to validate model exists in providers
+                            const validateModel = (providerId: string, modelId: string): boolean => {
+                                const provider = providers.find((p) => p.id === providerId);
+                                if (!provider) return false;
+                                return provider.models.some((m) => m.id === modelId);
+                            };
 
-                             const agentForDefaults = existingAgent || defaultAgent;
-                            if (agentForDefaults?.model?.providerID && agentForDefaults?.model?.modelID) {
-                                const agentProvider = providers.find((p) => p.id === agentForDefaults.model!.providerID);
-                                if (agentProvider) {
-                                    const agentModel = agentProvider.models.find((model) => model.id === agentForDefaults.model!.modelID);
+                            // Track invalid settings to clear
+                            const invalidSettings: { defaultModel?: string; defaultAgent?: string } = {};
 
-                                    if (agentModel) {
-                                        set({
-                                            currentProviderId: agentForDefaults.model!.providerID,
-                                            currentModelId: agentForDefaults.model!.modelID,
-                                        });
+                            // 1. Check OpenChamber settings for default agent
+                            if (openChamberDefaults.defaultAgent) {
+                                const settingsAgent = safeAgents.find((agent) => agent.name === openChamberDefaults.defaultAgent);
+                                if (settingsAgent) {
+                                    resolvedAgent = settingsAgent;
+                                } else {
+                                    // Agent no longer exists - mark for clearing
+                                    invalidSettings.defaultAgent = '';
+                                }
+                            }
+
+                            // 2. Fall back to default logic
+                            if (!resolvedAgent) {
+                                resolvedAgent = fallbackAgent;
+                            }
+
+                            set({ currentAgentName: resolvedAgent.name });
+
+                            // --- Model Selection ---
+                            // Priority: settings.defaultModel → agent's preferred model → opencode/big-pickle
+                            let resolvedProviderId: string | undefined;
+                            let resolvedModelId: string | undefined;
+
+                            // 1. Check OpenChamber settings for default model
+                            if (openChamberDefaults.defaultModel) {
+                                const parsed = parseModelString(openChamberDefaults.defaultModel);
+                                if (parsed && validateModel(parsed.providerId, parsed.modelId)) {
+                                    resolvedProviderId = parsed.providerId;
+                                    resolvedModelId = parsed.modelId;
+                                } else {
+                                    // Model no longer exists - mark for clearing
+                                    invalidSettings.defaultModel = '';
+                                }
+                            }
+
+                            // 2. Fall back to agent's preferred model
+                            if (!resolvedProviderId && resolvedAgent?.model?.providerID && resolvedAgent?.model?.modelID) {
+                                if (validateModel(resolvedAgent.model.providerID, resolvedAgent.model.modelID)) {
+                                    resolvedProviderId = resolvedAgent.model.providerID;
+                                    resolvedModelId = resolvedAgent.model.modelID;
+                                }
+                            }
+
+                            // 3. Fall back to opencode/big-pickle
+                            if (!resolvedProviderId) {
+                                if (validateModel(FALLBACK_PROVIDER_ID, FALLBACK_MODEL_ID)) {
+                                    resolvedProviderId = FALLBACK_PROVIDER_ID;
+                                    resolvedModelId = FALLBACK_MODEL_ID;
+                                } else {
+                                    // Last resort: first provider's first model
+                                    const firstProvider = providers[0];
+                                    if (firstProvider && firstProvider.models[0]) {
+                                        resolvedProviderId = firstProvider.id;
+                                        resolvedModelId = firstProvider.models[0].id;
                                     }
                                 }
+                            }
+
+                            if (resolvedProviderId && resolvedModelId) {
+                                set({
+                                    currentProviderId: resolvedProviderId,
+                                    currentModelId: resolvedModelId,
+                                });
+                            }
+
+                            // Clear invalid settings from storage (best-effort cleanup)
+                            if (Object.keys(invalidSettings).length > 0) {
+                                // Also clear from store state
+                                set({
+                                    settingsDefaultModel: invalidSettings.defaultModel !== undefined ? undefined : get().settingsDefaultModel,
+                                    settingsDefaultAgent: invalidSettings.defaultAgent !== undefined ? undefined : get().settingsDefaultAgent,
+                                });
+                                updateDesktopSettings(invalidSettings).catch(() => {
+                                    // Ignore errors - best effort cleanup
+                                });
                             }
 
                             return true;
@@ -407,7 +549,7 @@ export const useConfigStore = create<ConfigStore>()(
                 },
 
                 setAgent: (agentName: string | undefined) => {
-                    const { agents, providers } = get();
+                    const { agents, providers, settingsDefaultModel } = get();
 
                     set({ currentAgentName: agentName });
 
@@ -452,6 +594,22 @@ export const useConfigStore = create<ConfigStore>()(
                             }
                         }
 
+                        // If settings has a default model, use it instead of agent's preferred
+                        if (settingsDefaultModel) {
+                            const parsed = parseModelString(settingsDefaultModel);
+                            if (parsed) {
+                                const settingsProvider = providers.find((p) => p.id === parsed.providerId);
+                                if (settingsProvider?.models.some((m) => m.id === parsed.modelId)) {
+                                    set({
+                                        currentProviderId: parsed.providerId,
+                                        currentModelId: parsed.modelId,
+                                    });
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Fall back to agent's preferred model
                         const agent = agents.find((candidate) => candidate.name === agentName);
                         if (agent?.model?.providerID && agent?.model?.modelID) {
                             const agentProvider = providers.find((provider) => provider.id === agent.model!.providerID);
@@ -467,6 +625,14 @@ export const useConfigStore = create<ConfigStore>()(
                             }
                         }
                     }
+                },
+
+                setSettingsDefaultModel: (model: string | undefined) => {
+                    set({ settingsDefaultModel: model });
+                },
+
+                setSettingsDefaultAgent: (agent: string | undefined) => {
+                    set({ settingsDefaultAgent: agent });
                 },
 
                 checkConnection: async () => {

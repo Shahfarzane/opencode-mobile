@@ -415,6 +415,13 @@ const sanitizeSettingsUpdate = (payload) => {
     result.typographySizes = typography;
   }
 
+  if (typeof candidate.defaultModel === 'string' && candidate.defaultModel.length > 0) {
+    result.defaultModel = candidate.defaultModel;
+  }
+  if (typeof candidate.defaultAgent === 'string' && candidate.defaultAgent.length > 0) {
+    result.defaultAgent = candidate.defaultAgent;
+  }
+
   return result;
 };
 

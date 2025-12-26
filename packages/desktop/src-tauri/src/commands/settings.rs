@@ -131,6 +131,16 @@ fn sanitize_settings_update(payload: &Value) -> Value {
                 result_obj.insert("markdownDisplayMode".to_string(), json!(s));
             }
         }
+        if let Some(Value::String(s)) = obj.get("defaultModel") {
+            if !s.is_empty() {
+                result_obj.insert("defaultModel".to_string(), json!(s));
+            }
+        }
+        if let Some(Value::String(s)) = obj.get("defaultAgent") {
+            if !s.is_empty() {
+                result_obj.insert("defaultAgent".to_string(), json!(s));
+            }
+        }
 
         // Boolean fields
         if let Some(Value::Bool(b)) = obj.get("useSystemTheme") {
