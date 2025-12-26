@@ -1,0 +1,179 @@
+import React from 'react';
+import { RiInformationLine } from '@remixicon/react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ModelSelector } from '@/components/sections/agents/ModelSelector';
+import { AgentSelector } from '@/components/sections/commands/AgentSelector';
+import { updateDesktopSettings } from '@/lib/persistence';
+import { isDesktopRuntime, getDesktopSettings } from '@/lib/desktop';
+import { useConfigStore } from '@/stores/useConfigStore';
+import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
+
+export const DefaultsSettings: React.FC = () => {
+  const setProvider = useConfigStore((state) => state.setProvider);
+  const setModel = useConfigStore((state) => state.setModel);
+  const setAgent = useConfigStore((state) => state.setAgent);
+  const setSettingsDefaultModel = useConfigStore((state) => state.setSettingsDefaultModel);
+  const setSettingsDefaultAgent = useConfigStore((state) => state.setSettingsDefaultAgent);
+  const providers = useConfigStore((state) => state.providers);
+
+  const [defaultModel, setDefaultModel] = React.useState<string | undefined>();
+  const [defaultAgent, setDefaultAgent] = React.useState<string | undefined>();
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  // Parse "provider/model" string into separate parts
+  const parsedModel = React.useMemo(() => {
+    if (!defaultModel) return { providerId: '', modelId: '' };
+    const parts = defaultModel.split('/');
+    if (parts.length !== 2) return { providerId: '', modelId: '' };
+    return { providerId: parts[0] || '', modelId: parts[1] || '' };
+  }, [defaultModel]);
+
+  // Load current settings
+  React.useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        let data: { defaultModel?: string; defaultAgent?: string } | null = null;
+
+        // 1. Desktop runtime (Tauri)
+        if (isDesktopRuntime()) {
+          data = await getDesktopSettings();
+        } else {
+          // 2. Runtime settings API (VSCode)
+          const runtimeSettings = getRegisteredRuntimeAPIs()?.settings;
+          if (runtimeSettings) {
+            try {
+              const result = await runtimeSettings.load();
+              const settings = result?.settings;
+              if (settings) {
+                data = {
+                  defaultModel: typeof settings.defaultModel === 'string' ? settings.defaultModel : undefined,
+                  defaultAgent: typeof settings.defaultAgent === 'string' ? settings.defaultAgent : undefined,
+                };
+              }
+            } catch {
+              // Fall through to fetch
+            }
+          }
+
+          // 3. Fetch API (Web)
+          if (!data) {
+            const response = await fetch('/api/config/settings', {
+              method: 'GET',
+              headers: { Accept: 'application/json' },
+            });
+            if (response.ok) {
+              data = await response.json();
+            }
+          }
+        }
+
+        if (data) {
+          setDefaultModel(data.defaultModel);
+          setDefaultAgent(data.defaultAgent);
+        }
+      } catch (error) {
+        console.warn('Failed to load defaults settings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleModelChange = React.useCallback(async (providerId: string, modelId: string) => {
+    const newValue = providerId && modelId ? `${providerId}/${modelId}` : undefined;
+    setDefaultModel(newValue);
+
+    // Update config store settings default (used by setAgent logic)
+    setSettingsDefaultModel(newValue);
+
+    // Also update current model immediately so new sessions use this model
+    if (providerId && modelId) {
+      const provider = providers.find((p) => p.id === providerId);
+      if (provider) {
+        setProvider(providerId);
+        setModel(modelId);
+      }
+    }
+
+    try {
+      await updateDesktopSettings({
+        defaultModel: newValue ?? '',
+      });
+    } catch (error) {
+      console.warn('Failed to save default model:', error);
+    }
+  }, [providers, setProvider, setModel, setSettingsDefaultModel]);
+
+  const handleAgentChange = React.useCallback(async (agentName: string) => {
+    const newValue = agentName || undefined;
+    setDefaultAgent(newValue);
+
+    // Update config store settings default
+    setSettingsDefaultAgent(newValue);
+
+    // Update current agent (setAgent will respect settingsDefaultModel)
+    if (agentName) {
+      setAgent(agentName);
+    }
+
+    try {
+      await updateDesktopSettings({
+        defaultAgent: newValue ?? '',
+      });
+    } catch (error) {
+      console.warn('Failed to save default agent:', error);
+    }
+  }, [setAgent, setSettingsDefaultAgent]);
+
+  if (isLoading) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <h3 className="typography-ui-header font-semibold text-foreground">Default model & agent</h3>
+          <Tooltip delayDuration={1000}>
+            <TooltipTrigger asChild>
+              <RiInformationLine className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent sideOffset={8} className="max-w-xs">
+              Set the default model and agent for new sessions.<br />
+              When not set, uses agent&apos;s preferred model or opencode/big-pickle as fallback.
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex flex-col gap-1.5">
+          <label className="typography-ui-label text-muted-foreground">Default model</label>
+          <ModelSelector
+            providerId={parsedModel.providerId}
+            modelId={parsedModel.modelId}
+            onChange={handleModelChange}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="typography-ui-label text-muted-foreground">Default agent</label>
+          <AgentSelector
+            agentName={defaultAgent || ''}
+            onChange={handleAgentChange}
+          />
+        </div>
+      </div>
+
+      {(defaultModel || defaultAgent) && (
+        <div className="typography-meta text-muted-foreground">
+          New sessions will start with:{' '}
+          {defaultModel && <span className="text-foreground">{defaultModel}</span>}
+          {defaultModel && defaultAgent && ' / '}
+          {defaultAgent && <span className="text-foreground">{defaultAgent}</span>}
+        </div>
+      )}
+    </div>
+  );
+};

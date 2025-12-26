@@ -41,6 +41,8 @@ export type DesktopSettings = {
   showReasoningTraces?: boolean;
   autoDeleteEnabled?: boolean;
   autoDeleteAfterDays?: number;
+  defaultModel?: string; // format: "provider/model"
+  defaultAgent?: string;
 };
 
 export type DesktopSettingsApi = {

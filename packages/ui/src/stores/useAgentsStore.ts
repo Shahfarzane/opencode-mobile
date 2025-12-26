@@ -31,15 +31,22 @@ export interface AgentConfig {
 }
 
 // Extended Agent type for API properties not in SDK types
-export type AgentWithExtras = Agent & { native?: boolean; hidden?: boolean };
+export type AgentWithExtras = Agent & {
+  native?: boolean;
+  hidden?: boolean;
+  options?: { hidden?: boolean };
+};
 
 // Helper to check if agent is built-in (handles both SDK 'builtIn' and API 'native')
 export const isAgentBuiltIn = (agent: Agent): boolean =>
   agent.builtIn || (agent as AgentWithExtras).native === true;
 
 // Helper to check if agent is hidden (internal agents like title, compaction, summary)
-export const isAgentHidden = (agent: Agent): boolean =>
-  (agent as AgentWithExtras).hidden === true;
+// Checks both top-level hidden and options.hidden (OpenCode API inconsistency workaround)
+export const isAgentHidden = (agent: Agent): boolean => {
+  const extended = agent as AgentWithExtras;
+  return extended.hidden === true || extended.options?.hidden === true;
+};
 
 // Helper to filter only visible (non-hidden) agents
 export const filterVisibleAgents = (agents: Agent[]): Agent[] =>

@@ -126,10 +126,20 @@ export const useSessionStore = create<SessionStore>()(
                     try {
                         const configState = useConfigStore.getState();
                         const visibleAgents = configState.getVisibleAgents();
-                        const agentName =
-                            configState.currentAgentName ||
-                            visibleAgents.find((agent) => agent.name === 'build')?.name ||
-                            visibleAgents[0]?.name;
+
+                        // Priority: settingsDefaultAgent → build → first visible
+                        let agentName: string | undefined;
+                        if (configState.settingsDefaultAgent) {
+                            const settingsAgent = visibleAgents.find((a) => a.name === configState.settingsDefaultAgent);
+                            if (settingsAgent) {
+                                agentName = settingsAgent.name;
+                            }
+                        }
+                        if (!agentName) {
+                            agentName =
+                                visibleAgents.find((agent) => agent.name === 'build')?.name ||
+                                visibleAgents[0]?.name;
+                        }
 
                         if (agentName) {
                             configState.setAgent(agentName);
