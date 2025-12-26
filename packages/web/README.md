@@ -13,7 +13,7 @@ https://github.com/btriapitsyn/openchamber
 curl -fsSL https://raw.githubusercontent.com/btriapitsyn/openchamber/main/scripts/install.sh | bash
 
 # Or install manually
-npm add -g @openchamber/web    # or pnpm, yarn, bun
+bun add -g @openchamber/web    # or npm, pnpm, yarn
 ```
 
 ## Usage

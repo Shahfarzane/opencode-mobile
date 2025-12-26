@@ -73,7 +73,7 @@ The whole project was built entirely with AI coding agents under my supervision.
 
 ### VS Code Extension
 
-Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=fedaykindev.openchamber) or search "OpenChamber" in Extensions.
+Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=fedaykindev.openchamber) / [Open VSX Registry](https://open-vsx.org/extension/FedaykinDev/openchamber) or search "OpenChamber" in Extensions.
 
 ### CLI (Web Server)
 
@@ -82,7 +82,7 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 curl -fsSL https://raw.githubusercontent.com/btriapitsyn/openchamber/main/scripts/install.sh | bash
 
 # Or install manually
-pnpm add -g @openchamber/web    # or npm, yarn, bun
+bun add -g @openchamber/web    # or npm, pnpm, yarn
 ```
 
 ```bash

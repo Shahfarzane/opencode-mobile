@@ -43,8 +43,8 @@ Currently available for macOS (Apple Silicon).
 ```bash
 git clone https://github.com/btriapitsyn/openchamber.git
 cd openchamber
-pnpm install
-pnpm run desktop:dev
+bun install
+bun run desktop:dev
 ```
 
 ## License

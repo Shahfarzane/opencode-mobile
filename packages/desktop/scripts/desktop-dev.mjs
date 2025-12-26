@@ -21,7 +21,7 @@ function spawnProcess(command, args, opts = {}) {
 async function main() {
   await startCli();
 
-  const tauriProcess = spawnProcess('pnpm', ['-C', desktopDir, 'tauri', 'dev', '--features', 'devtools']);
+  const tauriProcess = spawnProcess('bun', ['--cwd', desktopDir, 'tauri', 'dev', '--features', 'devtools']);
 
   let cleaning = false;
 

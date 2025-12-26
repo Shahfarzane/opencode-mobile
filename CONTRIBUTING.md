@@ -5,27 +5,27 @@
 ```bash
 git clone https://github.com/btriapitsyn/openchamber.git
 cd openchamber
-pnpm install
+bun install
 
 # Web development
-pnpm run dev:web:full
+bun run dev:web:full
 
 # Desktop app (Tauri)
-pnpm desktop:dev
+bun run desktop:dev
 
 # VS Code extension
-pnpm vscode:build && code --extensionDevelopmentPath="$(pwd)/packages/vscode"
+bun run vscode:build && code --extensionDevelopmentPath="$(pwd)/packages/vscode"
 
 # Production build
-pnpm run build
+bun run build
 ```
 
 ## Before Submitting
 
 ```bash
-pnpm -r type-check   # Must pass
-pnpm -r lint         # Must pass
-pnpm -r build        # Must succeed
+bun run type-check   # Must pass
+bun run lint         # Must pass
+bun run build        # Must succeed
 ```
 
 ## Code Style

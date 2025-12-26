@@ -50,9 +50,9 @@ OpenChamber inside VS Code: embeds the OpenChamber chat UI in the activity bar a
 ## Development
 
 ```bash
-pnpm install
-pnpm -C packages/vscode run build            # build extension + webview
-pnpm -C packages/vscode exec vsce package --no-dependencies
+bun install
+bun run --cwd packages/vscode build            # build extension + webview
+cd packages/vscode && bunx vsce package --no-dependencies
 ```
 
 ## Local Install

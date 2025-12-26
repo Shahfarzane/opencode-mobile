@@ -60,16 +60,16 @@ Extension in `packages/vscode`: Extension entry in `src/` (ChatViewProvider, bri
 Always validate changes:
 
 ```bash
-pnpm -r type-check   # TypeScript validation
-pnpm -r lint         # ESLint checks
-pnpm -r build        # Production build
+bun run type-check   # TypeScript validation
+bun run lint         # ESLint checks
+bun run build        # Production build
 ```
 
 ### Building
 ```bash
-pnpm run build                 # Build all packages
-pnpm run desktop:build         # Build desktop app
-pnpm vscode:build              # Build VS Code extension
+bun run build                 # Build all packages
+bun run desktop:build         # Build desktop app
+bun run vscode:build          # Build VS Code extension
 ```
 
 ## Communication & Output Discipline (MANDATORY)
@@ -98,7 +98,7 @@ SDK-managed SSE with AsyncGenerator, temp->real session ID swap (optimistic UI),
 ### Lint & Type Safety
 
 - Never land code that introduces new ESLint or TypeScript errors
-- Run `pnpm run lint` and `pnpm run type-check` before finalizing changes
+- Run `bun run lint` and `bun run type-check` before finalizing changes
 - Adding `eslint-disable` requires justification in a comment explaining why typing is impossible
 - Do **not** use `any` or `unknown` casts as escape hatches; build narrow adapter interfaces instead
 - Refactors or new features must keep existing lint/type baselines green

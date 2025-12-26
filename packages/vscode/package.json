@@ -75,15 +75,15 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run build",
-    "build": "pnpm run build:extension && pnpm run build:webview",
+    "vscode:prepublish": "bun run build",
+    "build": "bun run build:extension && bun run build:webview",
     "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
     "build:webview": "VITE_OPENCODE_URL=/api vite build",
-    "dev": "concurrently -n \"ext,web\" -c \"cyan,magenta\" \"pnpm run watch:extension\" \"pnpm run watch:webview\"",
+    "dev": "concurrently -n \"ext,web\" -c \"cyan,magenta\" \"bun run watch:extension\" \"bun run watch:webview\"",
     "watch:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch --sourcemap",
     "watch:webview": "vite build --watch",
     "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
-    "lint": "pnpm dlx eslint --ext .ts,.tsx src webview",
+    "lint": "bunx eslint --ext .ts,.tsx src webview",
     "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
