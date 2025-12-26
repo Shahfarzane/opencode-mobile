@@ -334,7 +334,7 @@ export const FileMentionAutocomplete = React.forwardRef<FileMentionHandle, FileM
                   {getFileIcon(file)}
                   <span
                     ref={(el) => { labelRefs.current[index] = el; }}
-                    className="relative flex-1 overflow-hidden max-w-[360px] file-mention-marquee-container"
+                    className="relative flex-1 min-w-0 overflow-hidden file-mention-marquee-container"
                     style={isSelected ? {
                       ['--file-mention-marquee-width' as string]: `${marqueeWidth}px`,
                       ['--file-mention-marquee-duration' as string]: `${marqueeDuration}s`
