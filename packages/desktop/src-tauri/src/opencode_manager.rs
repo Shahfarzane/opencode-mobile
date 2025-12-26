@@ -108,7 +108,7 @@ impl OpenCodeManager {
             is_ready: Arc::new(AtomicBool::new(false)),
             shutting_down: Arc::new(AtomicBool::new(false)),
             http_client: Client::builder()
-                .timeout(Duration::from_secs(5))
+                .timeout(Duration::from_secs(2))
                 .build()
                 .unwrap(),
         }
@@ -406,11 +406,9 @@ impl OpenCodeManager {
         while tokio::time::Instant::now() < deadline {
             let api_prefix = self.api_prefix();
 
-            // Try /health, /config, /agent endpoints
+            // Try /config, /agent endpoints
             match self.check_endpoints(port, &api_prefix).await {
                 Ok(()) => {
-                    // Once ready, attempt to detect and persist the API prefix for proxying
-                    let _ = self.detect_api_prefix().await;
                     return Ok(());
                 }
                 Err(e) => {
@@ -431,23 +429,20 @@ impl OpenCodeManager {
     async fn check_endpoints(&self, port: u16, prefix: &str) -> Result<()> {
         let base_url = format!("http://127.0.0.1:{port}{prefix}");
 
-        // Check /health
-        let health_url = format!("{base_url}/health");
-        let health_resp = self.http_client.get(&health_url).send().await?;
-        if !health_resp.status().is_success() {
-            return Err(anyhow!("/health returned {}", health_resp.status()));
-        }
-
-        // Check /config
         let config_url = format!("{base_url}/config");
-        let config_resp = self.http_client.get(&config_url).send().await?;
+        let agent_url = format!("{base_url}/agent");
+
+        let (config_resp, agent_resp) = tokio::join!(
+            self.http_client.get(&config_url).send(),
+            self.http_client.get(&agent_url).send()
+        );
+
+        let config_resp = config_resp?;
         if !config_resp.status().is_success() {
             return Err(anyhow!("/config returned {}", config_resp.status()));
         }
 
-        // Check /agent
-        let agent_url = format!("{base_url}/agent");
-        let agent_resp = self.http_client.get(&agent_url).send().await?;
+        let agent_resp = agent_resp?;
         if !agent_resp.status().is_success() {
             return Err(anyhow!("/agent returned {}", agent_resp.status()));
         }
@@ -497,8 +492,7 @@ impl OpenCodeManager {
         // SIGKILL
         let _ = child.kill().await;
 
-        // Wait up to 5 seconds for hard kill
-        match timeout(Duration::from_secs(5), child.wait()).await {
+        match timeout(Duration::from_secs(2), child.wait()).await {
             Ok(_) => {
                 info!("[desktop:opencode] exited after SIGKILL");
             }
