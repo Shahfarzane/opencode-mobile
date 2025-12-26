@@ -4,7 +4,7 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 import { OpenChamberLogo } from '@/components/ui/OpenChamberLogo';
-import { RiGithubFill, RiTwitterXFill } from '@remixicon/react';
+import { RiDiscordFill, RiGithubFill, RiTwitterXFill } from '@remixicon/react';
 
 declare const __APP_VERSION__: string | undefined;
 
@@ -79,6 +79,15 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
             >
               <RiGithubFill className="h-4 w-4" />
               <span>GitHub</span>
+            </a>
+            <a
+              href="https://discord.gg/ZYRSdnwwKA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 typography-meta text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RiDiscordFill className="h-4 w-4" />
+              <span>Discord</span>
             </a>
             <a
               href="https://x.com/btriapitsyn"

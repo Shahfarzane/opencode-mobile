@@ -9,6 +9,7 @@
     "type": "git",
     "url": "https://github.com/btriapitsyn/openchamber.git"
   },
+  "qna": "https://discord.gg/ZYRSdnwwKA",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"

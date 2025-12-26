@@ -89,6 +89,8 @@ const MENU_ITEM_CHECK_FOR_UPDATES_ID: &str = "openchamber_check_for_updates";
 const MENU_ITEM_REPORT_BUG_ID: &str = "openchamber_report_bug";
 #[cfg(target_os = "macos")]
 const MENU_ITEM_REQUEST_FEATURE_ID: &str = "openchamber_request_feature";
+#[cfg(target_os = "macos")]
+const MENU_ITEM_JOIN_DISCORD_ID: &str = "openchamber_join_discord";
 
 // App menu
 #[cfg(target_os = "macos")]
@@ -132,6 +134,7 @@ const MENU_ITEM_DOWNLOAD_LOGS_ID: &str = "openchamber_download_logs";
 
 const GITHUB_BUG_REPORT_URL: &str = "https://github.com/btriapitsyn/openchamber/issues/new?template=bug_report.yml";
 const GITHUB_FEATURE_REQUEST_URL: &str = "https://github.com/btriapitsyn/openchamber/issues/new?template=feature_request.yml";
+const DISCORD_INVITE_URL: &str = "https://discord.gg/ZYRSdnwwKA";
 
 #[derive(Clone)]
 pub(crate) struct DesktopRuntime {
@@ -493,6 +496,14 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
         None::<&str>,
     )?;
 
+    let join_discord = MenuItem::with_id(
+        app,
+        MENU_ITEM_JOIN_DISCORD_ID,
+        "Join Discord",
+        true,
+        None::<&str>,
+    )?;
+
     let theme_submenu = Submenu::with_items(
         app,
         "Theme",
@@ -524,6 +535,8 @@ fn build_macos_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Resu
             &PredefinedMenuItem::separator(app)?,
             &report_bug,
             &request_feature,
+            &PredefinedMenuItem::separator(app)?,
+            &join_discord,
         ],
     )?;
 
@@ -869,6 +882,15 @@ fn main() {
                     #[allow(deprecated)]
                     {
                         let _ = app.shell().open(GITHUB_FEATURE_REQUEST_URL, None);
+                    }
+                    return;
+                }
+
+                if event_id == MENU_ITEM_JOIN_DISCORD_ID {
+                    use tauri_plugin_shell::ShellExt;
+                    #[allow(deprecated)]
+                    {
+                        let _ = app.shell().open(DISCORD_INVITE_URL, None);
                     }
                     return;
                 }
