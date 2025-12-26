@@ -1949,7 +1949,6 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                         onTouchCancel={handleLongPressEnd}
                         className={cn(
                             'model-controls__model-trigger flex items-center gap-1.5 min-w-0 focus:outline-none',
-                            isMobile && 'flex-1',
                             'cursor-pointer hover:opacity-70',
                             buttonHeight
                         )}
@@ -1965,7 +1964,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                         <span
                             className={cn(
                                 'model-controls__model-label typography-micro font-medium truncate min-w-0',
-                                isMobile ? 'flex-1' : 'max-w-[220px]',
+                                !isMobile && 'max-w-[220px]',
                             )}
                         >
                             {getCurrentModelDisplayName()}
@@ -2319,12 +2318,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
             <div className={inlineClassName}>
                 <div
                     className={cn(
-                        'flex items-center min-w-0',
-                        isMobile
-                            ? 'flex-1 min-w-0 overflow-hidden'
-                            : (isCompact
-                                ? 'flex-1 min-w-0 justify-end'
-                                : 'flex-1 min-w-0 justify-end')
+                        'flex items-center min-w-0 flex-1 justify-end',
+                        isMobile && 'overflow-hidden'
                     )}
                 >
                     {renderModelSelector()}
