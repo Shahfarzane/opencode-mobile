@@ -4,10 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.5] - 2025-12-26
+
+- Added Nushell support for operations with Opencode CLI.
+- Improved file search with fuzzy matching capabilities.
+- Enhanced mobile responsiveness in chat controls.
+- Fixed workspace switching performance and API health checks.
+- Improved provider loading reliability during workspace switching.
+- Fixed session handling for non-existent worktree directories.
+- Added Discord links in the about section.
+- Added settings for choosing the default model/agent to start with in a new session.
+
+
 ## [1.3.4] - 2025-12-25
 
 - Diff view now loads reliably even with large files and slow networks.
-- Fixed getting diffs for worktree files
+- Fixed getting diffs for worktree files.
 - VS Code extension: improved type checking and editor integration.
 
 
