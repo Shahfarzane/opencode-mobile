@@ -12,7 +12,7 @@
     "access": "public"
   },
   "scripts": {
-    "dev": "pnpm run build:watch",
+    "dev": "bun run build:watch",
     "dev:server": "node server/index.js --port 3001",
     "dev:server:watch": "nodemon --watch server --ext js --exec \"node server/index.js --port 3001\"",
     "build": "vite build",

@@ -19,31 +19,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Build VS Code extension
-        run: pnpm -C packages/vscode run build
+        run: bun run --cwd packages/vscode build
 
       - name: Package extension
-        run: pnpm -C packages/vscode exec vsce package --no-dependencies
+        run: cd packages/vscode && bunx vsce package --no-dependencies
 
       - name: Publish to VS Code Marketplace
         if: ${{ env.VSCE_PAT != '' }}
-        run: pnpm -C packages/vscode exec vsce publish -p "$VSCE_PAT" --no-dependencies
+        run: cd packages/vscode && bunx vsce publish -p "$VSCE_PAT" --no-dependencies
 
       - name: Publish to Open VSX
         if: ${{ env.OVSX_PAT != '' }}
-        run: pnpm -C packages/vscode dlx ovsx publish packages/vscode/*.vsix -p "$OVSX_PAT"
+        run: bunx ovsx publish packages/vscode/*.vsix -p "$OVSX_PAT"
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
