@@ -108,22 +108,15 @@ export const detectTurns = (messages: ChatMessageEntry[]): Turn[] => {
 const extractFinalAssistantText = (turn: Turn): string | undefined => {
 
     for (const assistantMsg of turn.assistantMessages) {
+        const infoFinish = (assistantMsg.info as { finish?: string | null | undefined }).finish;
 
-        for (const part of assistantMsg.parts) {
-            if (part.type === 'step-finish') {
-                const finishReason = (part as { reason?: string | null | undefined }).reason;
-                const infoFinish = (assistantMsg.info as { finish?: string | null | undefined }).finish;
-
-                if (finishReason === 'stop' || infoFinish === 'stop') {
-
-                    const textPart = assistantMsg.parts.find(p => p.type === 'text');
-                    if (textPart) {
-                        const textContent = (textPart as { text?: string | null | undefined }).text ??
-                                          (textPart as { content?: string | null | undefined }).content;
-                        if (typeof textContent === 'string' && textContent.trim().length > 0) {
-                            return textContent;
-                        }
-                    }
+        if (infoFinish === 'stop') {
+            const textPart = assistantMsg.parts.find(p => p.type === 'text');
+            if (textPart) {
+                const textContent = (textPart as { text?: string | null | undefined }).text ??
+                                  (textPart as { content?: string | null | undefined }).content;
+                if (typeof textContent === 'string' && textContent.trim().length > 0) {
+                    return textContent;
                 }
             }
         }
@@ -194,12 +187,9 @@ const getTurnActivityInfo = (turn: Turn): TurnActivityInfo => {
 
     turn.assistantMessages.forEach((msg) => {
         const messageId = msg.info.id;
+        const infoFinish = (msg.info as { finish?: string | null | undefined }).finish;
         const hasStopFinishInMessage = ENABLE_TEXT_JUSTIFICATION_ACTIVITY
-            ? msg.parts.some((part) => {
-                  if (part.type !== 'step-finish') return false;
-                  const reason = (part as { reason?: string | null | undefined }).reason;
-                  return reason === 'stop';
-              })
+            ? infoFinish === 'stop'
             : false;
 
         msg.parts.forEach((part) => {

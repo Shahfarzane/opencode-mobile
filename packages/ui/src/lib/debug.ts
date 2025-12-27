@@ -590,7 +590,7 @@ export const debugUtils = {
 
     const lastMessage = assistantMessages[assistantMessages.length - 1];
     const stepFinishParts = lastMessage.parts.filter((p: any) => p.type === 'step-finish');
-    const hasStopReason = lastMessage.parts.some((p: any) => p.type === 'step-finish' && p.reason === 'stop');
+    const hasStopReason = (lastMessage.info as { finish?: string }).finish === 'stop';
 
     const timeInfo = lastMessage.info.time as any;
     const completedAt = timeInfo?.completed;

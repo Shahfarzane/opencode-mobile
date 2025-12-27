@@ -329,8 +329,8 @@ async fn handle_event(
                 set_phase(app, &id, ActivityPhase::Busy, phases.clone(), cooldowns.clone()).await;
             }
 
-            // Derive cooldown from "step-finish reason=stop" marker when present.
-            if is_stop_step_finish_part(&event.properties) {
+            // Derive cooldown from info.finish === 'stop' when present.
+            if has_finish_stop(info) {
                 enter_cooldown_if_busy(app, &id, phases.clone(), cooldowns.clone()).await;
             }
         }
@@ -349,13 +349,8 @@ fn is_streaming_assistant_part(properties: &Value) -> bool {
     )
 }
 
-fn is_stop_step_finish_part(properties: &Value) -> bool {
-    let Some(part) = properties.get("part") else {
-        return false;
-    };
-    let part_type = part.get("type").and_then(Value::as_str);
-    let reason = part.get("reason").and_then(Value::as_str);
-    part_type == Some("step-finish") && reason == Some("stop")
+fn has_finish_stop(info: &Value) -> bool {
+    info.get("finish").and_then(Value::as_str) == Some("stop")
 }
 
 async fn enter_cooldown_if_busy(

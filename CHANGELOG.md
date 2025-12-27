@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Optimized session activity status handling.
+
+
 ## [1.3.6] - 2025-12-27
 
 - Added the ability to manage (connect/disconnect) providers in settings.

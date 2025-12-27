@@ -105,6 +105,7 @@ interface MessageBodyProps {
     parts: Part[];
     isUser: boolean;
     isMessageCompleted: boolean;
+    messageFinish?: string;
 
     syntaxTheme: { [key: string]: React.CSSProperties };
 
@@ -300,6 +301,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
     messageId,
     parts,
     isMessageCompleted,
+    messageFinish,
 
     syntaxTheme,
     isMobile,
@@ -347,9 +349,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
 
     const createSessionFromAssistantMessage = useSessionStore((state) => state.createSessionFromAssistantMessage);
     const isLastAssistantInTurn = turnGroupingContext?.isLastAssistantInTurn ?? false;
-    const hasStopFinish = React.useMemo(() => {
-        return parts.some((part) => part.type === 'step-finish' && (part as { reason?: string | null | undefined }).reason === 'stop');
-    }, [parts]);
+    const hasStopFinish = messageFinish === 'stop';
 
 
     const hasTools = toolParts.length > 0;
@@ -414,24 +414,8 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         });
     }, [reasoningParts]);
 
-    const stepState = React.useMemo(() => {
-        let stepStarts = 0;
-        let stepFinishes = 0;
-        visibleParts.forEach((part) => {
-            if (part.type === 'step-start') {
-                stepStarts += 1;
-            } else if (part.type === 'step-finish') {
-                stepFinishes += 1;
-            }
-        });
-        return {
-            stepStarts,
-            stepFinishes,
-            hasOpenStep: stepStarts > stepFinishes,
-        };
-    }, [visibleParts]);
-
-    const hasOpenStep = stepState.hasOpenStep;
+    // Message is considered to have an "open step" if info.finish is not yet present
+    const hasOpenStep = typeof messageFinish !== 'string';
 
     const shouldHoldForReasoning =
         reasoningParts.length > 0 &&
