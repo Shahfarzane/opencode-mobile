@@ -1,16 +1,41 @@
 import type { Part } from "@opencode-ai/sdk";
 
-const isSyntheticPart = (part: Part | undefined): boolean => {
+export const isSyntheticPart = (part: Part | undefined): boolean => {
     if (!part || typeof part !== "object") {
         return false;
     }
     return Boolean((part as { synthetic?: boolean }).synthetic);
 };
 
+/**
+ * Checks if a message consists entirely of synthetic parts.
+ * Used for status/completion logic (not display filtering).
+ */
 export const isFullySyntheticMessage = (parts: Part[] | undefined): boolean => {
     if (!Array.isArray(parts) || parts.length === 0) {
         return false;
     }
 
     return parts.every((part) => isSyntheticPart(part));
+};
+
+/**
+ * Filters out synthetic parts from a message, but only if there are
+ * non-synthetic parts present. If all parts are synthetic, returns
+ * them as-is so the message can still be displayed.
+ */
+export const filterSyntheticParts = (parts: Part[] | undefined): Part[] => {
+    if (!Array.isArray(parts) || parts.length === 0) {
+        return [];
+    }
+
+    const hasNonSynthetic = parts.some((part) => !isSyntheticPart(part));
+
+    // If there are non-synthetic parts, filter out synthetic ones
+    if (hasNonSynthetic) {
+        return parts.filter((part) => !isSyntheticPart(part));
+    }
+
+    // If all parts are synthetic, return them all (so message is displayed)
+    return parts;
 };
