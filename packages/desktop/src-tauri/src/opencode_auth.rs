@@ -95,22 +95,4 @@ pub async fn remove_provider_auth(provider_id: &str) -> Result<bool> {
     Ok(true)
 }
 
-/// Get provider auth entry
-pub async fn get_provider_auth(provider_id: &str) -> Result<Option<Value>> {
-    let auth = read_auth().await?;
 
-    Ok(auth
-        .as_object()
-        .and_then(|obj| obj.get(provider_id))
-        .cloned())
-}
-
-/// List all provider IDs with auth
-pub async fn list_provider_auths() -> Result<Vec<String>> {
-    let auth = read_auth().await?;
-
-    Ok(auth
-        .as_object()
-        .map(|obj| obj.keys().cloned().collect())
-        .unwrap_or_default())
-}
