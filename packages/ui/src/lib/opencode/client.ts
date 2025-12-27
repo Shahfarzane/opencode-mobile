@@ -473,6 +473,7 @@ class OpencodeService {
   async abortSession(id: string): Promise<boolean> {
     const response = await this.client.session.abort({
       path: { id },
+      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined,
       throwOnError: true,
     });
     return Boolean(response.data);
