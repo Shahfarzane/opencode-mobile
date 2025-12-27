@@ -101,13 +101,8 @@ const computePartsTextLength = (parts: Part[] | undefined): number => {
     }, 0);
 };
 
-const hasStopReasonStop = (parts: Part[] | undefined): boolean => {
-    if (!Array.isArray(parts)) {
-        return false;
-    }
-    return parts.some(
-        (part) => part?.type === "step-finish" && (part as Record<string, unknown>)?.reason === "stop"
-    );
+const hasFinishStop = (info: { finish?: string } | undefined): boolean => {
+    return info?.finish === "stop";
 };
 
 const getPartKey = (part: Part | undefined): string | undefined => {
@@ -159,8 +154,8 @@ const mergeDuplicateMessage = (
     const incomingParts = Array.isArray(incoming.parts) ? incoming.parts : [];
     const existingLen = computePartsTextLength(existingParts);
     const incomingLen = computePartsTextLength(incomingParts);
-    const existingStop = hasStopReasonStop(existingParts);
-    const incomingStop = hasStopReasonStop(incomingParts);
+    const existingStop = hasFinishStop(existing.info);
+    const incomingStop = hasFinishStop(incoming.info);
 
     let parts = incomingParts;
     if (existingStop && existingLen >= incomingLen) {
@@ -449,7 +444,7 @@ export const useMessageStore = create<MessageStore>()(
                                     const existingParts = Array.isArray(existingEntry.parts) ? existingEntry.parts : [];
                                     const existingLen = computePartsTextLength(existingParts);
                                     const serverLen = computePartsTextLength(serverParts);
-                                    const storeHasStop = hasStopReasonStop(existingParts);
+                                    const storeHasStop = hasFinishStop(existingEntry.info);
 
                                     if (storeHasStop && existingLen > serverLen) {
                                         const mergedParts = mergePreferExistingParts(existingParts, serverParts);
@@ -1388,14 +1383,6 @@ export const useMessageStore = create<MessageStore>()(
                             return finalizeAbortState({ messages: newMessages, ...updates });
                         }
                     });
-
-                    const partType = (part as any)?.type;
-                    if (partType === 'step-finish' && actualRole !== 'user') {
-                        setTimeout(() => {
-                            const store = get();
-                            store.completeStreamingMessage(sessionId, messageId);
-                        }, 0);
-                    }
                 },
 
                 addStreamingPart: (sessionId: string, messageId: string, part: Part, role?: string, currentSessionId?: string) => {
@@ -1887,6 +1874,16 @@ export const useMessageStore = create<MessageStore>()(
 
                         return updates;
                     });
+
+                    // Trigger completion when info.finish is present for assistant messages
+                    const infoFinish = (messageInfo as { finish?: string })?.finish;
+                    const messageRole = (messageInfo as { role?: string })?.role;
+                    if (typeof infoFinish === 'string' && messageRole !== 'user') {
+                        setTimeout(() => {
+                            const store = get();
+                            store.completeStreamingMessage(sessionId, messageId);
+                        }, 0);
+                    }
                 },
 
                 completeStreamingMessage: (sessionId: string, messageId: string) => {
@@ -2041,7 +2038,7 @@ export const useMessageStore = create<MessageStore>()(
                                 const existingParts = Array.isArray(existingEntry.parts) ? existingEntry.parts : [];
                                 const existingLen = computePartsTextLength(existingParts);
                                 const serverLen = computePartsTextLength(serverParts);
-                                const storeHasStop = hasStopReasonStop(existingParts);
+                                const storeHasStop = hasFinishStop(existingEntry.info);
 
                                 if (storeHasStop && existingLen > serverLen) {
                                     const mergedParts = mergePreferExistingParts(existingParts, serverParts);

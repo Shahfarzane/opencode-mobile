@@ -287,6 +287,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         return Boolean(messageCompletedAt && messageCompletedAt > 0);
     }, [isUser, messageCompletedAt]);
 
+    const messageFinish = React.useMemo(() => {
+        const finish = (message.info as { finish?: string }).finish;
+        return typeof finish === 'string' ? finish : undefined;
+    }, [message.info]);
+
     const visibleParts = React.useMemo(
         () =>
             filterVisibleParts(normalizedParts, {
@@ -382,23 +387,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         return { name, token: rawValue } satisfies AgentMentionInfo;
     }, [isUser, message.parts]);
 
-    const stepState = React.useMemo(() => {
-
-        let stepStarts = 0;
-        let stepFinishes = 0;
-        visibleParts.forEach((part) => {
-            if (part.type === 'step-start') {
-                stepStarts += 1;
-            } else if (part.type === 'step-finish') {
-                stepFinishes += 1;
-            }
-        });
-        return {
-            hasOpenStep: stepStarts > stepFinishes,
-        };
-    }, [visibleParts]);
-
-    const hasOpenStep = stepState.hasOpenStep;
+    // Message is considered to have an "open step" if info.finish is not yet present
+    const hasOpenStep = typeof messageFinish !== 'string';
 
     const shouldCoordinateRendering = React.useMemo(() => {
         if (isUser) {
@@ -756,6 +746,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                         parts={visibleParts}
                                         isUser={isUser}
                                         isMessageCompleted={isMessageCompleted}
+                                        messageFinish={messageFinish}
                                         syntaxTheme={syntaxTheme}
                                         isMobile={isMobile}
                                         hasTouchInput={hasTouchInput}
@@ -797,6 +788,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 parts={visibleParts}
                                 isUser={isUser}
                                 isMessageCompleted={isMessageCompleted}
+                                messageFinish={messageFinish}
                                 syntaxTheme={syntaxTheme}
                                 isMobile={isMobile}
                                 hasTouchInput={hasTouchInput}

@@ -864,24 +864,6 @@ function deriveSessionActivity(payload) {
     }
   }
 
-  if (payload.type === 'message.part.updated') {
-    const info = payload.properties?.info;
-    const part = payload.properties?.part;
-    const sessionId = info?.sessionID ?? part?.sessionID ?? payload.properties?.sessionID;
-    const role = info?.role;
-    const partType = part?.type;
-    const reason = part?.reason;
-    if (
-      typeof sessionId === 'string' &&
-      sessionId.length > 0 &&
-      role === 'assistant' &&
-      partType === 'step-finish' &&
-      reason === 'stop'
-    ) {
-      return { sessionId, phase: 'cooldown' };
-    }
-  }
-
   if (payload.type === 'session.idle') {
     const sessionId = payload.properties?.sessionID;
     if (typeof sessionId === 'string' && sessionId.length > 0) {

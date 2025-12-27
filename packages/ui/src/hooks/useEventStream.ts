@@ -698,9 +698,7 @@ export const useEventStream = () => {
 
         const existingMessage = getMessageFromStore(sessionId, messageId);
         const existingLen = computeTextLength(existingMessage?.parts || []);
-        const existingStopMarker = existingMessage?.parts?.some(
-          (part) => part?.type === 'step-finish' && (part as { reason?: string }).reason === 'stop'
-        ) ?? false;
+        const existingStopMarker = (existingMessage?.info as { finish?: string } | undefined)?.finish === 'stop';
 
         const serverParts = (props as { parts?: unknown }).parts || (messageExt as { parts?: unknown }).parts;
         const partsArray = Array.isArray(serverParts) ? (serverParts as Part[]) : [];
@@ -710,12 +708,13 @@ export const useEventStream = () => {
 
         if (!hasParts && !completedFromServer) break;
 
+        const finishCandidate = (message as { finish?: unknown }).finish;
+        const finish = typeof finishCandidate === 'string' ? finishCandidate : null;
+        const eventHasStopFinish = finish === 'stop';
+
         if ((messageExt as { role?: unknown }).role === 'assistant' && hasParts) {
           const incomingLen = computeTextLength(partsArray);
           const wouldShrink = existingLen > 0 && incomingLen + TEXT_SHRINK_TOLERANCE < existingLen;
-          const eventHasStopFinish = partsArray.some(
-            (p) => p?.type === 'step-finish' && (p as { reason?: string }).reason === 'stop'
-          );
 
           if (wouldShrink && !eventHasStopFinish) {
             trackMessage(messageId, 'skipped_shrinking_update', { incomingLen, existingLen });
@@ -772,16 +771,12 @@ export const useEventStream = () => {
         const messageTime = (message as { time?: { completed?: unknown } }).time;
         const completedCandidate = (messageTime as { completed?: unknown } | undefined)?.completed;
         const hasCompletedTimestamp = typeof completedCandidate === 'number' && Number.isFinite(completedCandidate);
-        const finishCandidate = (message as { finish?: unknown }).finish;
-        const finish = typeof finishCandidate === 'string' ? finishCandidate : null;
 
-        const stopMarkerPresent = partsArray.some(
-          (p) => p?.type === 'step-finish' && (p as { reason?: string }).reason === 'stop'
-        ) || existingStopMarker;
+        const stopMarkerPresent = finish === 'stop' || existingStopMarker;
 
         const shouldFinalizeAssistantMessage =
           (message as { role?: string }).role === 'assistant' &&
-          (hasCompletedTimestamp || finish === 'stop' || stopMarkerPresent);
+          (hasCompletedTimestamp || stopMarkerPresent);
 
           if (shouldFinalizeAssistantMessage && (message as { role?: string }).role === 'assistant') {
 
@@ -894,20 +889,9 @@ export const useEventStream = () => {
 	          completeStreamingMessage(sessionId, messageId);
 
 	          // For web/vscode: trigger cooldown only when assistant message has finish === "stop"
-	          // (or we can infer a stop marker) to match desktop backend semantics.
+	          // to match desktop backend semantics.
 	          if (!isDesktopRuntimeRef.current) {
-	            const finishCandidate = (message as { finish?: unknown }).finish;
-	            const finish = typeof finishCandidate === 'string' ? finishCandidate : null;
-
-	            const inferredStopMarkerPresent =
-	              Array.isArray(partsArray) &&
-	              partsArray.some((part) => {
-	                if (!part || typeof part !== 'object') return false;
-	                const partAny = part as { type?: string; reason?: string };
-	                return partAny.type === 'step-finish' && partAny.reason === 'stop';
-	              });
-
-	            if (finish === 'stop' || inferredStopMarkerPresent) {
+	            if (finish === 'stop') {
 	              const currentPhase = useSessionStore.getState().sessionActivityPhase?.get(sessionId);
 	              if (currentPhase === 'busy') {
 	                updateSessionActivityPhase(sessionId, 'cooldown');

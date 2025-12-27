@@ -11,6 +11,7 @@ export interface MessageInfo {
     };
     status?: string;
     streaming?: boolean;
+    finish?: string;
 }
 
 export interface MessageRecord {
@@ -27,9 +28,7 @@ export function isMessageComplete(messageInfo: MessageInfo, parts: Part[] = []):
     const completedAt = typeof timeInfo?.completed === 'number' ? timeInfo.completed : undefined;
     const messageStatus = messageInfo?.status;
 
-    const hasStopFinish = parts.some(part =>
-        part.type === 'step-finish' && (part as any).reason === 'stop'
-    );
+    const hasStopFinish = messageInfo.finish === 'stop';
 
     const hasCompletedFlag = (typeof completedAt === 'number' && completedAt > 0) || messageStatus === 'completed';
     if (!hasCompletedFlag || !hasStopFinish) {
