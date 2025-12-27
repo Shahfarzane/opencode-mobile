@@ -5,7 +5,7 @@ import ChatMessage from './ChatMessage';
 import { PermissionCard } from './PermissionCard';
 import type { Permission } from '@/types/permission';
 import type { AnimationHandlers, ContentChangeReason } from '@/hooks/useChatScrollManager';
-import { isFullySyntheticMessage } from '@/lib/messages/synthetic';
+import { filterSyntheticParts } from '@/lib/messages/synthetic';
 import { useTurnGrouping } from './hooks/useTurnGrouping';
 
 interface MessageListProps {
@@ -40,16 +40,21 @@ const MessageList: React.FC<MessageListProps> = ({
 
     const displayMessages = React.useMemo(() => {
         const seenIds = new Set<string>();
-        return messages.filter((message) => {
-            const messageId = message.info?.id;
-            if (typeof messageId === 'string') {
-                if (seenIds.has(messageId)) {
-                    return false;
+        return messages
+            .filter((message) => {
+                const messageId = message.info?.id;
+                if (typeof messageId === 'string') {
+                    if (seenIds.has(messageId)) {
+                        return false;
+                    }
+                    seenIds.add(messageId);
                 }
-                seenIds.add(messageId);
-            }
-            return !isFullySyntheticMessage(message.parts);
-        });
+                return true;
+            })
+            .map((message) => ({
+                ...message,
+                parts: filterSyntheticParts(message.parts),
+            }));
     }, [messages]);
 
     const { getContextForMessage } = useTurnGrouping(displayMessages);
