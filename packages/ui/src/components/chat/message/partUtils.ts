@@ -28,10 +28,18 @@ interface VisibleFilterOptions {
 export const filterVisibleParts = (parts: Part[], options: VisibleFilterOptions = {}): Part[] => {
     const { includeReasoning = true } = options;
 
+    // Check if there are any non-synthetic parts
+    const hasNonSynthetic = parts.some((part) => {
+        const partWithSynthetic = part as PartWithSynthetic;
+        return !partWithSynthetic.synthetic;
+    });
+
     return parts.filter((part) => {
         const partWithSynthetic = part as PartWithSynthetic;
         const isSynthetic = Boolean(partWithSynthetic.synthetic);
-        if (isSynthetic) {
+        // Only filter out synthetic parts if there are non-synthetic parts present
+        // Otherwise, show synthetic parts so the message is displayed
+        if (isSynthetic && hasNonSynthetic) {
             return false;
         }
         if (!includeReasoning && part.type === 'reasoning') {
