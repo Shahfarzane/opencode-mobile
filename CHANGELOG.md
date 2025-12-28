@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.7] - 2025-12-28
+
 - Redesigned Settings as a full-screen view with tabbed navigation.
 - Added mobile-friendly drill-down navigation for settings.
 - ESC key now closes settings; double-ESC abort only works on chat tab without overlays.
