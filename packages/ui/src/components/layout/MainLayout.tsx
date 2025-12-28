@@ -187,6 +187,13 @@ export const MainLayout: React.FC = () => {
             const tagName = target.tagName;
             const isInput = tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT';
             if (isInput || target.isContentEditable) {
+                // Check if focus is moving to another input - if so, don't close keyboard
+                const related = event.relatedTarget as HTMLElement | null;
+                const relatedTag = related?.tagName;
+                const relatedIsInput = relatedTag === 'INPUT' || relatedTag === 'TEXTAREA' || relatedTag === 'SELECT' || related?.isContentEditable;
+                if (relatedIsInput) {
+                    return;
+                }
                 forceKeyboardClosed();
             }
         };

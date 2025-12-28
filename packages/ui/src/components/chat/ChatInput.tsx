@@ -996,7 +996,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
 
     return (
 
-        <form onSubmit={handleSubmit} className="pt-0 pb-4 bottom-safe-area">
+        <form onSubmit={handleSubmit} className="pt-0 pb-2 md:pb-4 bottom-safe-area">
             <StatusRow
                 isWorking={working.isWorking}
                 statusText={workingStatusText}
