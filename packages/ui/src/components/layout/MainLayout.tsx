@@ -1,7 +1,6 @@
 import React from 'react';
 import { Header, FixedSessionsButton } from './Header';
 import { Sidebar } from './Sidebar';
-import { SettingsDialog } from './SettingsDialog';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { CommandPalette } from '../ui/CommandPalette';
 import { HelpDialog } from '../ui/HelpDialog';
@@ -16,7 +15,7 @@ import { useDeviceInfo } from '@/lib/device';
 import { useEdgeSwipe } from '@/hooks/useEdgeSwipe';
 import { cn } from '@/lib/utils';
 
-import { ChatView, GitView, DiffView, TerminalView } from '@/components/views';
+import { ChatView, GitView, DiffView, TerminalView, SettingsView } from '@/components/views';
 
 export const MainLayout: React.FC = () => {
     const {
@@ -218,6 +217,7 @@ export const MainLayout: React.FC = () => {
     }, [activeMainTab]);
 
     const isChatActive = activeMainTab === 'chat';
+    const isSettingsActive = isSettingsDialogOpen && !isMobile;
 
     return (
         <DiffWorkerProvider>
@@ -231,13 +231,16 @@ export const MainLayout: React.FC = () => {
                 <CommandPalette />
                 <HelpDialog />
                 <SessionDialogs />
-                <SettingsDialog isOpen={isSettingsDialogOpen} onClose={() => setSettingsDialogOpen(false)} />
 
                 {isMobile ? (
                 <>
-                    <Header />
+                    {/* Mobile: Header + content + settings overlay */}
+                    {!isSettingsDialogOpen && <Header />}
                     <div
-                        className="flex flex-1 overflow-hidden bg-background"
+                        className={cn(
+                            'flex flex-1 overflow-hidden bg-background',
+                            isSettingsDialogOpen && 'hidden'
+                        )}
                         style={{ paddingTop: 'var(--oc-header-height, 56px)' }}
                     >
                         <main className="flex-1 overflow-hidden bg-background relative">
@@ -259,33 +262,53 @@ export const MainLayout: React.FC = () => {
                     >
                         <SessionSidebar mobileVariant />
                     </MobileOverlayPanel>
+
+                    {/* Mobile settings: full screen */}
+                    {isSettingsDialogOpen && (
+                        <div className="absolute inset-0 z-10 bg-background">
+                            <ErrorBoundary><SettingsView onClose={() => setSettingsDialogOpen(false)} /></ErrorBoundary>
+                        </div>
+                    )}
                 </>
             ) : (
                 <>
-                    <Sidebar isOpen={isSidebarOpen} isMobile={isMobile}>
-                        <SessionSidebar />
-                    </Sidebar>
+                    {!isSettingsActive && (
+                        <Sidebar isOpen={isSidebarOpen} isMobile={isMobile}>
+                            <SessionSidebar />
+                        </Sidebar>
+                    )}
 
-                    <div className="flex flex-1 flex-col overflow-hidden">
-                        <Header />
-
-                        <div className="flex flex-1 overflow-hidden bg-background">
-                            <main className="flex-1 overflow-hidden bg-background relative">
-                                <div className={cn('absolute inset-0', !isChatActive && 'invisible')}>
-                                    <ErrorBoundary><ChatView /></ErrorBoundary>
-                                </div>
-                                {secondaryView && (
-                                    <div className="absolute inset-0">
-                                        <ErrorBoundary>{secondaryView}</ErrorBoundary>
+                    {/* Main content area */}
+                    <div className="flex flex-1 flex-col overflow-hidden relative">
+                        {/* Normal view: Header + content */}
+                        <div className={cn('absolute inset-0 flex flex-col', isSettingsActive && 'invisible')}>
+                            <Header />
+                            <div className="flex flex-1 overflow-hidden bg-background">
+                                <main className="flex-1 overflow-hidden bg-background relative">
+                                    <div className={cn('absolute inset-0', !isChatActive && 'invisible')}>
+                                        <ErrorBoundary><ChatView /></ErrorBoundary>
                                     </div>
-                                )}
-                            </main>
+                                    {secondaryView && (
+                                        <div className="absolute inset-0">
+                                            <ErrorBoundary>{secondaryView}</ErrorBoundary>
+                                        </div>
+                                    )}
+                                </main>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Settings view: full screen overlay */}
+                    {isSettingsActive && (
+                        <div className={cn('absolute inset-0 z-10', isDesktopRuntime ? 'bg-transparent' : 'bg-background')}>
+                            <ErrorBoundary><SettingsView onClose={() => setSettingsDialogOpen(false)} /></ErrorBoundary>
+                        </div>
+                    )}
                 </>
             )}
 
-            <FixedSessionsButton />
+            {/* Hide fixed sessions button when settings is open */}
+            {!isSettingsActive && <FixedSessionsButton />}
         </div>
     </DiffWorkerProvider>
     );

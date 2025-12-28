@@ -28,11 +28,12 @@ Workspaces:
 ### Core Components (UI)
 In `packages/ui/src/components/chat/`: ChatContainer, ChatEmptyState, ChatErrorBoundary, ChatInput, ChatMessage, FileAttachment, MarkdownRenderer, MessageList, ModelControls, PermissionCard, PermissionRequest, ServerFilePicker, StreamingTextDiff, AgentMentionAutocomplete, CommandAutocomplete, FileMentionAutocomplete.
 In `packages/ui/src/components/chat/message/`: MessageBody, MessageHeader, ToolOutputDialog, DiffViewToggle, FadeInOnReveal; parts/ (AssistantTextPart, ReasoningPart, ToolPart, UserTextPart, etc.)
-In `packages/ui/src/components/layout/`: MainLayout, Header, Sidebar, SidebarContextSummary, SettingsDialog, VSCodeLayout.
-In `packages/ui/src/components/sections/`: AgentsPage, CommandsPage, GitIdentitiesPage, ProvidersPage, SettingsPage (with subsections for agents/, commands/, git-identities/, providers/, settings/).
+In `packages/ui/src/components/layout/`: MainLayout, Header, Sidebar, SidebarContextSummary, VSCodeLayout.
+In `packages/ui/src/components/views/`: ChatView, GitView, DiffView, TerminalView, SettingsView.
+In `packages/ui/src/components/sections/`: subsections agents/, commands/, git-identities/, openchamber/, providers/, shared/.
 In `packages/ui/src/components/session/`: DirectoryTree, DirectoryExplorerDialog, SessionDialogs, SessionSidebar.
 In `packages/ui/src/components/ui/`: CommandPalette, HelpDialog, ConfigUpdateOverlay, ContextUsageDisplay, ErrorBoundary, MemoryDebugPanel, MobileOverlayPanel, FireworksAnimation, OpenChamberLogo, OpenCodeIcon, ProviderLogo, ScrollShadow, OverlayScrollbar, plus Radix-based primitives (button, dialog, input, select, etc.)
-In `packages/ui/src/components/views/`: ChatView, GitView, DiffView, PierreDiffViewer, TerminalView.
+
 In `packages/ui/src/components/terminal/`: TerminalViewport
 In `packages/ui/src/components/onboarding/`: OnboardingScreen
 In `packages/ui/src/components/providers/`: ThemeProvider
@@ -78,8 +79,19 @@ bun run vscode:build          # Build VS Code extension
 
 ## Key Patterns
 
-### Section-Based Navigation
-Modular section architecture with dedicated pages and sidebars. Sections: Agents, Commands, Git Identities, Providers, Sessions, Settings. Independent state management and routing.
+### Settings View Architecture
+Full-screen settings view (`SettingsView.tsx`) with tabbed navigation. Desktop: sidebar + page side-by-side with resizable sidebar. Mobile: drill-down pattern (sidebar → page with back button). Tabs: OpenChamber, Agents, Commands, Providers, Git Identities.
+
+Each settings section has a sidebar (`*Sidebar.tsx`) and page (`*Page.tsx`) in `packages/ui/src/components/sections/`.
+
+**Shared boilerplate components** in `packages/ui/src/components/sections/shared/`:
+- `SettingsSidebarLayout` - wrapper with bg, scroll, header/footer slots
+- `SettingsSidebarHeader` - "Total X" + add button
+- `SettingsSidebarItem` - list item with title, metadata, selection, optional actions dropdown
+- `SettingsPageLayout` - centered max-w-3xl scrollable container
+- `SettingsSection` - section with optional title, description, divider
+
+Use these as reference when adding new settings sections. See `index.ts` for usage examples.
 
 ### File Attachments
 Drag-and-drop upload with 10MB limit (`FileAttachment.tsx`), Data URL encoding, type validation with fallbacks, integrated via `useFileStore.addAttachedFile()`.
@@ -129,7 +141,8 @@ Backend: `packages/web/server/index.js` with `listLocalDirectory()`, `getFilesys
 `SessionSwitcherDialog.tsx`: Collapsible date groups, mobile parity with MobileOverlayPanel, Git worktree and shared session chips, streaming indicators.
 
 ### Settings & Configuration
-`packages/ui/src/components/sections/`: AgentsPage, CommandsPage, GitIdentitiesPage, ProvidersPage, SessionsPage, SettingsPage
+`packages/ui/src/components/sections/`: AgentsPage, CommandsPage, GitIdentitiesPage, ProvidersPage, SessionsPage, OpenChamberPage
+`packages/ui/src/components/sections/shared/`: Boilerplate components for new sections
 Related stores: useAgentsStore, useCommandsStore, useConfigStore, useGitIdentitiesStore
 
 ### Git Operations

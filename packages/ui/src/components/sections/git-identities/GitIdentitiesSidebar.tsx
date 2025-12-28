@@ -42,7 +42,11 @@ const COLOR_MAP: Record<string, string> = {
   type: 'var(--syntax-type)',
 };
 
-export const GitIdentitiesSidebar: React.FC = () => {
+interface GitIdentitiesSidebarProps {
+  onItemSelect?: () => void;
+}
+
+export const GitIdentitiesSidebar: React.FC<GitIdentitiesSidebarProps> = ({ onItemSelect }) => {
   const {
     selectedProfileId,
     profiles,
@@ -56,6 +60,16 @@ export const GitIdentitiesSidebar: React.FC = () => {
   const { setSidebarOpen } = useUIStore();
   const { isMobile } = useDeviceInfo();
 
+  const [isDesktopRuntime, setIsDesktopRuntime] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return typeof window.opencodeDesktop !== 'undefined';
+  });
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
+  }, []);
+
   React.useEffect(() => {
     loadProfiles();
     loadGlobalIdentity();
@@ -63,6 +77,7 @@ export const GitIdentitiesSidebar: React.FC = () => {
 
   const handleCreateProfile = () => {
     setSelectedProfile('new');
+    onItemSelect?.();
     if (isMobile) {
       setSidebarOpen(false);
     }
@@ -80,22 +95,19 @@ export const GitIdentitiesSidebar: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col bg-sidebar">
+    <div className={cn('flex h-full flex-col', isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar')}>
       <div className={cn('border-b border-border/40 px-3 dark:border-white/10', isMobile ? 'mt-2 py-3' : 'py-3')}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="typography-ui-label font-semibold text-foreground">Git Profiles</h2>
-          <div className="flex items-center gap-1">
-            <span className="typography-meta text-muted-foreground">{profiles.length}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground"
-              onClick={handleCreateProfile}
-            >
-              <RiAddLine className="size-4" />
-            </Button>
-          </div>
+          <span className="typography-meta text-muted-foreground">Total {profiles.length}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 -my-1 text-muted-foreground"
+            onClick={handleCreateProfile}
+          >
+            <RiAddLine className="size-4" />
+          </Button>
         </div>
       </div>
 
@@ -111,6 +123,7 @@ export const GitIdentitiesSidebar: React.FC = () => {
                 isSelected={selectedProfileId === 'global'}
                 onSelect={() => {
                   setSelectedProfile('global');
+                  onItemSelect?.();
                   if (isMobile) {
                     setSidebarOpen(false);
                   }
@@ -143,6 +156,7 @@ export const GitIdentitiesSidebar: React.FC = () => {
                   isSelected={selectedProfileId === profile.id}
                   onSelect={() => {
                     setSelectedProfile(profile.id);
+                    onItemSelect?.();
                     if (isMobile) {
                       setSidebarOpen(false);
                     }
@@ -172,68 +186,62 @@ const ProfileListItem: React.FC<ProfileListItemProps> = ({
   onDelete,
   isReadOnly = false,
 }) => {
-
   const IconComponent = ICON_MAP[profile.icon || 'branch'] || RiGitBranchLine;
-
   const iconColor = COLOR_MAP[profile.color || ''];
 
   return (
-    <div className="group transition-all duration-200">
-      <div className="relative">
-        <div className="w-full flex items-center justify-between py-1.5 px-2 pr-1">
-          <button
-            onClick={onSelect}
-            className="flex-1 text-left overflow-hidden"
-            inputMode="none"
-            tabIndex={0}
-          >
-             <div className="flex items-center gap-2">
-               <IconComponent
-                 className="w-4 h-4 flex-shrink-0"
-                 style={{ color: iconColor }}
-               />
-              <div className={cn(
-                "typography-ui-label font-medium truncate flex-1",
-                isSelected
-                  ? "text-primary"
-                  : "text-foreground hover:text-primary/80"
-              )}>
-                {profile.name}
-              </div>
-            </div>
+    <div
+      className={cn(
+        'group relative flex items-center rounded-md px-1.5 py-1 transition-all duration-200',
+        isSelected ? 'dark:bg-accent/80 bg-primary/12' : 'hover:dark:bg-accent/40 hover:bg-primary/6'
+      )}
+    >
+      <div className="flex min-w-0 flex-1 items-center">
+        <button
+          onClick={onSelect}
+          className="flex min-w-0 flex-1 flex-col gap-0 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          tabIndex={0}
+        >
+          <div className="flex items-center gap-2">
+            <IconComponent
+              className="w-4 h-4 flex-shrink-0"
+              style={{ color: iconColor }}
+            />
+            <span className="typography-ui-label font-normal truncate flex-1 text-foreground">
+              {profile.name}
+            </span>
+          </div>
 
-            {}
-            <div className="typography-meta text-muted-foreground truncate mt-0.5">
-              {profile.userEmail}
-            </div>
-          </button>
+          <div className="typography-micro text-muted-foreground/60 truncate leading-tight">
+            {profile.userEmail}
+          </div>
+        </button>
 
-          {!isReadOnly && onDelete && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                 <Button
-                   size="icon"
-                   variant="ghost"
-                   className="h-6 w-6 flex-shrink-0 -mr-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
-                 >
-                   <RiMore2Line className="h-3.5 w-3.5" />
-                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-fit min-w-20">
-                 <DropdownMenuItem
-                   onClick={(e) => {
-                     e.stopPropagation();
-                     onDelete();
-                   }}
-                   className="text-destructive focus:text-destructive"
-                 >
-                   <RiDeleteBinLine className="h-4 w-4 mr-px" />
-                   Delete
-                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+        {!isReadOnly && onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 flex-shrink-0 -mr-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+              >
+                <RiMore2Line className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-fit min-w-20">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <RiDeleteBinLine className="h-4 w-4 mr-px" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   );

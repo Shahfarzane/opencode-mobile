@@ -6,7 +6,7 @@ import { useSessionStore } from '@/stores/useSessionStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { ContextUsageDisplay } from '@/components/ui/ContextUsageDisplay';
 import { RiAddLine, RiArrowLeftLine, RiSettings3Line } from '@remixicon/react';
-import { SettingsPage } from '@/components/sections/settings/SettingsPage';
+import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPage';
 
 type VSCodeView = 'sessions' | 'chat' | 'settings';
 
@@ -229,7 +229,7 @@ const VSCodeSettingsView: React.FC = () => {
     <div className="flex flex-col h-full">
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        <SettingsPage />
+        <OpenChamberPage />
       </div>
     </div>
   );

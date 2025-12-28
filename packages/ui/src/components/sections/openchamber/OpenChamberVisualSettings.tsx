@@ -55,7 +55,14 @@ const DIFF_LAYOUT_OPTIONS: Option<'dynamic' | 'inline' | 'side-by-side'>[] = [
     },
 ];
 
-export const AppearanceSettings: React.FC = () => {
+export type VisibleSetting = 'theme' | 'fontSize' | 'spacing' | 'toolOutput' | 'diffLayout' | 'reasoning';
+
+interface OpenChamberVisualSettingsProps {
+    /** Which settings to show. If undefined, shows all. */
+    visibleSettings?: VisibleSetting[];
+}
+
+export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps> = ({ visibleSettings }) => {
     const { isMobile } = useDeviceInfo();
     const showReasoningTraces = useUIStore(state => state.showReasoningTraces);
     const setShowReasoningTraces = useUIStore(state => state.setShowReasoningTraces);
@@ -72,9 +79,14 @@ export const AppearanceSettings: React.FC = () => {
         setThemeMode,
     } = useThemeSystem();
 
+    const shouldShow = (setting: VisibleSetting): boolean => {
+        if (!visibleSettings) return true;
+        return visibleSettings.includes(setting);
+    };
+
     return (
         <div className="w-full space-y-8">
-            {!isVSCodeRuntime() && (
+            {shouldShow('theme') && !isVSCodeRuntime() && (
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <h3 className="typography-ui-header font-semibold text-foreground">
@@ -97,7 +109,7 @@ export const AppearanceSettings: React.FC = () => {
                 </div>
             )}
 
-            {!isMobile && (
+            {shouldShow('fontSize') && !isMobile && (
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <h3 className="typography-ui-header font-semibold text-foreground">
@@ -138,102 +150,105 @@ export const AppearanceSettings: React.FC = () => {
                 </div>
             )}
 
-            <div className="space-y-4">
-                <div className="space-y-1">
-                    <h3 className="typography-ui-header font-semibold text-foreground">
-                        Spacing
-                    </h3>
+            {shouldShow('spacing') && (
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <h3 className="typography-ui-header font-semibold text-foreground">
+                            Spacing
+                        </h3>
 
-                </div>
-
-                {isMobile ? (
-                    <div className="flex items-center gap-2 w-full">
-                        <input
-                            type="range"
-                            min="50"
-                            max="200"
-                            step="5"
-                            value={padding}
-                            onChange={(e) => setPadding(Number(e.target.value))}
-                            className="flex-1 min-w-0 h-3 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
-                            aria-label="Spacing percentage"
-                        />
-
-                        <span className="typography-ui-label font-medium text-foreground tabular-nums rounded-md border border-border bg-background px-2 py-1.5 min-w-[3.75rem] text-center">
-                            {padding}
-                        </span>
-
-                        <ButtonSmall
-                            type="button"
-                            variant="ghost"
-                            onClick={() => setPadding(100)}
-                            disabled={padding === 100}
-                            className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
-                            aria-label="Reset spacing"
-                            title="Reset"
-                        >
-                            <RiRestartLine className="h-3.5 w-3.5" />
-                        </ButtonSmall>
                     </div>
-                ) : (
-                    <div className="flex items-center gap-3 w-full max-w-md">
-                        <input
-                            type="range"
-                            min="50"
-                            max="200"
-                            step="5"
-                            value={padding}
-                            onChange={(e) => setPadding(Number(e.target.value))}
-                            className="flex-1 min-w-0 h-2 bg-muted rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
-                        />
-                        <NumberInput
-                            value={padding}
-                            onValueChange={setPadding}
-                            min={50}
-                            max={200}
-                            step={5}
-                            aria-label="Spacing percentage"
-                        />
-                        <ButtonSmall
-                            type="button"
-                            variant="ghost"
-                            onClick={() => setPadding(100)}
-                            disabled={padding === 100}
-                            className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
-                            aria-label="Reset spacing"
-                            title="Reset"
-                        >
-                            <RiRestartLine className="h-3.5 w-3.5" />
-                        </ButtonSmall>
+
+                    {isMobile ? (
+                        <div className="flex items-center gap-2 w-full">
+                            <input
+                                type="range"
+                                min="50"
+                                max="200"
+                                step="5"
+                                value={padding}
+                                onChange={(e) => setPadding(Number(e.target.value))}
+                                className="flex-1 min-w-0 h-3 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
+                                aria-label="Spacing percentage"
+                            />
+
+                            <span className="typography-ui-label font-medium text-foreground tabular-nums rounded-md border border-border bg-background px-2 py-1.5 min-w-[3.75rem] text-center">
+                                {padding}
+                            </span>
+
+                            <ButtonSmall
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setPadding(100)}
+                                disabled={padding === 100}
+                                className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
+                                aria-label="Reset spacing"
+                                title="Reset"
+                            >
+                                <RiRestartLine className="h-3.5 w-3.5" />
+                            </ButtonSmall>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3 w-full max-w-md">
+                            <input
+                                type="range"
+                                min="50"
+                                max="200"
+                                step="5"
+                                value={padding}
+                                onChange={(e) => setPadding(Number(e.target.value))}
+                                className="flex-1 min-w-0 h-2 bg-muted rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
+                            />
+                            <NumberInput
+                                value={padding}
+                                onValueChange={setPadding}
+                                min={50}
+                                max={200}
+                                step={5}
+                                aria-label="Spacing percentage"
+                            />
+                            <ButtonSmall
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setPadding(100)}
+                                disabled={padding === 100}
+                                className="h-8 w-8 px-0 border border-border bg-background hover:bg-accent disabled:opacity-100 disabled:bg-background"
+                                aria-label="Reset spacing"
+                                title="Reset"
+                            >
+                                <RiRestartLine className="h-3.5 w-3.5" />
+                            </ButtonSmall>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {shouldShow('toolOutput') && (
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <h3 className="typography-ui-header font-semibold text-foreground">
+                            Default Tool Output
+                        </h3>
+                        <p className="typography-meta text-muted-foreground">
+                            {TOOL_EXPANSION_OPTIONS.find(o => o.value === toolCallExpansion)?.description}
+                        </p>
                     </div>
-                )}
-            </div>
-
-            <div className="space-y-4">
-                <div className="space-y-1">
-                    <h3 className="typography-ui-header font-semibold text-foreground">
-                        Default Tool Output
-                    </h3>
-                    <p className="typography-meta text-muted-foreground">
-                        {TOOL_EXPANSION_OPTIONS.find(o => o.value === toolCallExpansion)?.description}
-                    </p>
+                    <div className="flex gap-1 w-fit">
+                        {TOOL_EXPANSION_OPTIONS.map((option) => (
+                            <ButtonSmall
+                                key={option.value}
+                                variant={toolCallExpansion === option.value ? 'default' : 'outline'}
+                                className={cn(toolCallExpansion === option.value ? undefined : 'text-foreground')}
+                                onClick={() => setToolCallExpansion(option.value)}
+                            >
+                                {option.label}
+                            </ButtonSmall>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex gap-1 w-fit">
-                    {TOOL_EXPANSION_OPTIONS.map((option) => (
-                        <ButtonSmall
-                            key={option.value}
-                            variant={toolCallExpansion === option.value ? 'default' : 'outline'}
-                            className={cn(toolCallExpansion === option.value ? undefined : 'text-foreground')}
-                            onClick={() => setToolCallExpansion(option.value)}
-                        >
-                            {option.label}
-                        </ButtonSmall>
-                    ))}
-                </div>
-            </div>
+            )}
 
-            {}
-            {!isMobile && (
+            {shouldShow('diffLayout') && !isMobile && (
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <h3 className="typography-ui-header font-semibold text-foreground">
@@ -264,18 +279,19 @@ export const AppearanceSettings: React.FC = () => {
                 </div>
             )}
 
-            {}
-            <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                    type="checkbox"
-                    className="h-3.5 w-3.5 accent-primary"
-                    checked={showReasoningTraces}
-                    onChange={(event) => setShowReasoningTraces(event.target.checked)}
-                />
-                <span className="typography-ui-header font-semibold text-foreground">
-                    Show thinking / reasoning traces
-                </span>
-            </label>
+            {shouldShow('reasoning') && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 accent-primary"
+                        checked={showReasoningTraces}
+                        onChange={(event) => setShowReasoningTraces(event.target.checked)}
+                    />
+                    <span className="typography-ui-header font-semibold text-foreground">
+                        Show thinking / reasoning traces
+                    </span>
+                </label>
+            )}
         </div>
     );
 };

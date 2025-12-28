@@ -1,11 +1,4 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { SIDEBAR_SECTIONS } from '@/constants/sidebar';
 import type { SidebarSection } from '@/constants/sidebar';
@@ -19,10 +12,8 @@ import { ProvidersSidebar } from '@/components/sections/providers/ProvidersSideb
 import { ProvidersPage } from '@/components/sections/providers/ProvidersPage';
 import { GitIdentitiesSidebar } from '@/components/sections/git-identities/GitIdentitiesSidebar';
 import { GitIdentitiesPage } from '@/components/sections/git-identities/GitIdentitiesPage';
-import { SettingsPage } from '@/components/sections/settings/SettingsPage';
-import { useDeviceInfo } from '@/lib/device';
+import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPage';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { SIDEBAR_CONTENT_WIDTH } from '@/components/layout/Sidebar';
 import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
 
 interface SettingsDialogProps {
@@ -37,10 +28,13 @@ const SETTINGS_SECTIONS = (() => {
   return settingsSection ? [settingsSection, ...otherSections] : filtered;
 })();
 
+/**
+ * Mobile-only settings dialog using MobileOverlayPanel.
+ * Desktop uses SettingsView rendered inline in MainLayout.
+ */
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = React.useState<SidebarSection>('settings');
   const [showPageContent, setShowPageContent] = React.useState(false);
-  const { isMobile } = useDeviceInfo();
 
   React.useEffect(() => {
     if (isOpen) {
@@ -51,19 +45,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
   const handleTabChange = React.useCallback((tab: SidebarSection) => {
     setActiveTab(tab);
-    if (isMobile) {
-      setShowPageContent(false);
-    }
-  }, [isMobile]);
+    setShowPageContent(false);
+  }, []);
 
   const handleItemSelect = React.useCallback(() => {
-    if (isMobile) {
-      setShowPageContent(true);
-    }
-  }, [isMobile]);
+    setShowPageContent(true);
+  }, []);
 
   const renderSidebarContent = () => {
-
     if (activeTab === 'settings') {
       return null;
     }
@@ -73,21 +62,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         case 'agents':
           return <AgentsSidebar />;
         case 'commands':
-      return <CommandsSidebar />;
-    case 'providers':
-      return <ProvidersSidebar />;
-    case 'git-identities':
-      return <GitIdentitiesSidebar />;
-    default:
-      return null;
-  }
+          return <CommandsSidebar />;
+        case 'providers':
+          return <ProvidersSidebar />;
+        case 'git-identities':
+          return <GitIdentitiesSidebar />;
+        default:
+          return null;
+      }
     })();
 
-    if (isMobile) {
-      return <div onClick={handleItemSelect}>{content}</div>;
-    }
-
-    return content;
+    return <div onClick={handleItemSelect}>{content}</div>;
   };
 
   const renderPageContent = () => {
@@ -97,50 +82,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       case 'commands':
         return <CommandsPage />;
       case 'providers':
-      return <ProvidersPage />;
-    case 'git-identities':
-      return <GitIdentitiesPage />;
-    case 'settings':
-      return <SettingsPage />;
+        return <ProvidersPage />;
+      case 'git-identities':
+        return <GitIdentitiesPage />;
+      case 'settings':
+        return <OpenChamberPage />;
       default:
         return null;
     }
   };
 
-  const activeSection = SETTINGS_SECTIONS.find(s => s.id === activeTab);
-  const useMobileOverlay = isMobile;
-
-  const headerContent = (
-    <DialogHeader
-      className="border-b border-border/40 px-6 pb-4 pt-[calc(var(--oc-safe-area-top,0px)+0.5rem)]"
-    >
-      <div className="relative flex items-center justify-center">
-        {isMobile && showPageContent && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowPageContent(false)}
-            className="absolute left-0 h-6 w-6 flex-shrink-0"
-          >
-            <RiArrowLeftSLine className="h-5 w-5" />
-            <span className="sr-only">Back to sidebar</span>
-          </Button>
-        )}
-        <DialogTitle className="typography-ui-header">Settings</DialogTitle>
-      </div>
-      {activeSection && (
-        <DialogDescription className="typography-meta text-muted-foreground hidden sm:block">
-          {activeSection.description}
-        </DialogDescription>
-      )}
-    </DialogHeader>
-  );
-
   const mainContent = (
-    <div className={cn(
-      'flex flex-col min-h-0',
-      isMobile ? 'h-full overflow-hidden' : 'flex-1 overflow-hidden'
-    )}>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Tab bar */}
       <div className="flex flex-wrap items-center gap-1 border-b border-border/40 bg-background/95 px-3 py-1.5">
         {SETTINGS_SECTIONS.map(({ id, label, icon: Icon }) => {
           const isActive = activeTab === id;
@@ -157,35 +111,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               aria-pressed={isActive}
               aria-label={label}
             >
-              <PhosphorIcon className={cn('h-5 w-5 sm:h-4 sm:w-4')} weight="regular" />
-              <span className="hidden sm:inline">{label}</span>
+              <PhosphorIcon className="h-5 w-5" weight="regular" />
             </button>
           );
         })}
       </div>
 
+      {/* Content area - mobile drill-down pattern */}
       <div className="flex flex-1 overflow-hidden">
-        {activeTab !== 'settings' && (!isMobile || !showPageContent) && (
-          <div
-            className={cn(
-              'overflow-hidden border-r bg-sidebar',
-              isMobile && 'w-full border-r-0'
-            )}
-            style={
-              !isMobile
-                ? {
-                    width: `${SIDEBAR_CONTENT_WIDTH}px`,
-                    minWidth: `${SIDEBAR_CONTENT_WIDTH}px`,
-                  }
-                : undefined
-            }
-          >
+        {activeTab !== 'settings' && !showPageContent && (
+          <div className="w-full overflow-hidden bg-sidebar">
             <ErrorBoundary>{renderSidebarContent()}</ErrorBoundary>
           </div>
         )}
 
-        {(activeTab === 'settings' || !isMobile || showPageContent) && (
-          <div className={cn('flex-1 overflow-hidden bg-background', isMobile && 'w-full')}>
+        {(activeTab === 'settings' || showPageContent) && (
+          <div className="w-full flex-1 overflow-hidden bg-background">
             <ErrorBoundary>{renderPageContent()}</ErrorBoundary>
           </div>
         )}
@@ -193,56 +134,34 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     </div>
   );
 
-  const panelContent = (
-    <div className="flex h-full flex-col overflow-hidden">
-      {!useMobileOverlay && headerContent}
-      {mainContent}
-    </div>
-  );
-
-  if (useMobileOverlay) {
-    return (
-      <MobileOverlayPanel
-        open={isOpen}
-        onClose={onClose}
-        title="Settings"
-        className="max-w-full"
-        contentMaxHeightClassName="h-[min(80dvh,720px)]"
-        renderHeader={(closeButton) => (
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
-            <div className="relative flex flex-1 items-center justify-center">
-              {showPageContent && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowPageContent(false)}
-                  className="absolute left-0 h-6 w-6 flex-shrink-0"
-                >
-                  <RiArrowLeftSLine className="h-5 w-5" />
-                  <span className="sr-only">Back to sidebar</span>
-                </Button>
-              )}
-              <span className="typography-ui-header">Settings</span>
-            </div>
-            {closeButton}
-          </div>
-        )}
-      >
-        {mainContent}
-      </MobileOverlayPanel>
-    );
-  }
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        className={cn(
-          'flex flex-col gap-0 p-0',
-          'h-[88vh] w-[65vw] max-w-[900px]'
-        )}
-      >
-        {panelContent}
-      </DialogContent>
-    </Dialog>
+    <MobileOverlayPanel
+      open={isOpen}
+      onClose={onClose}
+      title="Settings"
+      className="max-w-full"
+      contentMaxHeightClassName="h-[min(80dvh,720px)]"
+      renderHeader={(closeButton) => (
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
+          <div className="relative flex flex-1 items-center justify-center">
+            {showPageContent && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPageContent(false)}
+                className="absolute left-0 h-6 w-6 flex-shrink-0"
+              >
+                <RiArrowLeftSLine className="h-5 w-5" />
+                <span className="sr-only">Back to sidebar</span>
+              </Button>
+            )}
+            <span className="typography-ui-header">Settings</span>
+          </div>
+          {closeButton}
+        </div>
+      )}
+    >
+      {mainContent}
+    </MobileOverlayPanel>
   );
 };

@@ -26,7 +26,11 @@ import { cn } from '@/lib/utils';
 import type { Agent } from '@opencode-ai/sdk';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 
-export const AgentsSidebar: React.FC = () => {
+interface AgentsSidebarProps {
+    onItemSelect?: () => void;
+}
+
+export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) => {
     const [newAgentName, setNewAgentName] = React.useState('');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
@@ -40,6 +44,16 @@ export const AgentsSidebar: React.FC = () => {
 
     const { setSidebarOpen } = useUIStore();
     const { isMobile } = useDeviceInfo();
+
+    const [isDesktopRuntime, setIsDesktopRuntime] = React.useState<boolean>(() => {
+        if (typeof window === 'undefined') return false;
+        return typeof window.opencodeDesktop !== 'undefined';
+    });
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+        setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
+    }, []);
 
     React.useEffect(() => {
         loadAgents();
@@ -118,19 +132,16 @@ export const AgentsSidebar: React.FC = () => {
     const customAgents = visibleAgents.filter((agent) => !isAgentBuiltIn(agent));
 
     return (
-        <div className="flex h-full flex-col bg-sidebar">
+        <div className={cn('flex h-full flex-col', isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar')}>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <div className={cn('border-b border-border/40 px-3 dark:border-white/10', isMobile ? 'mt-2 py-3' : 'py-3')}>
                     <div className="flex items-center justify-between gap-2">
-                        <h2 className="typography-ui-label font-semibold text-foreground">Agents</h2>
-                        <div className="flex items-center gap-1">
-                            <span className="typography-meta text-muted-foreground">{visibleAgents.length}</span>
-                            <DialogTrigger asChild>
-                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                                    <RiAddLine className="size-4" />
-                                </Button>
-                            </DialogTrigger>
-                        </div>
+                        <span className="typography-meta text-muted-foreground">Total {visibleAgents.length}</span>
+                        <DialogTrigger asChild>
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 -my-1 text-muted-foreground">
+                                <RiAddLine className="size-4" />
+                            </Button>
+                        </DialogTrigger>
                     </div>
                 </div>
 
@@ -155,6 +166,7 @@ export const AgentsSidebar: React.FC = () => {
                                             isSelected={selectedAgentName === agent.name}
                                             onSelect={() => {
                                                 setSelectedAgent(agent.name);
+                                                onItemSelect?.();
                                                 if (isMobile) {
                                                     setSidebarOpen(false);
                                                 }
@@ -178,6 +190,7 @@ export const AgentsSidebar: React.FC = () => {
                                             isSelected={selectedAgentName === agent.name}
                                             onSelect={() => {
                                                 setSelectedAgent(agent.name);
+                                                onItemSelect?.();
                                                 if (isMobile) {
                                                     setSidebarOpen(false);
                                                 }
@@ -247,38 +260,33 @@ const AgentListItem: React.FC<AgentListItemProps> = ({
     getAgentModeIcon,
 }) => {
     return (
-        <div className="group transition-all duration-200">
-            <div className="relative">
-                <div className="w-full flex items-center justify-between py-1.5 px-2 pr-1">
-                    <button
-                        onClick={onSelect}
-                        className="flex-1 text-left overflow-hidden"
-                        inputMode="none"
-                        tabIndex={0}
-                    >
-                        <div className="flex items-center gap-1.5">
-                            <div className={cn(
-                                "typography-ui-label font-medium truncate",
-                                isSelected
-                                    ? "text-primary"
-                                    : "text-foreground hover:text-primary/80"
-                            )}>
-                                {agent.name}
-                            </div>
+        <div
+            className={cn(
+                'group relative flex items-center rounded-md px-1.5 py-1 transition-all duration-200',
+                isSelected ? 'dark:bg-accent/80 bg-primary/12' : 'hover:dark:bg-accent/40 hover:bg-primary/6'
+            )}
+        >
+            <div className="flex min-w-0 flex-1 items-center">
+                <button
+                    onClick={onSelect}
+                    className="flex min-w-0 flex-1 flex-col gap-0 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    tabIndex={0}
+                >
+                    <div className="flex items-center gap-1.5">
+                        <span className="typography-ui-label font-normal truncate text-foreground">
+                            {agent.name}
+                        </span>
+                        {getAgentModeIcon(agent.mode)}
+                    </div>
 
-                            {}
-                            {getAgentModeIcon(agent.mode)}
+                    {agent.description && (
+                        <div className="typography-micro text-muted-foreground/60 truncate leading-tight">
+                            {agent.description}
                         </div>
+                    )}
+                </button>
 
-                        {}
-                        {agent.description && (
-                            <div className="typography-meta text-muted-foreground truncate mt-0.5">
-                                {agent.description}
-                            </div>
-                        )}
-                    </button>
-
-                    <DropdownMenu>
+                <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 size="icon"
@@ -313,7 +321,6 @@ const AgentListItem: React.FC<AgentListItemProps> = ({
                             )}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                </div>
             </div>
         </div>
     );
