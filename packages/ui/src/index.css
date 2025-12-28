@@ -1146,7 +1146,7 @@ html:not(.dark) .chat-scroll {
       --oc-safe-area-top: env(safe-area-inset-top, 0);
       --oc-safe-area-right: env(safe-area-inset-right, 0);
       --oc-safe-area-bottom: env(safe-area-inset-bottom, 0);
-      --oc-safe-area-bottom-visual: clamp(2px, calc(var(--oc-safe-area-bottom) * 0.1 + 2px), 10px);
+      --oc-safe-area-bottom-visual: clamp(0px, calc(var(--oc-safe-area-bottom) * 0.05), 4px);
       --oc-safe-area-left: env(safe-area-inset-left, 0);
     }
 
@@ -1236,7 +1236,7 @@ html:not(.dark) .chat-scroll {
       --oc-safe-area-top: env(safe-area-inset-top, 0);
       --oc-safe-area-right: env(safe-area-inset-right, 0);
       --oc-safe-area-bottom: env(safe-area-inset-bottom, 0);
-      --oc-safe-area-bottom-visual: clamp(2px, calc(var(--oc-safe-area-bottom) * 0.1 + 2px), 10px);
+      --oc-safe-area-bottom-visual: clamp(0px, calc(var(--oc-safe-area-bottom) * 0.05), 4px);
       --oc-safe-area-left: env(safe-area-inset-left, 0);
     }
 
