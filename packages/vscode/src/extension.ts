@@ -26,6 +26,13 @@ const formatDurationMs = (value: number | null | undefined) => {
 export async function activate(context: vscode.ExtensionContext) {
   outputChannel = vscode.window.createOutputChannel('OpenChamber');
 
+  // Migration: clear legacy auto-set API URLs (ports 47680-47689 were auto-assigned by older extension versions)
+  const config = vscode.workspace.getConfiguration('openchamber');
+  const legacyApiUrl = config.get<string>('apiUrl') || '';
+  if (/^https?:\/\/localhost:4768\d\/?$/.test(legacyApiUrl.trim())) {
+    await config.update('apiUrl', '', vscode.ConfigurationTarget.Global);
+  }
+
   // Create OpenCode manager first
   openCodeManager = createOpenCodeManager(context);
 
