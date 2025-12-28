@@ -1,4 +1,4 @@
-import { RiBrainAi3Line, RiChatAi3Line, RiCommandLine, RiGitBranchLine, RiPaintBrushLine, RiStackLine } from '@remixicon/react';
+import { RiBrainAi3Line, RiChatAi3Line, RiCommandLine, RiGitBranchLine, RiSettings3Line, RiStackLine } from '@remixicon/react';
 import type { ComponentType } from 'react';
 
 export type SidebarSection = 'sessions' | 'agents' | 'commands' | 'providers' | 'git-identities' | 'settings';
@@ -46,9 +46,9 @@ export const SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
     },
     {
         id: 'settings',
-        label: 'Appearance',
-        description: 'Fine-tune themes, fonts, and typography across the interface.',
-        icon: RiPaintBrushLine,
+        label: 'OpenChamber',
+        description: 'OpenChamber app settings: themes, fonts, and preferences.',
+        icon: RiSettings3Line,
     },
 ];
 

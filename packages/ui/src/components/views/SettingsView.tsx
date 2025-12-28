@@ -1,0 +1,386 @@
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { SIDEBAR_SECTIONS } from '@/constants/sidebar';
+import type { SidebarSection } from '@/constants/sidebar';
+import { RiArrowLeftSLine, RiCloseLine } from '@remixicon/react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { AgentsSidebar } from '@/components/sections/agents/AgentsSidebar';
+import { AgentsPage } from '@/components/sections/agents/AgentsPage';
+import { CommandsSidebar } from '@/components/sections/commands/CommandsSidebar';
+import { CommandsPage } from '@/components/sections/commands/CommandsPage';
+import { ProvidersSidebar } from '@/components/sections/providers/ProvidersSidebar';
+import { ProvidersPage } from '@/components/sections/providers/ProvidersPage';
+import { GitIdentitiesSidebar } from '@/components/sections/git-identities/GitIdentitiesSidebar';
+import { GitIdentitiesPage } from '@/components/sections/git-identities/GitIdentitiesPage';
+import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPage';
+import { OpenChamberSidebar, type OpenChamberSection } from '@/components/sections/openchamber/OpenChamberSidebar';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { useDeviceInfo } from '@/lib/device';
+
+const SETTINGS_SECTIONS = (() => {
+  const filtered = SIDEBAR_SECTIONS.filter(section => section.id !== 'sessions');
+  const settingsSection = filtered.find(s => s.id === 'settings');
+  const otherSections = filtered.filter(s => s.id !== 'settings');
+  return settingsSection ? [settingsSection, ...otherSections] : filtered;
+})();
+
+// Same constraints as main sidebar
+const SETTINGS_SIDEBAR_MIN_WIDTH = 200;
+const SETTINGS_SIDEBAR_MAX_WIDTH = 500;
+const SETTINGS_SIDEBAR_DEFAULT_WIDTH = 264;
+
+interface SettingsViewProps {
+  onClose?: () => void;
+}
+
+export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
+  const { isMobile } = useDeviceInfo();
+  const [activeTab, setActiveTab] = React.useState<SidebarSection>('settings');
+  const [selectedOpenChamberSection, setSelectedOpenChamberSection] = React.useState<OpenChamberSection>('visual');
+  // Mobile drill-down state: show page content instead of sidebar
+  const [showMobilePageContent, setShowMobilePageContent] = React.useState(false);
+  const [sidebarWidth, setSidebarWidth] = React.useState(() => {
+    // Use proportional width like main sidebar (20% of window)
+    if (typeof window !== 'undefined') {
+      return Math.min(
+        SETTINGS_SIDEBAR_MAX_WIDTH,
+        Math.max(SETTINGS_SIDEBAR_MIN_WIDTH, Math.floor(window.innerWidth * 0.2))
+      );
+    }
+    return SETTINGS_SIDEBAR_DEFAULT_WIDTH;
+  });
+  const [hasManuallyResized, setHasManuallyResized] = React.useState(false);
+  const [isResizing, setIsResizing] = React.useState(false);
+  const startXRef = React.useRef(0);
+  const startWidthRef = React.useRef(sidebarWidth);
+
+  const [isDesktopApp, setIsDesktopApp] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined';
+  });
+
+  const isMacPlatform = React.useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return /Macintosh|Mac OS X/.test(navigator.userAgent || '');
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsDesktopApp(typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined');
+  }, []);
+
+  // Update proportional width on window resize (if not manually resized)
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      if (!hasManuallyResized) {
+        const proportionalWidth = Math.min(
+          SETTINGS_SIDEBAR_MAX_WIDTH,
+          Math.max(SETTINGS_SIDEBAR_MIN_WIDTH, Math.floor(window.innerWidth * 0.2))
+        );
+        setSidebarWidth(proportionalWidth);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [hasManuallyResized]);
+
+  // Resize handling
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const delta = event.clientX - startXRef.current;
+      const nextWidth = Math.min(
+        SETTINGS_SIDEBAR_MAX_WIDTH,
+        Math.max(SETTINGS_SIDEBAR_MIN_WIDTH, startWidthRef.current + delta)
+      );
+      setSidebarWidth(nextWidth);
+      setHasManuallyResized(true);
+    };
+
+    const handlePointerUp = () => setIsResizing(false);
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp, { once: true });
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isResizing]);
+
+  const handlePointerDown = (event: React.PointerEvent) => {
+    setIsResizing(true);
+    startXRef.current = event.clientX;
+    startWidthRef.current = sidebarWidth;
+    event.preventDefault();
+  };
+
+  // Draggable header for Tauri desktop
+  const handleDragStart = React.useCallback(async (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    if (e.button !== 0) return;
+
+    if (isDesktopApp) {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const window = getCurrentWindow();
+        await window.startDragging();
+      } catch (error) {
+        console.error('Failed to start window dragging:', error);
+      }
+    }
+  }, [isDesktopApp]);
+
+  // Active tab can be dragged (like main header)
+  const handleActiveTabDragStart = React.useCallback(async (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+
+    if (isDesktopApp) {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const window = getCurrentWindow();
+        await window.startDragging();
+      } catch (error) {
+        console.error('Failed to start window dragging:', error);
+      }
+    }
+  }, [isDesktopApp]);
+
+  const handleTabChange = React.useCallback((tab: SidebarSection) => {
+    setActiveTab(tab);
+    // Reset mobile drill-down state when changing tabs
+    setShowMobilePageContent(false);
+  }, []);
+
+  // Handle mobile sidebar item selection (drill-down to page)
+  const handleMobileSidebarClick = React.useCallback(() => {
+    if (isMobile) {
+      setShowMobilePageContent(true);
+    }
+  }, [isMobile]);
+
+  const renderSidebarContent = () => {
+    switch (activeTab) {
+      case 'settings':
+        return (
+          <OpenChamberSidebar
+            selectedSection={selectedOpenChamberSection}
+            onSelectSection={(section) => {
+              setSelectedOpenChamberSection(section);
+              handleMobileSidebarClick();
+            }}
+          />
+        );
+      case 'agents':
+        return <AgentsSidebar onItemSelect={handleMobileSidebarClick} />;
+      case 'commands':
+        return <CommandsSidebar onItemSelect={handleMobileSidebarClick} />;
+      case 'providers':
+        return <ProvidersSidebar onItemSelect={handleMobileSidebarClick} />;
+      case 'git-identities':
+        return <GitIdentitiesSidebar onItemSelect={handleMobileSidebarClick} />;
+      default:
+        return null;
+    }
+  };
+
+  const hasSidebar = true; // All tabs now have sidebars
+
+  const renderPageContent = () => {
+    switch (activeTab) {
+      case 'agents':
+        return <AgentsPage />;
+      case 'commands':
+        return <CommandsPage />;
+      case 'providers':
+        return <ProvidersPage />;
+      case 'git-identities':
+        return <GitIdentitiesPage />;
+      case 'settings':
+        return <OpenChamberPage section={selectedOpenChamberSection} />;
+      default:
+        return null;
+    }
+  };
+
+  // Keyboard shortcut display based on platform
+  const shortcutKey = isMacPlatform ? '⌘' : 'Ctrl';
+
+  // Desktop padding for Mac titlebar area
+  const desktopPaddingClass = React.useMemo(() => {
+    if (isDesktopApp && isMacPlatform) {
+      return 'pl-[5.75rem]'; // Space for traffic lights
+    }
+    return '';
+  }, [isDesktopApp, isMacPlatform]);
+
+  const showLeadingDivider = isDesktopApp && isMacPlatform;
+
+  return (
+    <div className={cn('flex h-full flex-col overflow-hidden', isDesktopApp ? 'bg-transparent' : 'bg-background')}>
+      {/* Header with tabs and close button */}
+      <div
+        onMouseDown={!isMobile ? handleDragStart : undefined}
+        className={cn(
+          'flex select-none items-center justify-between border-b',
+          isMobile ? 'h-auto px-3 py-2' : 'app-region-drag h-12',
+          !isMobile && desktopPaddingClass,
+          isDesktopApp ? 'bg-background' : 'bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80'
+        )}
+        style={{ borderColor: 'var(--interactive-border)' }}
+      >
+        {/* Mobile: back button when drilling down */}
+        {isMobile && showMobilePageContent && (
+          <button
+            type="button"
+            onClick={() => setShowMobilePageContent(false)}
+            aria-label="Back"
+            className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center p-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <RiArrowLeftSLine className="h-5 w-5" />
+          </button>
+        )}
+
+        {/* Mobile: spacer to push tabs to the right */}
+        {isMobile && <div className="flex-1" />}
+
+        <div className={cn('flex items-center', isMobile ? 'gap-1' : 'h-full')}>
+          {/* Leading divider before first tab - only on Mac desktop */}
+          {!isMobile && showLeadingDivider && <div className="h-full w-px bg-border" aria-hidden="true" />}
+          {SETTINGS_SECTIONS.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
+            const PhosphorIcon = Icon as React.ComponentType<{ className?: string; weight?: string }>;
+
+            if (isMobile) {
+              // Mobile: icon-only buttons
+              return (
+                <Tooltip key={id} delayDuration={500}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleTabChange(id)}
+                      className={cn(
+                        'relative flex h-9 w-9 items-center justify-center rounded-md transition-colors',
+                        'hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                        isActive ? 'text-foreground' : 'text-muted-foreground'
+                      )}
+                      aria-pressed={isActive}
+                      aria-label={label}
+                    >
+                      <PhosphorIcon className="h-5 w-5" weight="regular" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{label}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            // Desktop: full tabs with text and dividers
+            return (
+              <React.Fragment key={id}>
+                <button
+                  onClick={() => handleTabChange(id)}
+                  onMouseDown={isActive ? handleActiveTabDragStart : undefined}
+                  className={cn(
+                    'relative flex h-full items-center gap-2 px-4 typography-ui-label font-medium transition-colors',
+                    isActive ? 'app-region-drag' : 'app-region-no-drag',
+                    'hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+                    isActive ? 'text-foreground' : 'text-muted-foreground'
+                  )}
+                  aria-pressed={isActive}
+                  aria-label={label}
+                >
+                  <PhosphorIcon className="h-4 w-4" weight="regular" />
+                  <span className="header-tab-label">{label}</span>
+                </button>
+                {/* Vertical divider after each tab */}
+                <div className="h-full w-px bg-border" aria-hidden="true" />
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        {onClose && (
+          <div className={cn('flex items-center', isMobile ? '' : 'pr-3')}>
+            <Tooltip delayDuration={500}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close settings"
+                  className={cn(
+                    'inline-flex h-9 w-9 items-center justify-center p-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                    !isMobile && 'app-region-no-drag'
+                  )}
+                >
+                  <RiCloseLine className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Close Settings ({shortcutKey}+,)</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+      </div>
+
+      {/* Content area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Mobile: show sidebar OR page content based on drill-down state */}
+        {isMobile ? (
+          showMobilePageContent ? (
+            <div className="flex-1 overflow-hidden bg-background">
+              <ErrorBoundary>{renderPageContent()}</ErrorBoundary>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden bg-sidebar">
+              <ErrorBoundary>{renderSidebarContent()}</ErrorBoundary>
+            </div>
+          )
+        ) : (
+          /* Desktop: show both sidebar and page content side by side */
+          <>
+            {hasSidebar && (
+              <div
+                className={cn(
+                  'relative overflow-hidden border-r',
+                  isDesktopApp
+                    ? 'bg-[color:var(--sidebar-overlay-strong)] backdrop-blur supports-[backdrop-filter]:bg-[color:var(--sidebar-overlay-soft)]'
+                    : 'bg-sidebar',
+                  isResizing ? 'transition-none' : ''
+                )}
+                style={{
+                  width: `${sidebarWidth}px`,
+                  minWidth: `${sidebarWidth}px`,
+                  borderColor: 'var(--interactive-border)',
+                }}
+              >
+                {/* Resize handle */}
+                <div
+                  className={cn(
+                    'absolute right-0 top-0 z-20 h-full w-[6px] -mr-[3px] cursor-col-resize',
+                    isResizing ? 'bg-primary/30' : 'bg-transparent hover:bg-primary/20'
+                  )}
+                  onPointerDown={handlePointerDown}
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize settings sidebar"
+                />
+                <ErrorBoundary>{renderSidebarContent()}</ErrorBoundary>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-hidden bg-background">
+              <ErrorBoundary>{renderPageContent()}</ErrorBoundary>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};

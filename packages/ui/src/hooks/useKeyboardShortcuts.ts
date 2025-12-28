@@ -118,7 +118,7 @@ export const useKeyboardShortcuts = () => {
         return;
       }
 
-      if (e.ctrlKey && !e.metaKey && !e.shiftKey && e.key === ',') {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === ',') {
         e.preventDefault();
         const { isSettingsDialogOpen } = useUIStore.getState();
         setSettingsDialogOpen(!isSettingsDialogOpen);
@@ -144,6 +144,34 @@ export const useKeyboardShortcuts = () => {
       }
 
       if (e.key === 'Escape') {
+        const {
+          isSettingsDialogOpen,
+          isCommandPaletteOpen,
+          isHelpDialogOpen,
+          isSessionSwitcherOpen,
+          isSessionCreateDialogOpen,
+          isAboutDialogOpen,
+          activeMainTab,
+        } = useUIStore.getState();
+
+        // If settings is open, close it
+        if (isSettingsDialogOpen) {
+          e.preventDefault();
+          setSettingsDialogOpen(false);
+          resetAbortPriming();
+          return;
+        }
+
+        // Check if any overlay is open or not on chat tab - don't process abort
+        const hasOverlay = isCommandPaletteOpen || isHelpDialogOpen || isSessionSwitcherOpen || isSessionCreateDialogOpen || isAboutDialogOpen;
+        const isChatActive = activeMainTab === 'chat';
+
+        if (hasOverlay || !isChatActive) {
+          resetAbortPriming();
+          return;
+        }
+
+        // Double-ESC abort logic - only when on chat tab with no overlays
         const sessionId = currentSessionId;
         const canAbortNow = working.canAbort && Boolean(sessionId);
         if (!canAbortNow) {

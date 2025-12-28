@@ -9,31 +9,45 @@ import { cn } from '@/lib/utils';
 
 const ADD_PROVIDER_ID = '__add_provider__';
 
-export const ProvidersSidebar: React.FC = () => {
+interface ProvidersSidebarProps {
+  onItemSelect?: () => void;
+}
+
+export const ProvidersSidebar: React.FC<ProvidersSidebarProps> = ({ onItemSelect }) => {
   const providers = useConfigStore((state) => state.providers);
   const selectedProviderId = useConfigStore((state) => state.selectedProviderId);
   const setSelectedProvider = useConfigStore((state) => state.setSelectedProvider);
   const { isMobile } = useDeviceInfo();
 
+  const [isDesktopRuntime, setIsDesktopRuntime] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return typeof window.opencodeDesktop !== 'undefined';
+  });
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
+  }, []);
+
   return (
-    <div className="flex h-full flex-col bg-sidebar">
+    <div className={cn('flex h-full flex-col', isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar')}>
       <div className={cn('border-b border-border/40 px-3 dark:border-white/10', isMobile ? 'mt-2 py-3' : 'py-3')}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="typography-ui-label font-semibold text-foreground">Providers</h2>
-          <div className="flex items-center gap-1">
-            <span className="typography-meta text-muted-foreground">{providers.length}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground"
-              onClick={() => setSelectedProvider(ADD_PROVIDER_ID)}
-              aria-label="Connect provider"
-              title="Connect provider"
-            >
-              <RiAddLine className="size-4" />
-            </Button>
-          </div>
+          <span className="typography-meta text-muted-foreground">Total {providers.length}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 -my-1 text-muted-foreground"
+            onClick={() => {
+              setSelectedProvider(ADD_PROVIDER_ID);
+              onItemSelect?.();
+            }}
+            aria-label="Connect provider"
+            title="Connect provider"
+          >
+            <RiAddLine className="size-4" />
+          </Button>
         </div>
       </div>
 
@@ -50,32 +64,30 @@ export const ProvidersSidebar: React.FC = () => {
             const isSelected = provider.id === selectedProviderId;
 
             return (
-              <div key={provider.id} className="group transition-all duration-200">
-                <div className="relative">
-                  <div className="w-full flex items-center justify-between py-1.5 px-2 pr-1">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProvider(provider.id)}
-                      className="flex-1 text-left overflow-hidden"
-                      tabIndex={0}
-                    >
-                      <div className="flex items-center gap-2">
-                        <ProviderLogo providerId={provider.id} className="h-4 w-4 flex-shrink-0" />
-                        <span className={cn(
-                          "typography-ui-label font-medium truncate flex-1 min-w-0",
-                          isSelected
-                            ? "text-primary"
-                            : "text-foreground hover:text-primary/80"
-                        )}>
-                          {provider.name || provider.id}
-                        </span>
-                        <span className="typography-meta text-muted-foreground flex-shrink-0">
-                          {modelCount}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
+              <div
+                key={provider.id}
+                className={cn(
+                  'group relative flex items-center rounded-md px-1.5 py-1 transition-all duration-200',
+                  isSelected ? 'dark:bg-accent/80 bg-primary/12' : 'hover:dark:bg-accent/40 hover:bg-primary/6'
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProvider(provider.id);
+                    onItemSelect?.();
+                  }}
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                  tabIndex={0}
+                >
+                  <ProviderLogo providerId={provider.id} className="h-4 w-4 flex-shrink-0" />
+                  <span className="typography-ui-label font-normal truncate flex-1 min-w-0 text-foreground">
+                    {provider.name || provider.id}
+                  </span>
+                  <span className="typography-micro text-muted-foreground/60 flex-shrink-0">
+                    {modelCount}
+                  </span>
+                </button>
               </div>
             );
           })
