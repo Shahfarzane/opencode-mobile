@@ -20,6 +20,7 @@ interface TabConfig {
   label: string;
   icon: RemixiconComponentType;
   badge?: number;
+  showDot?: boolean;
 }
 
 export const FixedSessionsButton: React.FC = () => {
@@ -265,7 +266,12 @@ export const Header: React.FC = () => {
       badge: !isMobile && diffFileCount > 0 ? diffFileCount : undefined,
     },
     { id: 'terminal', label: 'Terminal', icon: RiTerminalBoxLine },
-    { id: 'git', label: 'Git', icon: RiGitBranchLine },
+    {
+      id: 'git',
+      label: 'Git',
+      icon: RiGitBranchLine,
+      showDot: isMobile && diffFileCount > 0,
+    },
   ], [diffFileCount, isMobile]);
 
   useEffect(() => {
@@ -469,6 +475,7 @@ export const Header: React.FC = () => {
                     role="tab"
                     className={cn(
                       headerIconButtonClass,
+                      'relative',
                       isActive && 'text-foreground'
                     )}
                   >
@@ -477,6 +484,12 @@ export const Header: React.FC = () => {
                       <span className="absolute -top-1 -right-1 text-[10px] font-semibold text-primary">
                         {tab.badge}
                       </span>
+                    )}
+                    {tab.showDot && (
+                      <span
+                        className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary"
+                        aria-label="Changes available"
+                      />
                     )}
                   </button>
                 </TooltipTrigger>

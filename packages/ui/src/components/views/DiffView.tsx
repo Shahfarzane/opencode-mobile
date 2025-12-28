@@ -305,8 +305,10 @@ export const DiffView: React.FC = () => {
     const diffLayoutPreference = useUIStore((state) => state.diffLayoutPreference);
     const diffFileLayout = useUIStore((state) => state.diffFileLayout);
     const setDiffFileLayout = useUIStore((state) => state.setDiffFileLayout);
-    const diffWrapLines = useUIStore((state) => state.diffWrapLines);
+    const diffWrapLinesStore = useUIStore((state) => state.diffWrapLines);
     const setDiffWrapLines = useUIStore((state) => state.setDiffWrapLines);
+    // Default to wrap on mobile
+    const diffWrapLines = isMobile || diffWrapLinesStore;
 
     const changedFiles: FileEntry[] = React.useMemo(() => {
         if (!status?.files) return [];
@@ -564,7 +566,7 @@ export const DiffView: React.FC = () => {
                 {selectedFileEntry && (
                     <button
                         type="button"
-                        onClick={() => setDiffWrapLines(!diffWrapLines)}
+                        onClick={() => setDiffWrapLines(!diffWrapLinesStore)}
                         className={`flex items-center justify-center size-5 rounded-sm transition-opacity ${
                             diffWrapLines
                                 ? 'text-foreground opacity-100'
