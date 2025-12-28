@@ -265,7 +265,7 @@ export const MainLayout: React.FC = () => {
 
                     {/* Mobile settings: full screen */}
                     {isSettingsDialogOpen && (
-                        <div className="absolute inset-0 z-10 bg-background">
+                        <div className="absolute inset-0 z-10 bg-background header-safe-area">
                             <ErrorBoundary><SettingsView onClose={() => setSettingsDialogOpen(false)} /></ErrorBoundary>
                         </div>
                     )}
