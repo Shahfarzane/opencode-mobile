@@ -143,7 +143,7 @@ export const ChangeRow = React.memo<ChangeRowProps>(function ChangeRow({
               type="button"
               onClick={handleRevertClick}
               disabled={isReverting}
-              className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
+              className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={`Revert changes for ${file.path}`}
             >
               {isReverting ? (
