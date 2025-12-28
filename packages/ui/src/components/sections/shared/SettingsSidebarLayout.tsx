@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+import { isVSCodeRuntime } from '@/lib/desktop';
 import { cn } from '@/lib/utils';
 
 interface SettingsSidebarLayoutProps {
@@ -37,16 +38,27 @@ export const SettingsSidebarLayout: React.FC<SettingsSidebarLayoutProps> = ({
     return typeof window.opencodeDesktop !== 'undefined';
   });
 
+  const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
+
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
   }, []);
 
+  // Desktop app: transparent for blur effect
+  // VS Code: bg-background (same as page content)
+  // Web/mobile: bg-sidebar
+  const bgClass = isDesktopRuntime
+    ? 'bg-transparent'
+    : isVSCode
+      ? 'bg-background'
+      : 'bg-sidebar';
+
   return (
     <div
       className={cn(
         'flex h-full flex-col',
-        isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar',
+        bgClass,
         className
       )}
     >

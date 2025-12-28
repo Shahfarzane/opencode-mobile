@@ -21,6 +21,7 @@ import {
 import { useGitIdentitiesStore } from '@/stores/useGitIdentitiesStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDeviceInfo } from '@/lib/device';
+import { isVSCodeRuntime } from '@/lib/desktop';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 import { cn } from '@/lib/utils';
 import type { GitIdentityProfile } from '@/stores/useGitIdentitiesStore';
@@ -65,6 +66,8 @@ export const GitIdentitiesSidebar: React.FC<GitIdentitiesSidebarProps> = ({ onIt
     return typeof window.opencodeDesktop !== 'undefined';
   });
 
+  const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
+
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
@@ -74,6 +77,12 @@ export const GitIdentitiesSidebar: React.FC<GitIdentitiesSidebarProps> = ({ onIt
     loadProfiles();
     loadGlobalIdentity();
   }, [loadProfiles, loadGlobalIdentity]);
+
+  const bgClass = isDesktopRuntime
+    ? 'bg-transparent'
+    : isVSCode
+      ? 'bg-background'
+      : 'bg-sidebar';
 
   const handleCreateProfile = () => {
     setSelectedProfile('new');
@@ -95,8 +104,8 @@ export const GitIdentitiesSidebar: React.FC<GitIdentitiesSidebarProps> = ({ onIt
   };
 
   return (
-    <div className={cn('flex h-full flex-col', isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar')}>
-      <div className={cn('border-b border-border/40 px-3 dark:border-white/10', isMobile ? 'mt-2 py-3' : 'py-3')}>
+    <div className={cn('flex h-full flex-col', bgClass)}>
+      <div className={cn('border-b px-3', isMobile ? 'mt-2 py-3' : 'py-3')}>
         <div className="flex items-center justify-between gap-2">
           <span className="typography-meta text-muted-foreground">Total {profiles.length}</span>
           <Button

@@ -12,12 +12,14 @@ export type VSCodeThemeColorToken =
   | 'editor.lineHighlightBackground'
   | 'editorCursor.foreground'
   | 'focusBorder'
+  | 'contrastBorder'
   | 'diffEditor.insertedTextBackground'
   | 'diffEditor.insertedTextBorder'
   | 'diffEditor.insertedLineBackground'
   | 'gitDecoration.addedResourceForeground'
   | 'sideBar.background'
   | 'sideBar.foreground'
+  | 'sideBar.border'
   | 'panel.background'
   | 'panel.foreground'
   | 'panel.border'
@@ -69,12 +71,14 @@ const VARIABLE_MAP: Record<VSCodeThemeColorToken, string> = {
   'editor.lineHighlightBackground': '--vscode-editor-lineHighlightBackground',
   'editorCursor.foreground': '--vscode-editorCursor-foreground',
   focusBorder: '--vscode-focusBorder',
+  contrastBorder: '--vscode-contrastBorder',
   'diffEditor.insertedTextBackground': '--vscode-diffEditor-insertedTextBackground',
   'diffEditor.insertedTextBorder': '--vscode-diffEditor-insertedTextBorder',
   'diffEditor.insertedLineBackground': '--vscode-diffEditor-insertedLineBackground',
   'gitDecoration.addedResourceForeground': '--vscode-gitDecoration-addedResourceForeground',
   'sideBar.background': '--vscode-sideBar-background',
   'sideBar.foreground': '--vscode-sideBar-foreground',
+  'sideBar.border': '--vscode-sideBar-border',
   'panel.background': '--vscode-panel-background',
   'panel.foreground': '--vscode-panel-foreground',
   'panel.border': '--vscode-panel-border',
@@ -200,11 +204,14 @@ export const buildVSCodeThemeFromPalette = (palette: VSCodeThemePalette): Theme 
     palette.colors[token] ?? fallback;
 
   const sidebarBg = read('sideBar.background', base.colors.surface.background);
-  const sidebarFg = read('sideBar.foreground', read('descriptionForeground', base.colors.surface.mutedForeground));
   const panelBg = read('panel.background', read('editor.background', base.colors.surface.elevated));
   const panelFg = read('panel.foreground', read('editor.foreground', base.colors.surface.foreground));
   const background = sidebarBg;
   const foreground = read('editor.foreground', base.colors.surface.foreground);
+  // Use descriptionForeground for muted text with reduced opacity for less prominence
+  // This makes inactive tabs and secondary text clearly distinguishable from active/primary text
+  const rawMutedFg = read('descriptionForeground', base.colors.surface.mutedForeground);
+  const mutedFg = applyAlpha(rawMutedFg, palette.kind === 'light' ? 0.55 : 0.5);
   // Prefer VS Code's "added diff" color as our primary accent when available (users expect this to match their theme).
   const diffInserted = palette.colors['diffEditor.insertedTextBorder']
     ?? palette.colors['diffEditor.insertedLineBackground']
@@ -219,8 +226,14 @@ export const buildVSCodeThemeFromPalette = (palette: VSCodeThemePalette): Theme 
   const selection = read('editor.selectionBackground', activeBg);
   const selectionFg = read('editor.selectionForeground', foreground);
   const focus = read('focusBorder', accent);
-  // Prefer panel border for a less prominent, more consistent border color in webviews.
-  const border = read('panel.border', read('input.border', base.colors.interactive.border));
+  // Build a visible border color: prefer contrastBorder (high-contrast themes), then sideBar.border, panel.border, input.border
+  // If the chosen border is too transparent or matches background, derive one from foreground
+  const rawBorder = read('contrastBorder', '') ||
+    read('sideBar.border', '') ||
+    read('panel.border', '') ||
+    read('input.border', base.colors.interactive.border);
+  // Ensure border has enough visibility by applying minimum opacity
+  const border = rawBorder ? applyAlpha(forceOpaque(rawBorder), palette.kind === 'light' ? 0.15 : 0.2) : applyAlpha(foreground, palette.kind === 'light' ? 0.1 : 0.15);
   const focusRing = applyAlpha(focus, palette.kind === 'light' ? 0.35 : 0.45);
   const cursor = read('editorCursor.foreground', base.colors.interactive.cursor);
   const badgeBg = read('badge.background', accent);
@@ -263,7 +276,7 @@ export const buildVSCodeThemeFromPalette = (palette: VSCodeThemePalette): Theme 
         background,
         foreground,
         muted: activeBg,
-        mutedForeground: sidebarFg,
+        mutedForeground: mutedFg,
         elevated: panelBg,
         elevatedForeground: panelFg,
         overlay: read('statusBar.background', base.colors.surface.overlay),

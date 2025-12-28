@@ -1,17 +1,21 @@
 import React from 'react';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { SessionSidebar } from '@/components/session/SessionSidebar';
-import { ChatView } from '@/components/views';
+import { ChatView, SettingsView } from '@/components/views';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { ContextUsageDisplay } from '@/components/ui/ContextUsageDisplay';
 import { RiAddLine, RiArrowLeftLine, RiSettings3Line } from '@remixicon/react';
-import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPage';
+
+// Width threshold for mobile vs desktop layout in settings
+const MOBILE_WIDTH_THRESHOLD = 550;
 
 type VSCodeView = 'sessions' | 'chat' | 'settings';
 
 export const VSCodeLayout: React.FC = () => {
   const [currentView, setCurrentView] = React.useState<VSCodeView>('chat');
+  const [containerWidth, setContainerWidth] = React.useState<number>(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const currentSessionId = useSessionStore((state) => state.currentSessionId);
   const sessions = useSessionStore((state) => state.sessions);
   const newSessionDraftOpen = useSessionStore((state) => Boolean(state.newSessionDraft?.open));
@@ -110,8 +114,28 @@ export const VSCodeLayout: React.FC = () => {
     void hydrateMessages();
   }, [connectionStatus, currentSessionId, currentView, hasInitializedOnce, loadMessages, messages, newSessionDraftOpen]);
 
+  // Track container width for responsive settings layout
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    observer.observe(container);
+    // Set initial width
+    setContainerWidth(container.clientWidth);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const usesMobileLayout = containerWidth > 0 && containerWidth < MOBILE_WIDTH_THRESHOLD;
+
   return (
-    <div className="h-full w-full bg-background text-foreground flex flex-col">
+    <div ref={containerRef} className="h-full w-full bg-background text-foreground flex flex-col">
       {currentView === 'sessions' ? (
         <div className="flex flex-col h-full">
           <VSCodeHeader 
@@ -129,16 +153,10 @@ export const VSCodeLayout: React.FC = () => {
           </div>
         </div>
       ) : currentView === 'settings' ? (
-        <div className="flex flex-col h-full">
-          <VSCodeHeader
-            title="Settings"
-            showBack
-            onBack={handleBackToSessions}
-          />
-          <div className="flex-1 overflow-y-auto">
-            <VSCodeSettingsView />
-          </div>
-        </div>
+        <SettingsView
+          onClose={() => setCurrentView('sessions')}
+          forceMobile={usesMobileLayout}
+        />
       ) : (
         <div className="flex flex-col h-full">
           <VSCodeHeader
@@ -186,7 +204,7 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
       {showBack && onBack && (
         <button
           onClick={onBack}
-          className="p-1 rounded hover:bg-muted transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center p-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label="Back to sessions"
         >
           <RiArrowLeftLine className="h-5 w-5" />
@@ -196,7 +214,7 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
       {onNewSession && (
         <button
           onClick={onNewSession}
-          className="p-1 rounded hover:bg-muted transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center p-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label="New session"
         >
           <RiAddLine className="h-5 w-5" />
@@ -205,7 +223,7 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
       {onSettings && (
         <button
           onClick={onSettings}
-          className="p-1 rounded hover:bg-muted transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center p-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label="Settings"
         >
           <RiSettings3Line className="h-5 w-5" />
@@ -224,13 +242,4 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
   );
 };
 
-const VSCodeSettingsView: React.FC = () => {
-  return (
-    <div className="flex flex-col h-full">
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <OpenChamberPage />
-      </div>
-    </div>
-  );
-};
+

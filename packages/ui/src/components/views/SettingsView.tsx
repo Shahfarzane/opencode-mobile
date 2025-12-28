@@ -16,6 +16,7 @@ import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPa
 import { OpenChamberSidebar, type OpenChamberSection } from '@/components/sections/openchamber/OpenChamberSidebar';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useDeviceInfo } from '@/lib/device';
+import { isVSCodeRuntime } from '@/lib/desktop';
 
 const SETTINGS_SECTIONS = (() => {
   const filtered = SIDEBAR_SECTIONS.filter(section => section.id !== 'sessions');
@@ -29,12 +30,18 @@ const SETTINGS_SIDEBAR_MIN_WIDTH = 200;
 const SETTINGS_SIDEBAR_MAX_WIDTH = 500;
 const SETTINGS_SIDEBAR_DEFAULT_WIDTH = 264;
 
+// Width threshold for hiding tab labels (show icons only)
+const TAB_LABELS_MIN_WIDTH = 700;
+
 interface SettingsViewProps {
   onClose?: () => void;
+  /** Force mobile layout regardless of device detection */
+  forceMobile?: boolean;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
-  const { isMobile } = useDeviceInfo();
+export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile }) => {
+  const deviceInfo = useDeviceInfo();
+  const isMobile = forceMobile ?? deviceInfo.isMobile;
   const [activeTab, setActiveTab] = React.useState<SidebarSection>('settings');
   const [selectedOpenChamberSection, setSelectedOpenChamberSection] = React.useState<OpenChamberSection>('visual');
   // Mobile drill-down state: show page content instead of sidebar
@@ -51,6 +58,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
   });
   const [hasManuallyResized, setHasManuallyResized] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
+  const [containerWidth, setContainerWidth] = React.useState(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const startXRef = React.useRef(0);
   const startWidthRef = React.useRef(sidebarWidth);
 
@@ -64,10 +73,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
     return /Macintosh|Mac OS X/.test(navigator.userAgent || '');
   }, []);
 
+  const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
+
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsDesktopApp(typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined');
   }, []);
+
+  // Track container width for responsive tab labels
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    observer.observe(container);
+    setContainerWidth(container.clientWidth);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const showTabLabels = containerWidth === 0 || containerWidth >= TAB_LABELS_MIN_WIDTH;
 
   // Update proportional width on window resize (if not manually resized)
   React.useEffect(() => {
@@ -221,7 +251,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
   const showLeadingDivider = isDesktopApp && isMacPlatform;
 
   return (
-    <div className={cn('flex h-full flex-col overflow-hidden', isDesktopApp ? 'bg-transparent' : 'bg-background')}>
+    <div ref={containerRef} className={cn('flex h-full flex-col overflow-hidden', isDesktopApp ? 'bg-transparent' : 'bg-background')}>
       {/* Header with tabs and close button */}
       <div
         onMouseDown={!isMobile ? handleDragStart : undefined}
@@ -296,7 +326,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                   aria-label={label}
                 >
                   <PhosphorIcon className="h-4 w-4" weight="regular" />
-                  <span className="header-tab-label">{label}</span>
+                  {showTabLabels && <span>{label}</span>}
                 </button>
                 {/* Vertical divider after each tab */}
                 <div className="h-full w-px bg-border" aria-hidden="true" />
@@ -338,7 +368,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
               <ErrorBoundary>{renderPageContent()}</ErrorBoundary>
             </div>
           ) : (
-            <div className="flex-1 overflow-hidden bg-sidebar">
+            <div className={cn('flex-1 overflow-hidden', isVSCode ? 'bg-background' : 'bg-sidebar')}>
               <ErrorBoundary>{renderSidebarContent()}</ErrorBoundary>
             </div>
           )
@@ -351,7 +381,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose }) => {
                   'relative overflow-hidden border-r',
                   isDesktopApp
                     ? 'bg-[color:var(--sidebar-overlay-strong)] backdrop-blur supports-[backdrop-filter]:bg-[color:var(--sidebar-overlay-soft)]'
-                    : 'bg-sidebar',
+                    : isVSCode
+                      ? 'bg-background'
+                      : 'bg-sidebar',
                   isResizing ? 'transition-none' : ''
                 )}
                 style={{

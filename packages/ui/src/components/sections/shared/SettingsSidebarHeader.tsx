@@ -37,7 +37,7 @@ export const SettingsSidebarHeader: React.FC<SettingsSidebarHeaderProps> = ({
   return (
     <div
       className={cn(
-        'border-b border-border/40 px-3 dark:border-white/10',
+        'border-b px-3',
         isMobile ? 'mt-2 py-3' : 'py-3'
       )}
     >

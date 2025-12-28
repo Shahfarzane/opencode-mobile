@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 import { useDeviceInfo } from '@/lib/device';
-import { isWebRuntime } from '@/lib/desktop';
+import { isVSCodeRuntime, isWebRuntime } from '@/lib/desktop';
 import { AboutSettings } from './AboutSettings';
 import { cn } from '@/lib/utils';
 
@@ -48,13 +48,24 @@ export const OpenChamberSidebar: React.FC<OpenChamberSidebarProps> = ({
     return typeof window.opencodeDesktop !== 'undefined';
   });
 
+  const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
+
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
   }, []);
 
+  // Desktop app: transparent for blur effect
+  // VS Code: bg-background (same as page content)
+  // Web/mobile: bg-sidebar
+  const bgClass = isDesktopRuntime
+    ? 'bg-transparent'
+    : isVSCode
+      ? 'bg-background'
+      : 'bg-sidebar';
+
   return (
-    <div className={cn('flex h-full flex-col', isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar')}>
+    <div className={cn('flex h-full flex-col', bgClass)}>
       <ScrollableOverlay outerClassName="flex-1 min-h-0" className="space-y-1 px-3 py-2 overflow-x-hidden">
         {OPENCHAMBER_SECTION_GROUPS.map((group) => {
           const isSelected = selectedSection === group.id;
@@ -84,7 +95,7 @@ export const OpenChamberSidebar: React.FC<OpenChamberSidebarProps> = ({
 
       {/* Mobile footer: About section */}
       {showAbout && (
-        <div className="border-t border-border/40 px-3 py-4">
+        <div className="border-t px-3 py-4">
           <AboutSettings />
         </div>
       )}
