@@ -22,6 +22,7 @@ import { RiAddLine, RiAiAgentFill, RiAiAgentLine, RiDeleteBinLine, RiFileCopyLin
 import { useAgentsStore, isAgentBuiltIn, isAgentHidden } from '@/stores/useAgentsStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDeviceInfo } from '@/lib/device';
+import { isVSCodeRuntime } from '@/lib/desktop';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@opencode-ai/sdk';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
@@ -50,6 +51,8 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
         return typeof window.opencodeDesktop !== 'undefined';
     });
 
+    const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
+
     React.useEffect(() => {
         if (typeof window === 'undefined') return;
         setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
@@ -58,6 +61,12 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
     React.useEffect(() => {
         loadAgents();
     }, [loadAgents]);
+
+    const bgClass = isDesktopRuntime
+        ? 'bg-transparent'
+        : isVSCode
+            ? 'bg-background'
+            : 'bg-sidebar';
 
     const handleCreateAgent = () => {
         if (!newAgentName.trim()) {
@@ -132,9 +141,9 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
     const customAgents = visibleAgents.filter((agent) => !isAgentBuiltIn(agent));
 
     return (
-        <div className={cn('flex h-full flex-col', isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar')}>
+        <div className={cn('flex h-full flex-col', bgClass)}>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <div className={cn('border-b border-border/40 px-3 dark:border-white/10', isMobile ? 'mt-2 py-3' : 'py-3')}>
+                <div className={cn('border-b px-3', isMobile ? 'mt-2 py-3' : 'py-3')}>
                     <div className="flex items-center justify-between gap-2">
                         <span className="typography-meta text-muted-foreground">Total {visibleAgents.length}</span>
                         <DialogTrigger asChild>

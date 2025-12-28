@@ -22,6 +22,7 @@ import { RiAddLine, RiTerminalBoxLine, RiMore2Line, RiDeleteBinLine, RiFileCopyL
 import { useCommandsStore, type Command } from '@/stores/useCommandsStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDeviceInfo } from '@/lib/device';
+import { isVSCodeRuntime } from '@/lib/desktop';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,8 @@ export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }
     return typeof window.opencodeDesktop !== 'undefined';
   });
 
+  const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
+
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
@@ -57,6 +60,12 @@ export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }
   React.useEffect(() => {
     loadCommands();
   }, [loadCommands]);
+
+  const bgClass = isDesktopRuntime
+    ? 'bg-transparent'
+    : isVSCode
+      ? 'bg-background'
+      : 'bg-sidebar';
 
   const handleCreateCommand = () => {
     if (!newCommandName.trim()) {
@@ -110,9 +119,9 @@ export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }
   };
 
   return (
-    <div className={cn('flex h-full flex-col', isDesktopRuntime ? 'bg-transparent' : 'bg-sidebar')}>
+    <div className={cn('flex h-full flex-col', bgClass)}>
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <div className={cn('border-b border-border/40 px-3 dark:border-white/10', isMobile ? 'mt-2 py-3' : 'py-3')}>
+        <div className={cn('border-b px-3', isMobile ? 'mt-2 py-3' : 'py-3')}>
           <div className="flex items-center justify-between gap-2">
             <span className="typography-meta text-muted-foreground">Total {commands.length}</span>
             <DialogTrigger asChild>

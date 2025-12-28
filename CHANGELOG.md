@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - ESC key now closes settings; double-ESC abort only works on chat tab without overlays.
 - Added responsive tab labels in settings header (icons only at narrow widths).
 - Improved session activity status handling and message step completion logic.
+- Introduced enchanced VSCode extension settings with dynamic layout based on width.
 
 
 ## [1.3.6] - 2025-12-27
