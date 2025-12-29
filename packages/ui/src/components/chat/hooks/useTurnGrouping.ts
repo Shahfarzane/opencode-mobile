@@ -412,6 +412,12 @@ export const useTurnGrouping = (messages: ChatMessageEntry[]): UseTurnGroupingRe
     const toolCallExpansion = useUIStore((state) => state.toolCallExpansion);
     // Activity group is expanded for 'activity' and 'detailed', collapsed for 'collapsed'
     const defaultActivityExpanded = toolCallExpansion === 'activity' || toolCallExpansion === 'detailed';
+
+    // Reset turn UI states when the expansion preference changes
+    // This ensures the setting takes precedence over manual toggles
+    React.useEffect(() => {
+        setTurnUiStates(new Map());
+    }, [toolCallExpansion]);
     
     const getOrCreateTurnState = React.useCallback(
         (turnId: string): TurnUiState => {
