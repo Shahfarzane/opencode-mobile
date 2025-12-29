@@ -8,9 +8,17 @@ const OPENCODE_CONFIG_DIR = path.join(os.homedir(), '.config', 'opencode');
 const AGENT_DIR = path.join(OPENCODE_CONFIG_DIR, 'agent');
 const COMMAND_DIR = path.join(OPENCODE_CONFIG_DIR, 'command');
 const CONFIG_FILE = path.join(OPENCODE_CONFIG_DIR, 'opencode.json');
+const CUSTOM_CONFIG_FILE = process.env.OPENCODE_CONFIG
+  ? path.resolve(process.env.OPENCODE_CONFIG)
+  : null;
 const PROMPT_FILE_PATTERN = /^\{file:(.+)\}$/i;
 
-// Command scope types
+// Scope types (shared by agents and commands)
+const AGENT_SCOPE = {
+  USER: 'user',
+  PROJECT: 'project'
+};
+
 const COMMAND_SCOPE = {
   USER: 'user',
   PROJECT: 'project'
@@ -27,6 +35,80 @@ function ensureDirs() {
     fs.mkdirSync(COMMAND_DIR, { recursive: true });
   }
 }
+
+// ============== AGENT SCOPE HELPERS ==============
+
+/**
+ * Ensure project-level agent directory exists
+ */
+function ensureProjectAgentDir(workingDirectory) {
+  const projectAgentDir = path.join(workingDirectory, '.opencode', 'agent');
+  if (!fs.existsSync(projectAgentDir)) {
+    fs.mkdirSync(projectAgentDir, { recursive: true });
+  }
+  return projectAgentDir;
+}
+
+/**
+ * Get project-level agent path
+ */
+function getProjectAgentPath(workingDirectory, agentName) {
+  return path.join(workingDirectory, '.opencode', 'agent', `${agentName}.md`);
+}
+
+/**
+ * Get user-level agent path
+ */
+function getUserAgentPath(agentName) {
+  return path.join(AGENT_DIR, `${agentName}.md`);
+}
+
+/**
+ * Determine agent scope based on where the .md file exists
+ * Priority: project level > user level > null (built-in only)
+ */
+function getAgentScope(agentName, workingDirectory) {
+  if (workingDirectory) {
+    const projectPath = getProjectAgentPath(workingDirectory, agentName);
+    if (fs.existsSync(projectPath)) {
+      return { scope: AGENT_SCOPE.PROJECT, path: projectPath };
+    }
+  }
+  
+  const userPath = getUserAgentPath(agentName);
+  if (fs.existsSync(userPath)) {
+    return { scope: AGENT_SCOPE.USER, path: userPath };
+  }
+  
+  return { scope: null, path: null };
+}
+
+/**
+ * Get the path where an agent should be written based on scope
+ */
+function getAgentWritePath(agentName, workingDirectory, requestedScope) {
+  // For updates: check existing location first (project takes precedence)
+  const existing = getAgentScope(agentName, workingDirectory);
+  if (existing.path) {
+    return existing;
+  }
+  
+  // For new agents or built-in overrides: use requested scope or default to user
+  const scope = requestedScope || AGENT_SCOPE.USER;
+  if (scope === AGENT_SCOPE.PROJECT && workingDirectory) {
+    return { 
+      scope: AGENT_SCOPE.PROJECT, 
+      path: getProjectAgentPath(workingDirectory, agentName) 
+    };
+  }
+  
+  return { 
+    scope: AGENT_SCOPE.USER, 
+    path: getUserAgentPath(agentName) 
+  };
+}
+
+// ============== COMMAND SCOPE HELPERS ==============
 
 /**
  * Ensure project-level command directory exists
@@ -132,38 +214,129 @@ function writePromptFile(filePath, content) {
   console.log(`Updated prompt file: ${filePath}`);
 }
 
-function readConfig() {
-  if (!fs.existsSync(CONFIG_FILE)) {
+function getProjectConfigPath(workingDirectory) {
+  if (!workingDirectory) return null;
+  return path.join(workingDirectory, 'opencode.json');
+}
+
+function getConfigPaths(workingDirectory) {
+  return {
+    userPath: CONFIG_FILE,
+    projectPath: getProjectConfigPath(workingDirectory),
+    customPath: CUSTOM_CONFIG_FILE
+  };
+}
+
+function readConfigFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
     return {};
   }
   try {
-    const content = fs.readFileSync(CONFIG_FILE, 'utf8');
+    const content = fs.readFileSync(filePath, 'utf8');
     const normalized = stripJsonComments(content).trim();
     if (!normalized) {
       return {};
     }
     return JSON.parse(normalized);
   } catch (error) {
-    console.error('Failed to read config file:', error);
+    console.error(`Failed to read config file: ${filePath}`, error);
     throw new Error('Failed to read OpenCode configuration');
   }
 }
 
-function writeConfig(config) {
-  try {
+function isPlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
 
-    if (fs.existsSync(CONFIG_FILE)) {
-      const backupFile = `${CONFIG_FILE}.openchamber.backup`;
-      fs.copyFileSync(CONFIG_FILE, backupFile);
+function mergeConfigs(base, override) {
+  if (!isPlainObject(base) || !isPlainObject(override)) {
+    return override;
+  }
+  const result = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    if (key in result) {
+      const baseValue = result[key];
+      if (isPlainObject(baseValue) && isPlainObject(value)) {
+        result[key] = mergeConfigs(baseValue, value);
+      } else {
+        result[key] = value;
+      }
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+function readConfigLayers(workingDirectory) {
+  const { userPath, projectPath, customPath } = getConfigPaths(workingDirectory);
+  const userConfig = readConfigFile(userPath);
+  const projectConfig = readConfigFile(projectPath);
+  const customConfig = readConfigFile(customPath);
+  const mergedConfig = mergeConfigs(mergeConfigs(userConfig, projectConfig), customConfig);
+
+  return {
+    userConfig,
+    projectConfig,
+    customConfig,
+    mergedConfig,
+    paths: { userPath, projectPath, customPath }
+  };
+}
+
+function readConfig(workingDirectory) {
+  return readConfigLayers(workingDirectory).mergedConfig;
+}
+
+function writeConfig(config, filePath = CONFIG_FILE) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const backupFile = `${filePath}.openchamber.backup`;
+      fs.copyFileSync(filePath, backupFile);
       console.log(`Created config backup: ${backupFile}`);
     }
 
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
-    console.log('Successfully wrote config file');
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(config, null, 2), 'utf8');
+    console.log(`Successfully wrote config file: ${filePath}`);
   } catch (error) {
-    console.error('Failed to write config file:', error);
+    console.error(`Failed to write config file: ${filePath}`, error);
     throw new Error('Failed to write OpenCode configuration');
   }
+}
+
+function getJsonEntrySource(layers, sectionKey, entryName) {
+  const { userConfig, projectConfig, customConfig, paths } = layers;
+  const customSection = customConfig?.[sectionKey]?.[entryName];
+  if (customSection !== undefined) {
+    return { section: customSection, config: customConfig, path: paths.customPath, exists: true };
+  }
+
+  const projectSection = projectConfig?.[sectionKey]?.[entryName];
+  if (projectSection !== undefined) {
+    return { section: projectSection, config: projectConfig, path: paths.projectPath, exists: true };
+  }
+
+  const userSection = userConfig?.[sectionKey]?.[entryName];
+  if (userSection !== undefined) {
+    return { section: userSection, config: userConfig, path: paths.userPath, exists: true };
+  }
+
+  return { section: null, config: null, path: null, exists: false };
+}
+
+function getJsonWriteTarget(layers, preferredScope) {
+  const { userConfig, projectConfig, customConfig, paths } = layers;
+  if (paths.customPath) {
+    return { config: customConfig, path: paths.customPath };
+  }
+  if (preferredScope === AGENT_SCOPE.PROJECT && paths.projectPath) {
+    return { config: projectConfig, path: paths.projectPath };
+  }
+  if (paths.projectPath) {
+    return { config: projectConfig, path: paths.projectPath };
+  }
+  return { config: userConfig, path: paths.userPath };
 }
 
 function parseMdFile(filePath) {
@@ -201,23 +374,53 @@ function writeMdFile(filePath, frontmatter, body) {
   }
 }
 
-function getAgentSources(agentName) {
-  const mdPath = path.join(AGENT_DIR, `${agentName}.md`);
-  const mdExists = fs.existsSync(mdPath);
+function getAgentSources(agentName, workingDirectory) {
+  // Check project level first (takes precedence)
+  const projectPath = workingDirectory ? getProjectAgentPath(workingDirectory, agentName) : null;
+  const projectExists = projectPath && fs.existsSync(projectPath);
+  
+  // Then check user level
+  const userPath = getUserAgentPath(agentName);
+  const userExists = fs.existsSync(userPath);
+  
+  // Determine which md file to use (project takes precedence)
+  const mdPath = projectExists ? projectPath : (userExists ? userPath : null);
+  const mdExists = !!mdPath;
+  const mdScope = projectExists ? AGENT_SCOPE.PROJECT : (userExists ? AGENT_SCOPE.USER : null);
 
-  const config = readConfig();
-  const jsonSection = config.agent?.[agentName];
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'agent', agentName);
+  const jsonSection = jsonSource.section;
+  const jsonPath = jsonSource.path || layers.paths.customPath || layers.paths.projectPath || layers.paths.userPath;
+  const jsonScope = jsonSource.path === layers.paths.projectPath ? AGENT_SCOPE.PROJECT : AGENT_SCOPE.USER;
 
   const sources = {
     md: {
       exists: mdExists,
-      path: mdExists ? mdPath : null,
+      path: mdPath,
+      scope: mdScope,
       fields: []
     },
     json: {
-      exists: !!jsonSection,
-      path: CONFIG_FILE,
+      exists: jsonSource.exists,
+      path: jsonPath,
+      scope: jsonSource.exists ? jsonScope : null,
       fields: []
+    },
+    json: {
+      exists: jsonSource.exists,
+      path: jsonPath,
+      scope: jsonSource.exists ? jsonScope : null,
+      fields: []
+    },
+    // Additional info about both levels
+    projectMd: {
+      exists: projectExists,
+      path: projectPath
+    },
+    userMd: {
+      exists: userExists,
+      path: userPath
     }
   };
 
@@ -236,94 +439,140 @@ function getAgentSources(agentName) {
   return sources;
 }
 
-function createAgent(agentName, config) {
+function createAgent(agentName, config, workingDirectory, scope) {
   ensureDirs();
 
-  const mdPath = path.join(AGENT_DIR, `${agentName}.md`);
-
-  if (fs.existsSync(mdPath)) {
-    throw new Error(`Agent ${agentName} already exists as .md file`);
+  // Check if agent already exists at either level
+  const projectPath = workingDirectory ? getProjectAgentPath(workingDirectory, agentName) : null;
+  const userPath = getUserAgentPath(agentName);
+  
+  if (projectPath && fs.existsSync(projectPath)) {
+    throw new Error(`Agent ${agentName} already exists as project-level .md file`);
+  }
+  
+  if (fs.existsSync(userPath)) {
+    throw new Error(`Agent ${agentName} already exists as user-level .md file`);
   }
 
-  const existingConfig = readConfig();
-  if (existingConfig.agent?.[agentName]) {
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'agent', agentName);
+  if (jsonSource.exists) {
     throw new Error(`Agent ${agentName} already exists in opencode.json`);
   }
 
-  const { prompt, ...frontmatter } = config;
+  // Determine target path based on requested scope
+  let targetPath;
+  let targetScope;
+  
+  if (scope === AGENT_SCOPE.PROJECT && workingDirectory) {
+    ensureProjectAgentDir(workingDirectory);
+    targetPath = projectPath;
+    targetScope = AGENT_SCOPE.PROJECT;
+  } else {
+    targetPath = userPath;
+    targetScope = AGENT_SCOPE.USER;
+  }
 
-  writeMdFile(mdPath, frontmatter, prompt || '');
-  console.log(`Created new agent: ${agentName}`);
+  // Extract scope and prompt from config - scope is only used for path determination, not written to file
+  const { prompt, scope: _scopeFromConfig, ...frontmatter } = config;
+
+  writeMdFile(targetPath, frontmatter, prompt || '');
+  console.log(`Created new agent: ${agentName} (scope: ${targetScope}, path: ${targetPath})`);
 }
 
-function updateAgent(agentName, updates) {
+function updateAgent(agentName, updates, workingDirectory) {
   ensureDirs();
 
-  const mdPath = path.join(AGENT_DIR, `${agentName}.md`);
-  const mdExists = fs.existsSync(mdPath);
+  // Determine correct path: project level takes precedence
+  const { scope, path: mdPath } = getAgentWritePath(agentName, workingDirectory);
+  const mdExists = mdPath && fs.existsSync(mdPath);
+  
+  // Check if agent exists in opencode.json across all config layers
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'agent', agentName);
+  const jsonSection = jsonSource.section;
+  const hasJsonFields = jsonSource.exists && jsonSection && Object.keys(jsonSection).length > 0;
+  const jsonTarget = jsonSource.exists
+    ? { config: jsonSource.config, path: jsonSource.path }
+    : getJsonWriteTarget(layers, workingDirectory ? AGENT_SCOPE.PROJECT : AGENT_SCOPE.USER);
+  let config = jsonTarget.config || {};
+  
+  // Determine if we should create a new md file:
+  // Only for built-in agents (no md file AND no json config)
+  const isBuiltinOverride = !mdExists && !hasJsonFields;
+  
+  let targetPath = mdPath;
+  let targetScope = scope;
+  
+  if (!mdExists && isBuiltinOverride) {
+    // Built-in agent override - create at user level
+    targetPath = getUserAgentPath(agentName);
+    targetScope = AGENT_SCOPE.USER;
+  }
 
-  let mdData = mdExists ? parseMdFile(mdPath) : null;
-  let config = readConfig();
-  const jsonSection = config.agent?.[agentName];
+  // Only create md data for existing md files or built-in overrides
+  let mdData = mdExists ? parseMdFile(mdPath) : (isBuiltinOverride ? { frontmatter: {}, body: '' } : null);
 
   let mdModified = false;
   let jsonModified = false;
+  // Only create new md if it's a built-in override
+  let creatingNewMd = isBuiltinOverride;
 
   for (const [field, value] of Object.entries(updates)) {
 
     if (field === 'prompt') {
       const normalizedValue = typeof value === 'string' ? value : (value == null ? '' : String(value));
 
-      if (mdExists) {
-        mdData.body = normalizedValue;
-        mdModified = true;
+      if (mdExists || creatingNewMd) {
+        if (mdData) {
+          mdData.body = normalizedValue;
+          mdModified = true;
+        }
+        continue;
       } else if (isPromptFileReference(jsonSection?.prompt)) {
         const promptFilePath = resolvePromptFilePath(jsonSection.prompt);
         if (!promptFilePath) {
           throw new Error(`Invalid prompt file reference for agent ${agentName}`);
         }
         writePromptFile(promptFilePath, normalizedValue);
+        continue;
       } else if (isPromptFileReference(normalizedValue)) {
         if (!config.agent) config.agent = {};
         if (!config.agent[agentName]) config.agent[agentName] = {};
         config.agent[agentName].prompt = normalizedValue;
         jsonModified = true;
-      } else {
-        if (!config.agent) config.agent = {};
-        if (!config.agent[agentName]) config.agent[agentName] = {};
-        config.agent[agentName].prompt = normalizedValue;
-        jsonModified = true;
+        continue;
       }
+      
+      // For JSON-only agents, store prompt inline in JSON
+      if (!config.agent) config.agent = {};
+      if (!config.agent[agentName]) config.agent[agentName] = {};
+      config.agent[agentName].prompt = normalizedValue;
+      jsonModified = true;
       continue;
     }
 
     const inMd = mdData?.frontmatter?.[field] !== undefined;
     const inJson = jsonSection?.[field] !== undefined;
 
-    if (inMd) {
-
-      mdData.frontmatter[field] = value;
-      mdModified = true;
-    } else if (inJson) {
-
+    // JSON takes precedence over md, so update JSON first if field exists there
+    if (inJson) {
       if (!config.agent) config.agent = {};
       if (!config.agent[agentName]) config.agent[agentName] = {};
       config.agent[agentName][field] = value;
       jsonModified = true;
+    } else if (inMd || creatingNewMd) {
+      if (mdData) {
+        mdData.frontmatter[field] = value;
+        mdModified = true;
+      }
     } else {
-
-      if (mdExists && jsonSection) {
-
-        if (!config.agent) config.agent = {};
-        if (!config.agent[agentName]) config.agent[agentName] = {};
-        config.agent[agentName][field] = value;
-        jsonModified = true;
-      } else if (mdExists) {
-
+      // New field - add to the appropriate location based on agent source
+      if ((mdExists || creatingNewMd) && mdData) {
         mdData.frontmatter[field] = value;
         mdModified = true;
       } else {
-
+        // JSON-only agent or has JSON fields - add to JSON
         if (!config.agent) config.agent = {};
         if (!config.agent[agentName]) config.agent[agentName] = {};
         config.agent[agentName][field] = value;
@@ -332,39 +581,56 @@ function updateAgent(agentName, updates) {
     }
   }
 
-  if (mdModified) {
-    writeMdFile(mdPath, mdData.frontmatter, mdData.body);
+  if (mdModified && mdData) {
+    writeMdFile(targetPath, mdData.frontmatter, mdData.body);
   }
 
   if (jsonModified) {
-    writeConfig(config);
+    writeConfig(config, jsonTarget.path || CONFIG_FILE);
   }
 
-  console.log(`Updated agent: ${agentName} (md: ${mdModified}, json: ${jsonModified})`);
+  console.log(`Updated agent: ${agentName} (scope: ${targetScope}, md: ${mdModified}, json: ${jsonModified})`);
 }
 
-function deleteAgent(agentName) {
-  const mdPath = path.join(AGENT_DIR, `${agentName}.md`);
+function deleteAgent(agentName, workingDirectory) {
   let deleted = false;
 
-  if (fs.existsSync(mdPath)) {
-    fs.unlinkSync(mdPath);
-    console.log(`Deleted agent .md file: ${mdPath}`);
+  // Check project level first (takes precedence)
+  if (workingDirectory) {
+    const projectPath = getProjectAgentPath(workingDirectory, agentName);
+    if (fs.existsSync(projectPath)) {
+      fs.unlinkSync(projectPath);
+      console.log(`Deleted project-level agent .md file: ${projectPath}`);
+      deleted = true;
+    }
+  }
+
+  // Then check user level
+  const userPath = getUserAgentPath(agentName);
+  if (fs.existsSync(userPath)) {
+    fs.unlinkSync(userPath);
+    console.log(`Deleted user-level agent .md file: ${userPath}`);
     deleted = true;
   }
 
-  const config = readConfig();
-  if (config.agent?.[agentName]) {
-    delete config.agent[agentName];
-    writeConfig(config);
+  // Also check json config (highest precedence entry only)
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'agent', agentName);
+  if (jsonSource.exists && jsonSource.config && jsonSource.path) {
+    if (!jsonSource.config.agent) jsonSource.config.agent = {};
+    delete jsonSource.config.agent[agentName];
+    writeConfig(jsonSource.config, jsonSource.path);
     console.log(`Removed agent from opencode.json: ${agentName}`);
     deleted = true;
   }
 
+  // If nothing was deleted (built-in agent), disable it in highest-precedence config
   if (!deleted) {
-    if (!config.agent) config.agent = {};
-    config.agent[agentName] = { disable: true };
-    writeConfig(config);
+    const jsonTarget = getJsonWriteTarget(layers, workingDirectory ? AGENT_SCOPE.PROJECT : AGENT_SCOPE.USER);
+    const targetConfig = jsonTarget.config || {};
+    if (!targetConfig.agent) targetConfig.agent = {};
+    targetConfig.agent[agentName] = { disable: true };
+    writeConfig(targetConfig, jsonTarget.path || CONFIG_FILE);
     console.log(`Disabled built-in agent: ${agentName}`);
   }
 }
@@ -383,8 +649,10 @@ function getCommandSources(commandName, workingDirectory) {
   const mdExists = !!mdPath;
   const mdScope = projectExists ? COMMAND_SCOPE.PROJECT : (userExists ? COMMAND_SCOPE.USER : null);
 
-  const config = readConfig();
-  const jsonSection = config.command?.[commandName];
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'command', commandName);
+  const jsonSection = jsonSource.section;
+  const jsonPath = jsonSource.path || layers.paths.customPath || layers.paths.projectPath || layers.paths.userPath;
 
   const sources = {
     md: {
@@ -394,8 +662,8 @@ function getCommandSources(commandName, workingDirectory) {
       fields: []
     },
     json: {
-      exists: !!jsonSection,
-      path: CONFIG_FILE,
+      exists: jsonSource.exists,
+      path: jsonPath,
       fields: []
     },
     // Additional info about both levels
@@ -439,8 +707,9 @@ function createCommand(commandName, config, workingDirectory, scope) {
     throw new Error(`Command ${commandName} already exists as user-level .md file`);
   }
 
-  const existingConfig = readConfig();
-  if (existingConfig.command?.[commandName]) {
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'command', commandName);
+  if (jsonSource.exists) {
     throw new Error(`Command ${commandName} already exists in opencode.json`);
   }
 
@@ -470,25 +739,33 @@ function updateCommand(commandName, updates, workingDirectory) {
   // Determine correct path: project level takes precedence
   const { scope, path: mdPath } = getCommandWritePath(commandName, workingDirectory);
   const mdExists = mdPath && fs.existsSync(mdPath);
-  
-  // If no existing md file, we need to create one (for built-in command overrides)
-  // Default to user level for built-in overrides
+
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'command', commandName);
+  const jsonSection = jsonSource.section;
+  const hasJsonFields = jsonSource.exists && jsonSection && Object.keys(jsonSection).length > 0;
+  const jsonTarget = jsonSource.exists
+    ? { config: jsonSource.config, path: jsonSource.path }
+    : getJsonWriteTarget(layers, workingDirectory ? COMMAND_SCOPE.PROJECT : COMMAND_SCOPE.USER);
+  let config = jsonTarget.config || {};
+
+  // Only create a new md file for built-in overrides (no md + no json)
+  const isBuiltinOverride = !mdExists && !hasJsonFields;
+
   let targetPath = mdPath;
   let targetScope = scope;
-  
-  if (!mdExists) {
-    // No existing md file - this is a built-in override, create at user level
+
+  if (!mdExists && isBuiltinOverride) {
+    // Built-in command override - create at user level
     targetPath = getUserCommandPath(commandName);
     targetScope = COMMAND_SCOPE.USER;
   }
 
-  let mdData = mdExists ? parseMdFile(mdPath) : { frontmatter: {}, body: '' };
-  let config = readConfig();
-  const jsonSection = config.command?.[commandName];
+  const mdData = mdExists ? parseMdFile(mdPath) : (isBuiltinOverride ? { frontmatter: {}, body: '' } : null);
 
   let mdModified = false;
   let jsonModified = false;
-  let creatingNewMd = !mdExists;
+  let creatingNewMd = isBuiltinOverride;
 
   for (const [field, value] of Object.entries(updates)) {
 
@@ -496,42 +773,51 @@ function updateCommand(commandName, updates, workingDirectory) {
       const normalizedValue = typeof value === 'string' ? value : (value == null ? '' : String(value));
 
       if (mdExists || creatingNewMd) {
-        mdData.body = normalizedValue;
-        mdModified = true;
+        if (mdData) {
+          mdData.body = normalizedValue;
+          mdModified = true;
+        }
+        continue;
       } else if (isPromptFileReference(jsonSection?.template)) {
         const templateFilePath = resolvePromptFilePath(jsonSection.template);
         if (!templateFilePath) {
           throw new Error(`Invalid template file reference for command ${commandName}`);
         }
         writePromptFile(templateFilePath, normalizedValue);
+        continue;
       } else if (isPromptFileReference(normalizedValue)) {
         if (!config.command) config.command = {};
         if (!config.command[commandName]) config.command[commandName] = {};
         config.command[commandName].template = normalizedValue;
         jsonModified = true;
-      } else {
-        // Create new md file for the update
-        mdData.body = normalizedValue;
-        mdModified = true;
-        creatingNewMd = true;
+        continue;
       }
+
+      // For JSON-only commands, store template inline in JSON
+      if (!config.command) config.command = {};
+      if (!config.command[commandName]) config.command[commandName] = {};
+      config.command[commandName].template = normalizedValue;
+      jsonModified = true;
       continue;
     }
 
     const inMd = mdData?.frontmatter?.[field] !== undefined;
     const inJson = jsonSection?.[field] !== undefined;
 
-    if (inMd || creatingNewMd) {
-      mdData.frontmatter[field] = value;
-      mdModified = true;
-    } else if (inJson) {
+    // JSON takes precedence over md, so update JSON first if field exists there
+    if (inJson) {
       if (!config.command) config.command = {};
       if (!config.command[commandName]) config.command[commandName] = {};
       config.command[commandName][field] = value;
       jsonModified = true;
+    } else if (inMd || creatingNewMd) {
+      if (mdData) {
+        mdData.frontmatter[field] = value;
+        mdModified = true;
+      }
     } else {
-      // New field - add to md if it exists or we're creating one
-      if (mdExists || creatingNewMd) {
+      // New field - add to appropriate location based on command source
+      if ((mdExists || creatingNewMd) && mdData) {
         mdData.frontmatter[field] = value;
         mdModified = true;
       } else {
@@ -543,12 +829,12 @@ function updateCommand(commandName, updates, workingDirectory) {
     }
   }
 
-  if (mdModified) {
+  if (mdModified && mdData) {
     writeMdFile(targetPath, mdData.frontmatter, mdData.body);
   }
 
   if (jsonModified) {
-    writeConfig(config);
+    writeConfig(config, jsonTarget.path || CONFIG_FILE);
   }
 
   console.log(`Updated command: ${commandName} (scope: ${targetScope}, md: ${mdModified}, json: ${jsonModified})`);
@@ -575,11 +861,13 @@ function deleteCommand(commandName, workingDirectory) {
     deleted = true;
   }
 
-  // Also check json config
-  const config = readConfig();
-  if (config.command?.[commandName]) {
-    delete config.command[commandName];
-    writeConfig(config);
+  // Also check json config (highest precedence entry only)
+  const layers = readConfigLayers(workingDirectory);
+  const jsonSource = getJsonEntrySource(layers, 'command', commandName);
+  if (jsonSource.exists && jsonSource.config && jsonSource.path) {
+    if (!jsonSource.config.command) jsonSource.config.command = {};
+    delete jsonSource.config.command[commandName];
+    writeConfig(jsonSource.config, jsonSource.path);
     console.log(`Removed command from opencode.json: ${commandName}`);
     deleted = true;
   }
@@ -591,6 +879,7 @@ function deleteCommand(commandName, workingDirectory) {
 
 export {
   getAgentSources,
+  getAgentScope,
   createAgent,
   updateAgent,
   deleteAgent,
@@ -604,5 +893,6 @@ export {
   AGENT_DIR,
   COMMAND_DIR,
   CONFIG_FILE,
+  AGENT_SCOPE,
   COMMAND_SCOPE
 };

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
 import type { OpenCodeManager } from './opencode';
-import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand, type CommandScope, COMMAND_SCOPE } from './opencodeConfig';
+import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand, type AgentScope, type CommandScope, AGENT_SCOPE, COMMAND_SCOPE } from './opencodeConfig';
 import { removeProviderAuth } from './opencodeAuth';
 
 export interface BridgeRequest {
@@ -617,19 +617,25 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
           return { id, type, success: false, error: 'Agent name is required' };
         }
 
+        // Get working directory for project-level agent support
+        const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
         const normalizedMethod = typeof method === 'string' && method.trim() ? method.trim().toUpperCase() : 'GET';
         if (normalizedMethod === 'GET') {
-          const sources = getAgentSources(agentName);
+          const sources = getAgentSources(agentName, workingDirectory);
           return {
             id,
             type,
             success: true,
-            data: { name: agentName, sources, isBuiltIn: !sources.md.exists && !sources.json.exists },
+            data: { name: agentName, sources, scope: sources.md.scope, isBuiltIn: !sources.md.exists && !sources.json.exists },
           };
         }
 
         if (normalizedMethod === 'POST') {
-          createAgent(agentName, (body || {}) as Record<string, unknown>);
+          // Extract scope from body if present
+          const scopeValue = body?.scope as string | undefined;
+          const scope: AgentScope | undefined = scopeValue === 'project' ? AGENT_SCOPE.PROJECT : scopeValue === 'user' ? AGENT_SCOPE.USER : undefined;
+          createAgent(agentName, (body || {}) as Record<string, unknown>, workingDirectory, scope);
           await ctx?.manager?.restart();
           return {
             id,
@@ -645,7 +651,7 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         }
 
         if (normalizedMethod === 'PATCH') {
-          updateAgent(agentName, (body || {}) as Record<string, unknown>);
+          updateAgent(agentName, (body || {}) as Record<string, unknown>, workingDirectory);
           await ctx?.manager?.restart();
           return {
             id,
@@ -661,7 +667,7 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         }
 
         if (normalizedMethod === 'DELETE') {
-          deleteAgent(agentName);
+          deleteAgent(agentName, workingDirectory);
           await ctx?.manager?.restart();
           return {
             id,

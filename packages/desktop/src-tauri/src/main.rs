@@ -1190,18 +1190,27 @@ async fn handle_agent_route(
     req: Request<Body>,
     name: String,
 ) -> Result<Response<Body>, StatusCode> {
+    // Get working directory for project-level agent detection
+    let working_directory = state.opencode.get_working_directory();
+    
     match method {
         Method::GET => {
-            match opencode_config::get_agent_sources(&name).await {
-                Ok(sources) => Ok(json_response(
-                    StatusCode::OK,
-                    ConfigMetadataResponse {
-                        name,
-                        is_built_in: !sources.md.exists && !sources.json.exists,
-                        scope: None,
-                        sources,
-                    },
-                )),
+            match opencode_config::get_agent_sources(&name, Some(&working_directory)).await {
+                Ok(sources) => {
+                    let scope = sources.md.scope.clone().map(|s| match s {
+                        opencode_config::Scope::User => opencode_config::CommandScope::User,
+                        opencode_config::Scope::Project => opencode_config::CommandScope::Project,
+                    });
+                    Ok(json_response(
+                        StatusCode::OK,
+                        ConfigMetadataResponse {
+                            name,
+                            is_built_in: !sources.md.exists && !sources.json.exists,
+                            scope,
+                            sources,
+                        },
+                    ))
+                }
                 Err(err) => {
                     error!("[desktop:config] Failed to read agent sources: {}", err);
                     Ok(config_error_response(
@@ -1216,8 +1225,17 @@ async fn handle_agent_route(
                 Ok(data) => data,
                 Err(resp) => return Ok(resp),
             };
+            
+            // Extract scope from payload if present
+            let scope = payload.get("scope")
+                .and_then(|v| v.as_str())
+                .and_then(|s| match s {
+                    "project" => Some(opencode_config::AgentScope::Project),
+                    "user" => Some(opencode_config::AgentScope::User),
+                    _ => None,
+                });
 
-            match opencode_config::create_agent(&name, &payload).await {
+            match opencode_config::create_agent(&name, &payload, Some(&working_directory), scope).await {
                 Ok(()) => {
                     if let Err(resp) =
                         refresh_opencode_after_config_change(state, "agent creation").await
@@ -1253,7 +1271,7 @@ async fn handle_agent_route(
                 Err(resp) => return Ok(resp),
             };
 
-            match opencode_config::update_agent(&name, &payload).await {
+            match opencode_config::update_agent(&name, &payload, Some(&working_directory)).await {
                 Ok(()) => {
                     if let Err(resp) =
                         refresh_opencode_after_config_change(state, "agent update").await
@@ -1283,7 +1301,7 @@ async fn handle_agent_route(
                 }
             }
         }
-        Method::DELETE => match opencode_config::delete_agent(&name).await {
+        Method::DELETE => match opencode_config::delete_agent(&name, Some(&working_directory)).await {
             Ok(()) => {
                 if let Err(resp) =
                     refresh_opencode_after_config_change(state, "agent deletion").await
@@ -1329,7 +1347,10 @@ async fn handle_command_route(
         Method::GET => {
             match opencode_config::get_command_sources(&name, Some(&working_directory)).await {
                 Ok(sources) => {
-                    let scope = sources.md.scope.clone();
+                    let scope = sources.md.scope.clone().map(|s| match s {
+                        opencode_config::Scope::User => opencode_config::CommandScope::User,
+                        opencode_config::Scope::Project => opencode_config::CommandScope::Project,
+                    });
                     Ok(json_response(
                         StatusCode::OK,
                         ConfigMetadataResponse {

@@ -12,6 +12,26 @@ import {
 import { getSafeStorage } from "./utils/safeStorage";
 import { useConfigStore } from "@/stores/useConfigStore";
 
+// Note: useDirectoryStore cannot be imported at top level to avoid circular dependency
+// useDirectoryStore -> useAgentsStore (for refreshAfterOpenCodeRestart)
+// useAgentsStore -> useDirectoryStore (for currentDirectory)
+// Instead we access it from the window object where it's exposed
+const getCurrentDirectory = (): string | null => {
+  // Try to get from window if store is already loaded
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const store = (window as any).__zustand_directory_store__;
+    if (store) {
+      return store.getState().currentDirectory;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+};
+
+export type AgentScope = 'user' | 'project';
+
 export interface AgentConfig {
   name: string;
   description?: string;
@@ -22,12 +42,16 @@ export interface AgentConfig {
   mode?: "primary" | "subagent" | "all";
   tools?: Record<string, boolean>;
   permission?: {
-     edit?: "allow" | "ask" | "deny" | "full";
+     edit?: "allow" | "ask" | "deny";
      bash?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
+     skill?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
      webfetch?: "allow" | "ask" | "deny";
+     doom_loop?: "allow" | "ask" | "deny";
+     external_directory?: "allow" | "ask" | "deny";
    };
 
   disable?: boolean;
+  scope?: AgentScope;
 }
 
 // Extended Agent type for API properties not in SDK types
@@ -61,13 +85,36 @@ const SLOW_HEALTH_POLL_BASE_MS = 800;
 const SLOW_HEALTH_POLL_INCREMENT_MS = 200;
 const SLOW_HEALTH_POLL_MAX_MS = 2000;
 
+export interface AgentDraft {
+  name: string;
+  scope: AgentScope;
+  description?: string;
+  model?: string | null;
+  temperature?: number;
+  top_p?: number;
+  prompt?: string;
+  mode?: "primary" | "subagent" | "all";
+  tools?: Record<string, boolean>;
+  permission?: {
+     edit?: "allow" | "ask" | "deny";
+     bash?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
+     skill?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
+     webfetch?: "allow" | "ask" | "deny";
+     doom_loop?: "allow" | "ask" | "deny";
+     external_directory?: "allow" | "ask" | "deny";
+   };
+  disable?: boolean;
+}
+
 interface AgentsStore {
 
   selectedAgentName: string | null;
   agents: Agent[];
   isLoading: boolean;
+  agentDraft: AgentDraft | null;
 
   setSelectedAgent: (name: string | null) => void;
+  setAgentDraft: (draft: AgentDraft | null) => void;
   loadAgents: () => Promise<boolean>;
   createAgent: (config: AgentConfig) => Promise<boolean>;
   updateAgent: (name: string, config: Partial<AgentConfig>) => Promise<boolean>;
@@ -91,9 +138,14 @@ export const useAgentsStore = create<AgentsStore>()(
         selectedAgentName: null,
         agents: [],
         isLoading: false,
+        agentDraft: null,
 
         setSelectedAgent: (name: string | null) => {
           set({ selectedAgentName: name });
+        },
+
+        setAgentDraft: (draft: AgentDraft | null) => {
+          set({ agentDraft: draft });
         },
 
         loadAgents: async () => {
@@ -104,7 +156,29 @@ export const useAgentsStore = create<AgentsStore>()(
           for (let attempt = 0; attempt < 3; attempt++) {
             try {
               const agents = await opencodeClient.listAgents();
-              set({ agents, isLoading: false });
+              
+              // Fetch scope info for each agent
+              const currentDirectory = getCurrentDirectory();
+              const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+              
+              const agentsWithScope = await Promise.all(
+                agents.map(async (agent) => {
+                  try {
+                    const response = await fetch(`/api/config/agents/${encodeURIComponent(agent.name)}${queryParams}`);
+                    if (response.ok) {
+                      const data = await response.json();
+                      // Handle web/desktop response formats; fall back to JSON scope if md scope missing
+                      const scope = data.scope ?? data.sources?.md?.scope ?? data.sources?.json?.scope;
+                      return { ...agent, scope: scope as AgentScope | undefined };
+                    }
+                  } catch (err) {
+                    console.error(`[AgentsStore] Failed to fetch scope for agent "${agent.name}":`, err);
+                  }
+                  return agent;
+                })
+              );
+              
+              set({ agents: agentsWithScope, isLoading: false });
               return true;
             } catch (error) {
               lastError = error;
@@ -136,10 +210,15 @@ export const useAgentsStore = create<AgentsStore>()(
             if (config.tools && Object.keys(config.tools).length > 0) agentConfig.tools = config.tools;
             if (config.permission) agentConfig.permission = config.permission;
             if (config.disable !== undefined) agentConfig.disable = config.disable;
+            if (config.scope) agentConfig.scope = config.scope;
 
             console.log('[AgentsStore] Agent config to save:', agentConfig);
 
-            const response = await fetch(`/api/config/agents/${encodeURIComponent(config.name)}`, {
+            // Get current directory for project-level agent support
+            const currentDirectory = getCurrentDirectory();
+            const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+
+            const response = await fetch(`/api/config/agents/${encodeURIComponent(config.name)}${queryParams}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(agentConfig)
@@ -199,7 +278,11 @@ export const useAgentsStore = create<AgentsStore>()(
 
             console.log('[AgentsStore] Agent config to update:', agentConfig);
 
-            const response = await fetch(`/api/config/agents/${encodeURIComponent(name)}`, {
+            // Get current directory for project-level agent support
+            const currentDirectory = getCurrentDirectory();
+            const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+
+            const response = await fetch(`/api/config/agents/${encodeURIComponent(name)}${queryParams}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(agentConfig)
@@ -242,7 +325,11 @@ export const useAgentsStore = create<AgentsStore>()(
           startConfigUpdate("Deleting agent configuration…");
           let requiresReload = false;
           try {
-            const response = await fetch(`/api/config/agents/${encodeURIComponent(name)}`, {
+            // Get current directory for project-level agent support
+            const currentDirectory = getCurrentDirectory();
+            const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+
+            const response = await fetch(`/api/config/agents/${encodeURIComponent(name)}${queryParams}`, {
               method: 'DELETE'
             });
 
