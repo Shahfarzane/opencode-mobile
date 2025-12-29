@@ -1,6 +1,7 @@
 import { getDesktopSettings, updateDesktopSettings as updateDesktopSettingsApi, isDesktopRuntime } from '@/lib/desktop';
 import type { DesktopSettings } from '@/lib/desktop';
 import { useUIStore } from '@/stores/useUIStore';
+import { useMessageQueueStore } from '@/stores/messageQueueStore';
 import { loadAppearancePreferences, applyAppearancePreferences } from '@/lib/appearancePersistence';
 import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 
@@ -55,6 +56,7 @@ const getRuntimeSettingsAPI = () => getRegisteredRuntimeAPIs()?.settings ?? null
 
 const applyDesktopUiPreferences = (settings: DesktopSettings) => {
   const store = useUIStore.getState();
+  const queueStore = useMessageQueueStore.getState();
 
   if (typeof settings.showReasoningTraces === 'boolean' && settings.showReasoningTraces !== store.showReasoningTraces) {
     store.setShowReasoningTraces(settings.showReasoningTraces);
@@ -67,6 +69,9 @@ const applyDesktopUiPreferences = (settings: DesktopSettings) => {
     if (normalized !== store.autoDeleteAfterDays) {
       store.setAutoDeleteAfterDays(normalized);
     }
+  }
+  if (typeof settings.queueModeEnabled === 'boolean' && settings.queueModeEnabled !== queueStore.queueModeEnabled) {
+    queueStore.setQueueMode(settings.queueModeEnabled);
   }
 };
 
@@ -130,6 +135,9 @@ const sanitizeWebSettings = (payload: unknown): DesktopSettings | null => {
   }
   if (typeof candidate.defaultAgent === 'string' && candidate.defaultAgent.length > 0) {
     result.defaultAgent = candidate.defaultAgent;
+  }
+  if (typeof candidate.queueModeEnabled === 'boolean') {
+    result.queueModeEnabled = candidate.queueModeEnabled;
   }
 
   return result;

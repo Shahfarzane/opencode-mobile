@@ -332,6 +332,7 @@ export interface SettingsPayload {
   showReasoningTraces?: boolean;
   autoDeleteEnabled?: boolean;
   autoDeleteAfterDays?: number;
+  queueModeEnabled?: boolean;
 
   [key: string]: unknown;
 }

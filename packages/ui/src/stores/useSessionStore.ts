@@ -278,7 +278,7 @@ export const useSessionStore = create<SessionStore>()(
                     get().evictLeastRecentlyUsed();
                 },
                 loadMessages: (sessionId: string) => useMessageStore.getState().loadMessages(sessionId),
-                sendMessage: async (content: string, providerID: string, modelID: string, agent?: string, attachments?: AttachedFile[], agentMentionName?: string) => {
+                sendMessage: async (content: string, providerID: string, modelID: string, agent?: string, attachments?: AttachedFile[], agentMentionName?: string, additionalParts?: Array<{ text: string; attachments?: AttachedFile[] }>) => {
                     const draft = get().newSessionDraft;
                     const trimmedAgent = typeof agent === 'string' && agent.trim().length > 0 ? agent.trim() : undefined;
 
@@ -353,7 +353,7 @@ export const useSessionStore = create<SessionStore>()(
                         try {
                             return await useMessageStore
                                 .getState()
-                                .sendMessage(content, providerID, modelID, effectiveDraftAgent, created.id, attachments, agentMentionName);
+                                .sendMessage(content, providerID, modelID, effectiveDraftAgent, created.id, attachments, agentMentionName, additionalParts);
                         } catch (error) {
                             setIdlePhase(created.id);
                             throw error;
@@ -380,7 +380,7 @@ export const useSessionStore = create<SessionStore>()(
                     }
 
                     try {
-                        return await useMessageStore.getState().sendMessage(content, providerID, modelID, effectiveAgent, currentSessionId || undefined, attachments, agentMentionName);
+                        return await useMessageStore.getState().sendMessage(content, providerID, modelID, effectiveAgent, currentSessionId || undefined, attachments, agentMentionName, additionalParts);
                     } catch (error) {
                         if (currentSessionId) {
                             setIdlePhase(currentSessionId);

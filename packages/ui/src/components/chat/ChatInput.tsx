@@ -11,9 +11,11 @@ import {
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useUIStore } from '@/stores/useUIStore';
-import type { EditPermissionMode } from '@/stores/types/sessionTypes';
+import { useMessageQueueStore, type QueuedMessage } from '@/stores/messageQueueStore';
+import type { AttachedFile, EditPermissionMode } from '@/stores/types/sessionTypes';
 import { getEditModeColors } from '@/lib/permissions/editModeColors';
 import { AttachedFilesList } from './FileAttachment';
+import { QueuedMessageChips } from './QueuedMessageChips';
 import { FileMentionAutocomplete, type FileMentionHandle } from './FileMentionAutocomplete';
 import { CommandAutocomplete, type CommandAutocompleteHandle } from './CommandAutocomplete';
 import { AgentMentionAutocomplete, type AgentMentionAutocompleteHandle } from './AgentMentionAutocomplete';
@@ -23,6 +25,7 @@ import { ModelControls } from './ModelControls';
 import { parseAgentMentions } from '@/lib/messages/agentMentions';
 import { StatusRow } from './StatusRow';
 import { useAssistantStatus } from '@/hooks/useAssistantStatus';
+import { useCurrentSessionActivity } from '@/hooks/useSessionActivity';
 import { toast } from 'sonner';
 import { useFileStore } from '@/stores/fileStore';
 import { calculateEditPermissionUIState, type BashPermissionSetting } from '@/lib/permissions/editPermissionDefaults';
@@ -35,6 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const MAX_VISIBLE_TEXTAREA_LINES = 8;
+const EMPTY_QUEUE: QueuedMessage[] = [];
 
 interface ChatInputProps {
     onOpenSettings?: () => void;
@@ -67,6 +71,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     const abortPromptSessionId = useSessionStore((state) => state.abortPromptSessionId);
     const abortPromptExpiresAt = useSessionStore((state) => state.abortPromptExpiresAt);
     const clearAbortPrompt = useSessionStore((state) => state.clearAbortPrompt);
+    const sessionAbortFlags = useSessionStore((state) => state.sessionAbortFlags);
     const attachedFiles = useSessionStore((state) => state.attachedFiles);
     const addAttachedFile = useSessionStore((state) => state.addAttachedFile);
     const addServerFile = useSessionStore((state) => state.addServerFile);
@@ -83,6 +88,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     const abortTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevWasAbortedRef = React.useRef(false);
     const sendTriggeredByPointerDownRef = React.useRef(false);
+
+    // Message queue
+    const queueModeEnabled = useMessageQueueStore((state) => state.queueModeEnabled);
+    const queuedMessages = useMessageQueueStore(
+        React.useCallback(
+            (state) => {
+                if (!currentSessionId) return EMPTY_QUEUE;
+                return state.queuedMessages[currentSessionId] ?? EMPTY_QUEUE;
+            },
+            [currentSessionId]
+        )
+    );
+    const addToQueue = useMessageQueueStore((state) => state.addToQueue);
+    const clearQueue = useMessageQueueStore((state) => state.clearQueue);
+
+    // Session activity for auto-send on idle
+    const { phase: sessionPhase } = useCurrentSessionActivity();
+    const prevSessionPhaseRef = React.useRef(sessionPhase);
+    const autoSendTriggeredRef = React.useRef(false);
 
     const handleTextareaPointerDownCapture = React.useCallback((event: React.PointerEvent<HTMLTextAreaElement>) => {
         if (!isMobile) {
@@ -219,6 +243,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     }, [chatInputAccent, softenBorderColor]);
 
     const hasContent = message.trim() || attachedFiles.length > 0;
+    const hasQueuedMessages = queuedMessages.length > 0;
+    const canSend = hasContent || hasQueuedMessages;
 
     const canAbort = working.isWorking;
 
@@ -227,16 +253,110 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         return abortPromptSessionId === currentSessionId && Boolean(abortPromptExpiresAt);
     }, [abortPromptSessionId, abortPromptExpiresAt, currentSessionId]);
 
+    // Add message to queue instead of sending
+    const handleQueueMessage = React.useCallback(() => {
+        if (!hasContent || !currentSessionId) return;
+
+        const messageToQueue = message.replace(/^\n+|\n+$/g, '');
+        const attachmentsToQueue = attachedFiles.map((file) => ({ ...file }));
+
+        addToQueue(currentSessionId, {
+            content: messageToQueue,
+            attachments: attachmentsToQueue.length > 0 ? attachmentsToQueue : undefined,
+        });
+
+        // Clear input and attachments
+        setMessage('');
+        if (attachmentsToQueue.length > 0) {
+            clearAttachedFiles();
+        }
+
+        if (!isMobile) {
+            textareaRef.current?.focus();
+        }
+    }, [hasContent, currentSessionId, message, attachedFiles, addToQueue, clearAttachedFiles, isMobile]);
+
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
 
-        if (!hasContent || (!currentSessionId && !newSessionDraftOpen)) return;
-
-        const messageToSend = message.replace(/^\n+|\n+$/g, '');
+        if (!canSend || (!currentSessionId && !newSessionDraftOpen)) return;
 
         scrollToBottom?.({ instant: true, force: true });
 
-        const normalizedCommand = messageToSend.trimStart();
+        if (!currentProviderId || !currentModelId) {
+            console.warn('Cannot send message: provider or model not selected');
+            return;
+        }
+
+        // Build the primary message (first part) and additional parts
+        let primaryText = '';
+        let primaryAttachments: AttachedFile[] = [];
+        let agentMentionName: string | undefined;
+        const additionalParts: Array<{ text: string; attachments?: AttachedFile[] }> = [];
+
+        // Process queued messages first
+        for (let i = 0; i < queuedMessages.length; i++) {
+            const queuedMsg = queuedMessages[i];
+            const { sanitizedText, mention } = parseAgentMentions(queuedMsg.content, agents);
+            
+            // Use agent mention from first message that has one
+            if (!agentMentionName && mention?.name) {
+                agentMentionName = mention.name;
+            }
+
+            if (i === 0) {
+                // First queued message becomes primary
+                primaryText = sanitizedText;
+                primaryAttachments = queuedMsg.attachments ?? [];
+            } else {
+                // Subsequent queued messages become additional parts
+                additionalParts.push({
+                    text: sanitizedText,
+                    attachments: queuedMsg.attachments,
+                });
+            }
+        }
+
+        // Add current input
+        if (hasContent) {
+            const messageToSend = message.replace(/^\n+|\n+$/g, '');
+            const { sanitizedText, mention } = parseAgentMentions(messageToSend, agents);
+            const attachmentsToSend = attachedFiles.map((file) => ({ ...file }));
+
+            if (!agentMentionName && mention?.name) {
+                agentMentionName = mention.name;
+            }
+
+            if (queuedMessages.length === 0) {
+                // No queue - current input is primary
+                primaryText = sanitizedText;
+                primaryAttachments = attachmentsToSend;
+            } else {
+                // Has queue - current input is additional part
+                additionalParts.push({
+                    text: sanitizedText,
+                    attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+                });
+            }
+        }
+
+        if (!primaryText && additionalParts.length === 0) return;
+
+        // Clear queue and input
+        if (currentSessionId && hasQueuedMessages) {
+            clearQueue(currentSessionId);
+        }
+        setMessage('');
+        if (attachedFiles.length > 0) {
+            clearAttachedFiles();
+        }
+
+        if (isMobile) {
+            textareaRef.current?.blur();
+        }
+
+        // Handle /summarize command scroll
+        const normalizedCommand = primaryText.trimStart();
         if (normalizedCommand.startsWith('/')) {
             const commandName = normalizedCommand
                 .slice(1)
@@ -248,29 +368,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             }
         }
 
-        if (!currentProviderId || !currentModelId) {
+        // Collect all attachments for error recovery
+        const allAttachments = [
+            ...primaryAttachments,
+            ...additionalParts.flatMap(p => p.attachments ?? []),
+        ];
 
-            console.warn('Cannot send message: provider or model not selected');
-            return;
-        }
-
-        const { sanitizedText, mention } = parseAgentMentions(messageToSend, agents);
-        const agentMentionName = mention?.name;
-
-        const attachmentsToSend = attachedFiles.map((file) => ({ ...file }));
-        if (attachmentsToSend.length > 0) {
-            clearAttachedFiles();
-        }
-
-        setMessage('');
-
-        if (isMobile) {
-            textareaRef.current?.blur();
-        }
- 
-        await sendMessage(sanitizedText, currentProviderId, currentModelId, currentAgentName, attachmentsToSend, agentMentionName)
-
-            .catch((error: unknown) => {
+        await sendMessage(
+            primaryText, 
+            currentProviderId, 
+            currentModelId, 
+            currentAgentName, 
+            primaryAttachments, 
+            agentMentionName,
+            additionalParts.length > 0 ? additionalParts : undefined
+        ).catch((error: unknown) => {
                 const rawMessage =
                     error instanceof Error
                         ? error.message
@@ -293,12 +405,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                     normalized === 'failed to send message';
 
                 if (isSoftNetworkError) {
-
                     return;
                 }
 
-                if (attachmentsToSend.length > 0) {
-                    useFileStore.setState({ attachedFiles: attachmentsToSend });
+                if (allAttachments.length > 0) {
+                    useFileStore.setState({ attachedFiles: allAttachments });
                 }
                 toast.error(rawMessage || 'Message failed to send. Attachments restored.');
             });
@@ -306,8 +417,41 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         if (!isMobile) {
             textareaRef.current?.focus();
         }
-
     };
+
+    // Keep a ref to handleSubmit for auto-send effect
+    const handleSubmitRef = React.useRef(handleSubmit);
+    handleSubmitRef.current = handleSubmit;
+
+    // Auto-send queued messages when session becomes idle (but not after abort)
+    React.useEffect(() => {
+        const wasWorking = prevSessionPhaseRef.current === 'busy' || prevSessionPhaseRef.current === 'cooldown';
+        const isNowIdle = sessionPhase === 'idle';
+        
+        // Check if session was recently aborted (within last 2 seconds)
+        const wasRecentlyAborted = currentSessionId && sessionAbortFlags.has(currentSessionId) && (() => {
+            const abortRecord = sessionAbortFlags.get(currentSessionId);
+            if (!abortRecord) return false;
+            const timeSinceAbort = Date.now() - abortRecord.timestamp;
+            return timeSinceAbort < 2000;
+        })();
+        
+        // Detect transition from working to idle, but skip if aborted
+        if (wasWorking && isNowIdle && queuedMessages.length > 0 && !autoSendTriggeredRef.current && !wasRecentlyAborted) {
+            // Prevent double-triggering
+            autoSendTriggeredRef.current = true;
+            
+            // Use setTimeout to avoid calling during render
+            setTimeout(() => {
+                if (currentSessionId && currentProviderId && currentModelId) {
+                    void handleSubmitRef.current();
+                }
+                autoSendTriggeredRef.current = false;
+            }, 100);
+        }
+        
+        prevSessionPhaseRef.current = sessionPhase;
+    }, [sessionPhase, queuedMessages.length, currentSessionId, currentProviderId, currentModelId, sessionAbortFlags]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 
@@ -341,9 +485,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             return;
         }
 
+        // Handle Enter/Ctrl+Enter based on queue mode
         if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
             e.preventDefault();
-            handleSubmit();
+            
+            const isCtrlEnter = e.ctrlKey || e.metaKey;
+            
+            // Queue mode: Enter queues, Ctrl+Enter sends
+            // Normal mode: Enter sends, Ctrl+Enter queues
+            // Note: Queueing only works when there's an existing session (currentSessionId)
+            // For new sessions (draft), always send immediately
+            const canQueue = hasContent && currentSessionId;
+            
+            if (queueModeEnabled) {
+                if (isCtrlEnter || !canQueue) {
+                    // Ctrl+Enter sends, or Enter when can't queue (new session)
+                    handleSubmit();
+                } else {
+                    // Enter queues when we have a session
+                    handleQueueMessage();
+                }
+            } else {
+                if (isCtrlEnter && canQueue) {
+                    // Ctrl+Enter queues when we have a session
+                    handleQueueMessage();
+                } else {
+                    // Enter sends
+                    handleSubmit();
+                }
+            }
         }
     };
 
@@ -839,13 +1009,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
     ) : (
         <button
             type={isMobile ? 'button' : 'submit'}
-            disabled={!hasContent || (!currentSessionId && !newSessionDraftOpen)}
+            disabled={!canSend || (!currentSessionId && !newSessionDraftOpen)}
             onPointerDownCapture={(event) => {
                 if (!isMobile || event.pointerType !== 'touch') {
                     return;
                 }
 
-                if (!hasContent || (!currentSessionId && !newSessionDraftOpen)) {
+                if (!canSend || (!currentSessionId && !newSessionDraftOpen)) {
                     return;
                 }
 
@@ -869,7 +1039,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             }}
             className={cn(
                 iconButtonBaseClass,
-                hasContent && (currentSessionId || newSessionDraftOpen)
+                canSend && (currentSessionId || newSessionDraftOpen)
                     ? 'text-primary hover:text-primary'
                     : 'opacity-30'
             )}
@@ -1040,6 +1210,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                     </div>
                 )}
                 <AttachedFilesList />
+                <QueuedMessageChips 
+                    onEditMessage={(content) => {
+                        setMessage(content);
+                        setTimeout(() => {
+                            textareaRef.current?.focus();
+                        }, 0);
+                    }} 
+                />
                 <div
                     className={cn(
                         "rounded-xl border border-border/80 bg-input/10 dark:bg-input/30",
