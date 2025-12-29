@@ -10,6 +10,12 @@ const COMMAND_DIR = path.join(OPENCODE_CONFIG_DIR, 'command');
 const CONFIG_FILE = path.join(OPENCODE_CONFIG_DIR, 'opencode.json');
 const PROMPT_FILE_PATTERN = /^\{file:(.+)\}$/i;
 
+// Command scope types
+const COMMAND_SCOPE = {
+  USER: 'user',
+  PROJECT: 'project'
+};
+
 function ensureDirs() {
   if (!fs.existsSync(OPENCODE_CONFIG_DIR)) {
     fs.mkdirSync(OPENCODE_CONFIG_DIR, { recursive: true });
@@ -20,6 +26,76 @@ function ensureDirs() {
   if (!fs.existsSync(COMMAND_DIR)) {
     fs.mkdirSync(COMMAND_DIR, { recursive: true });
   }
+}
+
+/**
+ * Ensure project-level command directory exists
+ */
+function ensureProjectCommandDir(workingDirectory) {
+  const projectCommandDir = path.join(workingDirectory, '.opencode', 'command');
+  if (!fs.existsSync(projectCommandDir)) {
+    fs.mkdirSync(projectCommandDir, { recursive: true });
+  }
+  return projectCommandDir;
+}
+
+/**
+ * Get project-level command path
+ */
+function getProjectCommandPath(workingDirectory, commandName) {
+  return path.join(workingDirectory, '.opencode', 'command', `${commandName}.md`);
+}
+
+/**
+ * Get user-level command path
+ */
+function getUserCommandPath(commandName) {
+  return path.join(COMMAND_DIR, `${commandName}.md`);
+}
+
+/**
+ * Determine command scope based on where the .md file exists
+ * Priority: project level > user level > null (built-in only)
+ */
+function getCommandScope(commandName, workingDirectory) {
+  if (workingDirectory) {
+    const projectPath = getProjectCommandPath(workingDirectory, commandName);
+    if (fs.existsSync(projectPath)) {
+      return { scope: COMMAND_SCOPE.PROJECT, path: projectPath };
+    }
+  }
+  
+  const userPath = getUserCommandPath(commandName);
+  if (fs.existsSync(userPath)) {
+    return { scope: COMMAND_SCOPE.USER, path: userPath };
+  }
+  
+  return { scope: null, path: null };
+}
+
+/**
+ * Get the path where a command should be written based on scope
+ */
+function getCommandWritePath(commandName, workingDirectory, requestedScope) {
+  // For updates: check existing location first (project takes precedence)
+  const existing = getCommandScope(commandName, workingDirectory);
+  if (existing.path) {
+    return existing;
+  }
+  
+  // For new commands or built-in overrides: use requested scope or default to user
+  const scope = requestedScope || COMMAND_SCOPE.USER;
+  if (scope === COMMAND_SCOPE.PROJECT && workingDirectory) {
+    return { 
+      scope: COMMAND_SCOPE.PROJECT, 
+      path: getProjectCommandPath(workingDirectory, commandName) 
+    };
+  }
+  
+  return { 
+    scope: COMMAND_SCOPE.USER, 
+    path: getUserCommandPath(commandName) 
+  };
 }
 
 function isPromptFileReference(value) {
@@ -111,7 +187,11 @@ function parseMdFile(filePath) {
 
 function writeMdFile(filePath, frontmatter, body) {
   try {
-    const yamlStr = yaml.stringify(frontmatter);
+    // Filter out null/undefined values - OpenCode expects keys to be omitted rather than set to null
+    const cleanedFrontmatter = Object.fromEntries(
+      Object.entries(frontmatter).filter(([, value]) => value != null)
+    );
+    const yamlStr = yaml.stringify(cleanedFrontmatter);
     const content = `---\n${yamlStr}---\n\n${body}`;
     fs.writeFileSync(filePath, content, 'utf8');
     console.log(`Successfully wrote markdown file: ${filePath}`);
@@ -289,9 +369,19 @@ function deleteAgent(agentName) {
   }
 }
 
-function getCommandSources(commandName) {
-  const mdPath = path.join(COMMAND_DIR, `${commandName}.md`);
-  const mdExists = fs.existsSync(mdPath);
+function getCommandSources(commandName, workingDirectory) {
+  // Check project level first (takes precedence)
+  const projectPath = workingDirectory ? getProjectCommandPath(workingDirectory, commandName) : null;
+  const projectExists = projectPath && fs.existsSync(projectPath);
+  
+  // Then check user level
+  const userPath = getUserCommandPath(commandName);
+  const userExists = fs.existsSync(userPath);
+  
+  // Determine which md file to use (project takes precedence)
+  const mdPath = projectExists ? projectPath : (userExists ? userPath : null);
+  const mdExists = !!mdPath;
+  const mdScope = projectExists ? COMMAND_SCOPE.PROJECT : (userExists ? COMMAND_SCOPE.USER : null);
 
   const config = readConfig();
   const jsonSection = config.command?.[commandName];
@@ -299,13 +389,23 @@ function getCommandSources(commandName) {
   const sources = {
     md: {
       exists: mdExists,
-      path: mdExists ? mdPath : null,
+      path: mdPath,
+      scope: mdScope,
       fields: []
     },
     json: {
       exists: !!jsonSection,
       path: CONFIG_FILE,
       fields: []
+    },
+    // Additional info about both levels
+    projectMd: {
+      exists: projectExists,
+      path: projectPath
+    },
+    userMd: {
+      exists: userExists,
+      path: userPath
     }
   };
 
@@ -324,13 +424,19 @@ function getCommandSources(commandName) {
   return sources;
 }
 
-function createCommand(commandName, config) {
+function createCommand(commandName, config, workingDirectory, scope) {
   ensureDirs();
 
-  const mdPath = path.join(COMMAND_DIR, `${commandName}.md`);
-
-  if (fs.existsSync(mdPath)) {
-    throw new Error(`Command ${commandName} already exists as .md file`);
+  // Check if command already exists at either level
+  const projectPath = workingDirectory ? getProjectCommandPath(workingDirectory, commandName) : null;
+  const userPath = getUserCommandPath(commandName);
+  
+  if (projectPath && fs.existsSync(projectPath)) {
+    throw new Error(`Command ${commandName} already exists as project-level .md file`);
+  }
+  
+  if (fs.existsSync(userPath)) {
+    throw new Error(`Command ${commandName} already exists as user-level .md file`);
   }
 
   const existingConfig = readConfig();
@@ -338,31 +444,58 @@ function createCommand(commandName, config) {
     throw new Error(`Command ${commandName} already exists in opencode.json`);
   }
 
-  const { template, ...frontmatter } = config;
+  // Determine target path based on requested scope
+  let targetPath;
+  let targetScope;
+  
+  if (scope === COMMAND_SCOPE.PROJECT && workingDirectory) {
+    ensureProjectCommandDir(workingDirectory);
+    targetPath = projectPath;
+    targetScope = COMMAND_SCOPE.PROJECT;
+  } else {
+    targetPath = userPath;
+    targetScope = COMMAND_SCOPE.USER;
+  }
 
-  writeMdFile(mdPath, frontmatter, template || '');
-  console.log(`Created new command: ${commandName}`);
+  // Extract scope from config - it's only used for path determination, not written to file
+  const { template, scope: _scopeFromConfig, ...frontmatter } = config;
+
+  writeMdFile(targetPath, frontmatter, template || '');
+  console.log(`Created new command: ${commandName} (scope: ${targetScope}, path: ${targetPath})`);
 }
 
-function updateCommand(commandName, updates) {
+function updateCommand(commandName, updates, workingDirectory) {
   ensureDirs();
 
-  const mdPath = path.join(COMMAND_DIR, `${commandName}.md`);
-  const mdExists = fs.existsSync(mdPath);
+  // Determine correct path: project level takes precedence
+  const { scope, path: mdPath } = getCommandWritePath(commandName, workingDirectory);
+  const mdExists = mdPath && fs.existsSync(mdPath);
+  
+  // If no existing md file, we need to create one (for built-in command overrides)
+  // Default to user level for built-in overrides
+  let targetPath = mdPath;
+  let targetScope = scope;
+  
+  if (!mdExists) {
+    // No existing md file - this is a built-in override, create at user level
+    targetPath = getUserCommandPath(commandName);
+    targetScope = COMMAND_SCOPE.USER;
+  }
 
-  let mdData = mdExists ? parseMdFile(mdPath) : null;
+  let mdData = mdExists ? parseMdFile(mdPath) : { frontmatter: {}, body: '' };
   let config = readConfig();
   const jsonSection = config.command?.[commandName];
 
   let mdModified = false;
   let jsonModified = false;
+  let creatingNewMd = !mdExists;
 
   for (const [field, value] of Object.entries(updates)) {
 
     if (field === 'template') {
       const normalizedValue = typeof value === 'string' ? value : (value == null ? '' : String(value));
 
-      if (mdExists) {
+      if (mdExists || creatingNewMd) {
         mdData.body = normalizedValue;
         mdModified = true;
       } else if (isPromptFileReference(jsonSection?.template)) {
@@ -377,10 +510,10 @@ function updateCommand(commandName, updates) {
         config.command[commandName].template = normalizedValue;
         jsonModified = true;
       } else {
-        if (!config.command) config.command = {};
-        if (!config.command[commandName]) config.command[commandName] = {};
-        config.command[commandName].template = normalizedValue;
-        jsonModified = true;
+        // Create new md file for the update
+        mdData.body = normalizedValue;
+        mdModified = true;
+        creatingNewMd = true;
       }
       continue;
     }
@@ -388,30 +521,20 @@ function updateCommand(commandName, updates) {
     const inMd = mdData?.frontmatter?.[field] !== undefined;
     const inJson = jsonSection?.[field] !== undefined;
 
-    if (inMd) {
-
+    if (inMd || creatingNewMd) {
       mdData.frontmatter[field] = value;
       mdModified = true;
     } else if (inJson) {
-
       if (!config.command) config.command = {};
       if (!config.command[commandName]) config.command[commandName] = {};
       config.command[commandName][field] = value;
       jsonModified = true;
     } else {
-
-      if (mdExists && jsonSection) {
-
-        if (!config.command) config.command = {};
-        if (!config.command[commandName]) config.command[commandName] = {};
-        config.command[commandName][field] = value;
-        jsonModified = true;
-      } else if (mdExists) {
-
+      // New field - add to md if it exists or we're creating one
+      if (mdExists || creatingNewMd) {
         mdData.frontmatter[field] = value;
         mdModified = true;
       } else {
-
         if (!config.command) config.command = {};
         if (!config.command[commandName]) config.command[commandName] = {};
         config.command[commandName][field] = value;
@@ -421,26 +544,38 @@ function updateCommand(commandName, updates) {
   }
 
   if (mdModified) {
-    writeMdFile(mdPath, mdData.frontmatter, mdData.body);
+    writeMdFile(targetPath, mdData.frontmatter, mdData.body);
   }
 
   if (jsonModified) {
     writeConfig(config);
   }
 
-  console.log(`Updated command: ${commandName} (md: ${mdModified}, json: ${jsonModified})`);
+  console.log(`Updated command: ${commandName} (scope: ${targetScope}, md: ${mdModified}, json: ${jsonModified})`);
 }
 
-function deleteCommand(commandName) {
-  const mdPath = path.join(COMMAND_DIR, `${commandName}.md`);
+function deleteCommand(commandName, workingDirectory) {
   let deleted = false;
 
-  if (fs.existsSync(mdPath)) {
-    fs.unlinkSync(mdPath);
-    console.log(`Deleted command .md file: ${mdPath}`);
+  // Check project level first (takes precedence)
+  if (workingDirectory) {
+    const projectPath = getProjectCommandPath(workingDirectory, commandName);
+    if (fs.existsSync(projectPath)) {
+      fs.unlinkSync(projectPath);
+      console.log(`Deleted project-level command .md file: ${projectPath}`);
+      deleted = true;
+    }
+  }
+
+  // Then check user level
+  const userPath = getUserCommandPath(commandName);
+  if (fs.existsSync(userPath)) {
+    fs.unlinkSync(userPath);
+    console.log(`Deleted user-level command .md file: ${userPath}`);
     deleted = true;
   }
 
+  // Also check json config
   const config = readConfig();
   if (config.command?.[commandName]) {
     delete config.command[commandName];
@@ -460,6 +595,7 @@ export {
   updateAgent,
   deleteAgent,
   getCommandSources,
+  getCommandScope,
   createCommand,
   updateCommand,
   deleteCommand,
@@ -467,5 +603,6 @@ export {
   writeConfig,
   AGENT_DIR,
   COMMAND_DIR,
-  CONFIG_FILE
+  CONFIG_FILE,
+  COMMAND_SCOPE
 };

@@ -1630,6 +1630,7 @@ function setupProxy(app) {
       req.path.startsWith('/themes/custom') ||
       req.path.startsWith('/config/agents') ||
       req.path.startsWith('/config/settings') ||
+      req.path === '/config/reload' ||
       req.path === '/health'
     ) {
       return next();
@@ -2168,9 +2169,11 @@ async function main(options = {}) {
     updateAgent,
     deleteAgent,
     getCommandSources,
+    getCommandScope,
     createCommand,
     updateCommand,
-    deleteCommand
+    deleteCommand,
+    COMMAND_SCOPE
   } = await import('./lib/opencode-config.js');
 
   app.get('/api/config/agents/:name', (req, res) => {
@@ -2259,11 +2262,13 @@ async function main(options = {}) {
   app.get('/api/config/commands/:name', (req, res) => {
     try {
       const commandName = req.params.name;
-      const sources = getCommandSources(commandName);
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      const sources = getCommandSources(commandName, workingDirectory);
 
       res.json({
         name: commandName,
         sources: sources,
+        scope: sources.md.scope,
         isBuiltIn: !sources.md.exists && !sources.json.exists
       });
     } catch (error) {
@@ -2275,12 +2280,14 @@ async function main(options = {}) {
   app.post('/api/config/commands/:name', async (req, res) => {
     try {
       const commandName = req.params.name;
-      const config = req.body;
+      const { scope, ...config } = req.body;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
 
       console.log('[Server] Creating command:', commandName);
       console.log('[Server] Config received:', JSON.stringify(config, null, 2));
+      console.log('[Server] Scope:', scope, 'Working directory:', workingDirectory);
 
-      createCommand(commandName, config);
+      createCommand(commandName, config, workingDirectory, scope);
       await refreshOpenCodeAfterConfigChange('command creation', {
         commandName
       });
@@ -2301,11 +2308,13 @@ async function main(options = {}) {
     try {
       const commandName = req.params.name;
       const updates = req.body;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
 
       console.log(`[Server] Updating command: ${commandName}`);
       console.log('[Server] Updates:', JSON.stringify(updates, null, 2));
+      console.log('[Server] Working directory:', workingDirectory);
 
-      updateCommand(commandName, updates);
+      updateCommand(commandName, updates, workingDirectory);
       await refreshOpenCodeAfterConfigChange('command update');
 
       console.log(`[Server] Command ${commandName} updated successfully`);
@@ -2326,8 +2335,9 @@ async function main(options = {}) {
   app.delete('/api/config/commands/:name', async (req, res) => {
     try {
       const commandName = req.params.name;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
 
-      deleteCommand(commandName);
+      deleteCommand(commandName, workingDirectory);
       await refreshOpenCodeAfterConfigChange('command deletion');
 
       res.json({

@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -18,8 +17,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { RiAddLine, RiTerminalBoxLine, RiMore2Line, RiDeleteBinLine, RiFileCopyLine } from '@remixicon/react';
-import { useCommandsStore, type Command } from '@/stores/useCommandsStore';
+import { RiAddLine, RiTerminalBoxLine, RiMore2Line, RiDeleteBinLine, RiFileCopyLine, RiRestartLine, RiEditLine } from '@remixicon/react';
+import { useCommandsStore, isCommandBuiltIn, type Command } from '@/stores/useCommandsStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDeviceInfo } from '@/lib/device';
 import { isVSCodeRuntime } from '@/lib/desktop';
@@ -31,13 +30,15 @@ interface CommandsSidebarProps {
 }
 
 export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }) => {
-  const [newCommandName, setNewCommandName] = React.useState('');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+  const [renameDialogCommand, setRenameDialogCommand] = React.useState<Command | null>(null);
+  const [renameNewName, setRenameNewName] = React.useState('');
 
   const {
     selectedCommandName,
     commands,
     setSelectedCommand,
+    setCommandDraft,
+    createCommand,
     deleteCommand,
     loadCommands,
   } = useCommandsStore();
@@ -67,22 +68,19 @@ export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }
       ? 'bg-background'
       : 'bg-sidebar';
 
-  const handleCreateCommand = () => {
-    if (!newCommandName.trim()) {
-      toast.error('Command name is required');
-      return;
+  const handleCreateNew = () => {
+    // Generate unique name
+    const baseName = 'new-command';
+    let newName = baseName;
+    let counter = 1;
+    while (commands.some((c) => c.name === newName)) {
+      newName = `${baseName}-${counter}`;
+      counter++;
     }
 
-    const sanitizedName = newCommandName.trim().replace(/\s+/g, '-');
-
-    if (commands.some((cmd) => cmd.name === sanitizedName)) {
-      toast.error('A command with this name already exists');
-      return;
-    }
-
-    setSelectedCommand(sanitizedName);
-    setNewCommandName('');
-    setIsCreateDialogOpen(false);
+    // Set draft and open the page for editing
+    setCommandDraft({ name: newName, scope: 'user' });
+    setSelectedCommand(newName);
 
     if (isMobile) {
       setSidebarOpen(false);
@@ -90,12 +88,32 @@ export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }
   };
 
   const handleDeleteCommand = async (command: Command) => {
+    if (isCommandBuiltIn(command)) {
+      toast.error('Built-in commands cannot be deleted');
+      return;
+    }
+
     if (window.confirm(`Are you sure you want to delete command "${command.name}"?`)) {
       const success = await deleteCommand(command.name);
       if (success) {
         toast.success(`Command "${command.name}" deleted successfully`);
       } else {
         toast.error('Failed to delete command');
+      }
+    }
+  };
+
+  const handleResetCommand = async (command: Command) => {
+    if (!isCommandBuiltIn(command)) {
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to reset command "${command.name}" to its default configuration?`)) {
+      const success = await deleteCommand(command.name);
+      if (success) {
+        toast.success(`Command "${command.name}" reset to default`);
+      } else {
+        toast.error('Failed to reset command');
       }
     }
   };
@@ -110,85 +128,185 @@ export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }
       newName = `${baseName}-copy-${copyNumber}`;
     }
 
+    // Set draft with prefilled values from source command
+    setCommandDraft({
+      name: newName,
+      scope: command.scope || 'user',
+      description: command.description,
+      template: command.template,
+      agent: command.agent,
+      model: command.model,
+      subtask: command.subtask,
+    });
     setSelectedCommand(newName);
-    setIsCreateDialogOpen(false);
 
     if (isMobile) {
       setSidebarOpen(false);
     }
   };
 
+  const handleOpenRenameDialog = (command: Command) => {
+    setRenameNewName(command.name);
+    setRenameDialogCommand(command);
+  };
+
+  const handleRenameCommand = async () => {
+    if (!renameDialogCommand) return;
+
+    const sanitizedName = renameNewName.trim().replace(/\s+/g, '-');
+
+    if (!sanitizedName) {
+      toast.error('Command name is required');
+      return;
+    }
+
+    if (sanitizedName === renameDialogCommand.name) {
+      setRenameDialogCommand(null);
+      return;
+    }
+
+    if (commands.some((cmd) => cmd.name === sanitizedName)) {
+      toast.error('A command with this name already exists');
+      return;
+    }
+
+    // Create new command with new name and all existing config
+    const success = await createCommand({
+      name: sanitizedName,
+      description: renameDialogCommand.description,
+      template: renameDialogCommand.template,
+      agent: renameDialogCommand.agent,
+      model: renameDialogCommand.model,
+      subtask: renameDialogCommand.subtask,
+    });
+
+    if (success) {
+      // Delete old command
+      const deleteSuccess = await deleteCommand(renameDialogCommand.name);
+      if (deleteSuccess) {
+        toast.success(`Command renamed to "${sanitizedName}"`);
+        setSelectedCommand(sanitizedName);
+      } else {
+        toast.error('Failed to remove old command after rename');
+      }
+    } else {
+      toast.error('Failed to rename command');
+    }
+
+    setRenameDialogCommand(null);
+  };
+
+  const builtInCommands = commands.filter(isCommandBuiltIn);
+  const customCommands = commands.filter((cmd) => !isCommandBuiltIn(cmd));
+
   return (
     <div className={cn('flex h-full flex-col', bgClass)}>
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <div className={cn('border-b px-3', isMobile ? 'mt-2 py-3' : 'py-3')}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="typography-meta text-muted-foreground">Total {commands.length}</span>
-            <DialogTrigger asChild>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 -my-1 text-muted-foreground">
-                <RiAddLine className="size-4" />
-              </Button>
-            </DialogTrigger>
-          </div>
+      <div className={cn('border-b px-3', isMobile ? 'mt-2 py-3' : 'py-3')}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="typography-meta text-muted-foreground">Total {commands.length}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 -my-1 text-muted-foreground"
+            onClick={handleCreateNew}
+          >
+            <RiAddLine className="size-4" />
+          </Button>
         </div>
+      </div>
 
-        <ScrollableOverlay outerClassName="flex-1 min-h-0" className="space-y-1 px-3 py-2">
-            {commands.length === 0 ? (
-              <div className="py-12 px-4 text-center text-muted-foreground">
-                <RiTerminalBoxLine className="mx-auto mb-3 h-10 w-10 opacity-50" />
-                <p className="typography-ui-label font-medium">No commands configured</p>
-                <p className="typography-meta mt-1 opacity-75">Use the + button above to create one</p>
-              </div>
-            ) : (
+      <ScrollableOverlay outerClassName="flex-1 min-h-0" className="space-y-1 px-3 py-2">
+        {commands.length === 0 ? (
+          <div className="py-12 px-4 text-center text-muted-foreground">
+            <RiTerminalBoxLine className="mx-auto mb-3 h-10 w-10 opacity-50" />
+            <p className="typography-ui-label font-medium">No commands configured</p>
+            <p className="typography-meta mt-1 opacity-75">Use the + button above to create one</p>
+          </div>
+        ) : (
+          <>
+            {builtInCommands.length > 0 && (
               <>
-                  {[...commands].sort((a, b) => a.name.localeCompare(b.name)).map((command) => (
-                    <CommandListItem
-                      key={command.name}
-                      command={command}
-                      isSelected={selectedCommandName === command.name}
-                      onSelect={() => {
-                        setSelectedCommand(command.name);
-                        onItemSelect?.();
-                        if (isMobile) {
-                          setSidebarOpen(false);
-                        }
-                      }}
-                      onDelete={() => handleDeleteCommand(command)}
-                      onDuplicate={() => handleDuplicateCommand(command)}
-                    />
-                  ))}
+                <div className="px-2 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Built-in Commands
+                </div>
+                {[...builtInCommands].sort((a, b) => a.name.localeCompare(b.name)).map((command) => (
+                  <CommandListItem
+                    key={command.name}
+                    command={command}
+                    isSelected={selectedCommandName === command.name}
+                    onSelect={() => {
+                      setSelectedCommand(command.name);
+                      onItemSelect?.();
+                      if (isMobile) {
+                        setSidebarOpen(false);
+                      }
+                    }}
+                    onReset={() => handleResetCommand(command)}
+                    onDuplicate={() => handleDuplicateCommand(command)}
+                  />
+                ))}
               </>
             )}
-        </ScrollableOverlay>
 
+            {customCommands.length > 0 && (
+              <>
+                <div className="px-2 pb-1.5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Custom Commands
+                </div>
+                {[...customCommands].sort((a, b) => a.name.localeCompare(b.name)).map((command) => (
+                  <CommandListItem
+                    key={command.name}
+                    command={command}
+                    isSelected={selectedCommandName === command.name}
+                    onSelect={() => {
+                      setSelectedCommand(command.name);
+                      onItemSelect?.();
+                      if (isMobile) {
+                        setSidebarOpen(false);
+                      }
+                    }}
+                    onRename={() => handleOpenRenameDialog(command)}
+                    onDelete={() => handleDeleteCommand(command)}
+                    onDuplicate={() => handleDuplicateCommand(command)}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </ScrollableOverlay>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogCommand !== null} onOpenChange={(open) => !open && setRenameDialogCommand(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Command</DialogTitle>
+            <DialogTitle>Rename Command</DialogTitle>
             <DialogDescription>
-              Enter a unique name for your new slash command
+              Enter a new name for the command "/{renameDialogCommand?.name}"
             </DialogDescription>
           </DialogHeader>
           <Input
-            value={newCommandName}
-            onChange={(e) => setNewCommandName(e.target.value)}
-            placeholder="Command name..."
+            value={renameNewName}
+            onChange={(e) => setRenameNewName(e.target.value)}
+            placeholder="New command name..."
             className="text-foreground placeholder:text-muted-foreground"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                handleCreateCommand();
+                handleRenameCommand();
               }
             }}
           />
           <DialogFooter>
             <Button
               variant="ghost"
-              onClick={() => setIsCreateDialogOpen(false)}
+              onClick={() => setRenameDialogCommand(null)}
               className="text-foreground hover:bg-muted hover:text-foreground"
             >
               Cancel
             </Button>
-            <ButtonLarge onClick={handleCreateCommand}>
-              Create
+            <ButtonLarge onClick={handleRenameCommand}>
+              Rename
             </ButtonLarge>
           </DialogFooter>
         </DialogContent>
@@ -201,7 +319,9 @@ interface CommandListItemProps {
   command: Command;
   isSelected: boolean;
   onSelect: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
+  onReset?: () => void;
+  onRename?: () => void;
   onDuplicate: () => void;
 }
 
@@ -210,6 +330,8 @@ const CommandListItem: React.FC<CommandListItemProps> = ({
   isSelected,
   onSelect,
   onDelete,
+  onReset,
+  onRename,
   onDuplicate,
 }) => {
   return (
@@ -229,6 +351,11 @@ const CommandListItem: React.FC<CommandListItemProps> = ({
             <span className="typography-ui-label font-normal truncate text-foreground">
               /{command.name}
             </span>
+            {(command.scope || isCommandBuiltIn(command)) && (
+              <span className="typography-micro text-muted-foreground bg-muted px-1 rounded flex-shrink-0 leading-none pb-px border border-border/50">
+                {isCommandBuiltIn(command) ? 'system' : command.scope}
+              </span>
+            )}
           </div>
 
           {command.description && (
@@ -249,6 +376,18 @@ const CommandListItem: React.FC<CommandListItemProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-fit min-w-20">
+            {onRename && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRename();
+                }}
+              >
+                <RiEditLine className="h-4 w-4 mr-px" />
+                Rename
+              </DropdownMenuItem>
+            )}
+
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -259,16 +398,30 @@ const CommandListItem: React.FC<CommandListItemProps> = ({
               Duplicate
             </DropdownMenuItem>
 
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <RiDeleteBinLine className="h-4 w-4 mr-px" />
-              Delete
-            </DropdownMenuItem>
+            {onReset && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReset();
+                }}
+              >
+                <RiRestartLine className="h-4 w-4 mr-px" />
+                Reset
+              </DropdownMenuItem>
+            )}
+
+            {onDelete && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <RiDeleteBinLine className="h-4 w-4 mr-px" />
+                Delete
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

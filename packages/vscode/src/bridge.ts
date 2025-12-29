@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
 import type { OpenCodeManager } from './opencode';
-import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand } from './opencodeConfig';
+import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand, type CommandScope, COMMAND_SCOPE } from './opencodeConfig';
 import { removeProviderAuth } from './opencodeAuth';
 
 export interface BridgeRequest {
@@ -686,19 +686,25 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
           return { id, type, success: false, error: 'Command name is required' };
         }
 
+        // Get working directory for project-level command support
+        const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
         const normalizedMethod = typeof method === 'string' && method.trim() ? method.trim().toUpperCase() : 'GET';
         if (normalizedMethod === 'GET') {
-          const sources = getCommandSources(commandName);
+          const sources = getCommandSources(commandName, workingDirectory);
           return {
             id,
             type,
             success: true,
-            data: { name: commandName, sources, isBuiltIn: !sources.md.exists && !sources.json.exists },
+            data: { name: commandName, sources, scope: sources.md.scope, isBuiltIn: !sources.md.exists && !sources.json.exists },
           };
         }
 
         if (normalizedMethod === 'POST') {
-          createCommand(commandName, (body || {}) as Record<string, unknown>);
+          // Extract scope from body if present
+          const scopeValue = body?.scope as string | undefined;
+          const scope: CommandScope | undefined = scopeValue === 'project' ? COMMAND_SCOPE.PROJECT : scopeValue === 'user' ? COMMAND_SCOPE.USER : undefined;
+          createCommand(commandName, (body || {}) as Record<string, unknown>, workingDirectory, scope);
           await ctx?.manager?.restart();
           return {
             id,
@@ -714,7 +720,7 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         }
 
         if (normalizedMethod === 'PATCH') {
-          updateCommand(commandName, (body || {}) as Record<string, unknown>);
+          updateCommand(commandName, (body || {}) as Record<string, unknown>, workingDirectory);
           await ctx?.manager?.restart();
           return {
             id,
@@ -730,7 +736,7 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         }
 
         if (normalizedMethod === 'DELETE') {
-          deleteCommand(commandName);
+          deleteCommand(commandName, workingDirectory);
           await ctx?.manager?.restart();
           return {
             id,

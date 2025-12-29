@@ -236,6 +236,7 @@ struct ConfigErrorResponse {
 struct ConfigMetadataResponse {
     name: String,
     sources: opencode_config::ConfigSources,
+    scope: Option<opencode_config::CommandScope>,
     is_built_in: bool,
 }
 
@@ -1197,6 +1198,7 @@ async fn handle_agent_route(
                     ConfigMetadataResponse {
                         name,
                         is_built_in: !sources.md.exists && !sources.json.exists,
+                        scope: None,
                         sources,
                     },
                 )),
@@ -1320,17 +1322,24 @@ async fn handle_command_route(
     req: Request<Body>,
     name: String,
 ) -> Result<Response<Body>, StatusCode> {
+    // Get working directory for project-level command detection
+    let working_directory = state.opencode.get_working_directory();
+    
     match method {
         Method::GET => {
-            match opencode_config::get_command_sources(&name).await {
-                Ok(sources) => Ok(json_response(
-                    StatusCode::OK,
-                    ConfigMetadataResponse {
-                        name,
-                        is_built_in: !sources.md.exists && !sources.json.exists,
-                        sources,
-                    },
-                )),
+            match opencode_config::get_command_sources(&name, Some(&working_directory)).await {
+                Ok(sources) => {
+                    let scope = sources.md.scope.clone();
+                    Ok(json_response(
+                        StatusCode::OK,
+                        ConfigMetadataResponse {
+                            name,
+                            is_built_in: !sources.md.exists && !sources.json.exists,
+                            scope,
+                            sources,
+                        },
+                    ))
+                }
                 Err(err) => {
                     error!("[desktop:config] Failed to read command sources: {}", err);
                     Ok(config_error_response(
@@ -1345,8 +1354,17 @@ async fn handle_command_route(
                 Ok(data) => data,
                 Err(resp) => return Ok(resp),
             };
+            
+            // Extract scope from payload if present
+            let scope = payload.get("scope")
+                .and_then(|v| v.as_str())
+                .and_then(|s| match s {
+                    "project" => Some(opencode_config::CommandScope::Project),
+                    "user" => Some(opencode_config::CommandScope::User),
+                    _ => None,
+                });
 
-            match opencode_config::create_command(&name, &payload).await {
+            match opencode_config::create_command(&name, &payload, Some(&working_directory), scope).await {
                 Ok(()) => {
                     if let Err(resp) =
                         refresh_opencode_after_config_change(state, "command creation").await
@@ -1382,7 +1400,7 @@ async fn handle_command_route(
                 Err(resp) => return Ok(resp),
             };
 
-            match opencode_config::update_command(&name, &payload).await {
+            match opencode_config::update_command(&name, &payload, Some(&working_directory)).await {
                 Ok(()) => {
                     if let Err(resp) =
                         refresh_opencode_after_config_change(state, "command update").await
@@ -1412,7 +1430,7 @@ async fn handle_command_route(
                 }
             }
         }
-        Method::DELETE => match opencode_config::delete_command(&name).await {
+        Method::DELETE => match opencode_config::delete_command(&name, Some(&working_directory)).await {
             Ok(()) => {
                 if let Err(resp) =
                     refresh_opencode_after_config_change(state, "command deletion").await

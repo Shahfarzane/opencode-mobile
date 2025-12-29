@@ -10,6 +10,9 @@ import {
 import { emitConfigChange, scopeMatches, subscribeToConfigChanges } from "@/lib/configSync";
 import { getSafeStorage } from "./utils/safeStorage";
 import { useConfigStore } from "@/stores/useConfigStore";
+import { useDirectoryStore } from "@/stores/useDirectoryStore";
+
+export type CommandScope = 'user' | 'project';
 
 export interface CommandConfig {
   name: string;
@@ -18,11 +21,19 @@ export interface CommandConfig {
   model?: string | null;
   template?: string;
   subtask?: boolean;
+  scope?: CommandScope;
 }
 
 export interface Command extends CommandConfig {
   isBuiltIn?: boolean;
 }
+
+// Built-in commands provided by OpenCode (not defined in user config directories)
+const BUILTIN_COMMAND_NAMES = new Set(['init', 'review']);
+
+export const isCommandBuiltIn = (command: Command): boolean => {
+  return BUILTIN_COMMAND_NAMES.has(command.name);
+};
 
 const CONFIG_EVENT_SOURCE = "useCommandsStore";
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,13 +44,25 @@ const SLOW_HEALTH_POLL_BASE_MS = 800;
 const SLOW_HEALTH_POLL_INCREMENT_MS = 200;
 const SLOW_HEALTH_POLL_MAX_MS = 2000;
 
+export interface CommandDraft {
+  name: string;
+  scope: CommandScope;
+  description?: string;
+  agent?: string | null;
+  model?: string | null;
+  template?: string;
+  subtask?: boolean;
+}
+
 interface CommandsStore {
 
   selectedCommandName: string | null;
   commands: Command[];
   isLoading: boolean;
+  commandDraft: CommandDraft | null;
 
   setSelectedCommand: (name: string | null) => void;
+  setCommandDraft: (draft: CommandDraft | null) => void;
   loadCommands: () => Promise<boolean>;
   createCommand: (config: CommandConfig) => Promise<boolean>;
   updateCommand: (name: string, config: Partial<CommandConfig>) => Promise<boolean>;
@@ -61,9 +84,14 @@ export const useCommandsStore = create<CommandsStore>()(
         selectedCommandName: null,
         commands: [],
         isLoading: false,
+        commandDraft: null,
 
         setSelectedCommand: (name: string | null) => {
           set({ selectedCommandName: name });
+        },
+
+        setCommandDraft: (draft: CommandDraft | null) => {
+          set({ commandDraft: draft });
         },
 
         loadCommands: async () => {
@@ -74,7 +102,29 @@ export const useCommandsStore = create<CommandsStore>()(
           for (let attempt = 0; attempt < 3; attempt++) {
             try {
               const commands = await opencodeClient.listCommandsWithDetails();
-              set({ commands, isLoading: false });
+              
+              // Fetch scope info for each command
+              const currentDirectory = useDirectoryStore.getState().currentDirectory;
+              const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+              
+              const commandsWithScope = await Promise.all(
+                commands.map(async (cmd) => {
+                  try {
+                    const response = await fetch(`/api/config/commands/${encodeURIComponent(cmd.name)}${queryParams}`);
+                    if (response.ok) {
+                      const data = await response.json();
+                      // Handle both web (data.scope) and desktop (data.sources.md.scope) response formats
+                      const scope = data.scope ?? data.sources?.md?.scope;
+                      return { ...cmd, scope: scope as CommandScope | undefined };
+                    }
+                  } catch {
+                    // Ignore errors fetching scope
+                  }
+                  return cmd;
+                })
+              );
+              
+              set({ commands: commandsWithScope, isLoading: false });
               return true;
             } catch (error) {
               lastError = error;
@@ -102,10 +152,15 @@ export const useCommandsStore = create<CommandsStore>()(
             if (config.agent) commandConfig.agent = config.agent;
             if (config.model) commandConfig.model = config.model;
             if (config.subtask !== undefined) commandConfig.subtask = config.subtask;
+            if (config.scope) commandConfig.scope = config.scope;
 
             console.log('[CommandsStore] Command config to save:', commandConfig);
 
-            const response = await fetch(`/api/config/commands/${encodeURIComponent(config.name)}`, {
+            // Get current directory for project-level command support
+            const currentDirectory = useDirectoryStore.getState().currentDirectory;
+            const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+
+            const response = await fetch(`/api/config/commands/${encodeURIComponent(config.name)}${queryParams}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(commandConfig)
@@ -161,7 +216,11 @@ export const useCommandsStore = create<CommandsStore>()(
 
             console.log('[CommandsStore] Command config to update:', commandConfig);
 
-            const response = await fetch(`/api/config/commands/${encodeURIComponent(name)}`, {
+            // Get current directory for project-level command support
+            const currentDirectory = useDirectoryStore.getState().currentDirectory;
+            const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+
+            const response = await fetch(`/api/config/commands/${encodeURIComponent(name)}${queryParams}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(commandConfig)
@@ -204,7 +263,11 @@ export const useCommandsStore = create<CommandsStore>()(
           startConfigUpdate("Deleting command configuration…");
           let requiresReload = false;
           try {
-            const response = await fetch(`/api/config/commands/${encodeURIComponent(name)}`, {
+            // Get current directory for project-level command support
+            const currentDirectory = useDirectoryStore.getState().currentDirectory;
+            const queryParams = currentDirectory ? `?directory=${encodeURIComponent(currentDirectory)}` : '';
+
+            const response = await fetch(`/api/config/commands/${encodeURIComponent(name)}${queryParams}`, {
               method: 'DELETE'
             });
 
