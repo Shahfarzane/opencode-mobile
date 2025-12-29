@@ -152,6 +152,9 @@ fn sanitize_settings_update(payload: &Value) -> Value {
         if let Some(Value::Bool(b)) = obj.get("autoDeleteEnabled") {
             result_obj.insert("autoDeleteEnabled".to_string(), json!(b));
         }
+        if let Some(Value::Bool(b)) = obj.get("queueModeEnabled") {
+            result_obj.insert("queueModeEnabled".to_string(), json!(b));
+        }
 
         // Number fields
         if let Some(Value::Number(n)) = obj.get("autoDeleteAfterDays") {

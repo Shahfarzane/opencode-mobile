@@ -393,6 +393,16 @@ class OpencodeService {
       filename?: string;
       url: string;
     }>;
+    /** Additional text/file parts to include (for batch sending queued messages) */
+    additionalParts?: Array<{
+      text: string;
+      files?: Array<{
+        type: 'file';
+        mime: string;
+        filename?: string;
+        url: string;
+      }>;
+    }>;
     messageId?: string;
     agentMentions?: Array<{ name: string; source?: { value: string; start: number; end: number } }>;
   }): Promise<string> {
@@ -431,6 +441,28 @@ class OpencodeService {
         };
         parts.push(filePart);
       });
+    }
+
+    // Add additional parts (for batch/queued messages)
+    if (params.additionalParts && params.additionalParts.length > 0) {
+      for (const additional of params.additionalParts) {
+        if (additional.text && additional.text.trim()) {
+          parts.push({
+            type: 'text',
+            text: additional.text
+          });
+        }
+        if (additional.files && additional.files.length > 0) {
+          for (const file of additional.files) {
+            parts.push({
+              type: 'file',
+              mime: file.mime,
+              filename: file.filename,
+              url: file.url
+            });
+          }
+        }
+      }
     }
 
     if (params.agentMentions && params.agentMentions.length > 0) {

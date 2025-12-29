@@ -4,8 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Added Intel Mac (x86_64) support for the desktop application.
-- Build workflow now generates separate builds for Apple Silicon (arm64) and Intel (x86_64) Macs.
+- Added Intel Mac (x86_64) support for the desktop application (thanks to @rothnic).
+- Build workflow now generates separate builds for Apple Silicon (arm64) and Intel (x86_64) Macs (thanks to @rothnic).
+- Improved dev server HMR by reusing a healthy OpenCode process to avoid zombie instances.
+- Added queued message mode with chips, batching, and idle auto‑send (including attachments).
+- Added queue mode toggle to OpenChamber settings (chat section) with persistence across runtimes.
+
 
 ## [1.3.7] - 2025-12-28
 

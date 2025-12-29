@@ -421,6 +421,9 @@ const sanitizeSettingsUpdate = (payload) => {
   if (typeof candidate.defaultAgent === 'string' && candidate.defaultAgent.length > 0) {
     result.defaultAgent = candidate.defaultAgent;
   }
+  if (typeof candidate.queueModeEnabled === 'boolean') {
+    result.queueModeEnabled = candidate.queueModeEnabled;
+  }
 
   return result;
 };
@@ -501,12 +504,26 @@ const persistSettings = async (changes) => {
   return formatSettingsResponse(next);
 };
 
-// Global state
-let openCodeProcess = null;
-let openCodePort = null;
+// HMR-persistent state via globalThis
+// These values survive Vite HMR reloads to prevent zombie OpenCode processes
+const HMR_STATE_KEY = '__openchamberHmrState';
+const getHmrState = () => {
+  if (!globalThis[HMR_STATE_KEY]) {
+    globalThis[HMR_STATE_KEY] = {
+      openCodeProcess: null,
+      openCodePort: null,
+      openCodeWorkingDirectory: process.cwd(),
+      isShuttingDown: false,
+      signalsAttached: false,
+    };
+  }
+  return globalThis[HMR_STATE_KEY];
+};
+const hmrState = getHmrState();
+
+// Non-HMR state (safe to reset on reload)
 let healthCheckInterval = null;
 let server = null;
-let isShuttingDown = false;
 let cachedModelsMetadata = null;
 let cachedModelsMetadataTimestamp = 0;
 let expressApp = null;
@@ -522,9 +539,59 @@ let openCodePortWaiters = [];
 let isOpenCodeReady = false;
 let openCodeNotReadySince = 0;
 let exitOnShutdown = true;
-let signalsAttached = false;
-let openCodeWorkingDirectory = process.cwd();
 let uiAuthController = null;
+
+// Sync helper - call after modifying any HMR state variable
+const syncToHmrState = () => {
+  hmrState.openCodeProcess = openCodeProcess;
+  hmrState.openCodePort = openCodePort;
+  hmrState.isShuttingDown = isShuttingDown;
+  hmrState.signalsAttached = signalsAttached;
+  hmrState.openCodeWorkingDirectory = openCodeWorkingDirectory;
+};
+
+// Sync helper - call to restore state from HMR (e.g., on module reload)
+const syncFromHmrState = () => {
+  openCodeProcess = hmrState.openCodeProcess;
+  openCodePort = hmrState.openCodePort;
+  isShuttingDown = hmrState.isShuttingDown;
+  signalsAttached = hmrState.signalsAttached;
+  openCodeWorkingDirectory = hmrState.openCodeWorkingDirectory;
+};
+
+// Module-level variables that shadow HMR state
+// These are synced to/from hmrState to survive HMR reloads
+let openCodeProcess = hmrState.openCodeProcess;
+let openCodePort = hmrState.openCodePort;
+let isShuttingDown = hmrState.isShuttingDown;
+let signalsAttached = hmrState.signalsAttached;
+let openCodeWorkingDirectory = hmrState.openCodeWorkingDirectory;
+
+/**
+ * Check if an existing OpenCode process is still alive and responding
+ * Used to reuse process across HMR reloads
+ */
+async function isOpenCodeProcessHealthy() {
+  if (!openCodeProcess || !openCodePort) {
+    return false;
+  }
+
+  // Check if process is still running
+  if (openCodeProcess.exitCode !== null || openCodeProcess.signalCode !== null) {
+    return false;
+  }
+
+  // Health check via HTTP
+  try {
+    const response = await fetch(`http://127.0.0.1:${openCodePort}/session`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(2000),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 const OPENCODE_BINARY_ENV =
   process.env.OPENCODE_BINARY ||
@@ -657,6 +724,7 @@ function setOpenCodePort(port) {
 
   if (portChanged || openCodePort === null) {
     openCodePort = numericPort;
+    syncToHmrState();
     console.log(`Detected OpenCode port: ${openCodePort}`);
 
     if (portChanged) {
@@ -1165,6 +1233,7 @@ async function startOpenCode() {
   }).catch((error) => {
     lastOpenCodeError = error.message;
     openCodePort = null;
+    syncToHmrState();
     settleFirstSignal();
     return error;
   });
@@ -1285,6 +1354,7 @@ async function restartOpenCode() {
       }
 
       openCodeProcess = null;
+      syncToHmrState();
 
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
@@ -1294,6 +1364,7 @@ async function restartOpenCode() {
       setOpenCodePort(ENV_CONFIGURED_OPENCODE_PORT);
     } else {
       openCodePort = null;
+      syncToHmrState();
     }
     openCodeApiPrefixDetected = false;
     if (openCodeApiDetectionTimer) {
@@ -1304,6 +1375,7 @@ async function restartOpenCode() {
 
     lastOpenCodeError = null;
     openCodeProcess = await startOpenCode();
+    syncToHmrState();
 
     if (!ENV_CONFIGURED_OPENCODE_PORT) {
       await waitForOpenCodePort();
@@ -1322,6 +1394,7 @@ async function restartOpenCode() {
     lastOpenCodeError = error.message;
     if (!ENV_CONFIGURED_OPENCODE_PORT) {
       openCodePort = null;
+      syncToHmrState();
     }
     openCodeApiPrefixDetected = false;
     throw error;
@@ -1684,6 +1757,7 @@ async function gracefulShutdown(options = {}) {
   if (isShuttingDown) return;
 
   isShuttingDown = true;
+  syncToHmrState();
   console.log('Starting graceful shutdown...');
   const exitProcess = typeof options.exitProcess === 'boolean' ? options.exitProcess : exitOnShutdown;
 
@@ -3026,6 +3100,7 @@ async function main(options = {}) {
       }
 
       openCodeWorkingDirectory = resolvedPath;
+      syncToHmrState();
 
       await refreshOpenCodeAfterConfigChange('directory change');
 
@@ -3489,15 +3564,24 @@ async function main(options = {}) {
   });
 
   try {
-    if (ENV_CONFIGURED_OPENCODE_PORT) {
-      console.log(`Using OpenCode port from environment: ${ENV_CONFIGURED_OPENCODE_PORT}`);
-      setOpenCodePort(ENV_CONFIGURED_OPENCODE_PORT);
+    // Check if we can reuse an existing OpenCode process from a previous HMR cycle
+    syncFromHmrState();
+    if (await isOpenCodeProcessHealthy()) {
+      console.log(`[HMR] Reusing existing OpenCode process on port ${openCodePort}`);
     } else {
-      openCodePort = null;
-    }
+      // No healthy process, start fresh
+      if (ENV_CONFIGURED_OPENCODE_PORT) {
+        console.log(`Using OpenCode port from environment: ${ENV_CONFIGURED_OPENCODE_PORT}`);
+        setOpenCodePort(ENV_CONFIGURED_OPENCODE_PORT);
+      } else {
+        openCodePort = null;
+        syncToHmrState();
+      }
 
-    lastOpenCodeError = null;
-    openCodeProcess = await startOpenCode();
+      lastOpenCodeError = null;
+      openCodeProcess = await startOpenCode();
+      syncToHmrState();
+    }
     await waitForOpenCodePort();
     try {
       await waitForOpenCodeReady();
@@ -3555,6 +3639,7 @@ async function main(options = {}) {
     process.on('SIGINT', gracefulShutdown);
     process.on('SIGQUIT', gracefulShutdown);
     signalsAttached = true;
+    syncToHmrState();
   }
 
   process.on('unhandledRejection', (reason, promise) => {

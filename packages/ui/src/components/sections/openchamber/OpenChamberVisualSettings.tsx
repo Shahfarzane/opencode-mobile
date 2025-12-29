@@ -4,6 +4,7 @@ import { RiRestartLine } from '@remixicon/react';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import type { ThemeMode } from '@/types/theme';
 import { useUIStore } from '@/stores/useUIStore';
+import { useMessageQueueStore } from '@/stores/messageQueueStore';
 import { cn } from '@/lib/utils';
 import { ButtonSmall } from '@/components/ui/button-small';
 import { NumberInput } from '@/components/ui/number-input';
@@ -55,7 +56,7 @@ const DIFF_LAYOUT_OPTIONS: Option<'dynamic' | 'inline' | 'side-by-side'>[] = [
     },
 ];
 
-export type VisibleSetting = 'theme' | 'fontSize' | 'spacing' | 'toolOutput' | 'diffLayout' | 'reasoning';
+export type VisibleSetting = 'theme' | 'fontSize' | 'spacing' | 'toolOutput' | 'diffLayout' | 'reasoning' | 'queueMode';
 
 interface OpenChamberVisualSettingsProps {
     /** Which settings to show. If undefined, shows all. */
@@ -74,6 +75,8 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
     const setPadding = useUIStore(state => state.setPadding);
     const diffLayoutPreference = useUIStore(state => state.diffLayoutPreference);
     const setDiffLayoutPreference = useUIStore(state => state.setDiffLayoutPreference);
+    const queueModeEnabled = useMessageQueueStore(state => state.queueModeEnabled);
+    const setQueueMode = useMessageQueueStore(state => state.setQueueMode);
     const {
         themeMode,
         setThemeMode,
@@ -291,6 +294,27 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                         Show thinking / reasoning traces
                     </span>
                 </label>
+            )}
+
+            {shouldShow('queueMode') && (
+                <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5 accent-primary"
+                            checked={queueModeEnabled}
+                            onChange={(event) => setQueueMode(event.target.checked)}
+                        />
+                        <span className="typography-ui-header font-semibold text-foreground">
+                            Queue messages by default
+                        </span>
+                    </label>
+                    <p className="typography-meta text-muted-foreground pl-5">
+                        {queueModeEnabled 
+                            ? 'Enter queues messages, Ctrl+Enter sends immediately.' 
+                            : 'Enter sends immediately, Ctrl+Enter queues messages.'}
+                    </p>
+                </div>
             )}
         </div>
     );

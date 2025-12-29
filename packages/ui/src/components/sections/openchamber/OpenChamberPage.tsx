@@ -69,9 +69,9 @@ const VisualSectionContent: React.FC = () => {
     return <OpenChamberVisualSettings visibleSettings={['theme', 'fontSize', 'spacing']} />;
 };
 
-// Chat section: Default Tool Output, Diff layout, Show reasoning traces
+// Chat section: Default Tool Output, Diff layout, Show reasoning traces, Queue mode
 const ChatSectionContent: React.FC = () => {
-    return <OpenChamberVisualSettings visibleSettings={['toolOutput', 'diffLayout', 'reasoning']} />;
+    return <OpenChamberVisualSettings visibleSettings={['toolOutput', 'diffLayout', 'reasoning', 'queueMode']} />;
 };
 
 // Sessions section: Default model & agent, Session retention
