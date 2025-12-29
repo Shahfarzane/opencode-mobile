@@ -2165,6 +2165,7 @@ async function main(options = {}) {
 
   const {
     getAgentSources,
+    getAgentScope,
     createAgent,
     updateAgent,
     deleteAgent,
@@ -2173,17 +2174,20 @@ async function main(options = {}) {
     createCommand,
     updateCommand,
     deleteCommand,
+    AGENT_SCOPE,
     COMMAND_SCOPE
   } = await import('./lib/opencode-config.js');
 
   app.get('/api/config/agents/:name', (req, res) => {
     try {
       const agentName = req.params.name;
-      const sources = getAgentSources(agentName);
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      const sources = getAgentSources(agentName, workingDirectory);
 
       res.json({
         name: agentName,
         sources: sources,
+        scope: sources.md.scope,
         isBuiltIn: !sources.md.exists && !sources.json.exists
       });
     } catch (error) {
@@ -2195,9 +2199,14 @@ async function main(options = {}) {
   app.post('/api/config/agents/:name', async (req, res) => {
     try {
       const agentName = req.params.name;
-      const config = req.body;
+      const { scope, ...config } = req.body;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
 
-      createAgent(agentName, config);
+      console.log('[Server] Creating agent:', agentName);
+      console.log('[Server] Config received:', JSON.stringify(config, null, 2));
+      console.log('[Server] Scope:', scope, 'Working directory:', workingDirectory);
+
+      createAgent(agentName, config, workingDirectory, scope);
       await refreshOpenCodeAfterConfigChange('agent creation', {
         agentName
       });
@@ -2218,11 +2227,13 @@ async function main(options = {}) {
     try {
       const agentName = req.params.name;
       const updates = req.body;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
 
       console.log(`[Server] Updating agent: ${agentName}`);
       console.log('[Server] Updates:', JSON.stringify(updates, null, 2));
+      console.log('[Server] Working directory:', workingDirectory);
 
-      updateAgent(agentName, updates);
+      updateAgent(agentName, updates, workingDirectory);
       await refreshOpenCodeAfterConfigChange('agent update');
 
       console.log(`[Server] Agent ${agentName} updated successfully`);
@@ -2243,8 +2254,9 @@ async function main(options = {}) {
   app.delete('/api/config/agents/:name', async (req, res) => {
     try {
       const agentName = req.params.name;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
 
-      deleteAgent(agentName);
+      deleteAgent(agentName, workingDirectory);
       await refreshOpenCodeAfterConfigChange('agent deletion');
 
       res.json({

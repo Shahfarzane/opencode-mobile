@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - Added queued message mode with chips, batching, and idle auto‑send (including attachments).
 - Added queue mode toggle to OpenChamber settings (chat section) with persistence across runtimes.
 - Fixed scroll position persistence for active conversation turns across session switches.
-- Refactored command management with ability to configure project/user scoped commands.
+- Refactored Agents/Commands management with ability to configure project/user scopes.
 
 
 ## [1.3.7] - 2025-12-28
