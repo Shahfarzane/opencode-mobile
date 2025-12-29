@@ -22,6 +22,8 @@ export const ChatContainer: React.FC = () => {
         loadMessages,
         loadMoreMessages,
         updateViewportAnchor,
+        updateActiveTurnAnchor,
+        getActiveTurnAnchor,
         sessionMemoryState,
         openNewSessionDraft,
         isSyncing,
@@ -69,6 +71,8 @@ export const ChatContainer: React.FC = () => {
         streamingMessageId,
         sessionMemoryState,
         updateViewportAnchor,
+        updateActiveTurnAnchor,
+        getActiveTurnAnchor,
         isSyncing,
         isMobile,
         messageStreamStates,
@@ -96,11 +100,14 @@ export const ChatContainer: React.FC = () => {
         }
         lastScrolledSessionRef.current = currentSessionId;
 
-        const container = scrollRef.current;
-        if (container) {
-            container.scrollTop = container.scrollHeight - container.clientHeight;
+        // Only scroll to bottom if there's no active anchor (anchor handles its own scroll)
+        if (!hasActiveAnchor) {
+            const container = scrollRef.current;
+            if (container) {
+                container.scrollTop = container.scrollHeight - container.clientHeight;
+            }
         }
-    }, [currentSessionId, scrollRef]);
+    }, [currentSessionId, scrollRef, hasActiveAnchor]);
 
     const handleLoadOlder = React.useCallback(async () => {
         if (!currentSessionId || isLoadingOlder) {
