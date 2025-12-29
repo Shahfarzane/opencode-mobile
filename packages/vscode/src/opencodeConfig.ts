@@ -227,6 +227,7 @@ const readConfigLayers = (workingDirectory?: string) => {
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for potential future use or debugging
 const readConfig = (workingDirectory?: string): Record<string, unknown> =>
   readConfigLayers(workingDirectory).mergedConfig;
 
@@ -410,7 +411,7 @@ export const updateAgent = (agentName: string, updates: Record<string, unknown>,
   let mdModified = false;
   let jsonModified = false;
   // Only create new md if it's a built-in override
-  let creatingNewMd = isBuiltinOverride;
+  const creatingNewMd = isBuiltinOverride;
 
   for (const [field, value] of Object.entries(updates || {})) {
     if (field === 'prompt') {
@@ -625,7 +626,7 @@ export const updateCommand = (commandName: string, updates: Record<string, unkno
 
   let mdModified = false;
   let jsonModified = false;
-  let creatingNewMd = isBuiltinOverride;
+  const creatingNewMd = isBuiltinOverride;
 
   for (const [field, value] of Object.entries(updates || {})) {
     if (field === 'template') {
