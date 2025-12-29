@@ -183,7 +183,10 @@ jobs:
           # Copy DMG (Tauri names it with the target triple in the path)
           DMG_PATH="packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg"
           if ls $DMG_PATH 1> /dev/null 2>&1; then
-            cp $DMG_PATH artifacts/
+            DMG_FILE=$(ls $DMG_PATH | head -n 1)
+            DMG_BASE=$(basename "$DMG_FILE")
+            DMG_NAME="${DMG_BASE%.dmg}-${{ matrix.platform }}.dmg"
+            cp "$DMG_FILE" "artifacts/$DMG_NAME"
           else
             echo "Error: DMG file not found at $DMG_PATH"
             exit 1
@@ -194,14 +197,20 @@ jobs:
           SIG_PATH="packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.tar.gz.sig"
           
           if ls $TAR_PATH 1> /dev/null 2>&1; then
-            cp $TAR_PATH artifacts/
+            TAR_FILE=$(ls $TAR_PATH | head -n 1)
+            TAR_BASE=$(basename "$TAR_FILE")
+            TAR_NAME="${TAR_BASE%.tar.gz}-${{ matrix.platform }}.tar.gz"
+            cp "$TAR_FILE" "artifacts/$TAR_NAME"
           else
             echo "Error: tar.gz file not found at $TAR_PATH"
             exit 1
           fi
           
           if ls $SIG_PATH 1> /dev/null 2>&1; then
-            cp $SIG_PATH artifacts/
+            SIG_FILE=$(ls $SIG_PATH | head -n 1)
+            SIG_BASE=$(basename "$SIG_FILE")
+            SIG_NAME="${SIG_BASE%.tar.gz.sig}-${{ matrix.platform }}.tar.gz.sig"
+            cp "$SIG_FILE" "artifacts/$SIG_NAME"
           else
             echo "Error: signature file not found at $SIG_PATH"
             exit 1
@@ -214,17 +223,17 @@ jobs:
         run: |
           VERSION="${{ needs.create-release.outputs.version }}"
           
-          # Find the signature file
-          SIG_FILE=$(find artifacts -name "*.tar.gz.sig" | head -1)
+          # Find the signature file for this platform
+          SIG_FILE=$(find artifacts -name "*-${{ matrix.platform }}.tar.gz.sig" | head -1)
           if [ -f "$SIG_FILE" ]; then
             SIGNATURE=$(cat "$SIG_FILE")
           else
             SIGNATURE=""
           fi
           
-          # Find the tar.gz file name
-          TAR_FILE=$(find artifacts -name "*.tar.gz" ! -name "*.sig" | head -1)
-          TAR_NAME=$(basename "$TAR_FILE" 2>/dev/null || echo "OpenChamber.app.tar.gz")
+          # Find the tar.gz file name for this platform
+          TAR_FILE=$(find artifacts -name "*-${{ matrix.platform }}.tar.gz" ! -name "*.sig" | head -1)
+          TAR_NAME=$(basename "$TAR_FILE" 2>/dev/null || echo "OpenChamber-${{ matrix.platform }}.app.tar.gz")
           
           cat > artifacts/latest-${{ matrix.platform }}.json << EOF
           {
