@@ -3,21 +3,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { useCommandsStore, type CommandConfig } from '@/stores/useCommandsStore';
-import { RiCheckLine, RiInformationLine, RiSaveLine, RiTerminalBoxLine } from '@remixicon/react';
+import { useCommandsStore, type CommandConfig, type CommandScope } from '@/stores/useCommandsStore';
+import { RiCheckLine, RiInformationLine, RiSaveLine, RiTerminalBoxLine, RiUser3Line, RiFolderLine } from '@remixicon/react';
 import { cn } from '@/lib/utils';
 import { ModelSelector } from '../agents/ModelSelector';
 import { AgentSelector } from './AgentSelector';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
 
 export const CommandsPage: React.FC = () => {
-  const { selectedCommandName, getCommandByName, createCommand, updateCommand, commands } = useCommandsStore();
+  const { selectedCommandName, getCommandByName, createCommand, updateCommand, commands, commandDraft, setCommandDraft } = useCommandsStore();
 
   const selectedCommand = selectedCommandName ? getCommandByName(selectedCommandName) : null;
-  const isNewCommand = selectedCommandName && !selectedCommand;
+  const isNewCommand = Boolean(commandDraft && commandDraft.name === selectedCommandName && !selectedCommand);
 
-  const [name, setName] = React.useState('');
+  const [draftName, setDraftName] = React.useState('');
+  const [draftScope, setDraftScope] = React.useState<CommandScope>('user');
   const [description, setDescription] = React.useState('');
   const [agent, setAgent] = React.useState('');
   const [model, setModel] = React.useState('');
@@ -26,33 +33,40 @@ export const CommandsPage: React.FC = () => {
   const [isSaving, setIsSaving] = React.useState(false);
 
   React.useEffect(() => {
-    if (isNewCommand) {
-
-      setName(selectedCommandName || '');
-      setDescription('');
-      setAgent('');
-      setModel('');
-      setTemplate('');
-      setSubtask(false);
+    if (isNewCommand && commandDraft) {
+      // Prefill from draft (for new or duplicated commands)
+      setDraftName(commandDraft.name || '');
+      setDraftScope(commandDraft.scope || 'user');
+      setDescription(commandDraft.description || '');
+      setAgent(commandDraft.agent || '');
+      setModel(commandDraft.model || '');
+      setTemplate(commandDraft.template || '');
+      setSubtask(commandDraft.subtask || false);
     } else if (selectedCommand) {
-
-      setName(selectedCommand.name);
       setDescription(selectedCommand.description || '');
       setAgent(selectedCommand.agent || '');
       setModel(selectedCommand.model || '');
       setTemplate(selectedCommand.template || '');
       setSubtask(selectedCommand.subtask || false);
     }
-  }, [selectedCommand, isNewCommand, selectedCommandName, commands]);
+  }, [selectedCommand, isNewCommand, selectedCommandName, commands, commandDraft]);
 
   const handleSave = async () => {
-    if (!name.trim()) {
+    const commandName = isNewCommand ? draftName.trim().replace(/\s+/g, '-') : selectedCommandName?.trim();
+    
+    if (!commandName) {
       toast.error('Command name is required');
       return;
     }
 
     if (!template.trim()) {
       toast.error('Command template is required');
+      return;
+    }
+
+    // Check for duplicate name when creating new command
+    if (isNewCommand && commands.some((cmd) => cmd.name === commandName)) {
+      toast.error('A command with this name already exists');
       return;
     }
 
@@ -63,19 +77,23 @@ export const CommandsPage: React.FC = () => {
       const trimmedModel = model.trim();
       const trimmedTemplate = template.trim();
       const config: CommandConfig = {
-        name: name.trim(),
+        name: commandName,
         description: description.trim() || undefined,
         agent: trimmedAgent === '' ? null : trimmedAgent,
         model: trimmedModel === '' ? null : trimmedModel,
         template: trimmedTemplate,
         subtask,
+        scope: isNewCommand ? draftScope : undefined,
       };
 
       let success: boolean;
       if (isNewCommand) {
         success = await createCommand(config);
+        if (success) {
+          setCommandDraft(null); // Clear draft after successful creation
+        }
       } else {
-        success = await updateCommand(name, config);
+        success = await updateCommand(commandName, config);
       }
 
       if (success) {
@@ -108,7 +126,7 @@ export const CommandsPage: React.FC = () => {
         {}
         <div className="space-y-1">
           <h1 className="typography-ui-header font-semibold text-lg">
-            {isNewCommand ? 'New Command' : name}
+            {isNewCommand ? 'New Command' : `/${selectedCommandName}`}
           </h1>
         </div>
 
@@ -121,20 +139,54 @@ export const CommandsPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <label className="typography-ui-label font-medium text-foreground">
-              Command Name
-            </label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="my-command"
-              disabled={!isNewCommand}
-            />
-            <p className="typography-meta text-muted-foreground">
-              Used with slash (/) prefix in chat
-            </p>
-          </div>
+          {isNewCommand && (
+            <div className="space-y-2">
+              <label className="typography-ui-label font-medium text-foreground">
+                Command Name & Scope
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center flex-1">
+                  <span className="typography-ui-label text-muted-foreground mr-1">/</span>
+                  <Input
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    placeholder="command-name"
+                    className="flex-1 text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+                <Select value={draftScope} onValueChange={(v) => setDraftScope(v as CommandScope)}>
+                  <SelectTrigger className="!h-9 w-auto gap-1.5">
+                    {draftScope === 'user' ? (
+                      <RiUser3Line className="h-4 w-4" />
+                    ) : (
+                      <RiFolderLine className="h-4 w-4" />
+                    )}
+                    <span className="capitalize">{draftScope}</span>
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    <SelectItem value="user" className="pr-2 [&>span:first-child]:hidden">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <RiUser3Line className="h-4 w-4" />
+                          <span>User</span>
+                        </div>
+                        <span className="typography-micro text-muted-foreground ml-6">Available in all projects</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="project" className="pr-2 [&>span:first-child]:hidden">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <RiFolderLine className="h-4 w-4" />
+                          <span>Project</span>
+                        </div>
+                        <span className="typography-micro text-muted-foreground ml-6">Only in current project</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="typography-ui-label font-medium text-foreground">

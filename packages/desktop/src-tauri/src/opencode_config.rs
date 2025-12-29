@@ -11,12 +11,29 @@ use tokio::fs;
 static PROMPT_FILE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)^\{file:(.+)\}$").expect("valid regex"));
 
+/// Command scope types
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CommandScope {
+    User,
+    Project,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceInfo {
     pub exists: bool,
     pub path: Option<String>,
     pub fields: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<CommandScope>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MdLocationInfo {
+    pub exists: bool,
+    pub path: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -24,6 +41,10 @@ pub struct SourceInfo {
 pub struct ConfigSources {
     pub md: SourceInfo,
     pub json: SourceInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_md: Option<MdLocationInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_md: Option<MdLocationInfo>,
 }
 
 /// Get OpenCode config directory path
@@ -39,7 +60,7 @@ fn get_agent_dir() -> PathBuf {
     get_config_dir().join("agent")
 }
 
-/// Get command directory path
+/// Get user-level command directory path
 fn get_command_dir() -> PathBuf {
     get_config_dir().join("command")
 }
@@ -47,6 +68,64 @@ fn get_command_dir() -> PathBuf {
 /// Get config file path
 fn get_config_file() -> PathBuf {
     get_config_dir().join("opencode.json")
+}
+
+/// Get project-level command directory path
+fn get_project_command_dir(working_directory: &Path) -> PathBuf {
+    working_directory.join(".opencode").join("command")
+}
+
+/// Get project-level command path
+fn get_project_command_path(working_directory: &Path, command_name: &str) -> PathBuf {
+    get_project_command_dir(working_directory).join(format!("{}.md", command_name))
+}
+
+/// Get user-level command path
+fn get_user_command_path(command_name: &str) -> PathBuf {
+    get_command_dir().join(format!("{}.md", command_name))
+}
+
+/// Ensure project command directory exists
+async fn ensure_project_command_dir(working_directory: &Path) -> Result<PathBuf> {
+    let project_command_dir = get_project_command_dir(working_directory);
+    fs::create_dir_all(&project_command_dir).await?;
+    Ok(project_command_dir)
+}
+
+/// Determine command scope based on where the .md file exists
+pub fn get_command_scope(command_name: &str, working_directory: Option<&Path>) -> (Option<CommandScope>, Option<PathBuf>) {
+    if let Some(wd) = working_directory {
+        let project_path = get_project_command_path(wd, command_name);
+        if project_path.exists() {
+            return (Some(CommandScope::Project), Some(project_path));
+        }
+    }
+    
+    let user_path = get_user_command_path(command_name);
+    if user_path.exists() {
+        return (Some(CommandScope::User), Some(user_path));
+    }
+    
+    (None, None)
+}
+
+/// Get the path where a command should be written based on scope
+fn get_command_write_path(command_name: &str, working_directory: Option<&Path>, requested_scope: Option<CommandScope>) -> (CommandScope, PathBuf) {
+    // For updates: check existing location first (project takes precedence)
+    let (existing_scope, existing_path) = get_command_scope(command_name, working_directory);
+    if let Some(path) = existing_path {
+        return (existing_scope.unwrap(), path);
+    }
+    
+    // For new commands or built-in overrides: use requested scope or default to user
+    let scope = requested_scope.unwrap_or(CommandScope::User);
+    if scope == CommandScope::Project {
+        if let Some(wd) = working_directory {
+            return (CommandScope::Project, get_project_command_path(wd, command_name));
+        }
+    }
+    
+    (CommandScope::User, get_user_command_path(command_name))
 }
 
 /// Ensure required directories exist
@@ -240,7 +319,13 @@ async fn write_md_file(
     frontmatter: &HashMap<String, Value>,
     body: &str,
 ) -> Result<()> {
-    let yaml_str = serde_yaml::to_string(frontmatter)?;
+    // Filter out null values - OpenCode expects keys to be omitted rather than set to null
+    let cleaned_frontmatter: HashMap<String, Value> = frontmatter
+        .iter()
+        .filter(|(_, v)| !v.is_null())
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    let yaml_str = serde_yaml::to_string(&cleaned_frontmatter)?;
     let content = format!("---\n{}---\n\n{}", yaml_str, body);
 
     fs::write(file_path, content).await?;
@@ -281,12 +366,16 @@ pub async fn get_agent_sources(agent_name: &str) -> Result<ConfigSources> {
             exists: md_exists,
             path: md_exists.then(|| md_path.display().to_string()),
             fields: md_fields,
+            scope: None, // Agents don't have project/user scope distinction yet
         },
         json: SourceInfo {
             exists: json_section.is_some(),
             path: Some(get_config_file().display().to_string()),
             fields: json_fields,
+            scope: None,
         },
+        project_md: None,
+        user_md: None,
     };
 
     Ok(sources)
@@ -528,18 +617,34 @@ pub async fn delete_agent(agent_name: &str) -> Result<()> {
 }
 
 /// Get information about where command configuration is stored
-pub async fn get_command_sources(command_name: &str) -> Result<ConfigSources> {
+pub async fn get_command_sources(command_name: &str, working_directory: Option<&Path>) -> Result<ConfigSources> {
     ensure_dirs().await?;
 
-    let md_path = get_command_dir().join(format!("{}.md", command_name));
-    let md_exists = md_path.exists();
+    // Check project level first (takes precedence)
+    let project_path = working_directory.map(|wd| get_project_command_path(wd, command_name));
+    let project_exists = project_path.as_ref().map(|p| p.exists()).unwrap_or(false);
+    
+    // Then check user level
+    let user_path = get_user_command_path(command_name);
+    let user_exists = user_path.exists();
+    
+    // Determine which md file to use (project takes precedence)
+    let (md_path, md_exists, md_scope) = if project_exists {
+        (project_path.clone(), true, Some(CommandScope::Project))
+    } else if user_exists {
+        (Some(user_path.clone()), true, Some(CommandScope::User))
+    } else {
+        (None, false, None)
+    };
 
     let mut md_fields = Vec::new();
     if md_exists {
-        let md_data = parse_md_file(&md_path).await?;
-        md_fields.extend(md_data.frontmatter.keys().cloned());
-        if !md_data.body.trim().is_empty() {
-            md_fields.push("template".to_string());
+        if let Some(ref path) = md_path {
+            let md_data = parse_md_file(path).await?;
+            md_fields.extend(md_data.frontmatter.keys().cloned());
+            if !md_data.body.trim().is_empty() {
+                md_fields.push("template".to_string());
+            }
         }
     }
 
@@ -557,29 +662,53 @@ pub async fn get_command_sources(command_name: &str) -> Result<ConfigSources> {
     let sources = ConfigSources {
         md: SourceInfo {
             exists: md_exists,
-            path: md_exists.then(|| md_path.display().to_string()),
+            path: md_path.map(|p| p.display().to_string()),
             fields: md_fields,
+            scope: md_scope,
         },
         json: SourceInfo {
             exists: json_section.is_some(),
             path: Some(get_config_file().display().to_string()),
             fields: json_fields,
+            scope: None,
         },
+        project_md: Some(MdLocationInfo {
+            exists: project_exists,
+            path: project_path.map(|p| p.display().to_string()),
+        }),
+        user_md: Some(MdLocationInfo {
+            exists: user_exists,
+            path: Some(user_path.display().to_string()),
+        }),
     };
 
     Ok(sources)
 }
 
 /// Create new command as .md file
-pub async fn create_command(command_name: &str, config: &HashMap<String, Value>) -> Result<()> {
+pub async fn create_command(
+    command_name: &str, 
+    config: &HashMap<String, Value>,
+    working_directory: Option<&Path>,
+    scope: Option<CommandScope>
+) -> Result<()> {
     ensure_dirs().await?;
 
-    let md_path = get_command_dir().join(format!("{}.md", command_name));
-
-    // Check if command already exists
-    if md_path.exists() {
+    // Check if command already exists at either level
+    if let Some(wd) = working_directory {
+        let project_path = get_project_command_path(wd, command_name);
+        if project_path.exists() {
+            return Err(anyhow!(
+                "Command {} already exists as project-level .md file",
+                command_name
+            ));
+        }
+    }
+    
+    let user_path = get_user_command_path(command_name);
+    if user_path.exists() {
         return Err(anyhow!(
-            "Command {} already exists as .md file",
+            "Command {} already exists as user-level .md file",
             command_name
         ));
     }
@@ -594,16 +723,29 @@ pub async fn create_command(command_name: &str, config: &HashMap<String, Value>)
         }
     }
 
-    // Extract template from config
+    // Determine target path based on requested scope
+    let (target_scope, target_path) = if scope == Some(CommandScope::Project) {
+        if let Some(wd) = working_directory {
+            ensure_project_command_dir(wd).await?;
+            (CommandScope::Project, get_project_command_path(wd, command_name))
+        } else {
+            (CommandScope::User, user_path)
+        }
+    } else {
+        (CommandScope::User, user_path)
+    };
+
+    // Extract template and scope from config - scope is only used for path determination, not written to file
     let mut frontmatter = config.clone();
     let template = frontmatter
         .remove("template")
         .and_then(|v| v.as_str().map(|s| s.to_string()))
         .unwrap_or_default();
+    frontmatter.remove("scope"); // Remove scope - it's not a valid command field
 
     // Write .md file
-    write_md_file(&md_path, &frontmatter, &template).await?;
-    info!("Created new command: {}", command_name);
+    write_md_file(&target_path, &frontmatter, &template).await?;
+    info!("Created new command: {} (scope: {:?}, path: {})", command_name, target_scope, target_path.display());
 
     Ok(())
 }
@@ -612,17 +754,29 @@ pub async fn create_command(command_name: &str, config: &HashMap<String, Value>)
 pub async fn update_command(
     command_name: &str,
     updates: &HashMap<String, Value>,
+    working_directory: Option<&Path>,
 ) -> Result<()> {
     ensure_dirs().await?;
 
-    let md_path = get_command_dir().join(format!("{}.md", command_name));
+    // Determine correct path: project level takes precedence
+    let (scope, md_path) = get_command_write_path(command_name, working_directory, None);
     let md_exists = md_path.exists();
+    
+    // If no existing md file, we need to create one (for built-in command overrides)
+    let target_path = if !md_exists {
+        // No existing md file - this is a built-in override, create at user level
+        get_user_command_path(command_name)
+    } else {
+        md_path.clone()
+    };
 
     let mut md_data = if md_exists {
         Some(parse_md_file(&md_path).await?)
     } else {
-        None
+        Some(MdData { frontmatter: HashMap::new(), body: String::new() })
     };
+    
+    let creating_new_md = !md_exists;
 
     let mut config = read_config().await?;
     let mut existing_command = config
@@ -657,7 +811,7 @@ pub async fn update_command(
         if field == "template" {
             let normalized_value = value.as_str().unwrap_or("").to_string();
 
-            if md_exists {
+            if md_exists || creating_new_md {
                 if let Some(ref mut data) = md_data {
                     data.body = normalized_value.clone();
                     md_modified = true;
@@ -677,10 +831,11 @@ pub async fn update_command(
                 }
             }
 
-            // Write template directly to JSON entry (file ref or inline string)
-            existing_command.insert("template".to_string(), Value::String(normalized_value));
-            json_modified = true;
-
+            // Create new md file for the update
+            if let Some(ref mut data) = md_data {
+                data.body = normalized_value;
+                md_modified = true;
+            }
             continue;
         }
 
@@ -691,7 +846,7 @@ pub async fn update_command(
             .unwrap_or(false);
         let in_json = existing_command.contains_key(field);
 
-        if in_md {
+        if in_md || creating_new_md {
             // Update in .md frontmatter
             if let Some(ref mut data) = md_data {
                 data.frontmatter.insert(field.clone(), value.clone());
@@ -702,19 +857,13 @@ pub async fn update_command(
             existing_command.insert(field.clone(), value.clone());
             json_modified = true;
         } else {
-            // Field not defined - apply priority rules
-            if md_exists && !existing_command.is_empty() {
-                // Both exist → add to opencode.json (higher priority)
-                existing_command.insert(field.clone(), value.clone());
-                json_modified = true;
-            } else if md_exists {
-                // Only .md exists → add to frontmatter
+            // New field - add to md if it exists or we're creating one
+            if md_exists || creating_new_md {
                 if let Some(ref mut data) = md_data {
                     data.frontmatter.insert(field.clone(), value.clone());
                     md_modified = true;
                 }
             } else {
-                // Only JSON or built-in → add/create section in opencode.json
                 existing_command.insert(field.clone(), value.clone());
                 json_modified = true;
             }
@@ -724,7 +873,7 @@ pub async fn update_command(
     // Write changes
     if md_modified {
         if let Some(data) = md_data {
-            write_md_file(&md_path, &data.frontmatter, &data.body).await?;
+            write_md_file(&target_path, &data.frontmatter, &data.body).await?;
         }
     }
 
@@ -756,26 +905,36 @@ pub async fn update_command(
     }
 
     info!(
-        "Updated command: {} (md: {}, json: {})",
-        command_name, md_modified, json_modified
+        "Updated command: {} (scope: {:?}, md: {}, json: {})",
+        command_name, scope, md_modified, json_modified
     );
 
     Ok(())
 }
 
 /// Delete command configuration
-pub async fn delete_command(command_name: &str) -> Result<()> {
-    let md_path = get_command_dir().join(format!("{}.md", command_name));
+pub async fn delete_command(command_name: &str, working_directory: Option<&Path>) -> Result<()> {
     let mut deleted = false;
 
-    // 1. Delete .md file if exists
-    if md_path.exists() {
-        fs::remove_file(&md_path).await?;
-        info!("Deleted command .md file: {}", md_path.display());
+    // 1. Check project level first (takes precedence)
+    if let Some(wd) = working_directory {
+        let project_path = get_project_command_path(wd, command_name);
+        if project_path.exists() {
+            fs::remove_file(&project_path).await?;
+            info!("Deleted project-level command .md file: {}", project_path.display());
+            deleted = true;
+        }
+    }
+
+    // 2. Check user level
+    let user_path = get_user_command_path(command_name);
+    if user_path.exists() {
+        fs::remove_file(&user_path).await?;
+        info!("Deleted user-level command .md file: {}", user_path.display());
         deleted = true;
     }
 
-    // 2. Remove section from opencode.json if exists
+    // 3. Remove section from opencode.json if exists
     let mut config = read_config().await?;
     if let Some(commands) = config.get_mut("command").and_then(|v| v.as_object_mut()) {
         if commands.remove(command_name).is_some() {
@@ -785,7 +944,7 @@ pub async fn delete_command(command_name: &str) -> Result<()> {
         }
     }
 
-    // 3. If nothing was deleted, throw error
+    // 4. If nothing was deleted, throw error
     if !deleted {
         return Err(anyhow!("Command \"{}\" not found", command_name));
     }
