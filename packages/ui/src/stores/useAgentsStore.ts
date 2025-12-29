@@ -171,8 +171,8 @@ export const useAgentsStore = create<AgentsStore>()(
                       const scope = data.scope ?? data.sources?.md?.scope ?? data.sources?.json?.scope;
                       return { ...agent, scope: scope as AgentScope | undefined };
                     }
-                  } catch (err) {
-                    console.error(`[AgentsStore] Failed to fetch scope for agent "${agent.name}":`, err);
+                  } catch {
+                    // Ignore scope fetch errors and fall back to agent defaults
                   }
                   return agent;
                 })
@@ -196,8 +196,6 @@ export const useAgentsStore = create<AgentsStore>()(
           startConfigUpdate("Creating agent configuration…");
           let requiresReload = false;
           try {
-            console.log('[AgentsStore] Creating agent:', config.name);
-
             const agentConfig: Record<string, unknown> = {
               mode: config.mode || "subagent",
             };
@@ -211,8 +209,6 @@ export const useAgentsStore = create<AgentsStore>()(
             if (config.permission) agentConfig.permission = config.permission;
             if (config.disable !== undefined) agentConfig.disable = config.disable;
             if (config.scope) agentConfig.scope = config.scope;
-
-            console.log('[AgentsStore] Agent config to save:', agentConfig);
 
             // Get current directory for project-level agent support
             const currentDirectory = getCurrentDirectory();
@@ -230,8 +226,6 @@ export const useAgentsStore = create<AgentsStore>()(
               throw new Error(message);
             }
 
-            console.log('[AgentsStore] Agent created successfully');
-
             const needsReload = payload?.requiresReload ?? true;
             if (needsReload) {
               requiresReload = true;
@@ -247,8 +241,7 @@ export const useAgentsStore = create<AgentsStore>()(
               emitConfigChange("agents", { source: CONFIG_EVENT_SOURCE });
             }
             return loaded;
-          } catch (error) {
-            console.error("[AgentsStore] Failed to create agent:", error);
+          } catch {
             return false;
           } finally {
             if (!requiresReload) {
@@ -261,9 +254,6 @@ export const useAgentsStore = create<AgentsStore>()(
           startConfigUpdate("Updating agent configuration…");
           let requiresReload = false;
           try {
-            console.log('[AgentsStore] Updating agent:', name);
-            console.log('[AgentsStore] Config received:', config);
-
             const agentConfig: Record<string, unknown> = {};
 
             if (config.mode !== undefined) agentConfig.mode = config.mode;
@@ -275,8 +265,6 @@ export const useAgentsStore = create<AgentsStore>()(
             if (config.tools !== undefined) agentConfig.tools = config.tools;
             if (config.permission !== undefined) agentConfig.permission = config.permission;
             if (config.disable !== undefined) agentConfig.disable = config.disable;
-
-            console.log('[AgentsStore] Agent config to update:', agentConfig);
 
             // Get current directory for project-level agent support
             const currentDirectory = getCurrentDirectory();
@@ -294,8 +282,6 @@ export const useAgentsStore = create<AgentsStore>()(
               throw new Error(message);
             }
 
-            console.log('[AgentsStore] Agent updated successfully');
-
             const needsReload = payload?.requiresReload ?? true;
             if (needsReload) {
               requiresReload = true;
@@ -311,8 +297,7 @@ export const useAgentsStore = create<AgentsStore>()(
               emitConfigChange("agents", { source: CONFIG_EVENT_SOURCE });
             }
             return loaded;
-          } catch (error) {
-            console.error("[AgentsStore] Failed to update agent:", error);
+          } catch {
             return false;
           } finally {
             if (!requiresReload) {
@@ -339,8 +324,6 @@ export const useAgentsStore = create<AgentsStore>()(
               throw new Error(message);
             }
 
-            console.log('[AgentsStore] Agent deleted successfully');
-
             const needsReload = payload?.requiresReload ?? true;
             if (needsReload) {
               requiresReload = true;
@@ -361,8 +344,7 @@ export const useAgentsStore = create<AgentsStore>()(
             }
 
             return loaded;
-          } catch (error) {
-            console.error("Failed to delete agent:", error);
+          } catch {
             return false;
           } finally {
             if (!requiresReload) {
@@ -452,8 +434,8 @@ async function performFullConfigRefresh(options: { message?: string; delayMs?: n
       window.localStorage.removeItem("agents-store");
       window.localStorage.removeItem("config-store");
     }
-  } catch (error) {
-    console.warn("[AgentsStore] Failed to prepare config refresh:", error);
+  } catch {
+    // Ignore local storage cleanup errors
   }
 
   try {
@@ -469,8 +451,7 @@ async function performFullConfigRefresh(options: { message?: string; delayMs?: n
     ]);
 
     emitConfigChange("agents", { source: CONFIG_EVENT_SOURCE });
-  } catch (error) {
-    console.error("[AgentsStore] Failed to refresh configuration after OpenCode restart:", error);
+  } catch {
     updateConfigUpdateMessage("OpenCode reload failed. Please retry refreshing configuration manually.");
     await sleep(1500);
   } finally {
