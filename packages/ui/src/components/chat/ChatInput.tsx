@@ -495,7 +495,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             // Normal mode: Enter sends, Ctrl+Enter queues
             // Note: Queueing only works when there's an existing session (currentSessionId)
             // For new sessions (draft), always send immediately
-            const canQueue = hasContent && currentSessionId;
+            const canQueue = hasContent && currentSessionId && sessionPhase !== 'idle';
             
             if (queueModeEnabled) {
                 if (isCtrlEnter || !canQueue) {

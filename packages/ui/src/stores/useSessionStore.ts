@@ -442,6 +442,8 @@ export const useSessionStore = create<SessionStore>()(
                 clearAttachedFiles: () => useFileStore.getState().clearAttachedFiles(),
 
                 updateViewportAnchor: (sessionId: string, anchor: number) => useMessageStore.getState().updateViewportAnchor(sessionId, anchor),
+                updateActiveTurnAnchor: (sessionId: string, anchorId: string | null, spacerHeight: number) => useMessageStore.getState().updateActiveTurnAnchor(sessionId, anchorId, spacerHeight),
+                getActiveTurnAnchor: (sessionId: string) => useMessageStore.getState().getActiveTurnAnchor(sessionId),
                 trimToViewportWindow: (sessionId: string, targetSize?: number) => {
                     const currentSessionId = useSessionManagementStore.getState().currentSessionId;
                     return useMessageStore.getState().trimToViewportWindow(sessionId, targetSize, currentSessionId || undefined);

@@ -361,6 +361,8 @@ interface MessageActions {
     updateMessageInfo: (sessionId: string, messageId: string, messageInfo: any) => void;
     syncMessages: (sessionId: string, messages: { info: Message; parts: Part[] }[]) => void;
     updateViewportAnchor: (sessionId: string, anchor: number) => void;
+    updateActiveTurnAnchor: (sessionId: string, anchorId: string | null, spacerHeight: number) => void;
+    getActiveTurnAnchor: (sessionId: string) => { anchorId: string | null; spacerHeight: number } | null;
     trimToViewportWindow: (sessionId: string, targetSize?: number, currentSessionId?: string) => void;
     evictLeastRecentlyUsed: (currentSessionId?: string) => void;
     loadMoreMessages: (sessionId: string, direction: "up" | "down") => Promise<void>;
@@ -479,6 +481,7 @@ export const useMessageStore = create<MessageStore>()(
                             const newMemoryState = new Map(state.sessionMemoryState);
                             const previousMemoryState = state.sessionMemoryState.get(sessionId);
                             newMemoryState.set(sessionId, {
+                                ...previousMemoryState,
                                 viewportAnchor: mergedMessages.length - 1,
                                 isStreaming: false,
                                 lastAccessedAt: Date.now(),
@@ -2200,6 +2203,34 @@ export const useMessageStore = create<MessageStore>()(
                         newMemoryState.set(sessionId, { ...memoryState, viewportAnchor: anchor });
                         return { sessionMemoryState: newMemoryState };
                     });
+                },
+
+                updateActiveTurnAnchor: (sessionId: string, anchorId: string | null, spacerHeight: number) => {
+                    set((state) => {
+                        const memoryState = state.sessionMemoryState.get(sessionId) || {
+                            viewportAnchor: 0,
+                            isStreaming: false,
+                            lastAccessedAt: Date.now(),
+                            backgroundMessageCount: 0,
+                        };
+
+                        const newMemoryState = new Map(state.sessionMemoryState);
+                        newMemoryState.set(sessionId, {
+                            ...memoryState,
+                            activeTurnAnchorId: anchorId ?? undefined,
+                            activeTurnSpacerHeight: spacerHeight,
+                        });
+                        return { sessionMemoryState: newMemoryState };
+                    });
+                },
+
+                getActiveTurnAnchor: (sessionId: string) => {
+                    const memoryState = get().sessionMemoryState.get(sessionId);
+                    if (!memoryState) return null;
+                    return {
+                        anchorId: memoryState.activeTurnAnchorId ?? null,
+                        spacerHeight: memoryState.activeTurnSpacerHeight ?? 0,
+                    };
                 },
 
                 trimToViewportWindow: (sessionId: string, targetSize: number = MEMORY_LIMITS.VIEWPORT_MESSAGES, currentSessionId?: string) => {
