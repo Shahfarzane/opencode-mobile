@@ -8,7 +8,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'openchamber.chatView';
 
   private _view?: vscode.WebviewView;
-  
+
+  public isVisible() {
+    return this._view?.visible ?? false;
+  }
+
   // Cache latest status/URL for when webview is resolved after connection is ready
   private _cachedStatus: ConnectionStatus = 'connecting';
   private _cachedError?: string;

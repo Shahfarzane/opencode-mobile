@@ -26,6 +26,143 @@ const formatDurationMs = (value: number | null | undefined) => {
 export async function activate(context: vscode.ExtensionContext) {
   outputChannel = vscode.window.createOutputChannel('OpenChamber');
 
+  let moveToRightSidebarScheduled = false;
+
+  const isCursorLikeHost = () => /\bcursor\b/i.test(vscode.env.appName);
+
+  const findMoveToRightSidebarCommandId = async (): Promise<string | null> => {
+    const commands = await vscode.commands.getCommands(true);
+
+    const preferred = [
+      // Newer VS Code naming
+      'workbench.action.moveViewToSecondarySideBar',
+      'workbench.action.moveViewToSecondarySidebar',
+      'workbench.action.moveFocusedViewToSecondarySideBar',
+      'workbench.action.moveFocusedViewToSecondarySidebar',
+
+      // Some builds use "Auxiliary Bar" naming
+      'workbench.action.moveViewToAuxiliaryBar',
+      'workbench.action.moveFocusedViewToAuxiliaryBar',
+    ];
+
+    for (const commandId of preferred) {
+      if (commands.includes(commandId)) return commandId;
+    }
+
+    const fuzzy = commands.find((commandId) => {
+      const id = commandId.toLowerCase();
+      const looksLikeMoveView = id.includes('workbench.action') && id.includes('move') && id.includes('view');
+      if (!looksLikeMoveView) return false;
+
+      // Support both "secondary sidebar" and "auxiliary bar" naming.
+      return (id.includes('secondary') && id.includes('side') && id.includes('bar')) || (id.includes('auxiliary') && id.includes('bar'));
+    });
+
+    return fuzzy || null;
+  };
+
+  const attemptMoveChatToRightSidebar = async (): Promise<'moved' | 'unsupported' | 'failed'> => {
+    const moveCommandId = await findMoveToRightSidebarCommandId();
+    if (!moveCommandId) return 'unsupported';
+
+    try {
+      await vscode.commands.executeCommand('openchamber.chatView.focus');
+      await vscode.commands.executeCommand(moveCommandId);
+      return 'moved';
+    } catch (error) {
+      outputChannel?.appendLine(
+        `[OpenChamber] Failed moving chat view to right sidebar (command=${moveCommandId}): ${error instanceof Error ? error.message : String(error)}`
+      );
+      return 'failed';
+    }
+  };
+
+  const maybeMoveChatToRightSidebarOnStartup = async () => {
+    if (isCursorLikeHost()) return;
+
+    const attempted = context.globalState.get<boolean>('openchamber.sidebarAutoMoveAttempted') || false;
+    if (attempted) return;
+    await context.globalState.update('openchamber.sidebarAutoMoveAttempted', true);
+
+    if (moveToRightSidebarScheduled) return;
+    moveToRightSidebarScheduled = true;
+
+    // Defer until after activation to avoid stealing focus during startup.
+    setTimeout(() => {
+      void (async () => {
+        try {
+          await attemptMoveChatToRightSidebar();
+        } finally {
+          moveToRightSidebarScheduled = false;
+        }
+      })();
+    }, 800);
+  };
+
+  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+  const tryExecuteCommand = async (commandId: string) => {
+    try {
+      await vscode.commands.executeCommand(commandId);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const togglePrimarySidebar = async () => {
+    return await tryExecuteCommand('workbench.action.toggleSidebarVisibility');
+  };
+
+  const toggleSecondarySidebar = async () => {
+    const candidates = ['workbench.action.toggleSecondarySideBarVisibility', 'workbench.action.toggleAuxiliaryBar'];
+    for (const commandId of candidates) {
+      if (await tryExecuteCommand(commandId)) return true;
+    }
+    return false;
+  };
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openchamber.openSidebar', async () => {
+      const isOpen = chatViewProvider?.isVisible() ?? false;
+
+      // Second click hides the sidebar that currently hosts the chat view.
+      if (isOpen) {
+        if (isCursorLikeHost()) {
+          await togglePrimarySidebar();
+          await sleep(50);
+          if (chatViewProvider?.isVisible()) {
+            await toggleSecondarySidebar();
+          }
+          return;
+        }
+
+        await toggleSecondarySidebar();
+        await sleep(50);
+        if (chatViewProvider?.isVisible()) {
+          await togglePrimarySidebar();
+        }
+        return;
+      }
+
+      // Best-effort: open the container (if available), then focus the chat view.
+      try {
+        await vscode.commands.executeCommand('workbench.view.extension.openchamber');
+      } catch {
+        // Ignore: not all VS Code forks expose this command.
+      }
+
+      await vscode.commands.executeCommand('openchamber.chatView.focus');
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openchamber.focusChat', async () => {
+      await vscode.commands.executeCommand('openchamber.chatView.focus');
+    })
+  );
+
+
   // Migration: clear legacy auto-set API URLs (ports 47680-47689 were auto-assigned by older extension versions)
   const config = vscode.workspace.getConfiguration('openchamber');
   const legacyApiUrl = config.get<string>('apiUrl') || '';
@@ -47,6 +184,8 @@ export async function activate(context: vscode.ExtensionContext) {
       { webviewOptions: { retainContextWhenHidden: true } }
     )
   );
+
+  void maybeMoveChatToRightSidebarOnStartup();
 
   context.subscriptions.push(
     vscode.commands.registerCommand('openchamber.restartApi', async () => {
@@ -91,7 +230,7 @@ export async function activate(context: vscode.ExtensionContext) {
       chatViewProvider?.addTextToInput(contextText);
 
       // Focus the chat panel
-      vscode.commands.executeCommand('openchamber.chatView.focus');
+      vscode.commands.executeCommand('openchamber.focusChat');
     })
   );
 
@@ -123,7 +262,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Create new session and send the prompt
       chatViewProvider?.createNewSessionWithPrompt(prompt);
-      vscode.commands.executeCommand('openchamber.chatView.focus');
+      vscode.commands.executeCommand('openchamber.focusChat');
     })
   );
 
@@ -153,7 +292,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Create new session and send the prompt
       chatViewProvider?.createNewSessionWithPrompt(prompt);
-      vscode.commands.executeCommand('openchamber.chatView.focus');
+      vscode.commands.executeCommand('openchamber.focusChat');
     })
   );
 
