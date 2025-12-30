@@ -808,6 +808,55 @@ pub async fn get_git_status(
         }
     }
 
+    // When there's no upstream yet (e.g. a freshly-created local worktree branch),
+    // git status doesn't report ahead/behind. We still want to surface unpublished commits.
+    if tracking.is_none() && !current.trim().is_empty() {
+        let mut base_candidates: Vec<String> = Vec::new();
+
+        let origin_head = run_git_with_allowed_exit(
+            &["symbolic-ref", "-q", "refs/remotes/origin/HEAD"],
+            &path,
+            &[1],
+        )
+        .await
+        .unwrap_or_default();
+
+        if !origin_head.trim().is_empty() {
+            base_candidates.push(origin_head.trim().replace("refs/remotes/", ""));
+        }
+
+        base_candidates.push("origin/main".to_string());
+        base_candidates.push("origin/master".to_string());
+        base_candidates.push("main".to_string());
+        base_candidates.push("master".to_string());
+
+        let mut selected_base: Option<String> = None;
+        for candidate in base_candidates {
+            let verified = run_git_with_allowed_exit(
+                &["rev-parse", "--verify", &candidate],
+                &path,
+                &[1],
+            )
+            .await
+            .unwrap_or_default();
+
+            if !verified.trim().is_empty() {
+                selected_base = Some(candidate);
+                break;
+            }
+        }
+
+        if let Some(base_ref) = selected_base {
+            let range = format!("{}..HEAD", base_ref);
+            if let Ok(raw) = run_git(&["rev-list", "--count", &range], &path).await {
+                if let Ok(count) = raw.trim().parse::<i32>() {
+                    ahead = count;
+                    behind = 0;
+                }
+            }
+        }
+    }
+
     Ok(GitStatus {
         current,
         tracking,
@@ -1445,13 +1494,45 @@ pub async fn git_push(
         .await
         .map_err(|e| e.to_string())?;
     let remote_name = remote.unwrap_or_else(|| "origin".to_string());
+    let explicit_branch = branch
+        .as_deref()
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
     let mut branch_name = branch.unwrap_or_default();
 
     let mut args = vec!["push".to_string(), remote_name.clone()];
     if branch_name.is_empty() {
         branch_name = get_current_branch_name(&root).await.unwrap_or_default();
     }
+
     if !branch_name.is_empty() {
+        // If caller didn't specify a branch and there's no upstream configured yet,
+        // publish on first push so future pushes/pulls work without extra prompts.
+        if !explicit_branch {
+            let remote_key = format!("branch.{}.remote", branch_name);
+            let merge_key = format!("branch.{}.merge", branch_name);
+
+            let upstream_remote = run_git_with_allowed_exit(
+                &["config", "--get", &remote_key],
+                &root,
+                &[1],
+            )
+            .await
+            .unwrap_or_default();
+
+            let upstream_merge = run_git_with_allowed_exit(
+                &["config", "--get", &merge_key],
+                &root,
+                &[1],
+            )
+            .await
+            .unwrap_or_default();
+
+            if upstream_remote.trim().is_empty() || upstream_merge.trim().is_empty() {
+                args.push("--set-upstream".to_string());
+            }
+        }
+
         args.push(branch_name.clone());
     }
 

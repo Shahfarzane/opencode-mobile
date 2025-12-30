@@ -271,15 +271,62 @@ export async function getStatus(directory) {
       };
     }
 
+    const selectBaseRefForUnpublished = async () => {
+      const candidates = [];
+
+      const originHead = await git
+        .raw(['symbolic-ref', '-q', 'refs/remotes/origin/HEAD'])
+        .then((value) => String(value || '').trim())
+        .catch(() => '');
+
+      if (originHead) {
+        // "refs/remotes/origin/main" -> "origin/main"
+        candidates.push(originHead.replace(/^refs\/remotes\//, ''));
+      }
+
+      candidates.push('origin/main', 'origin/master', 'main', 'master');
+
+      for (const ref of candidates) {
+        const exists = await git
+          .raw(['rev-parse', '--verify', ref])
+          .then((value) => String(value || '').trim())
+          .catch(() => '');
+        if (exists) return ref;
+      }
+
+      return null;
+    };
+
+    let tracking = status.tracking || null;
+    let ahead = status.ahead;
+    let behind = status.behind;
+
+    // When no upstream is configured (common for new worktree branches), Git doesn't report ahead/behind.
+    // We still want to show the number of unpublished commits to the user.
+    if (!tracking && status.current) {
+      const baseRef = await selectBaseRefForUnpublished();
+      if (baseRef) {
+        const countRaw = await git
+          .raw(['rev-list', '--count', `${baseRef}..HEAD`])
+          .then((value) => String(value || '').trim())
+          .catch(() => '');
+        const count = parseInt(countRaw, 10);
+        if (Number.isFinite(count)) {
+          ahead = count;
+          behind = 0;
+        }
+      }
+    }
+
     return {
       current: status.current,
-      tracking: status.tracking,
-      ahead: status.ahead,
-      behind: status.behind,
-      files: status.files.map(f => ({
+      tracking,
+      ahead,
+      behind,
+      files: status.files.map((f) => ({
         path: f.path,
         index: f.index,
-        working_dir: f.working_dir
+        working_dir: f.working_dir,
       })),
       isClean: status.isClean(),
       diffStats,
@@ -512,22 +559,79 @@ export async function pull(directory, options = {}) {
 export async function push(directory, options = {}) {
   const git = simpleGit(normalizeDirectoryPath(directory));
 
-  try {
-    const result = await git.push(
-      options.remote || 'origin',
-      options.branch,
-      options.options || {}
-    );
+  const buildUpstreamOptions = (raw) => {
+    if (Array.isArray(raw)) {
+      return raw.includes('--set-upstream') ? raw : [...raw, '--set-upstream'];
+    }
 
+    if (raw && typeof raw === 'object') {
+      return { ...raw, '--set-upstream': null };
+    }
+
+    return ['--set-upstream'];
+  };
+
+  const looksLikeMissingUpstream = (error) => {
+    const message = String(error?.message || error?.stderr || '').toLowerCase();
+    return (
+      message.includes('has no upstream') ||
+      message.includes('no upstream') ||
+      message.includes('set-upstream') ||
+      message.includes('set upstream') ||
+      (message.includes('upstream') && message.includes('push') && message.includes('-u'))
+    );
+  };
+
+  const normalizePushResult = (result) => {
     return {
       success: true,
       pushed: result.pushed,
       repo: result.repo,
-      ref: result.ref
+      ref: result.ref,
     };
+  };
+
+  const remote = options.remote || 'origin';
+
+  // If caller didn't specify a branch, this is the common "Push"/"Commit & Push" path.
+  // When there's no upstream yet (typical for freshly-created worktree branches), publish it on first push.
+  if (!options.branch) {
+    try {
+      const status = await git.status();
+      if (status.current && !status.tracking) {
+        const result = await git.push(remote, status.current, buildUpstreamOptions(options.options));
+        return normalizePushResult(result);
+      }
+    } catch (error) {
+      // If we can't read status, fall back to the regular push path below.
+      console.warn('Failed to read git status before push:', error);
+    }
+  }
+
+  try {
+    const result = await git.push(remote, options.branch, options.options || {});
+    return normalizePushResult(result);
   } catch (error) {
-    console.error('Failed to push:', error);
-    throw error;
+    // Last-resort fallback: retry with upstream if the error suggests it's missing.
+    if (!looksLikeMissingUpstream(error)) {
+      console.error('Failed to push:', error);
+      throw error;
+    }
+
+    try {
+      const status = await git.status();
+      const branch = options.branch || status.current;
+      if (!branch) {
+        console.error('Failed to push: missing branch name for upstream setup:', error);
+        throw error;
+      }
+
+      const result = await git.push(remote, branch, buildUpstreamOptions(options.options));
+      return normalizePushResult(result);
+    } catch (fallbackError) {
+      console.error('Failed to push (including upstream fallback):', fallbackError);
+      throw fallbackError;
+    }
   }
 }
 

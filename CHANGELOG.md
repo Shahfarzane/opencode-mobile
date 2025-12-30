@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- VS Code extension: reorganized extension location. It is now on the right sidebar for VSCode and on the left for Cursor/Windsurf.
+- Worktrees now do not create a remote branch by default; only the push action publishes the branch to remote.
+
+
 ## [1.3.9] - 2025-12-30
 
  - Added skills management to settings with the ability to create, edit, and delete skills (make sure you have the latest OpenCode version for skills support).
