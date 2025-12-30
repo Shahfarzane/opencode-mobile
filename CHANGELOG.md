@@ -4,8 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Added Skills management to settings
-- Added VS Code Right Click Context Menu with Actions "Add to Context", "Explain", "Improve Code".
+## [1.3.9] - 2025-12-30
+
+ - Added skills management to settings with the ability to create, edit, and delete skills (make sure you have the latest OpenCode version for skills support).
+- Added Skills catalog functionality for discovering and installing skills from external sources.
+- VS Code extension: added right-click context menu with "Add to Context," "Explain," and "Improve Code" actions (thanks to @wienans).
+
 
 ## [1.3.8] - 2025-12-29
 
