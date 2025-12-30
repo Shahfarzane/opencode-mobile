@@ -53,7 +53,7 @@ Express server and CLI in `packages/web`: API adapters in `packages/web/src/api`
 Native desktop app in `packages/desktop`: Tauri backend in `src-tauri/` (Rust), frontend API adapters in `src/api/` (settings, permissions, diagnostics, files, git, terminal, notifications, tools, updater), bridge layer in `src/lib/` for Tauri IPC communication.
 
 ### VS Code Extension Runtime
-Extension in `packages/vscode`: Extension entry in `src/` (ChatViewProvider, bridge, theme), webview API adapters in `webview/api/` (bridge, editor, files, permissions, settings, tools), webview components in `webview/components/` (ChatPanel, SessionsListView, VSCodeLayout).
+Extension in `packages/vscode`: Extension entry in `src/` (ChatViewProvider, bridge, theme), webview API adapters in `webview/api/` (bridge, editor, files, permissions, settings, tools), bootstrap script in `webview/main.tsx` that loads shared UI.
 
 ## Development Commands
 
