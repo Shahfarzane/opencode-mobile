@@ -449,7 +449,8 @@ export const ProvidersPage: React.FC = () => {
 
   if (isAddMode) {
     return (
-      <ScrollableOverlay outerClassName="h-full" className="mx-auto max-w-3xl space-y-6 p-6">
+      <ScrollableOverlay outerClassName="h-full" className="w-full">
+        <div className="mx-auto max-w-3xl space-y-6 p-6">
         <div className="space-y-1">
           <h1 className="typography-ui-header font-semibold text-lg">Connect provider</h1>
           <p className="typography-body text-muted-foreground">
@@ -700,6 +701,7 @@ export const ProvidersPage: React.FC = () => {
             )}
           </div>
         )}
+        </div>
       </ScrollableOverlay>
     );
   }
@@ -730,7 +732,8 @@ export const ProvidersPage: React.FC = () => {
   });
 
   return (
-    <ScrollableOverlay outerClassName="h-full" className="mx-auto max-w-3xl space-y-6 p-6">
+    <ScrollableOverlay outerClassName="h-full" className="w-full">
+      <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <ProviderLogo providerId={selectedProvider.id} className="h-5 w-5" />
@@ -967,6 +970,7 @@ export const ProvidersPage: React.FC = () => {
             })
           )}
         </div>
+      </div>
       </div>
     </ScrollableOverlay>
   );

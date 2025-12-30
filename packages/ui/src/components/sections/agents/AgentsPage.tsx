@@ -266,8 +266,9 @@ export const AgentsPage: React.FC = () => {
   }
 
   return (
-    <ScrollableOverlay outerClassName="h-full" className="mx-auto max-w-3xl space-y-6 p-6">
-      {}
+    <ScrollableOverlay outerClassName="h-full" className="w-full">
+      <div className="mx-auto max-w-3xl space-y-6 p-6">
+      {/* Header */}
       <div className="space-y-1">
         <h1 className="typography-ui-header font-semibold text-lg">
           {isNewAgent ? 'New Agent' : selectedAgentName}
@@ -928,6 +929,7 @@ export const AgentsPage: React.FC = () => {
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
+      </div>
       </div>
     </ScrollableOverlay>
   );
