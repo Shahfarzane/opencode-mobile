@@ -60,6 +60,104 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('openchamber.addToContext', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showWarningMessage('OpenChamber [Add to Context]:No active editor');
+        return;
+      }
+
+      const selection = editor.selection;
+      const selectedText = editor.document.getText(selection);
+
+      if (!selectedText) {
+        vscode.window.showWarningMessage('OpenChamber [Add to Context]: No text selected');
+        return;
+      }
+
+      // Get file info for context
+      const filePath = vscode.workspace.asRelativePath(editor.document.uri);
+      const languageId = editor.document.languageId;
+      
+      // Get line numbers (1-based for display)
+      const startLine = selection.start.line + 1;
+      const endLine = selection.end.line + 1;
+      const lineRange = startLine === endLine ? `${startLine}` : `${startLine}-${endLine}`;
+
+      // Format as file path with line numbers, followed by markdown code block
+      const contextText = `${filePath}:${lineRange}\n\`\`\`${languageId}\n${selectedText}\n\`\`\``;
+
+      // Send to webview and reveal the panel
+      chatViewProvider?.addTextToInput(contextText);
+
+      // Focus the chat panel
+      vscode.commands.executeCommand('openchamber.chatView.focus');
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openchamber.explain', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showWarningMessage('OpenChamber [Explain]: No active editor');
+        return;
+      }
+
+      const selection = editor.selection;
+      const selectedText = editor.document.getText(selection);
+      const filePath = vscode.workspace.asRelativePath(editor.document.uri);
+      const languageId = editor.document.languageId;
+
+      let prompt: string;
+
+      if (selectedText) {
+        // Selection exists - explain the selected code
+        const startLine = selection.start.line + 1;
+        const endLine = selection.end.line + 1;
+        const lineRange = startLine === endLine ? `${startLine}` : `${startLine}-${endLine}`;
+        prompt = `Explain the following Code / Text:\n\n${filePath}:${lineRange}\n\`\`\`${languageId}\n${selectedText}\n\`\`\``;
+      } else {
+        // No selection - explain the entire file
+        prompt = `Explain the following Code / Text:\n\n${filePath}`;
+      }
+
+      // Create new session and send the prompt
+      chatViewProvider?.createNewSessionWithPrompt(prompt);
+      vscode.commands.executeCommand('openchamber.chatView.focus');
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openchamber.improveCode', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showWarningMessage('OpenChamber [Improve Code]: No active editor');
+        return;
+      }
+
+      const selection = editor.selection;
+      const selectedText = editor.document.getText(selection);
+
+      if (!selectedText) {
+        vscode.window.showWarningMessage('OpenChamber [Improve Code]: No text selected');
+        return;
+      }
+
+      const filePath = vscode.workspace.asRelativePath(editor.document.uri);
+      const languageId = editor.document.languageId;
+      const startLine = selection.start.line + 1;
+      const endLine = selection.end.line + 1;
+      const lineRange = startLine === endLine ? `${startLine}` : `${startLine}-${endLine}`;
+
+      const prompt = `Improve the following Code:\n\n${filePath}:${lineRange}\n\`\`\`${languageId}\n${selectedText}\n\`\`\``;
+
+      // Create new session and send the prompt
+      chatViewProvider?.createNewSessionWithPrompt(prompt);
+      vscode.commands.executeCommand('openchamber.chatView.focus');
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('openchamber.showOpenCodeStatus', async () => {
       const config = vscode.workspace.getConfiguration('openchamber');
       const configuredApiUrl = (config.get<string>('apiUrl') || '').trim();

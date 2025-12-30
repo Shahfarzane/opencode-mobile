@@ -61,8 +61,45 @@
       {
         "command": "openchamber.showOpenCodeStatus",
         "title": "OpenChamber: Show OpenCode Status"
+      },
+      {
+        "command": "openchamber.addToContext",
+        "title": "Add to Context"
+      },
+      {
+        "command": "openchamber.explain",
+        "title": "Explain"
+      },
+      {
+        "command": "openchamber.improveCode",
+        "title": "Improve Code"
       }
     ],
+    "submenus": [
+      {
+        "id": "openchamber.submenu",
+        "label": "OpenChamber"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "openchamber.submenu",
+          "group": "navigation"
+        }
+      ],
+      "openchamber.submenu": [
+        {
+          "command": "openchamber.explain"
+        },
+        {
+          "command": "openchamber.improveCode"
+        },
+        {
+          "command": "openchamber.addToContext"
+        }
+      ]
+    },
     "configuration": {
       "title": "OpenChamber",
       "properties": {
