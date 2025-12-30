@@ -55,6 +55,19 @@
     },
     "commands": [
       {
+        "command": "openchamber.openSidebar",
+        "title": "Open OpenChamber Sidebar",
+        "icon": {
+          "light": "assets/icon.svg",
+          "dark": "assets/icon-titlebar.svg"
+        }
+      },
+      {
+        "command": "openchamber.focusChat",
+        "title": "OpenChamber: Focus Chat"
+      },
+
+      {
         "command": "openchamber.restartApi",
         "title": "OpenChamber: Restart API Connection"
       },
@@ -86,6 +99,12 @@
         {
           "submenu": "openchamber.submenu",
           "group": "navigation"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "openchamber.openSidebar",
+          "group": "navigation@1"
         }
       ],
       "openchamber.submenu": [
