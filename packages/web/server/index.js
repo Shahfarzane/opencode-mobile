@@ -1834,6 +1834,7 @@ async function main(options = {}) {
       req.path.startsWith('/api/config/agents') ||
       req.path.startsWith('/api/config/commands') ||
       req.path.startsWith('/api/config/settings') ||
+      req.path.startsWith('/api/config/skills') ||
       req.path.startsWith('/api/fs') ||
       req.path.startsWith('/api/git') ||
       req.path.startsWith('/api/prompts') ||
@@ -2361,6 +2362,203 @@ async function main(options = {}) {
     } catch (error) {
       console.error('Failed to delete command:', error);
       res.status(500).json({ error: error.message || 'Failed to delete command' });
+    }
+  });
+
+  // ============== SKILL ENDPOINTS ==============
+  
+  const {
+    getSkillSources,
+    discoverSkills,
+    createSkill,
+    updateSkill,
+    deleteSkill,
+    readSkillSupportingFile,
+    writeSkillSupportingFile,
+    deleteSkillSupportingFile,
+    SKILL_SCOPE
+  } = await import('./lib/opencode-config.js');
+
+  // List all discovered skills
+  app.get('/api/config/skills', (req, res) => {
+    try {
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      const skills = discoverSkills(workingDirectory);
+      
+      // Enrich with full sources info
+      const enrichedSkills = skills.map(skill => {
+        const sources = getSkillSources(skill.name, workingDirectory);
+        return {
+          ...skill,
+          sources
+        };
+      });
+      
+      res.json({ skills: enrichedSkills });
+    } catch (error) {
+      console.error('Failed to list skills:', error);
+      res.status(500).json({ error: 'Failed to list skills' });
+    }
+  });
+
+  // Get single skill sources
+  app.get('/api/config/skills/:name', (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      const sources = getSkillSources(skillName, workingDirectory);
+
+      res.json({
+        name: skillName,
+        sources: sources,
+        scope: sources.md.scope,
+        source: sources.md.source,
+        exists: sources.md.exists
+      });
+    } catch (error) {
+      console.error('Failed to get skill sources:', error);
+      res.status(500).json({ error: 'Failed to get skill configuration metadata' });
+    }
+  });
+
+  // Get skill supporting file content
+  app.get('/api/config/skills/:name/files/*filePath', (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const filePath = decodeURIComponent(req.params.filePath); // Decode URL-encoded path
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      
+      const sources = getSkillSources(skillName, workingDirectory);
+      if (!sources.md.exists || !sources.md.dir) {
+        return res.status(404).json({ error: 'Skill not found' });
+      }
+      
+      const content = readSkillSupportingFile(sources.md.dir, filePath);
+      if (content === null) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      res.json({ path: filePath, content });
+    } catch (error) {
+      console.error('Failed to read skill file:', error);
+      res.status(500).json({ error: 'Failed to read skill file' });
+    }
+  });
+
+  // Create new skill
+  app.post('/api/config/skills/:name', async (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const { scope, ...config } = req.body;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+
+      console.log('[Server] Creating skill:', skillName);
+      console.log('[Server] Scope:', scope, 'Working directory:', workingDirectory);
+
+      createSkill(skillName, config, workingDirectory, scope);
+      // Skills are just files - OpenCode loads them on-demand, no restart needed
+
+      res.json({
+        success: true,
+        requiresReload: false,
+        message: `Skill ${skillName} created successfully`,
+      });
+    } catch (error) {
+      console.error('Failed to create skill:', error);
+      res.status(500).json({ error: error.message || 'Failed to create skill' });
+    }
+  });
+
+  // Update existing skill
+  app.patch('/api/config/skills/:name', async (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const updates = req.body;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+
+      console.log(`[Server] Updating skill: ${skillName}`);
+      console.log('[Server] Working directory:', workingDirectory);
+
+      updateSkill(skillName, updates, workingDirectory);
+      // Skills are just files - OpenCode loads them on-demand, no restart needed
+
+      res.json({
+        success: true,
+        requiresReload: false,
+        message: `Skill ${skillName} updated successfully`,
+      });
+    } catch (error) {
+      console.error('[Server] Failed to update skill:', error);
+      res.status(500).json({ error: error.message || 'Failed to update skill' });
+    }
+  });
+
+  // Update/create supporting file
+  app.put('/api/config/skills/:name/files/*filePath', async (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const filePath = decodeURIComponent(req.params.filePath); // Decode URL-encoded path
+      const { content } = req.body;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      
+      const sources = getSkillSources(skillName, workingDirectory);
+      if (!sources.md.exists || !sources.md.dir) {
+        return res.status(404).json({ error: 'Skill not found' });
+      }
+      
+      writeSkillSupportingFile(sources.md.dir, filePath, content || '');
+      
+      res.json({
+        success: true,
+        message: `File ${filePath} saved successfully`,
+      });
+    } catch (error) {
+      console.error('Failed to write skill file:', error);
+      res.status(500).json({ error: error.message || 'Failed to write skill file' });
+    }
+  });
+
+  // Delete supporting file
+  app.delete('/api/config/skills/:name/files/*filePath', async (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const filePath = decodeURIComponent(req.params.filePath); // Decode URL-encoded path
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      
+      const sources = getSkillSources(skillName, workingDirectory);
+      if (!sources.md.exists || !sources.md.dir) {
+        return res.status(404).json({ error: 'Skill not found' });
+      }
+      
+      deleteSkillSupportingFile(sources.md.dir, filePath);
+      
+      res.json({
+        success: true,
+        message: `File ${filePath} deleted successfully`,
+      });
+    } catch (error) {
+      console.error('Failed to delete skill file:', error);
+      res.status(500).json({ error: error.message || 'Failed to delete skill file' });
+    }
+  });
+
+  // Delete skill
+  app.delete('/api/config/skills/:name', async (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+
+      deleteSkill(skillName, workingDirectory);
+      // Skills are just files - OpenCode loads them on-demand, no restart needed
+
+      res.json({
+        success: true,
+        requiresReload: false,
+        message: `Skill ${skillName} deleted successfully`,
+      });
+    } catch (error) {
+      console.error('Failed to delete skill:', error);
+      res.status(500).json({ error: error.message || 'Failed to delete skill' });
     }
   });
 

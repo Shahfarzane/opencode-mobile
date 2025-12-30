@@ -1334,6 +1334,289 @@ async fn handle_agent_route(
     }
 }
 
+/// Response type for skill metadata
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SkillMetadataResponse {
+    name: String,
+    exists: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scope: Option<opencode_config::Scope>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source: Option<opencode_config::SkillSource>,
+    sources: opencode_config::SkillConfigSources,
+}
+
+/// Response type for skill list
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SkillListItem {
+    name: String,
+    path: String,
+    scope: opencode_config::Scope,
+    source: opencode_config::SkillSource,
+    sources: opencode_config::SkillConfigSources,
+}
+
+/// Response type for skill file content
+#[derive(Serialize)]
+struct SkillFileResponse {
+    path: String,
+    content: String,
+}
+
+async fn handle_skill_list_route(
+    state: &ServerState,
+) -> Result<Response<Body>, StatusCode> {
+    let working_directory = state.opencode.get_working_directory();
+    let discovered = opencode_config::discover_skills(Some(&working_directory));
+    
+    let mut skills = Vec::new();
+    for skill in discovered {
+        match opencode_config::get_skill_sources(&skill.name, Some(&working_directory)).await {
+            Ok(sources) => {
+                skills.push(SkillListItem {
+                    name: skill.name,
+                    path: skill.path,
+                    scope: skill.scope,
+                    source: skill.source,
+                    sources,
+                });
+            }
+            Err(err) => {
+                error!("[desktop:config] Failed to get skill sources for {}: {}", skill.name, err);
+            }
+        }
+    }
+    
+    Ok(json_response(StatusCode::OK, serde_json::json!({ "skills": skills })))
+}
+
+async fn handle_skill_route(
+    state: &ServerState,
+    method: Method,
+    req: Request<Body>,
+    name: String,
+    file_path: Option<String>,
+) -> Result<Response<Body>, StatusCode> {
+    let working_directory = state.opencode.get_working_directory();
+    
+    // Handle file operations: /api/config/skills/:name/files/*
+    if let Some(ref fp) = file_path {
+        match method {
+            Method::GET => {
+                // Read supporting file
+                match opencode_config::get_skill_sources(&name, Some(&working_directory)).await {
+                    Ok(sources) => {
+                        if !sources.md.exists {
+                            return Ok(config_error_response(StatusCode::NOT_FOUND, "Skill not found"));
+                        }
+                        let skill_dir = sources.md.dir.ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+                        match opencode_config::read_skill_supporting_file(std::path::Path::new(&skill_dir), fp).await {
+                            Ok(content) => Ok(json_response(StatusCode::OK, SkillFileResponse { path: fp.clone(), content })),
+                            Err(_) => Ok(config_error_response(StatusCode::NOT_FOUND, "File not found")),
+                        }
+                    }
+                    Err(err) => {
+                        error!("[desktop:config] Failed to read skill sources: {}", err);
+                        Ok(config_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Failed to read skill"))
+                    }
+                }
+            }
+            Method::PUT => {
+                // Write supporting file
+                let payload = match parse_request_payload(req).await {
+                    Ok(data) => data,
+                    Err(resp) => return Ok(resp),
+                };
+                let content = payload.get("content").and_then(|v| v.as_str()).unwrap_or("");
+                
+                match opencode_config::get_skill_sources(&name, Some(&working_directory)).await {
+                    Ok(sources) => {
+                        if !sources.md.exists {
+                            return Ok(config_error_response(StatusCode::NOT_FOUND, "Skill not found"));
+                        }
+                        let skill_dir = sources.md.dir.ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+                        match opencode_config::write_skill_supporting_file(std::path::Path::new(&skill_dir), fp, content).await {
+                            Ok(()) => Ok(json_response(StatusCode::OK, ConfigActionResponse {
+                                success: true,
+                                requires_reload: false,
+                                message: format!("File {} saved successfully", fp),
+                                reload_delay_ms: 0,
+                            })),
+                            Err(err) => Ok(config_error_response(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
+                        }
+                    }
+                    Err(err) => Ok(config_error_response(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
+                }
+            }
+            Method::DELETE => {
+                // Delete supporting file
+                match opencode_config::get_skill_sources(&name, Some(&working_directory)).await {
+                    Ok(sources) => {
+                        if !sources.md.exists {
+                            return Ok(config_error_response(StatusCode::NOT_FOUND, "Skill not found"));
+                        }
+                        let skill_dir = sources.md.dir.ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+                        match opencode_config::delete_skill_supporting_file(std::path::Path::new(&skill_dir), fp).await {
+                            Ok(()) => Ok(json_response(StatusCode::OK, ConfigActionResponse {
+                                success: true,
+                                requires_reload: false,
+                                message: format!("File {} deleted successfully", fp),
+                                reload_delay_ms: 0,
+                            })),
+                            Err(err) => Ok(config_error_response(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
+                        }
+                    }
+                    Err(err) => Ok(config_error_response(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
+                }
+            }
+            _ => Ok(StatusCode::METHOD_NOT_ALLOWED.into_response()),
+        }
+    } else {
+        // Handle skill CRUD: /api/config/skills/:name
+        match method {
+            Method::GET => {
+                match opencode_config::get_skill_sources(&name, Some(&working_directory)).await {
+                    Ok(sources) => {
+                        let scope = sources.md.scope.clone();
+                        let source = sources.md.source.clone();
+                        Ok(json_response(
+                            StatusCode::OK,
+                            SkillMetadataResponse {
+                                name,
+                                exists: sources.md.exists,
+                                scope,
+                                source,
+                                sources,
+                            },
+                        ))
+                    }
+                    Err(err) => {
+                        error!("[desktop:config] Failed to read skill sources: {}", err);
+                        Ok(config_error_response(
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            "Failed to read skill configuration",
+                        ))
+                    }
+                }
+            }
+            Method::POST => {
+                let payload = match parse_request_payload(req).await {
+                    Ok(data) => data,
+                    Err(resp) => return Ok(resp),
+                };
+                
+                let scope = payload.get("scope")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| match s {
+                        "project" => Some(opencode_config::SkillScope::Project),
+                        "user" => Some(opencode_config::SkillScope::User),
+                        _ => None,
+                    });
+
+                match opencode_config::create_skill(&name, &payload, Some(&working_directory), scope).await {
+                    Ok(()) => {
+                        if let Err(resp) =
+                            refresh_opencode_after_config_change(state, "skill creation").await
+                        {
+                            return Ok(resp);
+                        }
+
+                        Ok(json_response(
+                            StatusCode::OK,
+                            ConfigActionResponse {
+                                success: true,
+                                requires_reload: true,
+                                message: format!(
+                                    "Skill {} created successfully. Reloading interface...",
+                                    name
+                                ),
+                                reload_delay_ms: CLIENT_RELOAD_DELAY_MS,
+                            },
+                        ))
+                    }
+                    Err(err) => {
+                        error!("[desktop:config] Failed to create skill {}: {}", name, err);
+                        Ok(config_error_response(
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            err.to_string(),
+                        ))
+                    }
+                }
+            }
+            Method::PATCH => {
+                let payload = match parse_request_payload(req).await {
+                    Ok(data) => data,
+                    Err(resp) => return Ok(resp),
+                };
+
+                match opencode_config::update_skill(&name, &payload, Some(&working_directory)).await {
+                    Ok(()) => {
+                        if let Err(resp) =
+                            refresh_opencode_after_config_change(state, "skill update").await
+                        {
+                            return Ok(resp);
+                        }
+
+                        Ok(json_response(
+                            StatusCode::OK,
+                            ConfigActionResponse {
+                                success: true,
+                                requires_reload: true,
+                                message: format!(
+                                    "Skill {} updated successfully. Reloading interface...",
+                                    name
+                                ),
+                                reload_delay_ms: CLIENT_RELOAD_DELAY_MS,
+                            },
+                        ))
+                    }
+                    Err(err) => {
+                        error!("[desktop:config] Failed to update skill {}: {}", name, err);
+                        Ok(config_error_response(
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            err.to_string(),
+                        ))
+                    }
+                }
+            }
+            Method::DELETE => match opencode_config::delete_skill(&name, Some(&working_directory)).await {
+                Ok(()) => {
+                    if let Err(resp) =
+                        refresh_opencode_after_config_change(state, "skill deletion").await
+                    {
+                        return Ok(resp);
+                    }
+
+                    Ok(json_response(
+                        StatusCode::OK,
+                        ConfigActionResponse {
+                            success: true,
+                            requires_reload: true,
+                            message: format!(
+                                "Skill {} deleted successfully. Reloading interface...",
+                                name
+                            ),
+                            reload_delay_ms: CLIENT_RELOAD_DELAY_MS,
+                        },
+                    ))
+                }
+                Err(err) => {
+                    error!("[desktop:config] Failed to delete skill {}: {}", name, err);
+                    let status = if err.to_string().contains("not found") {
+                        StatusCode::NOT_FOUND
+                    } else {
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    };
+                    Ok(config_error_response(status, err.to_string()))
+                }
+            },
+            _ => Ok(StatusCode::METHOD_NOT_ALLOWED.into_response()),
+        }
+    }
+}
+
 async fn handle_command_route(
     state: &ServerState,
     method: Method,
@@ -1514,6 +1797,39 @@ async fn handle_config_routes(
         return handle_command_route(&state, method, req, trimmed.to_string()).await;
     }
 
+    // Handle skill routes: /api/config/skills and /api/config/skills/:name
+    if path == "/api/config/skills" && method == Method::GET {
+        return handle_skill_list_route(&state).await;
+    }
+
+    if let Some(rest) = path.strip_prefix("/api/config/skills/") {
+        // Check if it's a file operation: /api/config/skills/:name/files/*
+        if let Some(files_start) = rest.find("/files/") {
+            let name = &rest[..files_start];
+            let file_path_encoded = &rest[files_start + 7..]; // Skip "/files/"
+            // Decode URL-encoded path (e.g., "docs%2Foptimization.md" -> "docs/optimization.md")
+            let file_path = urlencoding::decode(file_path_encoded)
+                .map(|s| s.into_owned())
+                .unwrap_or_else(|_| file_path_encoded.to_string());
+            if name.is_empty() {
+                return Ok(config_error_response(
+                    StatusCode::BAD_REQUEST,
+                    "Skill name is required",
+                ));
+            }
+            return handle_skill_route(&state, method, req, name.to_string(), Some(file_path)).await;
+        }
+        
+        let trimmed = rest.trim();
+        if trimmed.is_empty() {
+            return Ok(config_error_response(
+                StatusCode::BAD_REQUEST,
+                "Skill name is required",
+            ));
+        }
+        return handle_skill_route(&state, method, req, trimmed.to_string(), None).await;
+    }
+
     if path == "/api/config/reload" && method == Method::POST {
         if let Err(resp) =
             refresh_opencode_after_config_change(&state, "manual configuration reload").await
@@ -1685,6 +2001,7 @@ async fn proxy_to_opencode(
 
     let is_desktop_config_route = origin_path.starts_with("/api/config/agents/")
         || origin_path.starts_with("/api/config/commands/")
+        || origin_path.starts_with("/api/config/skills")
         || origin_path == "/api/config/reload"
         || is_provider_auth_delete;
 

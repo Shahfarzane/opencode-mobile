@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
-import { RiArrowDownSLine, RiArrowRightSLine, RiFileEditLine, RiFileSearchLine, RiFileTextLine, RiFolder6Line, RiGitBranchLine, RiGlobalLine, RiListCheck3, RiMenuSearchLine, RiPencilLine, RiTerminalBoxLine, RiToolsLine } from '@remixicon/react';
+import { RiArrowDownSLine, RiArrowRightSLine, RiBookLine, RiFileEditLine, RiFileSearchLine, RiFileTextLine, RiFolder6Line, RiGitBranchLine, RiGlobalLine, RiListCheck3, RiMenuSearchLine, RiPencilLine, RiTerminalBoxLine, RiToolsLine } from '@remixicon/react';
 import { cn } from '@/lib/utils';
 import { SimpleMarkdownRenderer } from '../../MarkdownRenderer';
 import { getToolMetadata, getLanguageFromExtension, isImageFile, getImageMimeType } from '@/lib/toolHelpers';
@@ -81,6 +81,9 @@ export const getToolIcon = (toolName: string) => {
     }
     if (tool === 'todowrite' || tool === 'todoread') {
         return <RiListCheck3 className={iconClass} />;
+    }
+    if (tool === 'skill') {
+        return <RiBookLine className={iconClass} />;
     }
     if (tool.startsWith('git')) {
         return <RiGitBranchLine className={iconClass} />;
@@ -169,6 +172,10 @@ const getToolDescription = (part: ToolPartType, state: ToolStateUnion, isMobile:
 
     if (part.tool === 'task' && input?.description && typeof input.description === 'string') {
         return isMobile ? input.description.substring(0, 40) : input.description.substring(0, 80);
+    }
+
+    if (part.tool === 'skill' && input?.name && typeof input.name === 'string') {
+        return input.name;
     }
 
     const desc = input?.description || metadata?.description || ('title' in state && state.title) || '';
@@ -647,6 +654,14 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = ({
         }
 
         if (part.tool === 'codesearch' && hasStringOutput) {
+            return renderScrollableBlock(
+                <div className="w-full min-w-0">
+                    <SimpleMarkdownRenderer content={outputString} variant="tool" />
+                </div>
+            );
+        }
+
+        if (part.tool === 'skill' && hasStringOutput) {
             return renderScrollableBlock(
                 <div className="w-full min-w-0">
                     <SimpleMarkdownRenderer content={outputString} variant="tool" />

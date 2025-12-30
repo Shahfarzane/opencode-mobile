@@ -387,6 +387,52 @@ const handleLocalApiRequest = async (url: URL, init?: RequestInit) => {
     }
   }
 
+  // Skills file operations: /api/config/skills/:name/files/:filePath
+  const skillsFilesMatch = pathname.match(/^\/api\/config\/skills\/([^/]+)\/files\/(.+)$/);
+  if (skillsFilesMatch) {
+    const name = decodeURIComponent(skillsFilesMatch[1]);
+    const filePath = decodeURIComponent(skillsFilesMatch[2]);
+    const verb = ((init?.method || 'GET') as string).toUpperCase();
+    const body = init?.body ? JSON.parse(init.body as string) : {};
+    try {
+      const data = await sendBridgeMessage('api:config/skills/files', { 
+        method: verb, 
+        name, 
+        filePath, 
+        content: body.content 
+      });
+      return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
+  // Skills CRUD: /api/config/skills/:name or /api/config/skills
+  if (pathname === '/api/config/skills') {
+    try {
+      const data = await sendBridgeMessage('api:config/skills', { method: 'GET' });
+      return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
+  if (pathname.startsWith('/api/config/skills/')) {
+    const encodedName = pathname.slice('/api/config/skills/'.length);
+    const name = decodeURIComponent(encodedName);
+    const verb = ((init?.method || 'GET') as string).toUpperCase();
+    const body = init?.body ? JSON.parse(init.body as string) : {};
+    try {
+      const data = await sendBridgeMessage('api:config/skills', { method: verb, name, body });
+      return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
   if (pathname.startsWith('/api/config/settings')) {
     if ((init?.method || 'GET').toUpperCase() === 'GET') {
       const settings = await sendBridgeMessage('api:config/settings:get');

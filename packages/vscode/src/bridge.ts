@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
 import type { OpenCodeManager } from './opencode';
-import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand, type AgentScope, type CommandScope, AGENT_SCOPE, COMMAND_SCOPE } from './opencodeConfig';
+import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand, type AgentScope, type CommandScope, AGENT_SCOPE, COMMAND_SCOPE, discoverSkills, getSkillSources, createSkill, updateSkill, deleteSkill, readSkillSupportingFile, writeSkillSupportingFile, deleteSkillSupportingFile, type SkillScope, SKILL_SCOPE } from './opencodeConfig';
 import { removeProviderAuth } from './opencodeAuth';
 
 export interface BridgeRequest {
@@ -755,6 +755,130 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
               reloadDelayMs: CLIENT_RELOAD_DELAY_MS,
             },
           };
+        }
+
+        return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+      }
+
+      case 'api:config/skills': {
+        const { method, name, body } = (payload || {}) as { method?: string; name?: string; body?: Record<string, unknown> };
+        const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const normalizedMethod = typeof method === 'string' && method.trim() ? method.trim().toUpperCase() : 'GET';
+
+        // LIST all skills (no name provided)
+        if (!name && normalizedMethod === 'GET') {
+          const skills = discoverSkills(workingDirectory);
+          return { id, type, success: true, data: { skills } };
+        }
+
+        const skillName = typeof name === 'string' ? name.trim() : '';
+        if (!skillName) {
+          return { id, type, success: false, error: 'Skill name is required' };
+        }
+
+        if (normalizedMethod === 'GET') {
+          const sources = getSkillSources(skillName, workingDirectory);
+          return {
+            id,
+            type,
+            success: true,
+            data: { name: skillName, sources, scope: sources.md.scope, source: sources.md.source },
+          };
+        }
+
+        if (normalizedMethod === 'POST') {
+          const scopeValue = body?.scope as string | undefined;
+          const scope: SkillScope | undefined = scopeValue === 'project' ? SKILL_SCOPE.PROJECT : scopeValue === 'user' ? SKILL_SCOPE.USER : undefined;
+          createSkill(skillName, (body || {}) as Record<string, unknown>, workingDirectory, scope);
+          // Skills are just files - OpenCode loads them on-demand, no restart needed
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: false,
+              message: `Skill ${skillName} created successfully`,
+            },
+          };
+        }
+
+        if (normalizedMethod === 'PATCH') {
+          updateSkill(skillName, (body || {}) as Record<string, unknown>, workingDirectory);
+          // Skills are just files - OpenCode loads them on-demand, no restart needed
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: false,
+              message: `Skill ${skillName} updated successfully`,
+            },
+          };
+        }
+
+        if (normalizedMethod === 'DELETE') {
+          deleteSkill(skillName, workingDirectory);
+          // Skills are just files - OpenCode loads them on-demand, no restart needed
+          return {
+            id,
+            type,
+            success: true,
+            data: {
+              success: true,
+              requiresReload: false,
+              message: `Skill ${skillName} deleted successfully`,
+            },
+          };
+        }
+
+        return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+      }
+
+      case 'api:config/skills/files': {
+        const { method, name, filePath, content } = (payload || {}) as { 
+          method?: string; 
+          name?: string; 
+          filePath?: string; 
+          content?: string;
+        };
+        const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+        const skillName = typeof name === 'string' ? name.trim() : '';
+        if (!skillName) {
+          return { id, type, success: false, error: 'Skill name is required' };
+        }
+
+        const relativePath = typeof filePath === 'string' ? filePath.trim() : '';
+        if (!relativePath) {
+          return { id, type, success: false, error: 'File path is required' };
+        }
+
+        const sources = getSkillSources(skillName, workingDirectory);
+        if (!sources.md.dir) {
+          return { id, type, success: false, error: `Skill "${skillName}" not found` };
+        }
+
+        const skillDir = sources.md.dir;
+        const normalizedMethod = typeof method === 'string' && method.trim() ? method.trim().toUpperCase() : 'GET';
+
+        if (normalizedMethod === 'GET') {
+          const fileContent = readSkillSupportingFile(skillDir, relativePath);
+          if (fileContent === null) {
+            return { id, type, success: false, error: `File "${relativePath}" not found in skill "${skillName}"` };
+          }
+          return { id, type, success: true, data: { content: fileContent } };
+        }
+
+        if (normalizedMethod === 'PUT') {
+          writeSkillSupportingFile(skillDir, relativePath, content || '');
+          return { id, type, success: true, data: { success: true } };
+        }
+
+        if (normalizedMethod === 'DELETE') {
+          deleteSkillSupportingFile(skillDir, relativePath);
+          return { id, type, success: true, data: { success: true } };
         }
 
         return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
