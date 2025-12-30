@@ -148,6 +148,14 @@ export const TOOL_METADATA: Record<string, ToolMetadata> = {
      category: 'system',
      outputLanguage: 'json',
      inputFields: []
+   },
+   skill: {
+     displayName: 'Load Skill',
+     category: 'ai',
+     outputLanguage: 'markdown',
+     inputFields: [
+       { key: 'name', label: 'Skill Name', type: 'text' }
+     ]
    }
  };
 

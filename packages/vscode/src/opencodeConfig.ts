@@ -732,3 +732,413 @@ export const deleteCommand = (commandName: string, workingDirectory?: string) =>
   }
 };
 
+// ============== SKILL SCOPE HELPERS ==============
+
+const SKILL_DIR = path.join(OPENCODE_CONFIG_DIR, 'skill');
+
+export const SKILL_SCOPE = {
+  USER: 'user',
+  PROJECT: 'project'
+} as const;
+
+export type SkillScope = typeof SKILL_SCOPE[keyof typeof SKILL_SCOPE];
+export type SkillSource = 'opencode' | 'claude';
+
+export type SupportingFile = {
+  name: string;
+  path: string;
+  fullPath: string;
+};
+
+export type SkillConfigSources = {
+  md: {
+    exists: boolean;
+    path: string | null;
+    dir: string | null;
+    fields: string[];
+    scope?: SkillScope | null;
+    source?: SkillSource | null;
+    supportingFiles: SupportingFile[];
+  };
+  projectMd?: { exists: boolean; path: string | null };
+  claudeMd?: { exists: boolean; path: string | null };
+  userMd?: { exists: boolean; path: string | null };
+};
+
+export type DiscoveredSkill = {
+  name: string;
+  path: string;
+  scope: SkillScope;
+  source: SkillSource;
+};
+
+const ensureSkillDirs = () => {
+  if (!fs.existsSync(SKILL_DIR)) {
+    fs.mkdirSync(SKILL_DIR, { recursive: true });
+  }
+};
+
+const getUserSkillDir = (skillName: string): string => {
+  return path.join(SKILL_DIR, skillName);
+};
+
+const getUserSkillPath = (skillName: string): string => {
+  return path.join(getUserSkillDir(skillName), 'SKILL.md');
+};
+
+const getProjectSkillDir = (workingDirectory: string, skillName: string): string => {
+  return path.join(workingDirectory, '.opencode', 'skill', skillName);
+};
+
+const getProjectSkillPath = (workingDirectory: string, skillName: string): string => {
+  return path.join(getProjectSkillDir(workingDirectory, skillName), 'SKILL.md');
+};
+
+const getClaudeSkillDir = (workingDirectory: string, skillName: string): string => {
+  return path.join(workingDirectory, '.claude', 'skills', skillName);
+};
+
+const getClaudeSkillPath = (workingDirectory: string, skillName: string): string => {
+  return path.join(getClaudeSkillDir(workingDirectory, skillName), 'SKILL.md');
+};
+
+export const getSkillScope = (skillName: string, workingDirectory?: string): { 
+  scope: SkillScope | null; 
+  path: string | null; 
+  source: SkillSource | null;
+} => {
+  if (workingDirectory) {
+    // Check .opencode/skill first
+    const projectPath = getProjectSkillPath(workingDirectory, skillName);
+    if (fs.existsSync(projectPath)) {
+      return { scope: SKILL_SCOPE.PROJECT, path: projectPath, source: 'opencode' };
+    }
+    
+    // Check .claude/skills (claude-compat)
+    const claudePath = getClaudeSkillPath(workingDirectory, skillName);
+    if (fs.existsSync(claudePath)) {
+      return { scope: SKILL_SCOPE.PROJECT, path: claudePath, source: 'claude' };
+    }
+  }
+  
+  const userPath = getUserSkillPath(skillName);
+  if (fs.existsSync(userPath)) {
+    return { scope: SKILL_SCOPE.USER, path: userPath, source: 'opencode' };
+  }
+  
+  return { scope: null, path: null, source: null };
+};
+
+const listSupportingFiles = (skillDir: string): SupportingFile[] => {
+  if (!fs.existsSync(skillDir)) return [];
+  
+  const files: SupportingFile[] = [];
+  
+  const walkDir = (dir: string, relativePath: string = '') => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      const relPath = relativePath ? path.join(relativePath, entry.name) : entry.name;
+      
+      if (entry.isDirectory()) {
+        walkDir(fullPath, relPath);
+      } else if (entry.name !== 'SKILL.md') {
+        files.push({
+          name: entry.name,
+          path: relPath,
+          fullPath
+        });
+      }
+    }
+  };
+  
+  walkDir(skillDir);
+  return files;
+};
+
+export const discoverSkills = (workingDirectory?: string): DiscoveredSkill[] => {
+  const skills = new Map<string, DiscoveredSkill>();
+  
+  const addSkill = (name: string, skillPath: string, scope: SkillScope, source: SkillSource) => {
+    if (!skills.has(name)) {
+      skills.set(name, { name, path: skillPath, scope, source });
+    }
+  };
+  
+  // 1. Project level .opencode/skill/ (highest priority)
+  if (workingDirectory) {
+    const projectSkillDir = path.join(workingDirectory, '.opencode', 'skill');
+    if (fs.existsSync(projectSkillDir)) {
+      const entries = fs.readdirSync(projectSkillDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const skillMdPath = path.join(projectSkillDir, entry.name, 'SKILL.md');
+          if (fs.existsSync(skillMdPath)) {
+            addSkill(entry.name, skillMdPath, SKILL_SCOPE.PROJECT, 'opencode');
+          }
+        }
+      }
+    }
+    
+    // 2. Claude-compatible .claude/skills/
+    const claudeSkillDir = path.join(workingDirectory, '.claude', 'skills');
+    if (fs.existsSync(claudeSkillDir)) {
+      const entries = fs.readdirSync(claudeSkillDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const skillMdPath = path.join(claudeSkillDir, entry.name, 'SKILL.md');
+          if (fs.existsSync(skillMdPath)) {
+            addSkill(entry.name, skillMdPath, SKILL_SCOPE.PROJECT, 'claude');
+          }
+        }
+      }
+    }
+  }
+  
+  // 3. User level ~/.config/opencode/skill/
+  if (fs.existsSync(SKILL_DIR)) {
+    const entries = fs.readdirSync(SKILL_DIR, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const skillMdPath = path.join(SKILL_DIR, entry.name, 'SKILL.md');
+        if (fs.existsSync(skillMdPath)) {
+          addSkill(entry.name, skillMdPath, SKILL_SCOPE.USER, 'opencode');
+        }
+      }
+    }
+  }
+  
+  return Array.from(skills.values());
+};
+
+export const getSkillSources = (skillName: string, workingDirectory?: string): SkillConfigSources => {
+  ensureSkillDirs();
+  
+  // Check all possible locations
+  const projectPath = workingDirectory ? getProjectSkillPath(workingDirectory, skillName) : null;
+  const projectExists = projectPath ? fs.existsSync(projectPath) : false;
+  const projectDir = projectExists && workingDirectory ? getProjectSkillDir(workingDirectory, skillName) : null;
+  
+  const claudePath = workingDirectory ? getClaudeSkillPath(workingDirectory, skillName) : null;
+  const claudeExists = claudePath ? fs.existsSync(claudePath) : false;
+  const claudeDir = claudeExists && workingDirectory ? getClaudeSkillDir(workingDirectory, skillName) : null;
+  
+  const userPath = getUserSkillPath(skillName);
+  const userExists = fs.existsSync(userPath);
+  const userDir = userExists ? getUserSkillDir(skillName) : null;
+  
+  // Determine which md file to use (priority: project > claude > user)
+  let mdPath: string | null = null;
+  let mdScope: SkillScope | null = null;
+  let mdSource: SkillSource | null = null;
+  let mdDir: string | null = null;
+  
+  if (projectExists) {
+    mdPath = projectPath;
+    mdScope = SKILL_SCOPE.PROJECT;
+    mdSource = 'opencode';
+    mdDir = projectDir;
+  } else if (claudeExists) {
+    mdPath = claudePath;
+    mdScope = SKILL_SCOPE.PROJECT;
+    mdSource = 'claude';
+    mdDir = claudeDir;
+  } else if (userExists) {
+    mdPath = userPath;
+    mdScope = SKILL_SCOPE.USER;
+    mdSource = 'opencode';
+    mdDir = userDir;
+  }
+  
+  const mdExists = !!mdPath;
+  let mdFields: string[] = [];
+  let supportingFiles: SupportingFile[] = [];
+  
+  if (mdExists && mdPath) {
+    const { frontmatter, body } = parseMdFile(mdPath);
+    mdFields = Object.keys(frontmatter);
+    if (body) mdFields.push('instructions');
+    if (mdDir) {
+      supportingFiles = listSupportingFiles(mdDir);
+    }
+  }
+  
+  return {
+    md: {
+      exists: mdExists,
+      path: mdPath,
+      dir: mdDir,
+      fields: mdFields,
+      scope: mdScope,
+      source: mdSource,
+      supportingFiles
+    },
+    projectMd: { exists: projectExists, path: projectPath },
+    claudeMd: { exists: claudeExists, path: claudePath },
+    userMd: { exists: userExists, path: userPath }
+  };
+};
+
+export const readSkillSupportingFile = (skillDir: string, relativePath: string): string | null => {
+  const fullPath = path.join(skillDir, relativePath);
+  if (!fs.existsSync(fullPath)) return null;
+  return fs.readFileSync(fullPath, 'utf8');
+};
+
+export const writeSkillSupportingFile = (skillDir: string, relativePath: string, content: string): void => {
+  const fullPath = path.join(skillDir, relativePath);
+  fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+  fs.writeFileSync(fullPath, content, 'utf8');
+};
+
+export const deleteSkillSupportingFile = (skillDir: string, relativePath: string): void => {
+  const fullPath = path.join(skillDir, relativePath);
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+    // Clean up empty parent directories
+    let parentDir = path.dirname(fullPath);
+    while (parentDir !== skillDir) {
+      try {
+        const entries = fs.readdirSync(parentDir);
+        if (entries.length === 0) {
+          fs.rmdirSync(parentDir);
+          parentDir = path.dirname(parentDir);
+        } else {
+          break;
+        }
+      } catch {
+        break;
+      }
+    }
+  }
+};
+
+const validateSkillName = (skillName: string): void => {
+  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(skillName) || skillName.length > 64) {
+    throw new Error(`Invalid skill name "${skillName}". Must be 1-64 lowercase alphanumeric characters with hyphens, cannot start or end with hyphen.`);
+  }
+};
+
+export const createSkill = (skillName: string, config: Record<string, unknown>, workingDirectory?: string, scope?: SkillScope): void => {
+  ensureSkillDirs();
+  validateSkillName(skillName);
+  
+  // Check if skill already exists
+  const existing = getSkillScope(skillName, workingDirectory);
+  if (existing.path) {
+    throw new Error(`Skill ${skillName} already exists at ${existing.path}`);
+  }
+  
+  // Determine target directory
+  let targetDir: string;
+  
+  if (scope === SKILL_SCOPE.PROJECT && workingDirectory) {
+    targetDir = getProjectSkillDir(workingDirectory, skillName);
+  } else {
+    targetDir = getUserSkillDir(skillName);
+  }
+  
+  fs.mkdirSync(targetDir, { recursive: true });
+  const targetPath = path.join(targetDir, 'SKILL.md');
+  
+  // Extract fields
+  const { instructions, scope: _ignored, supportingFiles: supportingFilesData, ...frontmatter } = config as Record<string, unknown> & { 
+    instructions?: unknown; 
+    scope?: unknown; 
+    supportingFiles?: Array<{ path: string; content: string }>;
+  };
+  void _ignored;
+  
+  // Ensure required fields
+  if (!frontmatter.name) {
+    frontmatter.name = skillName;
+  }
+  if (!frontmatter.description) {
+    throw new Error('Skill description is required');
+  }
+  
+  writeMdFile(targetPath, frontmatter, typeof instructions === 'string' ? instructions : '');
+  
+  // Write supporting files if provided
+  if (supportingFilesData && Array.isArray(supportingFilesData)) {
+    for (const file of supportingFilesData) {
+      if (file.path && file.content !== undefined) {
+        writeSkillSupportingFile(targetDir, file.path, file.content);
+      }
+    }
+  }
+};
+
+export const updateSkill = (skillName: string, updates: Record<string, unknown>, workingDirectory?: string): void => {
+  const existing = getSkillScope(skillName, workingDirectory);
+  if (!existing.path) {
+    throw new Error(`Skill "${skillName}" not found`);
+  }
+  
+  const mdPath = existing.path;
+  const mdDir = path.dirname(mdPath);
+  const mdData = parseMdFile(mdPath);
+  let mdModified = false;
+  
+  for (const [field, value] of Object.entries(updates || {})) {
+    if (field === 'scope') continue;
+    
+    if (field === 'instructions') {
+      const normalizedValue = typeof value === 'string' ? value : value == null ? '' : String(value);
+      mdData.body = normalizedValue;
+      mdModified = true;
+      continue;
+    }
+    
+    if (field === 'supportingFiles' && Array.isArray(value)) {
+      for (const file of value as Array<{ delete?: boolean; path?: string; content?: string }>) {
+        if (file.delete && file.path) {
+          deleteSkillSupportingFile(mdDir, file.path);
+        } else if (file.path && file.content !== undefined) {
+          writeSkillSupportingFile(mdDir, file.path, file.content);
+        }
+      }
+      continue;
+    }
+    
+    mdData.frontmatter[field] = value;
+    mdModified = true;
+  }
+  
+  if (mdModified) {
+    writeMdFile(mdPath, mdData.frontmatter, mdData.body);
+  }
+};
+
+export const deleteSkill = (skillName: string, workingDirectory?: string): void => {
+  let deleted = false;
+  
+  // Check and delete from all locations
+  if (workingDirectory) {
+    // Project level .opencode/skill/
+    const projectDir = getProjectSkillDir(workingDirectory, skillName);
+    if (fs.existsSync(projectDir)) {
+      fs.rmSync(projectDir, { recursive: true, force: true });
+      deleted = true;
+    }
+    
+    // Claude-compat .claude/skills/
+    const claudeDir = getClaudeSkillDir(workingDirectory, skillName);
+    if (fs.existsSync(claudeDir)) {
+      fs.rmSync(claudeDir, { recursive: true, force: true });
+      deleted = true;
+    }
+  }
+  
+  // User level
+  const userDir = getUserSkillDir(skillName);
+  if (fs.existsSync(userDir)) {
+    fs.rmSync(userDir, { recursive: true, force: true });
+    deleted = true;
+  }
+  
+  if (!deleted) {
+    throw new Error(`Skill "${skillName}" not found`);
+  }
+};
+

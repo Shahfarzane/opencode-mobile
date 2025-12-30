@@ -8,6 +8,8 @@ import { AgentsSidebar } from '@/components/sections/agents/AgentsSidebar';
 import { AgentsPage } from '@/components/sections/agents/AgentsPage';
 import { CommandsSidebar } from '@/components/sections/commands/CommandsSidebar';
 import { CommandsPage } from '@/components/sections/commands/CommandsPage';
+import { SkillsSidebar } from '@/components/sections/skills/SkillsSidebar';
+import { SkillsPage } from '@/components/sections/skills/SkillsPage';
 import { ProvidersSidebar } from '@/components/sections/providers/ProvidersSidebar';
 import { ProvidersPage } from '@/components/sections/providers/ProvidersPage';
 import { GitIdentitiesSidebar } from '@/components/sections/git-identities/GitIdentitiesSidebar';
@@ -209,6 +211,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <AgentsSidebar onItemSelect={handleMobileSidebarClick} />;
       case 'commands':
         return <CommandsSidebar onItemSelect={handleMobileSidebarClick} />;
+      case 'skills':
+        return <SkillsSidebar onItemSelect={handleMobileSidebarClick} />;
       case 'providers':
         return <ProvidersSidebar onItemSelect={handleMobileSidebarClick} />;
       case 'git-identities':
@@ -226,6 +230,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <AgentsPage />;
       case 'commands':
         return <CommandsPage />;
+      case 'skills':
+        return <SkillsPage />;
       case 'providers':
         return <ProvidersPage />;
       case 'git-identities':

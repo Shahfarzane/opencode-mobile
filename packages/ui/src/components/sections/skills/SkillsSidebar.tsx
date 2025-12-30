@@ -1,0 +1,401 @@
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ButtonLarge } from '@/components/ui/button-large';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { RiAddLine, RiDeleteBinLine, RiFileCopyLine, RiMore2Line, RiEditLine, RiBookOpenLine } from '@remixicon/react';
+import { useSkillsStore, type DiscoveredSkill } from '@/stores/useSkillsStore';
+import { useUIStore } from '@/stores/useUIStore';
+import { useDeviceInfo } from '@/lib/device';
+import { isVSCodeRuntime } from '@/lib/desktop';
+import { cn } from '@/lib/utils';
+import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+
+interface SkillsSidebarProps {
+  onItemSelect?: () => void;
+}
+
+export const SkillsSidebar: React.FC<SkillsSidebarProps> = ({ onItemSelect }) => {
+  const [renameDialogSkill, setRenameDialogSkill] = React.useState<DiscoveredSkill | null>(null);
+  const [renameNewName, setRenameNewName] = React.useState('');
+
+  const {
+    selectedSkillName,
+    skills,
+    setSelectedSkill,
+    setSkillDraft,
+    createSkill,
+    deleteSkill,
+    loadSkills,
+    getSkillDetail,
+  } = useSkillsStore();
+
+  const { setSidebarOpen } = useUIStore();
+  const { isMobile } = useDeviceInfo();
+
+  const [isDesktopRuntime, setIsDesktopRuntime] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return typeof window.opencodeDesktop !== 'undefined';
+  });
+
+  const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsDesktopRuntime(typeof window.opencodeDesktop !== 'undefined');
+  }, []);
+
+  React.useEffect(() => {
+    loadSkills();
+  }, [loadSkills]);
+
+  const bgClass = isDesktopRuntime
+    ? 'bg-transparent'
+    : isVSCode
+      ? 'bg-background'
+      : 'bg-sidebar';
+
+  const handleCreateNew = () => {
+    // Generate unique name
+    const baseName = 'new-skill';
+    let newName = baseName;
+    let counter = 1;
+    while (skills.some((s) => s.name === newName)) {
+      newName = `${baseName}-${counter}`;
+      counter++;
+    }
+
+    // Set draft and open the page for editing
+    setSkillDraft({ name: newName, scope: 'user', description: '' });
+    setSelectedSkill(newName);
+
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleDeleteSkill = async (skill: DiscoveredSkill) => {
+    if (window.confirm(`Are you sure you want to delete skill "${skill.name}"?`)) {
+      const success = await deleteSkill(skill.name);
+      if (success) {
+        toast.success(`Skill "${skill.name}" deleted successfully`);
+      } else {
+        toast.error('Failed to delete skill');
+      }
+    }
+  };
+
+  const handleDuplicateSkill = async (skill: DiscoveredSkill) => {
+    const baseName = skill.name;
+    let copyNumber = 1;
+    let newName = `${baseName}-copy`;
+
+    while (skills.some((s) => s.name === newName)) {
+      copyNumber++;
+      newName = `${baseName}-copy-${copyNumber}`;
+    }
+
+    // Get full skill detail to copy
+    const detail = await getSkillDetail(skill.name);
+    if (!detail) {
+      toast.error('Failed to load skill details for duplication');
+      return;
+    }
+
+    // Set draft with prefilled values from source skill
+    setSkillDraft({
+      name: newName,
+      scope: skill.scope || 'user',
+      description: detail.sources.md.fields.includes('description') ? '' : '', // Will be populated from page
+      instructions: '',
+    });
+    setSelectedSkill(newName);
+
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleOpenRenameDialog = (skill: DiscoveredSkill) => {
+    setRenameNewName(skill.name);
+    setRenameDialogSkill(skill);
+  };
+
+  const handleRenameSkill = async () => {
+    if (!renameDialogSkill) return;
+
+    const sanitizedName = renameNewName.trim().replace(/\s+/g, '-').toLowerCase();
+
+    if (!sanitizedName) {
+      toast.error('Skill name is required');
+      return;
+    }
+
+    if (sanitizedName === renameDialogSkill.name) {
+      setRenameDialogSkill(null);
+      return;
+    }
+
+    if (skills.some((s) => s.name === sanitizedName)) {
+      toast.error('A skill with this name already exists');
+      return;
+    }
+
+    // Get full detail to copy
+    const detail = await getSkillDetail(renameDialogSkill.name);
+    if (!detail) {
+      toast.error('Failed to load skill details');
+      setRenameDialogSkill(null);
+      return;
+    }
+
+    // Create new skill with new name
+    const success = await createSkill({
+      name: sanitizedName,
+      description: 'Renamed skill', // Will need proper description
+      scope: renameDialogSkill.scope,
+    });
+
+    if (success) {
+      // Delete old skill
+      const deleteSuccess = await deleteSkill(renameDialogSkill.name);
+      if (deleteSuccess) {
+        toast.success(`Skill renamed to "${sanitizedName}"`);
+        setSelectedSkill(sanitizedName);
+      } else {
+        toast.error('Failed to remove old skill after rename');
+      }
+    } else {
+      toast.error('Failed to rename skill');
+    }
+
+    setRenameDialogSkill(null);
+  };
+
+  // Separate project and user skills
+  const projectSkills = skills.filter((s) => s.scope === 'project');
+  const userSkills = skills.filter((s) => s.scope === 'user');
+
+  return (
+    <div className={cn('flex h-full flex-col', bgClass)}>
+      <div className={cn('border-b px-3', isMobile ? 'mt-2 py-3' : 'py-3')}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="typography-meta text-muted-foreground">Total {skills.length}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 -my-1 text-muted-foreground"
+            onClick={handleCreateNew}
+          >
+            <RiAddLine className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <ScrollableOverlay outerClassName="flex-1 min-h-0" className="space-y-1 px-3 py-2 overflow-x-hidden">
+        {skills.length === 0 ? (
+          <div className="py-12 px-4 text-center text-muted-foreground">
+            <RiBookOpenLine className="mx-auto mb-3 h-10 w-10 opacity-50" />
+            <p className="typography-ui-label font-medium">No skills configured</p>
+            <p className="typography-meta mt-1 opacity-75">Use the + button above to create one</p>
+          </div>
+        ) : (
+          <>
+            {projectSkills.length > 0 && (
+              <>
+                <div className="px-2 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Project Skills
+                </div>
+                {projectSkills.map((skill) => (
+                  <SkillListItem
+                    key={skill.name}
+                    skill={skill}
+                    isSelected={selectedSkillName === skill.name}
+                    onSelect={() => {
+                      setSelectedSkill(skill.name);
+                      onItemSelect?.();
+                      if (isMobile) {
+                        setSidebarOpen(false);
+                      }
+                    }}
+                    onRename={() => handleOpenRenameDialog(skill)}
+                    onDelete={() => handleDeleteSkill(skill)}
+                    onDuplicate={() => handleDuplicateSkill(skill)}
+                  />
+                ))}
+              </>
+            )}
+
+            {userSkills.length > 0 && (
+              <>
+                <div className="px-2 pb-1.5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  User Skills
+                </div>
+                {userSkills.map((skill) => (
+                  <SkillListItem
+                    key={skill.name}
+                    skill={skill}
+                    isSelected={selectedSkillName === skill.name}
+                    onSelect={() => {
+                      setSelectedSkill(skill.name);
+                      onItemSelect?.();
+                      if (isMobile) {
+                        setSidebarOpen(false);
+                      }
+                    }}
+                    onRename={() => handleOpenRenameDialog(skill)}
+                    onDelete={() => handleDeleteSkill(skill)}
+                    onDuplicate={() => handleDuplicateSkill(skill)}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </ScrollableOverlay>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogSkill !== null} onOpenChange={(open) => !open && setRenameDialogSkill(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Skill</DialogTitle>
+            <DialogDescription>
+              Enter a new name for the skill "{renameDialogSkill?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameNewName}
+            onChange={(e) => setRenameNewName(e.target.value)}
+            placeholder="New skill name..."
+            className="text-foreground placeholder:text-muted-foreground"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleRenameSkill();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setRenameDialogSkill(null)}
+              className="text-foreground hover:bg-muted hover:text-foreground"
+            >
+              Cancel
+            </Button>
+            <ButtonLarge onClick={handleRenameSkill}>
+              Rename
+            </ButtonLarge>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+interface SkillListItemProps {
+  skill: DiscoveredSkill;
+  isSelected: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  onRename: () => void;
+  onDuplicate: () => void;
+}
+
+const SkillListItem: React.FC<SkillListItemProps> = ({
+  skill,
+  isSelected,
+  onSelect,
+  onDelete,
+  onRename,
+  onDuplicate,
+}) => {
+  return (
+    <div
+      className={cn(
+        'group relative flex items-center rounded-md px-1.5 py-1 transition-all duration-200',
+        isSelected ? 'dark:bg-accent/80 bg-primary/12' : 'hover:dark:bg-accent/40 hover:bg-primary/6'
+      )}
+    >
+      <div className="flex min-w-0 flex-1 items-center">
+        <button
+          onClick={onSelect}
+          className="flex min-w-0 flex-1 flex-col gap-0 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          tabIndex={0}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="typography-ui-label font-normal truncate text-foreground">
+              {skill.name}
+            </span>
+            <span className="typography-micro text-muted-foreground bg-muted px-1 rounded flex-shrink-0 leading-none pb-px border border-border/50">
+              {skill.scope}
+            </span>
+            {skill.source === 'claude' && (
+              <span className="typography-micro text-muted-foreground bg-muted px-1 rounded flex-shrink-0 leading-none pb-px border border-border/50">
+                claude
+              </span>
+            )}
+          </div>
+        </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 flex-shrink-0 -mr-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+            >
+              <RiMore2Line className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-fit min-w-20">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onRename();
+              }}
+            >
+              <RiEditLine className="h-4 w-4 mr-px" />
+              Rename
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate();
+              }}
+            >
+              <RiFileCopyLine className="h-4 w-4 mr-px" />
+              Duplicate
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="text-destructive focus:text-destructive"
+            >
+              <RiDeleteBinLine className="h-4 w-4 mr-px" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+};

@@ -228,6 +228,7 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             codesearch: 'web code search',
             todowrite: 'updating todos',
             todoread: 'reading todos',
+            skill: 'learning skill',
         };
 
         const WORKING_PHRASES = [

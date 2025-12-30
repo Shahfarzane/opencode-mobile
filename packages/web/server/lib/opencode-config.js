@@ -7,6 +7,7 @@ import stripJsonComments from 'strip-json-comments';
 const OPENCODE_CONFIG_DIR = path.join(os.homedir(), '.config', 'opencode');
 const AGENT_DIR = path.join(OPENCODE_CONFIG_DIR, 'agent');
 const COMMAND_DIR = path.join(OPENCODE_CONFIG_DIR, 'command');
+const SKILL_DIR = path.join(OPENCODE_CONFIG_DIR, 'skill');
 const CONFIG_FILE = path.join(OPENCODE_CONFIG_DIR, 'opencode.json');
 const CUSTOM_CONFIG_FILE = process.env.OPENCODE_CONFIG
   ? path.resolve(process.env.OPENCODE_CONFIG)
@@ -24,6 +25,11 @@ const COMMAND_SCOPE = {
   PROJECT: 'project'
 };
 
+const SKILL_SCOPE = {
+  USER: 'user',
+  PROJECT: 'project'
+};
+
 function ensureDirs() {
   if (!fs.existsSync(OPENCODE_CONFIG_DIR)) {
     fs.mkdirSync(OPENCODE_CONFIG_DIR, { recursive: true });
@@ -33,6 +39,9 @@ function ensureDirs() {
   }
   if (!fs.existsSync(COMMAND_DIR)) {
     fs.mkdirSync(COMMAND_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(SKILL_DIR)) {
+    fs.mkdirSync(SKILL_DIR, { recursive: true });
   }
 }
 
@@ -178,6 +187,195 @@ function getCommandWritePath(commandName, workingDirectory, requestedScope) {
     scope: COMMAND_SCOPE.USER, 
     path: getUserCommandPath(commandName) 
   };
+}
+
+// ============== SKILL SCOPE HELPERS ==============
+
+/**
+ * Ensure project-level skill directory exists
+ */
+function ensureProjectSkillDir(workingDirectory) {
+  const projectSkillDir = path.join(workingDirectory, '.opencode', 'skill');
+  if (!fs.existsSync(projectSkillDir)) {
+    fs.mkdirSync(projectSkillDir, { recursive: true });
+  }
+  return projectSkillDir;
+}
+
+/**
+ * Get project-level skill directory path (.opencode/skill/{name}/)
+ */
+function getProjectSkillDir(workingDirectory, skillName) {
+  return path.join(workingDirectory, '.opencode', 'skill', skillName);
+}
+
+/**
+ * Get project-level skill SKILL.md path
+ */
+function getProjectSkillPath(workingDirectory, skillName) {
+  return path.join(getProjectSkillDir(workingDirectory, skillName), 'SKILL.md');
+}
+
+/**
+ * Get user-level skill directory path
+ */
+function getUserSkillDir(skillName) {
+  return path.join(SKILL_DIR, skillName);
+}
+
+/**
+ * Get user-level skill SKILL.md path
+ */
+function getUserSkillPath(skillName) {
+  return path.join(getUserSkillDir(skillName), 'SKILL.md');
+}
+
+/**
+ * Get Claude-compatible skill directory path (.claude/skills/{name}/)
+ */
+function getClaudeSkillDir(workingDirectory, skillName) {
+  return path.join(workingDirectory, '.claude', 'skills', skillName);
+}
+
+/**
+ * Get Claude-compatible skill SKILL.md path
+ */
+function getClaudeSkillPath(workingDirectory, skillName) {
+  return path.join(getClaudeSkillDir(workingDirectory, skillName), 'SKILL.md');
+}
+
+/**
+ * Determine skill scope based on where the SKILL.md file exists
+ * Priority: project level (.opencode) > user level > claude-compat (.claude/skills)
+ */
+function getSkillScope(skillName, workingDirectory) {
+  if (workingDirectory) {
+    // Check .opencode/skill first
+    const projectPath = getProjectSkillPath(workingDirectory, skillName);
+    if (fs.existsSync(projectPath)) {
+      return { scope: SKILL_SCOPE.PROJECT, path: projectPath, source: 'opencode' };
+    }
+    
+    // Check .claude/skills (claude-compat)
+    const claudePath = getClaudeSkillPath(workingDirectory, skillName);
+    if (fs.existsSync(claudePath)) {
+      return { scope: SKILL_SCOPE.PROJECT, path: claudePath, source: 'claude' };
+    }
+  }
+  
+  const userPath = getUserSkillPath(skillName);
+  if (fs.existsSync(userPath)) {
+    return { scope: SKILL_SCOPE.USER, path: userPath, source: 'opencode' };
+  }
+  
+  return { scope: null, path: null, source: null };
+}
+
+/**
+ * Get the path where a skill should be written based on scope
+ * Note: We never write to .claude/skills, only read from there
+ */
+function getSkillWritePath(skillName, workingDirectory, requestedScope) {
+  // For updates: check existing location first
+  const existing = getSkillScope(skillName, workingDirectory);
+  if (existing.path) {
+    // If it's from .claude/skills, we still edit in place
+    return existing;
+  }
+  
+  // For new skills: use requested scope or default to user
+  const scope = requestedScope || SKILL_SCOPE.USER;
+  if (scope === SKILL_SCOPE.PROJECT && workingDirectory) {
+    return { 
+      scope: SKILL_SCOPE.PROJECT, 
+      path: getProjectSkillPath(workingDirectory, skillName),
+      source: 'opencode'
+    };
+  }
+  
+  return { 
+    scope: SKILL_SCOPE.USER, 
+    path: getUserSkillPath(skillName),
+    source: 'opencode'
+  };
+}
+
+/**
+ * List all supporting files in a skill directory (excluding SKILL.md)
+ */
+function listSkillSupportingFiles(skillDir) {
+  if (!fs.existsSync(skillDir)) {
+    return [];
+  }
+  
+  const files = [];
+  
+  function walkDir(dir, relativePath = '') {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      const relPath = relativePath ? path.join(relativePath, entry.name) : entry.name;
+      
+      if (entry.isDirectory()) {
+        walkDir(fullPath, relPath);
+      } else if (entry.name !== 'SKILL.md') {
+        files.push({
+          name: entry.name,
+          path: relPath,
+          fullPath: fullPath
+        });
+      }
+    }
+  }
+  
+  walkDir(skillDir);
+  return files;
+}
+
+/**
+ * Read a supporting file content
+ */
+function readSkillSupportingFile(skillDir, relativePath) {
+  const fullPath = path.join(skillDir, relativePath);
+  if (!fs.existsSync(fullPath)) {
+    return null;
+  }
+  return fs.readFileSync(fullPath, 'utf8');
+}
+
+/**
+ * Write a supporting file
+ */
+function writeSkillSupportingFile(skillDir, relativePath, content) {
+  const fullPath = path.join(skillDir, relativePath);
+  const dir = path.dirname(fullPath);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(fullPath, content, 'utf8');
+}
+
+/**
+ * Delete a supporting file
+ */
+function deleteSkillSupportingFile(skillDir, relativePath) {
+  const fullPath = path.join(skillDir, relativePath);
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+    // Clean up empty parent directories
+    let parentDir = path.dirname(fullPath);
+    while (parentDir !== skillDir) {
+      try {
+        const entries = fs.readdirSync(parentDir);
+        if (entries.length === 0) {
+          fs.rmdirSync(parentDir);
+          parentDir = path.dirname(parentDir);
+        } else {
+          break;
+        }
+      } catch {
+        break;
+      }
+    }
+  }
 }
 
 function isPromptFileReference(value) {
@@ -877,6 +1075,300 @@ function deleteCommand(commandName, workingDirectory) {
   }
 }
 
+// ============== SKILL CRUD ==============
+
+/**
+ * Discover all skills from all sources
+ */
+function discoverSkills(workingDirectory) {
+  const skills = new Map();
+  
+  // Helper to add skill if not already found (first found wins by priority)
+  const addSkill = (name, skillPath, scope, source) => {
+    if (!skills.has(name)) {
+      skills.set(name, { name, path: skillPath, scope, source });
+    }
+  };
+  
+  // 1. Project level .opencode/skill/ (highest priority)
+  if (workingDirectory) {
+    const projectSkillDir = path.join(workingDirectory, '.opencode', 'skill');
+    if (fs.existsSync(projectSkillDir)) {
+      const entries = fs.readdirSync(projectSkillDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const skillMdPath = path.join(projectSkillDir, entry.name, 'SKILL.md');
+          if (fs.existsSync(skillMdPath)) {
+            addSkill(entry.name, skillMdPath, SKILL_SCOPE.PROJECT, 'opencode');
+          }
+        }
+      }
+    }
+    
+    // 2. Claude-compatible .claude/skills/
+    const claudeSkillDir = path.join(workingDirectory, '.claude', 'skills');
+    if (fs.existsSync(claudeSkillDir)) {
+      const entries = fs.readdirSync(claudeSkillDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const skillMdPath = path.join(claudeSkillDir, entry.name, 'SKILL.md');
+          if (fs.existsSync(skillMdPath)) {
+            addSkill(entry.name, skillMdPath, SKILL_SCOPE.PROJECT, 'claude');
+          }
+        }
+      }
+    }
+  }
+  
+  // 3. User level ~/.config/opencode/skill/
+  if (fs.existsSync(SKILL_DIR)) {
+    const entries = fs.readdirSync(SKILL_DIR, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const skillMdPath = path.join(SKILL_DIR, entry.name, 'SKILL.md');
+        if (fs.existsSync(skillMdPath)) {
+          addSkill(entry.name, skillMdPath, SKILL_SCOPE.USER, 'opencode');
+        }
+      }
+    }
+  }
+  
+  return Array.from(skills.values());
+}
+
+function getSkillSources(skillName, workingDirectory) {
+  // Check all possible locations
+  const projectPath = workingDirectory ? getProjectSkillPath(workingDirectory, skillName) : null;
+  const projectExists = projectPath && fs.existsSync(projectPath);
+  const projectDir = projectExists ? path.dirname(projectPath) : null;
+  
+  const claudePath = workingDirectory ? getClaudeSkillPath(workingDirectory, skillName) : null;
+  const claudeExists = claudePath && fs.existsSync(claudePath);
+  const claudeDir = claudeExists ? path.dirname(claudePath) : null;
+  
+  const userPath = getUserSkillPath(skillName);
+  const userExists = fs.existsSync(userPath);
+  const userDir = userExists ? path.dirname(userPath) : null;
+  
+  // Determine which md file to use (priority: project > claude > user)
+  let mdPath = null;
+  let mdScope = null;
+  let mdSource = null;
+  let mdDir = null;
+  
+  if (projectExists) {
+    mdPath = projectPath;
+    mdScope = SKILL_SCOPE.PROJECT;
+    mdSource = 'opencode';
+    mdDir = projectDir;
+  } else if (claudeExists) {
+    mdPath = claudePath;
+    mdScope = SKILL_SCOPE.PROJECT;
+    mdSource = 'claude';
+    mdDir = claudeDir;
+  } else if (userExists) {
+    mdPath = userPath;
+    mdScope = SKILL_SCOPE.USER;
+    mdSource = 'opencode';
+    mdDir = userDir;
+  }
+  
+  const mdExists = !!mdPath;
+
+  const sources = {
+    md: {
+      exists: mdExists,
+      path: mdPath,
+      dir: mdDir,
+      scope: mdScope,
+      source: mdSource,
+      fields: [],
+      supportingFiles: []
+    },
+    // Additional info about all locations
+    projectMd: {
+      exists: projectExists,
+      path: projectPath,
+      dir: projectDir
+    },
+    claudeMd: {
+      exists: claudeExists,
+      path: claudePath,
+      dir: claudeDir
+    },
+    userMd: {
+      exists: userExists,
+      path: userPath,
+      dir: userDir
+    }
+  };
+
+  if (mdExists && mdDir) {
+    const { frontmatter, body } = parseMdFile(mdPath);
+    sources.md.fields = Object.keys(frontmatter);
+    // Include actual content values
+    sources.md.description = frontmatter.description || '';
+    sources.md.name = frontmatter.name || skillName;
+    if (body) {
+      sources.md.fields.push('instructions');
+      sources.md.instructions = body;
+    } else {
+      sources.md.instructions = '';
+    }
+    sources.md.supportingFiles = listSkillSupportingFiles(mdDir);
+  }
+
+  return sources;
+}
+
+function createSkill(skillName, config, workingDirectory, scope) {
+  ensureDirs();
+
+  // Validate skill name (must be lowercase alphanumeric with hyphens, max 64 chars)
+  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(skillName) || skillName.length > 64) {
+    throw new Error(`Invalid skill name "${skillName}". Must be 1-64 lowercase alphanumeric characters with hyphens, cannot start or end with hyphen.`);
+  }
+
+  // Check if skill already exists at any location
+  const existing = getSkillScope(skillName, workingDirectory);
+  if (existing.path) {
+    throw new Error(`Skill ${skillName} already exists at ${existing.path}`);
+  }
+
+  // Determine target path based on requested scope
+  let targetDir;
+  let targetPath;
+  let targetScope;
+  
+  if (scope === SKILL_SCOPE.PROJECT && workingDirectory) {
+    ensureProjectSkillDir(workingDirectory);
+    targetDir = getProjectSkillDir(workingDirectory, skillName);
+    targetPath = getProjectSkillPath(workingDirectory, skillName);
+    targetScope = SKILL_SCOPE.PROJECT;
+  } else {
+    targetDir = getUserSkillDir(skillName);
+    targetPath = getUserSkillPath(skillName);
+    targetScope = SKILL_SCOPE.USER;
+  }
+
+  // Create skill directory
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  // Extract fields - scope is only for path determination
+  const { instructions, scope: _scopeFromConfig, supportingFiles, ...frontmatter } = config;
+
+  // Ensure required fields
+  if (!frontmatter.name) {
+    frontmatter.name = skillName;
+  }
+  if (!frontmatter.description) {
+    throw new Error('Skill description is required');
+  }
+
+  writeMdFile(targetPath, frontmatter, instructions || '');
+  
+  // Write supporting files if provided
+  if (supportingFiles && Array.isArray(supportingFiles)) {
+    for (const file of supportingFiles) {
+      if (file.path && file.content !== undefined) {
+        writeSkillSupportingFile(targetDir, file.path, file.content);
+      }
+    }
+  }
+  
+  console.log(`Created new skill: ${skillName} (scope: ${targetScope}, path: ${targetPath})`);
+}
+
+function updateSkill(skillName, updates, workingDirectory) {
+  ensureDirs();
+
+  // Get existing skill location
+  const existing = getSkillScope(skillName, workingDirectory);
+  if (!existing.path) {
+    throw new Error(`Skill "${skillName}" not found`);
+  }
+  
+  const mdPath = existing.path;
+  const mdDir = path.dirname(mdPath);
+  const mdData = parseMdFile(mdPath);
+
+  let mdModified = false;
+
+  for (const [field, value] of Object.entries(updates)) {
+    // Skip scope field - it's metadata only
+    if (field === 'scope') {
+      continue;
+    }
+    
+    if (field === 'instructions') {
+      const normalizedValue = typeof value === 'string' ? value : (value == null ? '' : String(value));
+      mdData.body = normalizedValue;
+      mdModified = true;
+      continue;
+    }
+
+    if (field === 'supportingFiles') {
+      // Handle supporting files updates
+      if (Array.isArray(value)) {
+        for (const file of value) {
+          if (file.delete && file.path) {
+            deleteSkillSupportingFile(mdDir, file.path);
+          } else if (file.path && file.content !== undefined) {
+            writeSkillSupportingFile(mdDir, file.path, file.content);
+          }
+        }
+      }
+      continue;
+    }
+
+    // Update frontmatter field
+    mdData.frontmatter[field] = value;
+    mdModified = true;
+  }
+
+  if (mdModified) {
+    writeMdFile(mdPath, mdData.frontmatter, mdData.body);
+  }
+
+  console.log(`Updated skill: ${skillName} (path: ${mdPath})`);
+}
+
+function deleteSkill(skillName, workingDirectory) {
+  let deleted = false;
+
+  // Check and delete from all locations
+  
+  // Project level .opencode/skill/
+  if (workingDirectory) {
+    const projectDir = getProjectSkillDir(workingDirectory, skillName);
+    if (fs.existsSync(projectDir)) {
+      fs.rmSync(projectDir, { recursive: true, force: true });
+      console.log(`Deleted project-level skill directory: ${projectDir}`);
+      deleted = true;
+    }
+    
+    // Claude-compat .claude/skills/ - we allow deletion here too
+    const claudeDir = getClaudeSkillDir(workingDirectory, skillName);
+    if (fs.existsSync(claudeDir)) {
+      fs.rmSync(claudeDir, { recursive: true, force: true });
+      console.log(`Deleted claude-compat skill directory: ${claudeDir}`);
+      deleted = true;
+    }
+  }
+
+  // User level
+  const userDir = getUserSkillDir(skillName);
+  if (fs.existsSync(userDir)) {
+    fs.rmSync(userDir, { recursive: true, force: true });
+    console.log(`Deleted user-level skill directory: ${userDir}`);
+    deleted = true;
+  }
+
+  if (!deleted) {
+    throw new Error(`Skill "${skillName}" not found`);
+  }
+}
+
 export {
   getAgentSources,
   getAgentScope,
@@ -888,11 +1380,22 @@ export {
   createCommand,
   updateCommand,
   deleteCommand,
+  getSkillSources,
+  getSkillScope,
+  discoverSkills,
+  createSkill,
+  updateSkill,
+  deleteSkill,
+  readSkillSupportingFile,
+  writeSkillSupportingFile,
+  deleteSkillSupportingFile,
   readConfig,
   writeConfig,
   AGENT_DIR,
   COMMAND_DIR,
+  SKILL_DIR,
   CONFIG_FILE,
   AGENT_SCOPE,
-  COMMAND_SCOPE
+  COMMAND_SCOPE,
+  SKILL_SCOPE
 };

@@ -1370,3 +1370,563 @@ pub async fn delete_command(command_name: &str, working_directory: Option<&Path>
 
     Ok(())
 }
+
+// ============== SKILL SCOPE TYPES ==============
+
+/// Skill scope types
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SkillScope {
+    User,
+    Project,
+}
+
+impl From<SkillScope> for Scope {
+    fn from(scope: SkillScope) -> Self {
+        match scope {
+            SkillScope::User => Scope::User,
+            SkillScope::Project => Scope::Project,
+        }
+    }
+}
+
+/// Skill source type (opencode vs claude-compat)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SkillSource {
+    Opencode,
+    Claude,
+}
+
+/// Supporting file info
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportingFile {
+    pub name: String,
+    pub path: String,
+    pub full_path: String,
+}
+
+/// Skill-specific source info with supporting files
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillSourceInfo {
+    pub exists: bool,
+    pub path: Option<String>,
+    pub dir: Option<String>,
+    pub fields: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<Scope>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<SkillSource>,
+    pub supporting_files: Vec<SupportingFile>,
+    // Actual content values
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
+}
+
+/// Skill config sources
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillConfigSources {
+    pub md: SkillSourceInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_md: Option<MdLocationInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub claude_md: Option<MdLocationInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_md: Option<MdLocationInfo>,
+}
+
+/// Discovered skill info
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoveredSkill {
+    pub name: String,
+    pub path: String,
+    pub scope: Scope,
+    pub source: SkillSource,
+}
+
+// ============== SKILL SCOPE HELPERS ==============
+
+/// Get user-level skill directory path
+fn get_skill_dir() -> PathBuf {
+    get_config_dir().join("skill")
+}
+
+/// Get user-level skill directory for a specific skill
+fn get_user_skill_dir(skill_name: &str) -> PathBuf {
+    get_skill_dir().join(skill_name)
+}
+
+/// Get user-level skill SKILL.md path
+fn get_user_skill_path(skill_name: &str) -> PathBuf {
+    get_user_skill_dir(skill_name).join("SKILL.md")
+}
+
+/// Get project-level skill directory (.opencode/skill/)
+fn get_project_skill_dir(working_directory: &Path, skill_name: &str) -> PathBuf {
+    working_directory.join(".opencode").join("skill").join(skill_name)
+}
+
+/// Get project-level skill SKILL.md path
+fn get_project_skill_path(working_directory: &Path, skill_name: &str) -> PathBuf {
+    get_project_skill_dir(working_directory, skill_name).join("SKILL.md")
+}
+
+/// Get Claude-compatible skill directory (.claude/skills/)
+fn get_claude_skill_dir(working_directory: &Path, skill_name: &str) -> PathBuf {
+    working_directory.join(".claude").join("skills").join(skill_name)
+}
+
+/// Get Claude-compatible skill SKILL.md path
+fn get_claude_skill_path(working_directory: &Path, skill_name: &str) -> PathBuf {
+    get_claude_skill_dir(working_directory, skill_name).join("SKILL.md")
+}
+
+/// Ensure skill directories exist
+async fn ensure_skill_dirs() -> Result<()> {
+    let skill_dir = get_skill_dir();
+    fs::create_dir_all(&skill_dir).await?;
+    Ok(())
+}
+
+/// Ensure project skill directory exists
+async fn ensure_project_skill_dir(working_directory: &Path, skill_name: &str) -> Result<PathBuf> {
+    let project_skill_dir = get_project_skill_dir(working_directory, skill_name);
+    fs::create_dir_all(&project_skill_dir).await?;
+    Ok(project_skill_dir)
+}
+
+/// Determine skill scope based on where the SKILL.md file exists
+pub fn get_skill_scope(skill_name: &str, working_directory: Option<&Path>) -> (Option<SkillScope>, Option<PathBuf>, Option<SkillSource>) {
+    if let Some(wd) = working_directory {
+        // Check .opencode/skill first
+        let project_path = get_project_skill_path(wd, skill_name);
+        if project_path.exists() {
+            return (Some(SkillScope::Project), Some(project_path), Some(SkillSource::Opencode));
+        }
+        
+        // Check .claude/skills (claude-compat)
+        let claude_path = get_claude_skill_path(wd, skill_name);
+        if claude_path.exists() {
+            return (Some(SkillScope::Project), Some(claude_path), Some(SkillSource::Claude));
+        }
+    }
+    
+    let user_path = get_user_skill_path(skill_name);
+    if user_path.exists() {
+        return (Some(SkillScope::User), Some(user_path), Some(SkillSource::Opencode));
+    }
+    
+    (None, None, None)
+}
+
+/// List supporting files in a skill directory (excluding SKILL.md)
+fn list_supporting_files(skill_dir: &Path) -> Vec<SupportingFile> {
+    let mut files = Vec::new();
+    
+    fn walk_dir(dir: &Path, relative_base: &Path, files: &mut Vec<SupportingFile>) {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                
+                if path.is_dir() {
+                    walk_dir(&path, relative_base, files);
+                } else if file_name != "SKILL.md" {
+                    let relative_path = path.strip_prefix(relative_base)
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_else(|_| file_name.clone());
+                    
+                    files.push(SupportingFile {
+                        name: file_name,
+                        path: relative_path,
+                        full_path: path.display().to_string(),
+                    });
+                }
+            }
+        }
+    }
+    
+    walk_dir(skill_dir, skill_dir, &mut files);
+    files
+}
+
+/// Discover all skills from all sources
+pub fn discover_skills(working_directory: Option<&Path>) -> Vec<DiscoveredSkill> {
+    let mut skills: std::collections::HashMap<String, DiscoveredSkill> = std::collections::HashMap::new();
+    
+    // Helper to add skill if not already found
+    let mut add_skill = |name: String, path: PathBuf, scope: Scope, source: SkillSource| {
+        if !skills.contains_key(&name) {
+            skills.insert(name.clone(), DiscoveredSkill {
+                name,
+                path: path.display().to_string(),
+                scope,
+                source,
+            });
+        }
+    };
+    
+    // 1. Project level .opencode/skill/ (highest priority)
+    if let Some(wd) = working_directory {
+        let project_skill_dir = wd.join(".opencode").join("skill");
+        if project_skill_dir.exists() {
+            if let Ok(entries) = std::fs::read_dir(&project_skill_dir) {
+                for entry in entries.flatten() {
+                    if entry.path().is_dir() {
+                        let skill_name = entry.file_name().to_string_lossy().to_string();
+                        let skill_md = entry.path().join("SKILL.md");
+                        if skill_md.exists() {
+                            add_skill(skill_name, skill_md, Scope::Project, SkillSource::Opencode);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 2. Claude-compatible .claude/skills/
+        let claude_skill_dir = wd.join(".claude").join("skills");
+        if claude_skill_dir.exists() {
+            if let Ok(entries) = std::fs::read_dir(&claude_skill_dir) {
+                for entry in entries.flatten() {
+                    if entry.path().is_dir() {
+                        let skill_name = entry.file_name().to_string_lossy().to_string();
+                        let skill_md = entry.path().join("SKILL.md");
+                        if skill_md.exists() {
+                            add_skill(skill_name, skill_md, Scope::Project, SkillSource::Claude);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // 3. User level ~/.config/opencode/skill/
+    let user_skill_dir = get_skill_dir();
+    if user_skill_dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(&user_skill_dir) {
+            for entry in entries.flatten() {
+                if entry.path().is_dir() {
+                    let skill_name = entry.file_name().to_string_lossy().to_string();
+                    let skill_md = entry.path().join("SKILL.md");
+                    if skill_md.exists() {
+                        add_skill(skill_name, skill_md, Scope::User, SkillSource::Opencode);
+                    }
+                }
+            }
+        }
+    }
+    
+    skills.into_values().collect()
+}
+
+/// Get information about where skill configuration is stored
+pub async fn get_skill_sources(skill_name: &str, working_directory: Option<&Path>) -> Result<SkillConfigSources> {
+    ensure_skill_dirs().await?;
+    
+    // Check all possible locations
+    let project_path = working_directory.map(|wd| get_project_skill_path(wd, skill_name));
+    let project_exists = project_path.as_ref().map(|p| p.exists()).unwrap_or(false);
+    let project_dir = project_exists.then(|| working_directory.map(|wd| get_project_skill_dir(wd, skill_name))).flatten();
+    
+    let claude_path = working_directory.map(|wd| get_claude_skill_path(wd, skill_name));
+    let claude_exists = claude_path.as_ref().map(|p| p.exists()).unwrap_or(false);
+    let claude_dir = claude_exists.then(|| working_directory.map(|wd| get_claude_skill_dir(wd, skill_name))).flatten();
+    
+    let user_path = get_user_skill_path(skill_name);
+    let user_exists = user_path.exists();
+    let user_dir = if user_exists { Some(get_user_skill_dir(skill_name)) } else { None };
+    
+    // Determine which md file to use (priority: project > claude > user)
+    let (md_path, md_exists, md_scope, md_source, md_dir) = if project_exists {
+        (project_path.clone(), true, Some(Scope::Project), Some(SkillSource::Opencode), project_dir.clone())
+    } else if claude_exists {
+        (claude_path.clone(), true, Some(Scope::Project), Some(SkillSource::Claude), claude_dir.clone())
+    } else if user_exists {
+        (Some(user_path.clone()), true, Some(Scope::User), Some(SkillSource::Opencode), user_dir.clone())
+    } else {
+        (None, false, None, None, None)
+    };
+    
+    let mut md_fields = Vec::new();
+    let mut supporting_files = Vec::new();
+    let mut md_name: Option<String> = None;
+    let mut md_description: Option<String> = None;
+    let mut md_instructions: Option<String> = None;
+    
+    if md_exists {
+        if let Some(ref path) = md_path {
+            let md_data = parse_md_file(path).await?;
+            md_fields.extend(md_data.frontmatter.keys().cloned());
+            
+            // Extract actual content values
+            md_name = md_data.frontmatter.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+            md_description = md_data.frontmatter.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
+            
+            if !md_data.body.trim().is_empty() {
+                md_fields.push("instructions".to_string());
+                md_instructions = Some(md_data.body.clone());
+            }
+        }
+        if let Some(ref dir) = md_dir {
+            supporting_files = list_supporting_files(dir);
+        }
+    }
+    
+    Ok(SkillConfigSources {
+        md: SkillSourceInfo {
+            exists: md_exists,
+            path: md_path.map(|p| p.display().to_string()),
+            dir: md_dir.map(|d| d.display().to_string()),
+            fields: md_fields,
+            scope: md_scope,
+            source: md_source,
+            supporting_files,
+            name: md_name,
+            description: md_description,
+            instructions: md_instructions,
+        },
+        project_md: Some(MdLocationInfo {
+            exists: project_exists,
+            path: project_path.map(|p| p.display().to_string()),
+        }),
+        claude_md: Some(MdLocationInfo {
+            exists: claude_exists,
+            path: claude_path.map(|p| p.display().to_string()),
+        }),
+        user_md: Some(MdLocationInfo {
+            exists: user_exists,
+            path: Some(user_path.display().to_string()),
+        }),
+    })
+}
+
+/// Read a supporting file content
+pub async fn read_skill_supporting_file(skill_dir: &Path, relative_path: &str) -> Result<String> {
+    let full_path = skill_dir.join(relative_path);
+    if !full_path.exists() {
+        return Err(anyhow!("File not found: {}", relative_path));
+    }
+    let content = fs::read_to_string(&full_path).await?;
+    Ok(content)
+}
+
+/// Write a supporting file
+pub async fn write_skill_supporting_file(skill_dir: &Path, relative_path: &str, content: &str) -> Result<()> {
+    let full_path = skill_dir.join(relative_path);
+    if let Some(parent) = full_path.parent() {
+        fs::create_dir_all(parent).await?;
+    }
+    fs::write(&full_path, content).await?;
+    info!("Wrote supporting file: {}", full_path.display());
+    Ok(())
+}
+
+/// Delete a supporting file
+pub async fn delete_skill_supporting_file(skill_dir: &Path, relative_path: &str) -> Result<()> {
+    let full_path = skill_dir.join(relative_path);
+    if full_path.exists() {
+        fs::remove_file(&full_path).await?;
+        info!("Deleted supporting file: {}", full_path.display());
+        
+        // Clean up empty parent directories
+        let mut parent = full_path.parent();
+        while let Some(p) = parent {
+            if p == skill_dir {
+                break;
+            }
+            if let Ok(mut entries) = std::fs::read_dir(p) {
+                if entries.next().is_none() {
+                    let _ = std::fs::remove_dir(p);
+                    parent = p.parent();
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Validate skill name (lowercase alphanumeric with hyphens, 1-64 chars)
+fn validate_skill_name(skill_name: &str) -> Result<()> {
+    let re = Regex::new(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$").expect("valid regex");
+    if !re.is_match(skill_name) || skill_name.len() > 64 {
+        return Err(anyhow!(
+            "Invalid skill name \"{}\". Must be 1-64 lowercase alphanumeric characters with hyphens, cannot start or end with hyphen.",
+            skill_name
+        ));
+    }
+    Ok(())
+}
+
+/// Create new skill
+pub async fn create_skill(
+    skill_name: &str,
+    config: &HashMap<String, Value>,
+    working_directory: Option<&Path>,
+    scope: Option<SkillScope>,
+) -> Result<()> {
+    ensure_skill_dirs().await?;
+    validate_skill_name(skill_name)?;
+    
+    // Check if skill already exists
+    let (_existing_scope, existing_path, _) = get_skill_scope(skill_name, working_directory);
+    if existing_path.is_some() {
+        return Err(anyhow!("Skill {} already exists", skill_name));
+    }
+    
+    // Determine target directory
+    let (target_scope, target_dir) = if scope == Some(SkillScope::Project) {
+        if let Some(wd) = working_directory {
+            let dir = ensure_project_skill_dir(wd, skill_name).await?;
+            (SkillScope::Project, dir)
+        } else {
+            let dir = get_user_skill_dir(skill_name);
+            fs::create_dir_all(&dir).await?;
+            (SkillScope::User, dir)
+        }
+    } else {
+        let dir = get_user_skill_dir(skill_name);
+        fs::create_dir_all(&dir).await?;
+        (SkillScope::User, dir)
+    };
+    
+    let target_path = target_dir.join("SKILL.md");
+    
+    // Extract fields
+    let mut frontmatter = config.clone();
+    let instructions = frontmatter
+        .remove("instructions")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_default();
+    frontmatter.remove("scope");
+    frontmatter.remove("supportingFiles");
+    
+    // Ensure required fields
+    if !frontmatter.contains_key("name") {
+        frontmatter.insert("name".to_string(), Value::String(skill_name.to_string()));
+    }
+    if !frontmatter.contains_key("description") {
+        return Err(anyhow!("Skill description is required"));
+    }
+    
+    write_md_file(&target_path, &frontmatter, &instructions).await?;
+    
+    // Write supporting files if provided
+    if let Some(supporting_files) = config.get("supportingFiles").and_then(|v| v.as_array()) {
+        for file in supporting_files {
+            if let (Some(path), Some(content)) = (
+                file.get("path").and_then(|v| v.as_str()),
+                file.get("content").and_then(|v| v.as_str()),
+            ) {
+                write_skill_supporting_file(&target_dir, path, content).await?;
+            }
+        }
+    }
+    
+    info!("Created new skill: {} (scope: {:?}, path: {})", skill_name, target_scope, target_path.display());
+    Ok(())
+}
+
+/// Update existing skill
+pub async fn update_skill(
+    skill_name: &str,
+    updates: &HashMap<String, Value>,
+    working_directory: Option<&Path>,
+) -> Result<()> {
+    let (_, existing_path, _) = get_skill_scope(skill_name, working_directory);
+    let md_path = existing_path.ok_or_else(|| anyhow!("Skill \"{}\" not found", skill_name))?;
+    let md_dir = md_path.parent().ok_or_else(|| anyhow!("Invalid skill path"))?;
+    
+    let mut md_data = parse_md_file(&md_path).await?;
+    let mut md_modified = false;
+    
+    for (field, value) in updates.iter() {
+        if field == "scope" {
+            continue;
+        }
+        
+        if field == "instructions" {
+            let normalized = value.as_str().unwrap_or("").to_string();
+            md_data.body = normalized;
+            md_modified = true;
+            continue;
+        }
+        
+        if field == "supportingFiles" {
+            if let Some(files) = value.as_array() {
+                for file in files {
+                    if let Some(true) = file.get("delete").and_then(|v| v.as_bool()) {
+                        if let Some(path) = file.get("path").and_then(|v| v.as_str()) {
+                            delete_skill_supporting_file(md_dir, path).await?;
+                        }
+                    } else if let (Some(path), Some(content)) = (
+                        file.get("path").and_then(|v| v.as_str()),
+                        file.get("content").and_then(|v| v.as_str()),
+                    ) {
+                        write_skill_supporting_file(md_dir, path, content).await?;
+                    }
+                }
+            }
+            continue;
+        }
+        
+        md_data.frontmatter.insert(field.clone(), value.clone());
+        md_modified = true;
+    }
+    
+    if md_modified {
+        write_md_file(&md_path, &md_data.frontmatter, &md_data.body).await?;
+    }
+    
+    info!("Updated skill: {} (path: {})", skill_name, md_path.display());
+    Ok(())
+}
+
+/// Delete skill
+pub async fn delete_skill(skill_name: &str, working_directory: Option<&Path>) -> Result<()> {
+    let mut deleted = false;
+    
+    // Check and delete from all locations
+    if let Some(wd) = working_directory {
+        // Project level .opencode/skill/
+        let project_dir = get_project_skill_dir(wd, skill_name);
+        if project_dir.exists() {
+            fs::remove_dir_all(&project_dir).await?;
+            info!("Deleted project-level skill directory: {}", project_dir.display());
+            deleted = true;
+        }
+        
+        // Claude-compat .claude/skills/
+        let claude_dir = get_claude_skill_dir(wd, skill_name);
+        if claude_dir.exists() {
+            fs::remove_dir_all(&claude_dir).await?;
+            info!("Deleted claude-compat skill directory: {}", claude_dir.display());
+            deleted = true;
+        }
+    }
+    
+    // User level
+    let user_dir = get_user_skill_dir(skill_name);
+    if user_dir.exists() {
+        fs::remove_dir_all(&user_dir).await?;
+        info!("Deleted user-level skill directory: {}", user_dir.display());
+        deleted = true;
+    }
+    
+    if !deleted {
+        return Err(anyhow!("Skill \"{}\" not found", skill_name));
+    }
+    
+    Ok(())
+}
