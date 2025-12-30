@@ -33,12 +33,16 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
   return (
     <ScrollableOverlay
       outerClassName={cn('h-full', outerClassName)}
-      className={cn(
-        'mx-auto max-w-3xl space-y-6 p-3 sm:p-6',
-        className
-      )}
+      className="w-full"
     >
-      {children}
+      <div
+        className={cn(
+          'mx-auto max-w-3xl space-y-6 p-3 sm:p-6',
+          className
+        )}
+      >
+        {children}
+      </div>
     </ScrollableOverlay>
   );
 };

@@ -156,8 +156,9 @@ export const GitIdentitiesPage: React.FC = () => {
   }
 
   return (
-    <ScrollableOverlay outerClassName="h-full" className="mx-auto max-w-3xl space-y-6 p-6">
-        {}
+    <ScrollableOverlay outerClassName="h-full" className="w-full">
+        <div className="mx-auto max-w-3xl space-y-6 p-6">
+        {/* Header */}
         <div className="space-y-1">
           <h1 className="typography-ui-header font-semibold text-lg">
             {isNewProfile ? 'New Git Profile' : isGlobalProfile ? 'Global Identity' : name || 'Edit Profile'}
@@ -368,6 +369,7 @@ export const GitIdentitiesPage: React.FC = () => {
           </div>
         </div>
         )}
+      </div>
       </div>
     </ScrollableOverlay>
   );

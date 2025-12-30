@@ -363,7 +363,8 @@ export const SkillsPage: React.FC = () => {
   }
 
   return (
-    <ScrollableOverlay outerClassName="h-full" className="mx-auto max-w-3xl space-y-6 p-6">
+    <ScrollableOverlay outerClassName="h-full" className="w-full">
+      <div className="mx-auto max-w-3xl space-y-6 p-6">
       {isNewSkill ? modeTabs : null}
 
       {/* Header */}
@@ -617,6 +618,7 @@ export const SkillsPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </ScrollableOverlay>
   );
 };

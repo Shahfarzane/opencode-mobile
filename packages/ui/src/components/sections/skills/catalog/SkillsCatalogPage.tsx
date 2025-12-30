@@ -121,7 +121,8 @@ export const SkillsCatalogPage: React.FC<SkillsCatalogPageProps> = ({ mode, onMo
   };
 
   return (
-    <ScrollableOverlay outerClassName="h-full" className="mx-auto max-w-3xl space-y-6 p-6">
+    <ScrollableOverlay outerClassName="h-full" className="w-full">
+      <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div className="space-y-3">
         <AnimatedTabs
           tabs={[
@@ -280,6 +281,7 @@ export const SkillsCatalogPage: React.FC<SkillsCatalogPageProps> = ({ mode, onMo
 
       <AddCatalogDialog open={addCatalogOpen} onOpenChange={setAddCatalogOpen} />
       <InstallSkillDialog open={installDialogOpen} onOpenChange={setInstallDialogOpen} item={installItem} />
+      </div>
     </ScrollableOverlay>
   );
 };
