@@ -191,6 +191,48 @@ fn sanitize_settings_update(payload: &Value) -> Value {
                 result_obj.insert("typographySizes".to_string(), sanitized);
             }
         }
+
+        // Skill catalogs (array of objects)
+        if let Some(Value::Array(arr)) = obj.get("skillCatalogs") {
+            let mut seen: HashSet<String> = HashSet::new();
+            let mut catalogs: Vec<Value> = vec![];
+
+            for entry in arr {
+                let Some(obj) = entry.as_object() else { continue };
+
+                let id = obj.get("id").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let label = obj.get("label").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let source = obj.get("source").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let subpath = obj.get("subpath").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let git_identity_id = obj.get("gitIdentityId").and_then(|v| v.as_str()).unwrap_or("").trim();
+
+                if id.is_empty() || label.is_empty() || source.is_empty() {
+                    continue;
+                }
+
+                if seen.contains(id) {
+                    continue;
+                }
+                seen.insert(id.to_string());
+
+                let mut catalog = serde_json::Map::new();
+                catalog.insert("id".to_string(), json!(id));
+                catalog.insert("label".to_string(), json!(label));
+                catalog.insert("source".to_string(), json!(source));
+                if !subpath.is_empty() {
+                    catalog.insert("subpath".to_string(), json!(subpath));
+                }
+                if !git_identity_id.is_empty() {
+                    catalog.insert("gitIdentityId".to_string(), json!(git_identity_id));
+                }
+
+                catalogs.push(Value::Object(catalog));
+            }
+
+            if !catalogs.is_empty() {
+                result_obj.insert("skillCatalogs".to_string(), Value::Array(catalogs));
+            }
+        }
     }
 
     result

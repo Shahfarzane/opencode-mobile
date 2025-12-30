@@ -27,6 +27,14 @@ export type DesktopServerInfo = {
   cliAvailable: boolean;
 };
 
+export type SkillCatalogConfig = {
+  id: string;
+  label: string;
+  source: string;
+  subpath?: string;
+  gitIdentityId?: string;
+};
+
 export type DesktopSettings = {
   themeId?: string;
   useSystemTheme?: boolean;
@@ -44,6 +52,9 @@ export type DesktopSettings = {
   defaultModel?: string; // format: "provider/model"
   defaultAgent?: string;
   queueModeEnabled?: boolean;
+
+  // User-added skills catalogs (persisted to ~/.config/openchamber/settings.json)
+  skillCatalogs?: SkillCatalogConfig[];
 };
 
 export type DesktopSettingsApi = {

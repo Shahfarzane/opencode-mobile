@@ -81,6 +81,7 @@ export const CommandsSidebar: React.FC<CommandsSidebarProps> = ({ onItemSelect }
     // Set draft and open the page for editing
     setCommandDraft({ name: newName, scope: 'user' });
     setSelectedCommand(newName);
+    onItemSelect?.();
 
     if (isMobile) {
       setSidebarOpen(false);

@@ -21,6 +21,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ButtonLarge } from '@/components/ui/button-large';
+import { AnimatedTabs } from '@/components/ui/animated-tabs';
+import { SkillsCatalogPage } from './catalog/SkillsCatalogPage';
 
 export const SkillsPage: React.FC = () => {
   const { 
@@ -37,6 +39,37 @@ export const SkillsPage: React.FC = () => {
 
   const selectedSkill = selectedSkillName ? getSkillByName(selectedSkillName) : null;
   const isNewSkill = Boolean(skillDraft && skillDraft.name === selectedSkillName && !selectedSkill);
+  const hasStaleSelection = Boolean(selectedSkillName && !selectedSkill && !skillDraft);
+
+  type SkillsMode = 'manual' | 'external';
+  const [mode, setMode] = React.useState<SkillsMode>('manual');
+
+  React.useEffect(() => {
+    if (!isNewSkill && mode !== 'manual') {
+      setMode('manual');
+    }
+  }, [isNewSkill, mode]);
+
+  React.useEffect(() => {
+    if (!hasStaleSelection) {
+      return;
+    }
+
+    // Clear persisted selection if it points to a non-existent skill.
+    setSelectedSkill(null);
+  }, [hasStaleSelection, setSelectedSkill]);
+
+  const modeTabs = isNewSkill ? (
+    <AnimatedTabs
+      tabs={[
+        { value: 'manual', label: 'Manual' },
+        { value: 'external', label: 'External' },
+      ]}
+      value={mode}
+      onValueChange={setMode}
+      animate={false}
+    />
+  ) : null;
 
   const [draftName, setDraftName] = React.useState('');
   const [draftScope, setDraftScope] = React.useState<SkillScope>('user');
@@ -71,6 +104,10 @@ export const SkillsPage: React.FC = () => {
 
   // Load skill details when selection changes
   React.useEffect(() => {
+    if (mode === 'external') {
+      return;
+    }
+
     const loadSkillDetails = async () => {
       if (isNewSkill && skillDraft) {
         // Prefill from draft (for new or duplicated skills)
@@ -104,7 +141,7 @@ export const SkillsPage: React.FC = () => {
     };
 
     loadSkillDetails();
-  }, [selectedSkill, isNewSkill, selectedSkillName, skills, skillDraft, getSkillDetail]);
+  }, [selectedSkill, isNewSkill, selectedSkillName, skills, skillDraft, getSkillDetail, mode]);
 
   const handleSave = async () => {
     const skillName = isNewSkill ? draftName.trim().replace(/\s+/g, '-').toLowerCase() : selectedSkillName?.trim();
@@ -297,8 +334,13 @@ export const SkillsPage: React.FC = () => {
     }
   };
 
-  // Show empty state only when nothing is selected AND no draft
-  if (!selectedSkillName && !skillDraft) {
+  if (isNewSkill && mode === 'external') {
+    return <SkillsCatalogPage mode={mode} onModeChange={setMode} />;
+  }
+
+
+  // Show empty state when nothing is selected or selection is stale
+  if ((!selectedSkillName && !skillDraft) || hasStaleSelection) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center text-muted-foreground">
@@ -322,6 +364,8 @@ export const SkillsPage: React.FC = () => {
 
   return (
     <ScrollableOverlay outerClassName="h-full" className="mx-auto max-w-3xl space-y-6 p-6">
+      {isNewSkill ? modeTabs : null}
+
       {/* Header */}
       <div className="space-y-1">
         <h1 className="typography-ui-header font-semibold text-lg">

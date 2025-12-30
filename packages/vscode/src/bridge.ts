@@ -4,6 +4,12 @@ import * as path from 'path';
 import type { OpenCodeManager } from './opencode';
 import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand, type AgentScope, type CommandScope, AGENT_SCOPE, COMMAND_SCOPE, discoverSkills, getSkillSources, createSkill, updateSkill, deleteSkill, readSkillSupportingFile, writeSkillSupportingFile, deleteSkillSupportingFile, type SkillScope, SKILL_SCOPE } from './opencodeConfig';
 import { removeProviderAuth } from './opencodeAuth';
+import {
+  getSkillsCatalog,
+  scanSkillsRepository as scanSkillsRepositoryFromGit,
+  installSkillsFromRepository as installSkillsFromGit,
+  type SkillsCatalogSourceConfig,
+} from './skillsCatalog';
 
 export interface BridgeRequest {
   id: string;
@@ -834,6 +840,73 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         }
 
         return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+      }
+
+      case 'api:config/skills:catalog': {
+        const refresh = Boolean((payload as { refresh?: boolean } | undefined)?.refresh);
+        const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+        const settings = readSettings(ctx);
+        const rawCatalogs = (settings as { skillCatalogs?: unknown }).skillCatalogs;
+
+        const additionalSources: SkillsCatalogSourceConfig[] = Array.isArray(rawCatalogs)
+          ? (rawCatalogs
+              .map((entry) => {
+                if (!entry || typeof entry !== 'object') return null;
+                const candidate = entry as Record<string, unknown>;
+                const id = typeof candidate.id === 'string' ? candidate.id.trim() : '';
+                const label = typeof candidate.label === 'string' ? candidate.label.trim() : '';
+                const source = typeof candidate.source === 'string' ? candidate.source.trim() : '';
+                const subpath = typeof candidate.subpath === 'string' ? candidate.subpath.trim() : '';
+                if (!id || !label || !source) return null;
+                const normalized: SkillsCatalogSourceConfig = {
+                  id,
+                  label,
+                  description: source,
+                  source,
+                  ...(subpath ? { defaultSubpath: subpath } : {}),
+                };
+                return normalized;
+              })
+              .filter((v) => v !== null) as SkillsCatalogSourceConfig[])
+          : [];
+
+        const data = await getSkillsCatalog(workingDirectory, refresh, additionalSources);
+        return { id, type, success: true, data };
+      }
+
+      case 'api:config/skills:scan': {
+        const body = (payload || {}) as { source?: string; subpath?: string; gitIdentityId?: string };
+        const data = await scanSkillsRepositoryFromGit({
+          source: String(body.source || ''),
+          subpath: body.subpath,
+        });
+        return { id, type, success: true, data };
+      }
+
+      case 'api:config/skills:install': {
+        const body = (payload || {}) as {
+          source?: string;
+          subpath?: string;
+          scope?: 'user' | 'project';
+          selections?: Array<{ skillDir: string }>;
+          conflictPolicy?: 'prompt' | 'skipAll' | 'overwriteAll';
+          conflictDecisions?: Record<string, 'skip' | 'overwrite'>;
+        };
+
+        const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+        const data = await installSkillsFromGit({
+          source: String(body.source || ''),
+          subpath: body.subpath,
+          scope: body.scope === 'project' ? 'project' : 'user',
+          workingDirectory: body.scope === 'project' ? workingDirectory : undefined,
+          selections: Array.isArray(body.selections) ? body.selections : [],
+          conflictPolicy: body.conflictPolicy,
+          conflictDecisions: body.conflictDecisions,
+        });
+
+        return { id, type, success: true, data };
       }
 
       case 'api:config/skills/files': {

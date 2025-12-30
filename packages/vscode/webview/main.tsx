@@ -408,6 +408,54 @@ const handleLocalApiRequest = async (url: URL, init?: RequestInit) => {
     }
   }
 
+  const skillsCatalogStatusFromPayload = (payload: unknown): number => {
+    if (!payload || typeof payload !== 'object') return 200;
+    const data = payload as { ok?: boolean; error?: { kind?: string } };
+    if (data.ok === false) {
+      const kind = data.error?.kind;
+      if (kind === 'conflicts') return 409;
+      if (kind === 'authRequired') return 401;
+      return 400;
+    }
+    return 200;
+  };
+
+  // Skills catalog: /api/config/skills/catalog
+  if (pathname === '/api/config/skills/catalog') {
+    const refresh = url.searchParams.get('refresh') === 'true';
+    try {
+      const data = await sendBridgeMessage('api:config/skills:catalog', { refresh });
+      return new Response(JSON.stringify(data), { status: skillsCatalogStatusFromPayload(data), headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ ok: false, error: { kind: 'unknown', message } }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
+  // Skills scan: /api/config/skills/scan
+  if (pathname === '/api/config/skills/scan') {
+    const body = init?.body ? JSON.parse(init.body as string) : {};
+    try {
+      const data = await sendBridgeMessage('api:config/skills:scan', body);
+      return new Response(JSON.stringify(data), { status: skillsCatalogStatusFromPayload(data), headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ ok: false, error: { kind: 'unknown', message } }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
+  // Skills install: /api/config/skills/install
+  if (pathname === '/api/config/skills/install') {
+    const body = init?.body ? JSON.parse(init.body as string) : {};
+    try {
+      const data = await sendBridgeMessage('api:config/skills:install', body);
+      return new Response(JSON.stringify(data), { status: skillsCatalogStatusFromPayload(data), headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ ok: false, error: { kind: 'unknown', message } }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
   // Skills CRUD: /api/config/skills/:name or /api/config/skills
   if (pathname === '/api/config/skills') {
     try {

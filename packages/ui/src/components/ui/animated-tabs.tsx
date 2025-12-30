@@ -13,6 +13,7 @@ interface AnimatedTabsProps<T extends string> {
   onValueChange: (value: T) => void;
   className?: string;
   isInteractive?: boolean;
+  animate?: boolean;
 }
 
 export function AnimatedTabs<T extends string>({
@@ -21,6 +22,7 @@ export function AnimatedTabs<T extends string>({
   onValueChange,
   className,
   isInteractive = true,
+  animate = true,
 }: AnimatedTabsProps<T>) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const activeTabRef = React.useRef<HTMLButtonElement>(null);
@@ -41,7 +43,7 @@ export function AnimatedTabs<T extends string>({
     container.style.clipPath = `inset(0 ${Number(100 - rightPercent).toFixed(2)}% 0 ${Number(leftPercent).toFixed(2)}% round 8px)`;
   }, []);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     updateClipPath();
   }, [updateClipPath, value, tabs.length]);
 
@@ -60,7 +62,10 @@ export function AnimatedTabs<T extends string>({
       <div
         ref={containerRef}
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-lg [clip-path:inset(0_75%_0_0_round_8px)] [transition:clip-path_200ms_ease]"
+        className={cn(
+          'pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-lg [clip-path:inset(0_75%_0_0_round_8px)]',
+          animate ? '[transition:clip-path_200ms_ease]' : null
+        )}
       >
         <div className="flex h-9 items-center gap-1 rounded-lg bg-accent px-1.5 text-accent-foreground">
           {tabs.map((tab) => {
