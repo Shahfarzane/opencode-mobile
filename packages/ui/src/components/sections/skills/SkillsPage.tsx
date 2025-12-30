@@ -402,6 +402,7 @@ export const SkillsPage: React.FC = () => {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief description of what this skill does..."
             rows={2}
+            className="max-h-32 resize-none"
           />
           <p className="typography-meta text-muted-foreground">
             The agent uses this to decide when to load the skill
@@ -422,7 +423,7 @@ export const SkillsPage: React.FC = () => {
           onChange={(e) => setInstructions(e.target.value)}
           placeholder="Step-by-step instructions, guidelines, or reference content..."
           rows={12}
-          className="font-mono typography-meta"
+          className="font-mono typography-meta max-h-80 resize-y"
         />
       </div>
 
