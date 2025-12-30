@@ -350,6 +350,39 @@ const normalizeStringArray = (input) => {
   );
 };
 
+const sanitizeSkillCatalogs = (input) => {
+  if (!Array.isArray(input)) {
+    return undefined;
+  }
+
+  const result = [];
+  const seen = new Set();
+
+  for (const entry of input) {
+    if (!entry || typeof entry !== 'object') continue;
+
+    const id = typeof entry.id === 'string' ? entry.id.trim() : '';
+    const label = typeof entry.label === 'string' ? entry.label.trim() : '';
+    const source = typeof entry.source === 'string' ? entry.source.trim() : '';
+    const subpath = typeof entry.subpath === 'string' ? entry.subpath.trim() : '';
+    const gitIdentityId = typeof entry.gitIdentityId === 'string' ? entry.gitIdentityId.trim() : '';
+
+    if (!id || !label || !source) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    result.push({
+      id,
+      label,
+      source,
+      ...(subpath ? { subpath } : {}),
+      ...(gitIdentityId ? { gitIdentityId } : {}),
+    });
+  }
+
+  return result;
+};
+
 const sanitizeSettingsUpdate = (payload) => {
   if (!payload || typeof payload !== 'object') {
     return {};
@@ -423,6 +456,11 @@ const sanitizeSettingsUpdate = (payload) => {
   }
   if (typeof candidate.queueModeEnabled === 'boolean') {
     result.queueModeEnabled = candidate.queueModeEnabled;
+  }
+
+  const skillCatalogs = sanitizeSkillCatalogs(candidate.skillCatalogs);
+  if (skillCatalogs) {
+    result.skillCatalogs = skillCatalogs;
   }
 
   return result;
@@ -2376,7 +2414,8 @@ async function main(options = {}) {
     readSkillSupportingFile,
     writeSkillSupportingFile,
     deleteSkillSupportingFile,
-    SKILL_SCOPE
+    SKILL_SCOPE,
+    SKILL_DIR,
   } = await import('./lib/opencode-config.js');
 
   // List all discovered skills
@@ -2398,6 +2437,210 @@ async function main(options = {}) {
     } catch (error) {
       console.error('Failed to list skills:', error);
       res.status(500).json({ error: 'Failed to list skills' });
+    }
+  });
+
+  // ============== SKILLS CATALOG + INSTALL ENDPOINTS ==============
+
+  const { getCuratedSkillsSources } = await import('./lib/skills-catalog/curated-sources.js');
+  const { getCacheKey, getCachedScan, setCachedScan } = await import('./lib/skills-catalog/cache.js');
+  const { parseSkillRepoSource } = await import('./lib/skills-catalog/source.js');
+  const { scanSkillsRepository } = await import('./lib/skills-catalog/scan.js');
+  const { installSkillsFromRepository } = await import('./lib/skills-catalog/install.js');
+  const { getProfiles, getProfile } = await import('./lib/git-identity-storage.js');
+
+  const listGitIdentitiesForResponse = () => {
+    try {
+      const profiles = getProfiles();
+      return profiles.map((p) => ({ id: p.id, name: p.name }));
+    } catch {
+      return [];
+    }
+  };
+
+  const resolveGitIdentity = (profileId) => {
+    if (!profileId) {
+      return null;
+    }
+    try {
+      const profile = getProfile(profileId);
+      const sshKey = profile?.sshKey;
+      if (typeof sshKey === 'string' && sshKey.trim()) {
+        return { sshKey: sshKey.trim() };
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  };
+
+  app.get('/api/config/skills/catalog', async (req, res) => {
+    try {
+      const workingDirectory = req.query.directory || openCodeWorkingDirectory;
+      const refresh = String(req.query.refresh || '').toLowerCase() === 'true';
+
+      const curatedSources = getCuratedSkillsSources();
+      const settings = await readSettingsFromDisk();
+      const customSourcesRaw = sanitizeSkillCatalogs(settings.skillCatalogs) || [];
+
+      const customSources = customSourcesRaw.map((entry) => ({
+        id: entry.id,
+        label: entry.label,
+        description: entry.source,
+        source: entry.source,
+        defaultSubpath: entry.subpath,
+        gitIdentityId: entry.gitIdentityId,
+      }));
+
+      const sources = [...curatedSources, ...customSources];
+
+      const discovered = discoverSkills(workingDirectory);
+      const installedByName = new Map(discovered.map((s) => [s.name, s]));
+
+      const itemsBySource = {};
+
+      for (const src of sources) {
+        const parsed = parseSkillRepoSource(src.source);
+        if (!parsed.ok) {
+          itemsBySource[src.id] = [];
+          continue;
+        }
+
+        const effectiveSubpath = src.defaultSubpath || parsed.effectiveSubpath || null;
+        const cacheKey = getCacheKey({
+          normalizedRepo: parsed.normalizedRepo,
+          subpath: effectiveSubpath || '',
+          identityId: src.gitIdentityId || '',
+        });
+
+        let scanResult = !refresh ? getCachedScan(cacheKey) : null;
+        if (!scanResult) {
+          const scanned = await scanSkillsRepository({
+            source: src.source,
+            subpath: src.defaultSubpath,
+            defaultSubpath: src.defaultSubpath,
+            identity: resolveGitIdentity(src.gitIdentityId),
+          });
+
+          if (!scanned.ok) {
+            itemsBySource[src.id] = [];
+            continue;
+          }
+
+          scanResult = scanned;
+          setCachedScan(cacheKey, scanResult);
+        }
+
+        const items = (scanResult.items || []).map((item) => {
+          const installed = installedByName.get(item.skillName);
+          return {
+            sourceId: src.id,
+            ...item,
+            gitIdentityId: src.gitIdentityId,
+            installed: installed
+              ? { isInstalled: true, scope: installed.scope }
+              : { isInstalled: false },
+          };
+        });
+
+        itemsBySource[src.id] = items;
+      }
+
+      const sourcesForUi = sources.map(({ gitIdentityId, ...rest }) => rest);
+      res.json({ ok: true, sources: sourcesForUi, itemsBySource });
+    } catch (error) {
+      console.error('Failed to load skills catalog:', error);
+      res.status(500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to load catalog' } });
+    }
+  });
+
+  app.post('/api/config/skills/scan', async (req, res) => {
+    try {
+      const { source, subpath, gitIdentityId } = req.body || {};
+      const identity = resolveGitIdentity(gitIdentityId);
+
+      const result = await scanSkillsRepository({
+        source,
+        subpath,
+        identity,
+      });
+
+      if (!result.ok) {
+        if (result.error?.kind === 'authRequired') {
+          return res.status(401).json({
+            ok: false,
+            error: {
+              ...result.error,
+              identities: listGitIdentitiesForResponse(),
+            },
+          });
+        }
+
+        return res.status(400).json({ ok: false, error: result.error });
+      }
+
+      res.json({ ok: true, items: result.items });
+    } catch (error) {
+      console.error('Failed to scan skills repository:', error);
+      res.status(500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to scan repository' } });
+    }
+  });
+
+  app.post('/api/config/skills/install', async (req, res) => {
+    try {
+      const {
+        source,
+        subpath,
+        gitIdentityId,
+        scope,
+        selections,
+        conflictPolicy,
+        conflictDecisions,
+      } = req.body || {};
+
+      const workingDirectory = req.query.directory;
+      if (scope === 'project' && !workingDirectory) {
+        return res.status(400).json({
+          ok: false,
+          error: { kind: 'invalidSource', message: 'Project installs require a directory parameter' },
+        });
+      }
+      const identity = resolveGitIdentity(gitIdentityId);
+
+      const result = await installSkillsFromRepository({
+        source,
+        subpath,
+        identity,
+        scope,
+        workingDirectory,
+        userSkillDir: SKILL_DIR,
+        selections,
+        conflictPolicy,
+        conflictDecisions,
+      });
+
+      if (!result.ok) {
+        if (result.error?.kind === 'conflicts') {
+          return res.status(409).json({ ok: false, error: result.error });
+        }
+
+        if (result.error?.kind === 'authRequired') {
+          return res.status(401).json({
+            ok: false,
+            error: {
+              ...result.error,
+              identities: listGitIdentitiesForResponse(),
+            },
+          });
+        }
+
+        return res.status(400).json({ ok: false, error: result.error });
+      }
+
+      res.json({ ok: true, installed: result.installed || [], skipped: result.skipped || [] });
+    } catch (error) {
+      console.error('Failed to install skills:', error);
+      res.status(500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to install skills' } });
     }
   });
 

@@ -44,6 +44,40 @@ type PersistApi = {
   onFinishHydration?: (callback: () => void) => (() => void) | void;
 };
 
+const sanitizeSkillCatalogs = (value: unknown): DesktopSettings['skillCatalogs'] | undefined => {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const result: NonNullable<DesktopSettings['skillCatalogs']> = [];
+  const seen = new Set<string>();
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') continue;
+    const candidate = entry as Record<string, unknown>;
+
+    const id = typeof candidate.id === 'string' ? candidate.id.trim() : '';
+    const label = typeof candidate.label === 'string' ? candidate.label.trim() : '';
+    const source = typeof candidate.source === 'string' ? candidate.source.trim() : '';
+    const subpath = typeof candidate.subpath === 'string' ? candidate.subpath.trim() : '';
+    const gitIdentityId = typeof candidate.gitIdentityId === 'string' ? candidate.gitIdentityId.trim() : '';
+
+    if (!id || !label || !source) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    result.push({
+      id,
+      label,
+      source,
+      ...(subpath ? { subpath } : {}),
+      ...(gitIdentityId ? { gitIdentityId } : {}),
+    });
+  }
+
+  return result;
+};
+
 const getPersistApi = (): PersistApi | undefined => {
   const candidate = (useUIStore as unknown as { persist?: PersistApi }).persist;
   if (candidate && typeof candidate === 'object') {
@@ -138,6 +172,11 @@ const sanitizeWebSettings = (payload: unknown): DesktopSettings | null => {
   }
   if (typeof candidate.queueModeEnabled === 'boolean') {
     result.queueModeEnabled = candidate.queueModeEnabled;
+  }
+
+  const skillCatalogs = sanitizeSkillCatalogs(candidate.skillCatalogs);
+  if (skillCatalogs) {
+    result.skillCatalogs = skillCatalogs;
   }
 
   return result;

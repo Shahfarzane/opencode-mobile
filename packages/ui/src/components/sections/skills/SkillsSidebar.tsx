@@ -82,6 +82,7 @@ export const SkillsSidebar: React.FC<SkillsSidebarProps> = ({ onItemSelect }) =>
     // Set draft and open the page for editing
     setSkillDraft({ name: newName, scope: 'user', description: '' });
     setSelectedSkill(newName);
+    onItemSelect?.();
 
     if (isMobile) {
       setSidebarOpen(false);

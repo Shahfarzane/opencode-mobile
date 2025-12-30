@@ -9,6 +9,7 @@ mod opencode_config;
 mod opencode_manager;
 mod window_state;
 mod path_utils;
+mod skills_catalog;
 
 use std::{collections::HashMap, path::PathBuf, sync::Arc, time::{Duration, Instant}};
 
@@ -1795,6 +1796,102 @@ async fn handle_config_routes(
             ));
         }
         return handle_command_route(&state, method, req, trimmed.to_string()).await;
+    }
+
+    // Skills catalog routes (must be checked before /api/config/skills/:name)
+    if path == "/api/config/skills/catalog" && method == Method::GET {
+        let refresh = req
+            .uri()
+            .query()
+            .map(|q| q.contains("refresh=true"))
+            .unwrap_or(false);
+
+        let working_directory = state.opencode.get_working_directory();
+        let payload = skills_catalog::get_catalog(&working_directory, refresh).await;
+        return Ok(json_response(StatusCode::OK, payload));
+    }
+
+    if path == "/api/config/skills/scan" && method == Method::POST {
+        let payload_map = match parse_request_payload(req).await {
+            Ok(data) => data,
+            Err(resp) => return Ok(resp),
+        };
+
+        let payload_value = serde_json::Value::Object(payload_map.into_iter().collect());
+        let scan_request = match serde_json::from_value::<skills_catalog::SkillsScanRequest>(payload_value) {
+            Ok(v) => v,
+            Err(_) => {
+                return Ok(json_response(
+                    StatusCode::BAD_REQUEST,
+                    skills_catalog::SkillsRepoScanResponse {
+                        ok: false,
+                        items: None,
+                        error: Some(skills_catalog::SkillsRepoError {
+                            kind: "invalidSource".to_string(),
+                            message: "Malformed scan request".to_string(),
+                            ssh_only: None,
+                            identities: None,
+                            conflicts: None,
+                        }),
+                    },
+                ))
+            }
+        };
+
+        let response = skills_catalog::scan_repository(scan_request).await;
+        let status = if response.ok {
+            StatusCode::OK
+        } else if response.error.as_ref().map(|e| e.kind.as_str()) == Some("authRequired") {
+            StatusCode::UNAUTHORIZED
+        } else {
+            StatusCode::BAD_REQUEST
+        };
+
+        return Ok(json_response(status, response));
+    }
+
+    if path == "/api/config/skills/install" && method == Method::POST {
+        let payload_map = match parse_request_payload(req).await {
+            Ok(data) => data,
+            Err(resp) => return Ok(resp),
+        };
+
+        let payload_value = serde_json::Value::Object(payload_map.into_iter().collect());
+        let install_request = match serde_json::from_value::<skills_catalog::SkillsInstallRequest>(payload_value) {
+            Ok(v) => v,
+            Err(_) => {
+                return Ok(json_response(
+                    StatusCode::BAD_REQUEST,
+                    skills_catalog::SkillsInstallResponse {
+                        ok: false,
+                        installed: None,
+                        skipped: None,
+                        error: Some(skills_catalog::SkillsRepoError {
+                            kind: "invalidSource".to_string(),
+                            message: "Malformed install request".to_string(),
+                            ssh_only: None,
+                            identities: None,
+                            conflicts: None,
+                        }),
+                    },
+                ))
+            }
+        };
+
+        let working_directory = state.opencode.get_working_directory();
+        let response = skills_catalog::install_skills(&working_directory, install_request).await;
+
+        let status = if response.ok {
+            StatusCode::OK
+        } else if response.error.as_ref().map(|e| e.kind.as_str()) == Some("conflicts") {
+            StatusCode::CONFLICT
+        } else if response.error.as_ref().map(|e| e.kind.as_str()) == Some("authRequired") {
+            StatusCode::UNAUTHORIZED
+        } else {
+            StatusCode::BAD_REQUEST
+        };
+
+        return Ok(json_response(status, response));
     }
 
     // Handle skill routes: /api/config/skills and /api/config/skills/:name

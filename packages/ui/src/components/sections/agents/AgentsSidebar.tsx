@@ -82,6 +82,7 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
     // Set draft and open the page for editing
     setAgentDraft({ name: newName, scope: 'user' });
     setSelectedAgent(newName);
+    onItemSelect?.();
 
     if (isMobile) {
       setSidebarOpen(false);

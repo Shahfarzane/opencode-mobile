@@ -412,3 +412,87 @@ export interface RuntimeAPIs {
 }
 
 export type RuntimeAPISelector<TValue> = (apis: RuntimeAPIs) => TValue;
+
+// ============== Skills Catalog Types ==============
+
+export type SkillsCatalogSourceId = string;
+
+export interface SkillsCatalogSource {
+  id: SkillsCatalogSourceId;
+  label: string;
+  description?: string;
+  source: string;
+  defaultSubpath?: string;
+}
+
+export interface SkillsCatalogItemInstalledBadge {
+  isInstalled: boolean;
+  scope?: 'user' | 'project';
+}
+
+export interface SkillsCatalogItem {
+  sourceId: SkillsCatalogSourceId;
+  repoSource: string;
+  repoSubpath?: string;
+  gitIdentityId?: string;
+  skillDir: string;
+  skillName: string;
+  frontmatterName?: string;
+  description?: string;
+  installable: boolean;
+  warnings?: string[];
+  installed?: SkillsCatalogItemInstalledBadge;
+}
+
+export interface SkillsCatalogResponse {
+  ok: boolean;
+  sources?: SkillsCatalogSource[];
+  itemsBySource?: Record<SkillsCatalogSourceId, SkillsCatalogItem[]>;
+  error?: { kind: string; message: string };
+}
+
+export interface SkillsRepoScanRequest {
+  source: string;
+  subpath?: string;
+  gitIdentityId?: string;
+}
+
+export type SkillsRepoScanError =
+  | { kind: 'authRequired'; message: string; sshOnly: true; identities?: Array<{ id: string; name: string }> }
+  | { kind: 'invalidSource'; message: string }
+  | { kind: 'gitUnavailable'; message: string }
+  | { kind: 'networkError'; message: string }
+  | { kind: 'unknown'; message: string };
+
+export interface SkillsRepoScanResponse {
+  ok: boolean;
+  items?: SkillsCatalogItem[];
+  error?: SkillsRepoScanError;
+}
+
+export interface SkillsInstallSelection {
+  skillDir: string;
+}
+
+export interface SkillsInstallRequest {
+  source: string;
+  subpath?: string;
+  gitIdentityId?: string;
+  scope: 'user' | 'project';
+  selections: SkillsInstallSelection[];
+  conflictPolicy?: 'prompt' | 'skipAll' | 'overwriteAll';
+  conflictDecisions?: Record<string, 'skip' | 'overwrite'>;
+}
+
+export type SkillsInstallError = SkillsRepoScanError | {
+  kind: 'conflicts';
+  message: string;
+  conflicts: Array<{ skillName: string; scope: 'user' | 'project' }>;
+};
+
+export interface SkillsInstallResponse {
+  ok: boolean;
+  installed?: Array<{ skillName: string; scope: 'user' | 'project' }>;
+  skipped?: Array<{ skillName: string; reason: string }>;
+  error?: SkillsInstallError;
+}
