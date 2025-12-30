@@ -210,17 +210,28 @@ export const GitHeader: React.FC<GitHeaderProps> = ({
         />
       )}
 
-      {status.tracking && (
-        <div className="flex items-center gap-2 px-1.5 typography-meta text-muted-foreground">
-          <span className="flex items-center gap-0.5">
-            <RiArrowUpLine className="size-3.5 text-primary/70" />
-            <span className="font-semibold text-foreground">{status.ahead}</span>
-          </span>
-          <span className="flex items-center gap-0.5">
-            <RiArrowDownLine className="size-3.5 text-primary/70" />
-            <span className="font-semibold text-foreground">{status.behind}</span>
-          </span>
-        </div>
+      {(Boolean(status.tracking) || status.ahead > 0 || status.behind > 0) && (
+        <Tooltip delayDuration={800}>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 px-1.5 typography-meta text-muted-foreground">
+              <span className="flex items-center gap-0.5">
+                <RiArrowUpLine className="size-3.5 text-primary/70" />
+                <span className="font-semibold text-foreground">{status.ahead}</span>
+              </span>
+              {Boolean(status.tracking) && (
+                <span className="flex items-center gap-0.5">
+                  <RiArrowDownLine className="size-3.5 text-primary/70" />
+                  <span className="font-semibold text-foreground">{status.behind}</span>
+                </span>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={8}>
+            {status.tracking
+              ? `Upstream: ${status.tracking}`
+              : 'Unpublished commits (no upstream set yet)'}
+          </TooltipContent>
+        </Tooltip>
       )}
 
       <SyncActions

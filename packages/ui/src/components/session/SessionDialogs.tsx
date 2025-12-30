@@ -23,7 +23,7 @@ import {
     mapWorktreeToMetadata,
     removeWorktree,
 } from '@/lib/git/worktreeService';
-import { checkIsGitRepository, ensureOpenChamberIgnored, gitPush } from '@/lib/gitApi';
+import { checkIsGitRepository, ensureOpenChamberIgnored } from '@/lib/gitApi';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useConfigStore } from '@/stores/useConfigStore';
@@ -428,22 +428,7 @@ export const SessionDialogs: React.FC = () => {
                 createBranch: true,
             });
             cleanupMetadata = metadata;
-            let status = await getWorktreeStatus(metadata.path).catch(() => undefined);
-            try {
-                await gitPush(metadata.path, {
-                    remote: 'origin',
-                    branch: normalizedBranch,
-                    options: ['--set-upstream'],
-                });
-                status = await getWorktreeStatus(metadata.path).catch(() => status);
-                toast.success(`Configured upstream for ${normalizedBranch}`);
-            } catch (pushError) {
-                const message =
-                    pushError instanceof Error ? pushError.message : 'Unable to push new worktree branch.';
-                toast.warning('Worktree created locally', {
-                    description: renderToastDescription(`Upstream setup failed: ${message}`),
-                });
-            }
+            const status = await getWorktreeStatus(metadata.path).catch(() => undefined);
             const createdMetadata = status ? { ...metadata, status } : metadata;
 
             const session = await createSession(undefined, metadata.path);
