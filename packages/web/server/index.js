@@ -7,6 +7,7 @@ import http from 'http';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { createUiAuth } from './lib/ui-auth.js';
+import { startCloudflareTunnel, printTunnelWarning, checkCloudflaredAvailable } from './lib/cloudflare-tunnel.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -578,6 +579,7 @@ let isOpenCodeReady = false;
 let openCodeNotReadySince = 0;
 let exitOnShutdown = true;
 let uiAuthController = null;
+let cloudflareTunnelController = null;
 
 // Sync helper - call after modifying any HMR state variable
 const syncToHmrState = () => {
@@ -713,21 +715,18 @@ function resolveBinaryFromPath(binaryName, searchPath) {
 }
 
 function getOpencodeSpawnConfig() {
-  const envPath = buildAugmentedPath();
-  const resolvedEnv = { ...process.env, PATH: envPath };
-
   if (OPENCODE_BINARY_ENV) {
-    const explicit = resolveBinaryFromPath(OPENCODE_BINARY_ENV, envPath);
+    const explicit = resolveBinaryFromPath(OPENCODE_BINARY_ENV, process.env.PATH);
     if (explicit) {
       console.log(`Using OpenCode binary from OPENCODE_BINARY: ${explicit}`);
-      return { command: explicit, env: resolvedEnv };
+      return { command: explicit, env: undefined };
     }
     console.warn(
       `OPENCODE_BINARY path "${OPENCODE_BINARY_ENV}" not found. Falling back to search.`
     );
   }
 
-  return { command: 'opencode', env: resolvedEnv };
+  return { command: 'opencode', env: undefined };
 }
 
 const ENV_CONFIGURED_OPENCODE_PORT = (() => {
@@ -1151,7 +1150,8 @@ function parseArgs(argv = process.argv.slice(2)) {
     process.env.OPENCHAMBER_UI_PASSWORD ||
     process.env.OPENCODE_UI_PASSWORD ||
     null;
-  const options = { port: DEFAULT_PORT, uiPassword: envPassword };
+  const envCfTunnel = process.env.OPENCHAMBER_TRY_CF_TUNNEL === 'true';
+  const options = { port: DEFAULT_PORT, uiPassword: envPassword, tryCfTunnel: envCfTunnel };
 
   const consumeValue = (currentIndex, inlineValue) => {
     if (typeof inlineValue === 'string') {
@@ -1186,6 +1186,11 @@ function parseArgs(argv = process.argv.slice(2)) {
       const { value, nextIndex } = consumeValue(i, inlineValue);
       i = nextIndex;
       options.uiPassword = typeof value === 'string' ? value : '';
+      continue;
+    }
+
+    if (optionName === 'try-cf-tunnel') {
+      options.tryCfTunnel = true;
       continue;
     }
   }
@@ -1835,6 +1840,12 @@ async function gracefulShutdown(options = {}) {
     uiAuthController = null;
   }
 
+  if (cloudflareTunnelController) {
+    console.log('Stopping Cloudflare tunnel...');
+    cloudflareTunnelController.stop();
+    cloudflareTunnelController = null;
+  }
+
   console.log('Graceful shutdown complete');
   if (exitProcess) {
     process.exit(0);
@@ -1843,7 +1854,9 @@ async function gracefulShutdown(options = {}) {
 
 async function main(options = {}) {
   const port = Number.isFinite(options.port) && options.port >= 0 ? Math.trunc(options.port) : DEFAULT_PORT;
+  const tryCfTunnel = options.tryCfTunnel === true;
   const attachSignals = options.attachSignals !== false;
+  const onTunnelReady = typeof options.onTunnelReady === 'function' ? options.onTunnelReady : null;
   if (typeof options.exitOnShutdown === 'boolean') {
     exitOnShutdown = options.exitOnShutdown;
   }
@@ -4086,13 +4099,35 @@ async function main(options = {}) {
       reject(error);
     };
     server.once('error', onError);
-    server.listen(port, () => {
+    server.listen(port, async () => {
       server.off('error', onError);
       const addressInfo = server.address();
       activePort = typeof addressInfo === 'object' && addressInfo ? addressInfo.port : port;
       console.log(`OpenChamber server running on port ${activePort}`);
       console.log(`Health check: http://localhost:${activePort}/health`);
       console.log(`Web interface: http://localhost:${activePort}`);
+
+      if (tryCfTunnel) {
+        console.log('\nInitializing Cloudflare Quick Tunnel...');
+        const cfCheck = await checkCloudflaredAvailable();
+        if (cfCheck.available) {
+          try {
+            const originUrl = `http://localhost:${activePort}`;
+            cloudflareTunnelController = await startCloudflareTunnel({ originUrl, port: activePort });
+            printTunnelWarning();
+            if (onTunnelReady) {
+              const tunnelUrl = cloudflareTunnelController.getPublicUrl();
+              if (tunnelUrl) {
+                onTunnelReady(tunnelUrl);
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to start Cloudflare tunnel: ${error.message}`);
+            console.log('Continuing without tunnel...');
+          }
+        }
+      }
+
       resolve();
     });
   });
@@ -4119,6 +4154,7 @@ async function main(options = {}) {
     httpServer: server,
     getPort: () => activePort,
     getOpenCodePort: () => openCodePort,
+    getTunnelUrl: () => cloudflareTunnelController?.getPublicUrl() ?? null,
     isReady: () => isOpenCodeReady,
     restartOpenCode: () => restartOpenCode(),
     stop: (shutdownOptions = {}) =>
@@ -4133,6 +4169,7 @@ if (isCliExecution) {
   exitOnShutdown = true;
   main({
     port: cliOptions.port,
+    tryCfTunnel: cliOptions.tryCfTunnel,
     attachSignals: true,
     exitOnShutdown: true,
     uiPassword: cliOptions.uiPassword

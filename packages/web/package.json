@@ -19,7 +19,7 @@
     "build:watch": "vite build --watch",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js",
-    "start": "node server/index.js"
+    "start": "node bin/cli.js serve"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.2.7",
