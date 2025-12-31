@@ -52,11 +52,6 @@ export const VSCodeLayout: React.FC = () => {
     setCurrentView('sessions');
   }, []);
 
-  const handleNewSession = React.useCallback(() => {
-    openNewSessionDraft();
-    setCurrentView('chat');
-  }, [openNewSessionDraft]);
-
   // Listen for connection status changes
   React.useEffect(() => {
     const handler = (event: Event) => {
@@ -68,6 +63,23 @@ export const VSCodeLayout: React.FC = () => {
     };
     window.addEventListener('openchamber:connection-status', handler as EventListener);
     return () => window.removeEventListener('openchamber:connection-status', handler as EventListener);
+  }, []);
+
+  // Listen for navigation events from VS Code extension title bar buttons
+  React.useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ view?: string }>).detail;
+      const view = detail?.view;
+      if (view === 'settings') {
+        setCurrentView('settings');
+      } else if (view === 'chat') {
+        setCurrentView('chat');
+      } else if (view === 'sessions') {
+        setCurrentView('sessions');
+      }
+    };
+    window.addEventListener('openchamber:navigate', handler as EventListener);
+    return () => window.removeEventListener('openchamber:navigate', handler as EventListener);
   }, []);
 
   // Bootstrap config and sessions when connected
@@ -140,8 +152,6 @@ export const VSCodeLayout: React.FC = () => {
         <div className="flex flex-col h-full">
           <VSCodeHeader 
             title="Sessions" 
-            onNewSession={handleNewSession}
-            onSettings={() => setCurrentView('settings')}
           />
           <div className="flex-1 overflow-hidden">
             <SessionSidebar
@@ -210,7 +220,7 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
           <RiArrowLeftLine className="h-5 w-5" />
         </button>
       )}
-      <h1 className="text-sm font-medium truncate flex-1" title={title}>{title}</h1>
+      <h1 className="text-sm font-medium truncate flex-1 h-9 w-9 items-center justify-center p-2" title={title}>{title}</h1>
       {onNewSession && (
         <button
           onClick={onNewSession}
