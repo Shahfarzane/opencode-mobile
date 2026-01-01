@@ -130,6 +130,7 @@ interface MessageBodyProps {
     turnGroupingContext?: TurnGroupingContext;
     onRevert?: () => void;
     isFirstMessage?: boolean;
+    errorMessage?: string;
 }
 
 const UserMessageBody: React.FC<{
@@ -318,6 +319,7 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
     onAuxiliaryContentComplete,
     showReasoningTraces = false,
     turnGroupingContext,
+    errorMessage,
 }) => {
 
     void _streamPhase;
@@ -1051,7 +1053,9 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
         summaryBody &&
         summaryBody.trim().length > 0;
 
-    const shouldShowFooter = hasTextContent && assistantTextParts.length > 0 && hasStopFinish && isLastAssistantInTurn;
+    const showErrorMessage = Boolean(errorMessage);
+
+    const shouldShowFooter = isLastAssistantInTurn && hasTextContent && (hasStopFinish || Boolean(errorMessage));
     const [isSummaryHovered, setIsSummaryHovered] = React.useState(false);
 
     const footerButtons = (
@@ -1131,6 +1135,13 @@ const AssistantMessageBody: React.FC<Omit<MessageBodyProps, 'isUser'>> = ({
                     className="leading-normal overflow-hidden text-foreground/90 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0"
                 >
                     {renderedParts}
+                    {showErrorMessage && (
+                        <FadeInOnReveal key="assistant-error">
+                            <div className="group/assistant-text relative break-words">
+                                <SimpleMarkdownRenderer content={errorMessage ?? ''} />
+                            </div>
+                        </FadeInOnReveal>
+                    )}
                     {showSummaryBody && (
                         <FadeInOnReveal key="summary-body">
                             <div

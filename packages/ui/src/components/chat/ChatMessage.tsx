@@ -526,6 +526,26 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     }
     const assistantSummaryForCopy = assistantSummaryRef.current;
 
+    const assistantErrorText = React.useMemo(() => {
+        if (isUser) {
+            return undefined;
+        }
+        const errorInfo = (message.info as { error?: unknown } | undefined)?.error as
+            | { data?: { message?: unknown }; message?: unknown; name?: unknown }
+            | undefined;
+        if (!errorInfo) {
+            return undefined;
+        }
+        const dataMessage = typeof errorInfo.data?.message === 'string' ? errorInfo.data.message : undefined;
+        const errorMessage = typeof errorInfo.message === 'string' ? errorInfo.message : undefined;
+        const errorName = typeof errorInfo.name === 'string' ? errorInfo.name : undefined;
+        const detail = dataMessage || errorMessage || errorName;
+        if (!detail) {
+            return undefined;
+        }
+        return `Opencode failed to send message with error:\n\`${detail}\``;
+    }, [isUser, message.info]);
+
     const messageTextContent = React.useMemo(() => {
         if (isUser) {
             const textParts = displayParts
@@ -540,12 +560,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             return combined.replace(/\n\s*\n+/g, '\n');
         }
 
+        if (assistantErrorText && assistantErrorText.trim().length > 0) {
+            return assistantErrorText;
+        }
+
         if (assistantSummaryForCopy && assistantSummaryForCopy.trim().length > 0) {
             return assistantSummaryForCopy;
         }
 
         return flattenAssistantTextParts(displayParts);
-    }, [assistantSummaryForCopy, displayParts, isUser]);
+    }, [assistantErrorText, assistantSummaryForCopy, displayParts, isUser]);
 
     const hasTextContent = messageTextContent.length > 0;
 
@@ -767,6 +791,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                         agentMention={agentMention}
                                         onRevert={handleRevert}
                                         isFirstMessage={isFirstMessage}
+                                        errorMessage={assistantErrorText}
                                     />
                                 </div>
                             </div>
@@ -808,6 +833,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 showReasoningTraces={showReasoningTraces}
                                 agentMention={agentMention}
                                 turnGroupingContext={turnGroupingContext}
+                                errorMessage={assistantErrorText}
                             />
 
                         </div>
