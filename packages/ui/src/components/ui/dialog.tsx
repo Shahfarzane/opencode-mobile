@@ -63,15 +63,18 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  keyboardAvoid = false,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  keyboardAvoid?: boolean
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay className="rounded-none" />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        data-keyboard-avoid={keyboardAvoid ? "true" : undefined}
         className={cn(
           "bg-background text-foreground fixed top-[50%] left-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 rounded-xl border p-6 shadow-none overflow-hidden pwa-dialog-content",
           className

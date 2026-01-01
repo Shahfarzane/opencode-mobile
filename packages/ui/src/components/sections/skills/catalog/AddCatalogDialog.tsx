@@ -224,7 +224,7 @@ export const AddCatalogDialog: React.FC<AddCatalogDialogProps> = ({ open, onOpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl" keyboardAvoid>
         <DialogHeader>
           <DialogTitle>Add skills catalog</DialogTitle>
           <DialogDescription>

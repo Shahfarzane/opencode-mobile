@@ -102,8 +102,35 @@ export const MainLayout: React.FC = () => {
         let stickyKeyboardInset = 0;
         let ignoreOpenUntilZero = false;
         let previousHeight = 0;
+        let keyboardAvoidTarget: HTMLElement | null = null;
 
         const setKeyboardOpen = useUIStore.getState().setKeyboardOpen;
+
+        const clearKeyboardAvoidTarget = () => {
+            if (!keyboardAvoidTarget) {
+                return;
+            }
+            keyboardAvoidTarget.style.setProperty('--oc-keyboard-avoid-offset', '0px');
+            keyboardAvoidTarget.removeAttribute('data-keyboard-avoid-active');
+            keyboardAvoidTarget = null;
+        };
+
+        const resolveKeyboardAvoidTarget = (active: HTMLElement | null) => {
+            if (!active) {
+                return null;
+            }
+            const markedTarget = active.closest('[data-keyboard-avoid]') as HTMLElement | null;
+            if (markedTarget) {
+                return markedTarget;
+            }
+            if (active.classList.contains('overlay-scrollbar-container')) {
+                const parent = active.parentElement;
+                if (parent instanceof HTMLElement) {
+                    return parent;
+                }
+            }
+            return active;
+        };
 
         const forceKeyboardClosed = () => {
             stickyKeyboardInset = 0;
@@ -155,7 +182,7 @@ export const MainLayout: React.FC = () => {
                 // (prevents false positives during Android keyboard animation)
                 const closingByHeight = !isTextTarget && height > previousHeight + 6;
 
-if (measuredInset === 0) {
+                if (measuredInset === 0) {
                     stickyKeyboardInset = 0;
                     setKeyboardOpen(false);
                 } else if (closingByHeight) {
@@ -173,6 +200,30 @@ if (measuredInset === 0) {
 
             root.style.setProperty('--oc-keyboard-inset', `${stickyKeyboardInset}px`);
             previousHeight = height;
+
+            const avoidTarget = isTextTarget ? resolveKeyboardAvoidTarget(active) : null;
+
+            if (!isMobile || !avoidTarget || !active) {
+                clearKeyboardAvoidTarget();
+            } else {
+                if (avoidTarget !== keyboardAvoidTarget) {
+                    clearKeyboardAvoidTarget();
+                    keyboardAvoidTarget = avoidTarget;
+                }
+                const viewportBottom = offsetTop + height;
+                const rect = active.getBoundingClientRect();
+                const overlap = rect.bottom - viewportBottom;
+                const clearance = 8;
+                const keyboardInset = Math.max(stickyKeyboardInset, measuredInset);
+                const avoidOffset = overlap > clearance && keyboardInset > 0
+                    ? Math.min(overlap, keyboardInset)
+                    : 0;
+                const target = keyboardAvoidTarget;
+                if (target) {
+                    target.style.setProperty('--oc-keyboard-avoid-offset', `${avoidOffset}px`);
+                    target.setAttribute('data-keyboard-avoid-active', 'true');
+                }
+            }
 
             // Only force-scroll lock while an input is focused.
             if (isMobile && isTextTarget) {
@@ -239,6 +290,7 @@ if (measuredInset === 0) {
             window.removeEventListener('orientationchange', updateVisualViewport);
             document.removeEventListener('focusin', handleFocusIn, true);
             document.removeEventListener('focusout', handleFocusOut, true);
+            clearKeyboardAvoidTarget();
         };
     }, [isMobile]);
 

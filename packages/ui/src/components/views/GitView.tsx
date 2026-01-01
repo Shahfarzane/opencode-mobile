@@ -640,7 +640,7 @@ export const GitView: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden bg-background" data-keyboard-avoid="true">
       <GitHeader
         status={status}
         localBranches={localBranches}

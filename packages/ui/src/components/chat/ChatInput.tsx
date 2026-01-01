@@ -1166,7 +1166,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
 
     return (
 
-        <form onSubmit={handleSubmit} className="pt-0 pb-2 md:pb-4 bottom-safe-area" style={isMobile && inputBarOffset > 0 && !isKeyboardOpen ? { marginBottom: `${inputBarOffset}px` } : undefined}>
+        <form
+            onSubmit={handleSubmit}
+            className="pt-0 pb-2 md:pb-4 bottom-safe-area"
+            data-keyboard-avoid="true"
+            style={isMobile && inputBarOffset > 0 && !isKeyboardOpen ? { marginBottom: `${inputBarOffset}px` } : undefined}
+        >
             <StatusRow
                 isWorking={working.isWorking}
                 statusText={workingStatusText}

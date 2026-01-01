@@ -730,6 +730,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
             <div className="flex min-w-0 flex-1 flex-col gap-0">
               <form
                 className="flex w-full items-center gap-2"
+                data-keyboard-avoid="true"
                 onSubmit={(event) => {
                   event.preventDefault();
                   handleSaveEdit();

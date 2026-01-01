@@ -804,6 +804,7 @@ export const TerminalView: React.FC = () => {
             <div
                 className="relative flex-1 overflow-hidden"
                 style={{ backgroundColor: xtermTheme.background }}
+                data-keyboard-avoid="true"
             >
                 <div className="h-full w-full box-border px-3 pt-3 pb-4">
                     {isTerminalActive ? (

@@ -266,7 +266,7 @@ export const AgentsPage: React.FC = () => {
   }
 
   return (
-    <ScrollableOverlay outerClassName="h-full" className="w-full">
+    <ScrollableOverlay keyboardAvoid outerClassName="h-full" className="w-full">
       <div className="mx-auto max-w-3xl space-y-6 p-6">
       {/* Header */}
       <div className="space-y-1">

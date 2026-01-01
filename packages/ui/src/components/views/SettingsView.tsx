@@ -370,7 +370,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         {/* Mobile: show sidebar OR page content based on drill-down state */}
         {isMobile ? (
           showMobilePageContent ? (
-            <div className="flex-1 overflow-hidden bg-background">
+            <div className="flex-1 overflow-hidden bg-background" data-keyboard-avoid="true">
               <ErrorBoundary>{renderPageContent()}</ErrorBoundary>
             </div>
           ) : (

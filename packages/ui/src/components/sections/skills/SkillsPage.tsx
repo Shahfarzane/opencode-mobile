@@ -363,7 +363,7 @@ export const SkillsPage: React.FC = () => {
   }
 
   return (
-    <ScrollableOverlay outerClassName="h-full" className="w-full">
+    <ScrollableOverlay keyboardAvoid outerClassName="h-full" className="w-full">
       <div className="mx-auto max-w-3xl space-y-6 p-6">
       {isNewSkill ? modeTabs : null}
 
@@ -558,7 +558,7 @@ export const SkillsPage: React.FC = () => {
         setIsFileDialogOpen(open);
         if (!open) setEditingFilePath(null);
       }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col" keyboardAvoid>
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editingFilePath ? 'Edit Supporting File' : 'Add Supporting File'}</DialogTitle>
             <DialogDescription>

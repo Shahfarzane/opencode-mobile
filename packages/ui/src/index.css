@@ -12,6 +12,7 @@
   --oc-header-height: 56px;
   --oc-visual-viewport-offset-top: 0px;
   --oc-keyboard-inset: 0px;
+  --oc-keyboard-avoid-offset: 0px;
   --ui-regular-font-weight: 400;
   --oc-scrollbar-thumb: oklch(0.32 0.03 50 / 0.4);
   --oc-scrollbar-thumb-hover: oklch(0.32 0.03 50 / 0.6);
@@ -54,6 +55,10 @@ textarea[data-chat-input="true"]:hover {
   border: none;
   box-shadow: none;
   -webkit-appearance: none;
+}
+
+[data-keyboard-avoid-active="true"] {
+  transform: translateY(calc(-1 * var(--oc-keyboard-avoid-offset, 0px)));
 }
 
 /* Scroll shadow (HeroUI) fallback styling to ensure visible gradients without the Tailwind plugin */
