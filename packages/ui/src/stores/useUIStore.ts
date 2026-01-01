@@ -17,6 +17,8 @@ export type EventStreamStatus =
 interface UIStore {
 
   theme: 'light' | 'dark' | 'system';
+  isMultiRunLauncherOpen: boolean;
+  multiRunLauncherPrefillPrompt: string;
   isSidebarOpen: boolean;
   sidebarWidth: number;
   hasManuallyResizedLeftSidebar: boolean;
@@ -88,6 +90,9 @@ interface UIStore {
   setDiffLayoutPreference: (mode: 'dynamic' | 'inline' | 'side-by-side') => void;
   setDiffFileLayout: (filePath: string, mode: 'inline' | 'side-by-side') => void;
   setDiffWrapLines: (wrap: boolean) => void;
+  setMultiRunLauncherOpen: (open: boolean) => void;
+  openMultiRunLauncher: () => void;
+  openMultiRunLauncherWithPrompt: (prompt: string) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -96,6 +101,8 @@ export const useUIStore = create<UIStore>()(
       (set, get) => ({
 
         theme: 'system',
+        isMultiRunLauncherOpen: false,
+        multiRunLauncherPrefillPrompt: '',
         isSidebarOpen: true,
         sidebarWidth: 264,
         hasManuallyResizedLeftSidebar: false,
@@ -420,7 +427,30 @@ export const useUIStore = create<UIStore>()(
           } else {
             root.classList.add(theme);
           }
-        }
+        },
+
+        setMultiRunLauncherOpen: (open) => {
+          set((state) => ({
+            isMultiRunLauncherOpen: open,
+            multiRunLauncherPrefillPrompt: open ? state.multiRunLauncherPrefillPrompt : '',
+          }));
+        },
+
+        openMultiRunLauncher: () => {
+          set({
+            isMultiRunLauncherOpen: true,
+            multiRunLauncherPrefillPrompt: '',
+            isSessionSwitcherOpen: false,
+          });
+        },
+
+        openMultiRunLauncherWithPrompt: (prompt) => {
+          set({
+            isMultiRunLauncherOpen: true,
+            multiRunLauncherPrefillPrompt: prompt,
+            isSessionSwitcherOpen: false,
+          });
+        },
       }),
       {
         name: 'ui-store',

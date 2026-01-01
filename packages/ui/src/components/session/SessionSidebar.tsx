@@ -25,6 +25,7 @@ import {
   RiShare2Line,
 } from '@remixicon/react';
 import { sessionEvents } from '@/lib/sessionEvents';
+import { ArrowsMerge } from '@/components/icons/ArrowsMerge';
 import { formatDirectoryName, formatPathForDisplay, cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
@@ -139,6 +140,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
 
   const setActiveMainTab = useUIStore((state) => state.setActiveMainTab);
   const setSessionSwitcherOpen = useUIStore((state) => state.setSessionSwitcherOpen);
+  const openMultiRunLauncher = useUIStore((state) => state.openMultiRunLauncher);
 
   const getSessionsByDirectory = useSessionStore((state) => state.getSessionsByDirectory);
   const currentSessionId = useSessionStore((state) => state.currentSessionId);
@@ -1021,17 +1023,32 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
             </button>
 
             {isGitRepo ? (
-              <button
-                type="button"
-                onClick={handleOpenWorktreeManager}
-                className={cn(
-                  'inline-flex h-10 w-7 flex-shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
-                  !isDesktopRuntime && 'bg-sidebar/60 hover:bg-sidebar',
-                )}
-                aria-label="Manage worktrees"
-              >
-                <RiGitRepositoryLine className="h-[1.125rem] w-[1.125rem] translate-y-px" />
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleOpenWorktreeManager}
+                  className={cn(
+                    'inline-flex h-10 w-7 flex-shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                    !isDesktopRuntime && 'bg-sidebar/60 hover:bg-sidebar',
+                  )}
+                  aria-label="Manage worktrees"
+                  title="Manage worktrees"
+                >
+                  <RiGitRepositoryLine className="h-[1.125rem] w-[1.125rem] translate-y-px" />
+                </button>
+                <button
+                  type="button"
+                  onClick={openMultiRunLauncher}
+                  className={cn(
+                    'inline-flex h-10 w-7 flex-shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                    !isDesktopRuntime && 'bg-sidebar/60 hover:bg-sidebar',
+                  )}
+                  aria-label="New Multi-Run"
+                  title="New Multi-Run"
+                >
+                  <ArrowsMerge className="h-[1.125rem] w-[1.125rem] translate-y-px" />
+                </button>
+              </>
             ) : null}
           </div>
         </div>
