@@ -130,6 +130,8 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
   const [isGitRepo, setIsGitRepo] = React.useState<boolean | null>(null);
   const [expandedSessionGroups, setExpandedSessionGroups] = React.useState<Set<string>>(new Set());
   const [hoveredGroupId, setHoveredGroupId] = React.useState<string | null>(null);
+  const [stuckHeaders, setStuckHeaders] = React.useState<Set<string>>(new Set());
+  const headerSentinelRefs = React.useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
   const homeDirectory = useDirectoryStore((state) => state.homeDirectory);
@@ -664,6 +666,38 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
     });
   }, []);
 
+  // Track when sticky headers become "stuck" using sentinel elements
+  React.useEffect(() => {
+    if (!isDesktopRuntime) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const groupId = (entry.target as HTMLElement).dataset.groupId;
+          if (!groupId) return;
+          
+          setStuckHeaders((prev) => {
+            const next = new Set(prev);
+            // When sentinel is NOT intersecting, header is stuck
+            if (!entry.isIntersecting) {
+              next.add(groupId);
+            } else {
+              next.delete(groupId);
+            }
+            return next;
+          });
+        });
+      },
+      { threshold: 0 }
+    );
+
+    headerSentinelRefs.current.forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [isDesktopRuntime, groupedSessions]);
+
   const renderSessionNode = React.useCallback(
     (node: SessionNode, depth = 0, groupDirectory?: string | null): React.ReactNode => {
       const session = node.session;
@@ -1055,13 +1089,23 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
         ) : (
           groupedSessions.map((group) => (
             <div key={group.id} className="relative">
-              {}
+              {/* Sentinel element to detect when header becomes stuck */}
+              {isDesktopRuntime && (
+                <div
+                  ref={(el) => { headerSentinelRefs.current.set(group.id, el); }}
+                  data-group-id={group.id}
+                  className="absolute top-0 h-px w-full pointer-events-none"
+                  aria-hidden="true"
+                />
+              )}
               <button
                 type="button"
                 onClick={() => toggleGroup(group.id)}
                 className={cn(
-                  'sticky top-0 z-10 pt-1.5 pb-1 w-full text-left cursor-pointer group/header border-b',
-                  !isDesktopRuntime && 'bg-sidebar',
+                  'sticky top-0 z-10 pt-1.5 pb-1 w-full text-left cursor-pointer group/header border-b transition-colors duration-150',
+                  isDesktopRuntime
+                    ? stuckHeaders.has(group.id) ? 'bg-sidebar' : 'bg-transparent'
+                    : 'bg-sidebar',
                 )}
                 style={{
                   borderColor: hoveredGroupId === group.id
