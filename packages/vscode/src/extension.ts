@@ -99,52 +99,9 @@ export async function activate(context: vscode.ExtensionContext) {
     }, 800);
   };
 
-  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-  const tryExecuteCommand = async (commandId: string) => {
-    try {
-      await vscode.commands.executeCommand(commandId);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const togglePrimarySidebar = async () => {
-    return await tryExecuteCommand('workbench.action.toggleSidebarVisibility');
-  };
-
-  const toggleSecondarySidebar = async () => {
-    const candidates = ['workbench.action.toggleSecondarySideBarVisibility', 'workbench.action.toggleAuxiliaryBar'];
-    for (const commandId of candidates) {
-      if (await tryExecuteCommand(commandId)) return true;
-    }
-    return false;
-  };
 
   context.subscriptions.push(
     vscode.commands.registerCommand('openchamber.openSidebar', async () => {
-      const isOpen = chatViewProvider?.isVisible() ?? false;
-
-      // Second click hides the sidebar that currently hosts the chat view.
-      if (isOpen) {
-        if (isCursorLikeHost()) {
-          await togglePrimarySidebar();
-          await sleep(50);
-          if (chatViewProvider?.isVisible()) {
-            await toggleSecondarySidebar();
-          }
-          return;
-        }
-
-        await toggleSecondarySidebar();
-        await sleep(50);
-        if (chatViewProvider?.isVisible()) {
-          await togglePrimarySidebar();
-        }
-        return;
-      }
-
       // Best-effort: open the container (if available), then focus the chat view.
       try {
         await vscode.commands.executeCommand('workbench.view.extension.openchamber');
