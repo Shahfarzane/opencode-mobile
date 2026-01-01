@@ -22,6 +22,7 @@ import { useConfigStore } from '@/stores/useConfigStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useMultiRunStore } from '@/stores/useMultiRunStore';
 import { useSessionStore } from '@/stores/useSessionStore';
+import { useUIStore } from '@/stores/useUIStore';
 import type { CreateMultiRunParams, MultiRunModelSelection } from '@/types/multirun';
 
 interface MultiRunLauncherProps {
@@ -248,6 +249,36 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory ?? null);
+  const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
+
+  const [isDesktopApp, setIsDesktopApp] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    return typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined';
+  });
+
+  const isMacPlatform = React.useMemo(() => {
+    if (typeof navigator === 'undefined') {
+      return false;
+    }
+    return /Macintosh|Mac OS X/.test(navigator.userAgent || '');
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const detected = typeof (window as typeof window & { opencodeDesktop?: unknown }).opencodeDesktop !== 'undefined';
+    setIsDesktopApp(detected);
+  }, []);
+
+  const desktopHeaderPaddingClass = React.useMemo(() => {
+    if (isDesktopApp && isMacPlatform) {
+      return isSidebarOpen ? 'pl-0' : 'pl-[8.0rem]';
+    }
+    return 'pl-3';
+  }, [isDesktopApp, isMacPlatform, isSidebarOpen]);
 
   const [worktreeBaseBranch, setWorktreeBaseBranch] = React.useState<string>('HEAD');
   const [availableWorktreeBaseBranches, setAvailableWorktreeBaseBranches] = React.useState<WorktreeBaseOption[]>([
@@ -392,10 +423,18 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
     <div className="flex flex-col h-full bg-background">
       {/* Header - same height as app header (h-12 = 48px) */}
       <header
-        className="flex h-12 items-center justify-between border-b app-region-drag"
+        className={cn(
+          'flex h-12 items-center justify-between border-b app-region-drag',
+          desktopHeaderPaddingClass
+        )}
         style={{ borderColor: 'var(--interactive-border)' }}
       >
-        <div className="flex items-center gap-3 pl-4">
+        <div
+          className={cn(
+            'flex items-center gap-3',
+            isDesktopApp && isMacPlatform && isSidebarOpen && 'pl-4'
+          )}
+        >
           <h1 className="typography-ui-label font-medium">New Multi-Run</h1>
         </div>
         {onCancel && (
@@ -433,7 +472,7 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. feature-auth, bugfix-login"
-                className="typography-body"
+                className="typography-body max-w-full sm:max-w-xs"
                 required
               />
               <p className="typography-micro text-muted-foreground">
@@ -465,19 +504,19 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
                   <SelectTrigger
                     id="multirun-worktree-base-branch"
                     size="lg"
-                    className="w-full typography-meta text-foreground"
+                    className="max-w-full typography-meta text-foreground"
                   >
                     <SelectValue
                       placeholder={isLoadingWorktreeBaseBranches ? 'Loading branches…' : 'Select a branch'}
                     />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent fitContent>
                     <SelectGroup>
                       <SelectLabel>Default</SelectLabel>
                       {availableWorktreeBaseBranches
                         .filter((option) => option.group === 'special')
                         .map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
+                          <SelectItem key={option.value} value={option.value} className="w-auto whitespace-nowrap">
                             {option.label}
                           </SelectItem>
                         ))}
@@ -491,7 +530,7 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
                           {availableWorktreeBaseBranches
                             .filter((option) => option.group === 'local')
                             .map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem key={option.value} value={option.value} className="w-auto whitespace-nowrap">
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -507,7 +546,7 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
                           {availableWorktreeBaseBranches
                             .filter((option) => option.group === 'remote')
                             .map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem key={option.value} value={option.value} className="w-auto whitespace-nowrap">
                                 {option.label}
                               </SelectItem>
                             ))}
