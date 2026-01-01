@@ -75,14 +75,15 @@ export const MobileOverlayPanel: React.FC<MobileOverlayPanelProps> = ({
       aria-modal="true"
       onClick={onClose}
     >
-      <div
-        className={cn(
-          'mt-auto w-full rounded-t-xl border border-border/50 bg-background shadow-none pwa-overlay-panel',
-          'mx-auto max-w-lg',
-          className
-        )}
-        onClick={(event) => event.stopPropagation()}
-      >
+        <div
+          className={cn(
+            'mt-auto w-full rounded-t-xl border border-border/50 bg-background shadow-none pwa-overlay-panel',
+            'mx-auto max-w-lg',
+            className
+          )}
+          data-keyboard-avoid="true"
+          onClick={(event) => event.stopPropagation()}
+        >
         {(() => {
           const closeButton = (
             <button

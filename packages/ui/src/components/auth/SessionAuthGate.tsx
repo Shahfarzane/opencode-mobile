@@ -209,7 +209,7 @@ export const SessionAuthGate: React.FC<SessionAuthGateProps> = ({ children }) =>
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="w-full space-y-2">
+          <form onSubmit={handleSubmit} className="w-full space-y-2" data-keyboard-avoid="true">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <RiLockLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />

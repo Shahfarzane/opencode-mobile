@@ -53,6 +53,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
     <Collapsible
       open={hasSelectedFiles}
       className="rounded-xl border border-border/60 bg-background/70 overflow-hidden"
+      data-keyboard-avoid="true"
     >
       <div className="flex w-full items-center justify-between px-3 py-2">
         <h3 className="typography-ui-header font-semibold text-foreground">Commit</h3>

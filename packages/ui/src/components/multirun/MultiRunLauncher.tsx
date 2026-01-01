@@ -422,7 +422,7 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
       {/* Content with chat-column max-width */}
       <div className="flex-1 overflow-auto">
         <div className="chat-column py-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" data-keyboard-avoid="true">
             {/* Group name (required) */}
             <div className="space-y-2">
               <label htmlFor="group-name" className="typography-ui-label font-medium text-foreground">
