@@ -41,6 +41,7 @@ openchamber update                   # Update to latest version
 - Smart tool visualization (inline diffs, file trees, results highlighting)
 - Rich permission cards with syntax-highlighted operation previews
 - Per-agent permission modes (ask/allow/full) per session
+- Multi-agent runs from a single prompt (isolated worktrees)
 - Branchable conversations: start a new session from any assistant response
 - Task tracker UI with live progress and tool summaries
 - Model selection UX: favorites, recents, and configurable tool output density
