@@ -4,9 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- VS Code extension: reorganized extension location. It is now on the right sidebar for VSCode and on the left for Cursor/Windsurf.
-- VS Code extension: Move Navigation Info into the title bar.
-- Worktrees now do not create a remote branch by default; only the push action publishes the branch to remote.
+## [1.4.0] - 2026-01-01
+
+- Added the ability to run multiple agents from a single prompt, with each agent working in an isolated worktree.
+- Git view: improved branch publishing by detecting unpublished commits and automatically setting the upstream on first push.
+- Worktrees: new branch creation can start from a chosen base; remote branches are only created when you push.
+- VS Code extension: default location is now the right secondary sidebar in VS Code, and the left activity bar in Cursor/Windsurf; navigation moved into the title bar (thanks to @wienans).
+- Web app: added Cloudflare Quick Tunnel support for simpler remote access (thanks to @wojons and @aptdnfapt).
+- Mobile: improved keyboard/input bar behavior (including Android fixes and better keyboard avoidance) and added an offset setting for curved-screen devices (thanks to @auroraflux).
+- Chat: now shows clearer error messages when agent messages fail.
+- Sidebar: improved readability for sticky headers with a dynamic background.
 
 
 ## [1.3.9] - 2025-12-30
