@@ -4,6 +4,7 @@ import * as path from 'path';
 import type { OpenCodeManager } from './opencode';
 import { createAgent, createCommand, deleteAgent, deleteCommand, getAgentSources, getCommandSources, updateAgent, updateCommand, type AgentScope, type CommandScope, AGENT_SCOPE, COMMAND_SCOPE, discoverSkills, getSkillSources, createSkill, updateSkill, deleteSkill, readSkillSupportingFile, writeSkillSupportingFile, deleteSkillSupportingFile, type SkillScope, SKILL_SCOPE } from './opencodeConfig';
 import { removeProviderAuth } from './opencodeAuth';
+import * as gitService from './gitService';
 import {
   getSkillsCatalog,
   scanSkillsRepository as scanSkillsRepositoryFromGit,
@@ -1045,6 +1046,287 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
           const errorMessage = error instanceof Error ? error.message : String(error);
           return { id, type, success: false, error: errorMessage };
         }
+      }
+
+      // ============== Git Operations ==============
+
+      case 'api:git/check': {
+        const { directory } = (payload || {}) as { directory?: string };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        const isRepo = await gitService.checkIsGitRepository(directory);
+        return { id, type, success: true, data: isRepo };
+      }
+
+      case 'api:git/worktree-type': {
+        const { directory } = (payload || {}) as { directory?: string };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        const isLinked = await gitService.isLinkedWorktree(directory);
+        return { id, type, success: true, data: isLinked };
+      }
+
+      case 'api:git/status': {
+        const { directory } = (payload || {}) as { directory?: string };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        const status = await gitService.getGitStatus(directory);
+        return { id, type, success: true, data: status };
+      }
+
+      case 'api:git/branches': {
+        const { directory, method, name, startPoint, force } = (payload || {}) as { 
+          directory?: string; 
+          method?: string;
+          name?: string;
+          startPoint?: string;
+          force?: boolean;
+        };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+
+        const normalizedMethod = typeof method === 'string' ? method.toUpperCase() : 'GET';
+
+        if (normalizedMethod === 'GET') {
+          const branches = await gitService.getGitBranches(directory);
+          return { id, type, success: true, data: branches };
+        }
+
+        if (normalizedMethod === 'POST') {
+          if (!name) {
+            return { id, type, success: false, error: 'Branch name is required' };
+          }
+          const result = await gitService.createBranch(directory, name, startPoint);
+          return { id, type, success: true, data: result };
+        }
+
+        if (normalizedMethod === 'DELETE') {
+          if (!name) {
+            return { id, type, success: false, error: 'Branch name is required' };
+          }
+          const result = await gitService.deleteGitBranch(directory, name, force);
+          return { id, type, success: true, data: result };
+        }
+
+        return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+      }
+
+      case 'api:git/remote-branches': {
+        const { directory, branch, remote } = (payload || {}) as { 
+          directory?: string; 
+          branch?: string;
+          remote?: string;
+        };
+        if (!directory || !branch) {
+          return { id, type, success: false, error: 'Directory and branch are required' };
+        }
+        const result = await gitService.deleteRemoteBranch(directory, branch, remote);
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/checkout': {
+        const { directory, branch } = (payload || {}) as { directory?: string; branch?: string };
+        if (!directory || !branch) {
+          return { id, type, success: false, error: 'Directory and branch are required' };
+        }
+        const result = await gitService.checkoutBranch(directory, branch);
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/worktrees': {
+        const { directory, method, path: worktreePath, branch, createBranch, force } = (payload || {}) as { 
+          directory?: string; 
+          method?: string;
+          path?: string;
+          branch?: string;
+          createBranch?: boolean;
+          force?: boolean;
+        };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+
+        const normalizedMethod = typeof method === 'string' ? method.toUpperCase() : 'GET';
+
+        if (normalizedMethod === 'GET') {
+          const worktrees = await gitService.listGitWorktrees(directory);
+          return { id, type, success: true, data: worktrees };
+        }
+
+        if (normalizedMethod === 'POST') {
+          if (!worktreePath || !branch) {
+            return { id, type, success: false, error: 'Path and branch are required' };
+          }
+          const result = await gitService.addGitWorktree(directory, worktreePath, branch, createBranch);
+          return { id, type, success: true, data: result };
+        }
+
+        if (normalizedMethod === 'DELETE') {
+          if (!worktreePath) {
+            return { id, type, success: false, error: 'Path is required' };
+          }
+          const result = await gitService.removeGitWorktree(directory, worktreePath, force);
+          return { id, type, success: true, data: result };
+        }
+
+        return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+      }
+
+      case 'api:git/diff': {
+        const { directory, path: filePath, staged, contextLines } = (payload || {}) as { 
+          directory?: string; 
+          path?: string;
+          staged?: boolean;
+          contextLines?: number;
+        };
+        if (!directory || !filePath) {
+          return { id, type, success: false, error: 'Directory and path are required' };
+        }
+        const result = await gitService.getGitDiff(directory, filePath, staged, contextLines);
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/file-diff': {
+        const { directory, path: filePath, staged } = (payload || {}) as { 
+          directory?: string; 
+          path?: string;
+          staged?: boolean;
+        };
+        if (!directory || !filePath) {
+          return { id, type, success: false, error: 'Directory and path are required' };
+        }
+        const result = await gitService.getGitFileDiff(directory, filePath, staged);
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/revert': {
+        const { directory, path: filePath } = (payload || {}) as { directory?: string; path?: string };
+        if (!directory || !filePath) {
+          return { id, type, success: false, error: 'Directory and path are required' };
+        }
+        await gitService.revertGitFile(directory, filePath);
+        return { id, type, success: true, data: { success: true } };
+      }
+
+      case 'api:git/commit': {
+        const { directory, message, addAll, files } = (payload || {}) as { 
+          directory?: string; 
+          message?: string;
+          addAll?: boolean;
+          files?: string[];
+        };
+        if (!directory || !message) {
+          return { id, type, success: false, error: 'Directory and message are required' };
+        }
+        const result = await gitService.createGitCommit(directory, message, { addAll, files });
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/push': {
+        const { directory, remote, branch, options } = (payload || {}) as { 
+          directory?: string; 
+          remote?: string;
+          branch?: string;
+          options?: string[] | Record<string, unknown>;
+        };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        const result = await gitService.gitPush(directory, { remote, branch, options });
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/pull': {
+        const { directory, remote, branch } = (payload || {}) as { 
+          directory?: string; 
+          remote?: string;
+          branch?: string;
+        };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        const result = await gitService.gitPull(directory, { remote, branch });
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/fetch': {
+        const { directory, remote, branch } = (payload || {}) as { 
+          directory?: string; 
+          remote?: string;
+          branch?: string;
+        };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        const result = await gitService.gitFetch(directory, { remote, branch });
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/log': {
+        const { directory, maxCount, from, to, file } = (payload || {}) as { 
+          directory?: string; 
+          maxCount?: number;
+          from?: string;
+          to?: string;
+          file?: string;
+        };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        const result = await gitService.getGitLog(directory, { maxCount, from, to, file });
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/commit-files': {
+        const { directory, hash } = (payload || {}) as { directory?: string; hash?: string };
+        if (!directory || !hash) {
+          return { id, type, success: false, error: 'Directory and hash are required' };
+        }
+        const result = await gitService.getCommitFiles(directory, hash);
+        return { id, type, success: true, data: result };
+      }
+
+      case 'api:git/identity': {
+        const { directory, method, userName, userEmail, sshKey } = (payload || {}) as { 
+          directory?: string; 
+          method?: string;
+          userName?: string;
+          userEmail?: string;
+          sshKey?: string | null;
+        };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+
+        const normalizedMethod = typeof method === 'string' ? method.toUpperCase() : 'GET';
+
+        if (normalizedMethod === 'GET') {
+          const identity = await gitService.getCurrentGitIdentity(directory);
+          return { id, type, success: true, data: identity };
+        }
+
+        if (normalizedMethod === 'POST') {
+          if (!userName || !userEmail) {
+            return { id, type, success: false, error: 'userName and userEmail are required' };
+          }
+          const result = await gitService.setGitIdentity(directory, userName, userEmail, sshKey);
+          return { id, type, success: true, data: result };
+        }
+
+        return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+      }
+
+      case 'api:git/ignore-openchamber': {
+        const { directory } = (payload || {}) as { directory?: string };
+        if (!directory) {
+          return { id, type, success: false, error: 'Directory is required' };
+        }
+        await gitService.ensureOpenChamberIgnored(directory);
+        return { id, type, success: true, data: { success: true } };
       }
 
       default:
