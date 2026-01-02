@@ -1,5 +1,5 @@
 import React from 'react';
-import { RiAddLine, RiCloseLine, RiPlayLine, RiSearchLine } from '@remixicon/react';
+import { RiAddLine, RiCheckLine, RiCloseLine, RiPlayLine, RiSearchLine, RiStarFill, RiTimeLine } from '@remixicon/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,7 +23,9 @@ import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useMultiRunStore } from '@/stores/useMultiRunStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { useModelLists } from '@/hooks/useModelLists';
 import type { CreateMultiRunParams, MultiRunModelSelection } from '@/types/multirun';
+import type { ModelMetadata } from '@/types';
 
 interface MultiRunLauncherProps {
   /** Prefill prompt textarea (optional) */
@@ -67,6 +69,24 @@ const ModelChip: React.FC<{
   );
 };
 
+const COMPACT_NUMBER_FORMATTER = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  compactDisplay: 'short',
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 0,
+});
+
+const formatTokens = (value?: number | null) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '';
+  }
+  if (value === 0) {
+    return '0';
+  }
+  const formatted = COMPACT_NUMBER_FORMATTER.format(value);
+  return formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted;
+};
+
 /**
  * Model selector for multi-run (allows selecting multiple unique models).
  */
@@ -75,34 +95,79 @@ const ModelMultiSelect: React.FC<{
   onAdd: (model: MultiRunModelSelection) => void;
   onRemove: (index: number) => void;
 }> = ({ selectedModels, onAdd, onRemove }) => {
-  const providers = useConfigStore((state) => state.providers);
+  const { providers, modelsMetadata } = useConfigStore();
+  const { favoriteModelsList, recentModelsList } = useModelLists();
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const itemRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
 
   // Get set of already selected model keys
   const selectedKeys = React.useMemo(() => {
     return new Set(selectedModels.map((m) => `${m.providerID}:${m.modelID}`));
   }, [selectedModels]);
 
-  // Filter models based on search query
-  const filteredProviders = React.useMemo(() => {
-    if (!searchQuery.trim()) return providers;
+  const getModelMetadata = (provId: string, modId: string): ModelMetadata | undefined => {
+    const key = `${provId}/${modId}`;
+    return modelsMetadata.get(key);
+  };
 
-    const query = searchQuery.toLowerCase();
+  const getModelDisplayName = (model: Record<string, unknown>) => {
+    const name = model?.name || model?.id || '';
+    const nameStr = String(name);
+    if (nameStr.length > 40) {
+      return nameStr.substring(0, 37) + '...';
+    }
+    return nameStr;
+  };
+
+  // Filter helper
+  const filterByQuery = React.useCallback((modelName: string, providerName: string) => {
+    if (!searchQuery.trim()) return true;
+    const lowerQuery = searchQuery.toLowerCase();
+    return (
+      modelName.toLowerCase().includes(lowerQuery) ||
+      providerName.toLowerCase().includes(lowerQuery)
+    );
+  }, [searchQuery]);
+
+  // Filter favorites
+  const filteredFavorites = React.useMemo(() => {
+    return favoriteModelsList.filter(({ model, providerID }) => {
+      const provider = providers.find(p => p.id === providerID);
+      const providerName = provider?.name || providerID;
+      const modelName = getModelDisplayName(model);
+      return filterByQuery(modelName, providerName);
+    });
+  }, [favoriteModelsList, providers, filterByQuery]);
+
+  // Filter recents
+  const filteredRecents = React.useMemo(() => {
+    return recentModelsList.filter(({ model, providerID }) => {
+      const provider = providers.find(p => p.id === providerID);
+      const providerName = provider?.name || providerID;
+      const modelName = getModelDisplayName(model);
+      return filterByQuery(modelName, providerName);
+    });
+  }, [recentModelsList, providers, filterByQuery]);
+
+  // Filter providers
+  const filteredProviders = React.useMemo(() => {
     return providers
       .map((provider) => {
         const models = Array.isArray(provider.models) ? provider.models : [];
         const filteredModels = models.filter((model) => {
-          const modelName = (model.name || model.id || '').toString().toLowerCase();
-          const providerName = provider.name.toLowerCase();
-          return modelName.includes(query) || providerName.includes(query);
+          const modelName = getModelDisplayName(model);
+          return filterByQuery(modelName, provider.name || provider.id || '');
         });
         return { ...provider, models: filteredModels };
       })
       .filter((provider) => provider.models.length > 0);
-  }, [providers, searchQuery]);
+  }, [providers, filterByQuery]);
+
+  const hasResults = filteredFavorites.length > 0 || filteredRecents.length > 0 || filteredProviders.length > 0;
 
   // Focus search input when opened
   React.useEffect(() => {
@@ -119,12 +184,73 @@ const ModelMultiSelect: React.FC<{
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setSearchQuery('');
+        setSelectedIndex(0);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  // Reset selection when search query changes
+  React.useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchQuery]);
+
+  // Render a model row
+  const renderModelRow = (
+    model: Record<string, unknown>,
+    providerID: string,
+    modelID: string,
+    keyPrefix: string,
+    flatIndex: number,
+    isHighlighted: boolean
+  ) => {
+    const key = `${providerID}:${modelID}`;
+    const isSelected = selectedKeys.has(key);
+    const metadata = getModelMetadata(providerID, modelID);
+    const contextTokens = formatTokens(metadata?.limit?.context);
+
+    return (
+      <button
+        key={`${keyPrefix}-${key}`}
+        ref={(el) => { itemRefs.current[flatIndex] = el; }}
+        type="button"
+        disabled={isSelected}
+        onClick={() => {
+          onAdd({
+            providerID,
+            modelID,
+            displayName: (model.name as string) || modelID,
+          });
+          // Don't close dropdown - allow selecting multiple
+        }}
+        onMouseEnter={() => setSelectedIndex(flatIndex)}
+        className={cn(
+          'w-full text-left px-2 py-1.5 rounded-md typography-meta transition-colors flex items-center gap-2',
+          isSelected
+            ? 'text-muted-foreground/50 cursor-not-allowed bg-accent/20'
+            : isHighlighted
+              ? 'bg-accent'
+              : 'hover:bg-accent/50'
+        )}
+      >
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <span className="font-medium truncate">
+            {getModelDisplayName(model)}
+          </span>
+          {contextTokens && (
+            <span className="typography-micro text-muted-foreground flex-shrink-0">
+              {contextTokens}
+            </span>
+          )}
+        </div>
+        {isSelected && (
+          <RiCheckLine className="h-4 w-4 text-primary flex-shrink-0" />
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="space-y-2">
@@ -142,83 +268,153 @@ const ModelMultiSelect: React.FC<{
             Add model
           </Button>
 
-          {isOpen && (
-            <div className="absolute top-full left-0 mt-1 z-50 border border-border/30 rounded-lg overflow-hidden bg-background shadow-lg w-72">
-              {/* Search input */}
-              <div className="p-2 border-b border-border/30">
-                <div className="relative">
-                  <RiSearchLine className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Search models..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-8 pl-8 typography-meta"
-                  />
+          {isOpen && (() => {
+            // Build flat list for keyboard navigation
+            type FlatModelItem = { model: Record<string, unknown>; providerID: string; modelID: string; section: string };
+            const flatModelList: FlatModelItem[] = [];
+            
+            filteredFavorites.forEach(({ model, providerID, modelID }) => {
+              flatModelList.push({ model, providerID, modelID, section: 'fav' });
+            });
+            filteredRecents.forEach(({ model, providerID, modelID }) => {
+              flatModelList.push({ model, providerID, modelID, section: 'recent' });
+            });
+            filteredProviders.forEach((provider) => {
+              provider.models.forEach((model) => {
+                flatModelList.push({ model, providerID: provider.id, modelID: model.id as string, section: 'provider' });
+              });
+            });
+
+            const totalItems = flatModelList.length;
+
+            // Handle keyboard navigation
+            const handleKeyDown = (e: React.KeyboardEvent) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
+                const nextIndex = (selectedIndex + 1) % Math.max(1, totalItems);
+                setSelectedIndex(nextIndex);
+                setTimeout(() => {
+                  itemRefs.current[nextIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 0);
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                e.stopPropagation();
+                const prevIndex = (selectedIndex - 1 + Math.max(1, totalItems)) % Math.max(1, totalItems);
+                setSelectedIndex(prevIndex);
+                setTimeout(() => {
+                  itemRefs.current[prevIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 0);
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                const selectedItem = flatModelList[selectedIndex];
+                if (selectedItem && !selectedKeys.has(`${selectedItem.providerID}:${selectedItem.modelID}`)) {
+                  onAdd({
+                    providerID: selectedItem.providerID,
+                    modelID: selectedItem.modelID,
+                    displayName: (selectedItem.model.name as string) || selectedItem.modelID,
+                  });
+                }
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsOpen(false);
+                setSearchQuery('');
+                setSelectedIndex(0);
+              }
+            };
+
+            let currentFlatIndex = 0;
+
+            return (
+              <div className="absolute bottom-full left-0 mb-1 z-50 border border-border/30 rounded-xl overflow-hidden bg-background shadow-lg w-[min(380px,calc(100vw-2rem))] flex flex-col">
+                {/* Search input */}
+                <div className="p-2 border-b border-border/40">
+                  <div className="relative">
+                    <RiSearchLine className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Search models"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className="h-8 pl-8 typography-meta"
+                    />
+                  </div>
+                </div>
+
+                {/* Models list */}
+                <ScrollableOverlay outerClassName="max-h-[400px] flex-1">
+                  <div className="p-1">
+                    {!hasResults && (
+                      <div className="px-2 py-4 text-center typography-meta text-muted-foreground">
+                        No models found
+                      </div>
+                    )}
+
+                    {/* Favorites Section */}
+                    {filteredFavorites.length > 0 && (
+                      <>
+                        <div className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                          <RiStarFill className="h-4 w-4 text-primary" />
+                          Favorites
+                        </div>
+                        {filteredFavorites.map(({ model, providerID, modelID }) => {
+                          const idx = currentFlatIndex++;
+                          return renderModelRow(model, providerID, modelID, 'fav', idx, selectedIndex === idx);
+                        })}
+                      </>
+                    )}
+
+                    {/* Recents Section */}
+                    {filteredRecents.length > 0 && (
+                      <>
+                        {filteredFavorites.length > 0 && <div className="h-px bg-border/40 my-1" />}
+                        <div className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                          <RiTimeLine className="h-4 w-4" />
+                          Recent
+                        </div>
+                        {filteredRecents.map(({ model, providerID, modelID }) => {
+                          const idx = currentFlatIndex++;
+                          return renderModelRow(model, providerID, modelID, 'recent', idx, selectedIndex === idx);
+                        })}
+                      </>
+                    )}
+
+                    {/* Separator before providers */}
+                    {(filteredFavorites.length > 0 || filteredRecents.length > 0) && filteredProviders.length > 0 && (
+                      <div className="h-px bg-border/40 my-1" />
+                    )}
+
+                    {/* All Providers - Flat List */}
+                    {filteredProviders.map((provider, index) => (
+                      <React.Fragment key={provider.id}>
+                        {index > 0 && <div className="h-px bg-border/40 my-1" />}
+                        <div className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                          <ProviderLogo
+                            providerId={provider.id}
+                            className="h-4 w-4 flex-shrink-0"
+                          />
+                          {provider.name}
+                        </div>
+                        {provider.models.map((model) => {
+                          const idx = currentFlatIndex++;
+                          return renderModelRow(model, provider.id, model.id as string, 'provider', idx, selectedIndex === idx);
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </ScrollableOverlay>
+
+                {/* Keyboard hints footer */}
+                <div className="px-3 pt-1 pb-1.5 border-t border-border/40 typography-micro text-muted-foreground">
+                  ↑↓ navigate • Enter select • Esc close
                 </div>
               </div>
-
-              {/* Models list */}
-              <ScrollableOverlay
-                outerClassName="max-h-[240px]"
-                className="p-2 space-y-1"
-              >
-                {filteredProviders.length === 0 ? (
-                  <div className="py-4 text-center text-muted-foreground typography-meta">
-                    No models found
-                  </div>
-                ) : (
-                  filteredProviders.map((provider) => {
-                    const models = Array.isArray(provider.models) ? provider.models : [];
-                    if (models.length === 0) return null;
-
-                    return (
-                      <div key={provider.id} className="space-y-0.5">
-                        <div className="flex items-center gap-2 py-1 text-muted-foreground">
-                          <ProviderLogo providerId={provider.id} className="h-3 w-3" />
-                          <span className="typography-micro font-medium uppercase tracking-wider">
-                            {provider.name}
-                          </span>
-                        </div>
-                        {models.map((model) => {
-                          const key = `${provider.id}:${model.id}`;
-                          const isSelected = selectedKeys.has(key);
-
-                          return (
-                            <button
-                              key={model.id as string}
-                              type="button"
-                              disabled={isSelected}
-                              onClick={() => {
-                                onAdd({
-                                  providerID: provider.id,
-                                  modelID: model.id as string,
-                                  displayName: model.name as string || model.id as string,
-                                });
-                                // Don't close dropdown - allow selecting multiple
-                              }}
-                              className={cn(
-                                'w-full text-left px-2 py-1 rounded-md typography-meta transition-colors',
-                                isSelected
-                                  ? 'text-muted-foreground/50 cursor-not-allowed'
-                                  : 'hover:bg-accent/50'
-                              )}
-                            >
-                              {model.name || model.id}
-                              {isSelected && (
-                                <span className="ml-2 text-muted-foreground/50">(selected)</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    );
-                  })
-                )}
-              </ScrollableOverlay>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Selected models */}

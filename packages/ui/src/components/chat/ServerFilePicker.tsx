@@ -17,8 +17,6 @@ import { useDeviceInfo } from '@/lib/device';
 import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
 import { useFileSearchStore } from '@/stores/useFileSearchStore';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useIsVSCodeRuntime } from '@/hooks/useRuntimeAPIs';
-
 interface FileInfo {
   name: string;
   path: string;
@@ -46,8 +44,8 @@ export const ServerFilePicker: React.FC<ServerFilePickerProps> = ({
   presentation = 'dropdown',
 }) => {
   const { isMobile } = useDeviceInfo();
-  const isVSCodeRuntime = useIsVSCodeRuntime();
-  const isCompact = isMobile || isVSCodeRuntime;
+  // Only use mobile panels on actual mobile devices, VSCode uses desktop dropdowns
+  const isCompact = isMobile;
   const { currentDirectory } = useDirectoryStore();
   const searchFiles = useFileSearchStore((state) => state.searchFiles);
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);

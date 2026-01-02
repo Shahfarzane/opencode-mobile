@@ -2,22 +2,21 @@ import React from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDeviceInfo } from '@/lib/device';
-import { RiArrowDownSLine, RiArrowRightSLine, RiPencilAiLine, RiStarFill, RiStarLine, RiTimeLine } from '@remixicon/react';
+import { RiArrowDownSLine, RiArrowRightSLine, RiCheckLine, RiCloseLine, RiPencilAiLine, RiSearchLine, RiStarFill, RiStarLine, RiTimeLine } from '@remixicon/react';
 import { cn } from '@/lib/utils';
 import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
 import { ProviderLogo } from '@/components/ui/ProviderLogo';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 import { useModelLists } from '@/hooks/useModelLists';
+import type { ModelMetadata } from '@/types';
 
 type ProviderModel = Record<string, unknown> & { id?: string; name?: string };
 
@@ -27,6 +26,24 @@ interface ModelSelectorProps {
     onChange: (providerId: string, modelId: string) => void;
     className?: string;
 }
+
+const COMPACT_NUMBER_FORMATTER = new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    compactDisplay: 'short',
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+});
+
+const formatTokens = (value?: number | null) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+        return '';
+    }
+    if (value === 0) {
+        return '0';
+    }
+    const formatted = COMPACT_NUMBER_FORMATTER.format(value);
+    return formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted;
+};
 
 export const ModelSelector: React.FC<ModelSelectorProps> = ({
     providerId,
@@ -43,21 +60,36 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
 
     const [isMobilePanelOpen, setIsMobilePanelOpen] = React.useState(false);
     const [expandedMobileProviders, setExpandedMobileProviders] = React.useState<Set<string>>(new Set());
+    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+    const [searchQuery, setSearchQuery] = React.useState('');
+    const [selectedIndex, setSelectedIndex] = React.useState(0);
+    const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
     const closeMobilePanel = () => setIsMobilePanelOpen(false);
-    const toggleMobileProviderExpansion = (providerId: string) => {
+    const toggleMobileProviderExpansion = (provId: string) => {
         setExpandedMobileProviders(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(providerId)) {
-                newSet.delete(providerId);
+            if (newSet.has(provId)) {
+                newSet.delete(provId);
             } else {
-                newSet.add(providerId);
+                newSet.add(provId);
             }
             return newSet;
         });
     };
 
+    // Reset search and selection when dropdown closes
+    React.useEffect(() => {
+        if (!isDropdownOpen) {
+            setSearchQuery('');
+            setSelectedIndex(0);
+        }
+    }, [isDropdownOpen]);
 
+    // Reset selection when search query changes
+    React.useEffect(() => {
+        setSelectedIndex(0);
+    }, [searchQuery]);
 
     const getModelDisplayName = (model: Record<string, unknown>) => {
         const name = model?.name || model?.id || '';
@@ -68,16 +100,119 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         return nameStr;
     };
 
-    const getModelMetadata = (providerId: string, modelId: string) => {
-        const key = `${providerId}/${modelId}`;
+    const getModelMetadata = (provId: string, modId: string): ModelMetadata | undefined => {
+        const key = `${provId}/${modId}`;
         return modelsMetadata.get(key);
     };
 
     const handleProviderAndModelChange = (newProviderId: string, newModelId: string) => {
         onChange(newProviderId, newModelId);
-        // Add to recent models on successful selection
-        addRecentModel(newProviderId, newModelId);
+        if (newProviderId && newModelId) {
+            addRecentModel(newProviderId, newModelId);
+        }
+        setIsDropdownOpen(false);
     };
+
+    // Filter helper
+    const filterByQuery = (modelName: string, providerName: string) => {
+        if (!searchQuery.trim()) return true;
+        const lowerQuery = searchQuery.toLowerCase();
+        return (
+            modelName.toLowerCase().includes(lowerQuery) ||
+            providerName.toLowerCase().includes(lowerQuery)
+        );
+    };
+
+    // Render a model row for desktop dropdown
+    const renderModelRow = (
+        model: ProviderModel,
+        provID: string,
+        modID: string,
+        keyPrefix: string,
+        flatIndex: number,
+        isHighlighted: boolean
+    ) => {
+        const metadata = getModelMetadata(provID, modID);
+        const contextTokens = formatTokens(metadata?.limit?.context);
+        const isSelected = providerId === provID && modelId === modID;
+        const isFavorite = isFavoriteModel(provID, modID);
+
+        return (
+            <div
+                key={`${keyPrefix}-${provID}-${modID}`}
+                ref={(el) => { itemRefs.current[flatIndex] = el; }}
+                className={cn(
+                    "typography-meta group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer",
+                    isHighlighted ? "bg-accent" : "hover:bg-accent/50"
+                )}
+                onClick={() => handleProviderAndModelChange(provID, modID)}
+                onMouseEnter={() => setSelectedIndex(flatIndex)}
+            >
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span className="font-medium truncate">
+                        {getModelDisplayName(model)}
+                    </span>
+                    {contextTokens ? (
+                        <span className="typography-micro text-muted-foreground flex-shrink-0">
+                            {contextTokens}
+                        </span>
+                    ) : null}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {isSelected && (
+                        <RiCheckLine className="h-4 w-4 text-primary" />
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleFavoriteModel(provID, modID);
+                        }}
+                        className={cn(
+                            "model-favorite-button flex h-4 w-4 items-center justify-center hover:text-yellow-600",
+                            isFavorite ? "text-yellow-500" : "text-muted-foreground"
+                        )}
+                        aria-label={isFavorite ? "Unfavorite" : "Favorite"}
+                        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                        {isFavorite ? (
+                            <RiStarFill className="h-3.5 w-3.5" />
+                        ) : (
+                            <RiStarLine className="h-3.5 w-3.5" />
+                        )}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    // Filter data for desktop dropdown
+    const filteredFavorites = favoriteModelsList.filter(({ model, providerID }) => {
+        const provider = providers.find(p => p.id === providerID);
+        const providerName = provider?.name || providerID;
+        const modelName = getModelDisplayName(model);
+        return filterByQuery(modelName, providerName);
+    });
+
+    const filteredRecents = recentModelsList.filter(({ model, providerID }) => {
+        const provider = providers.find(p => p.id === providerID);
+        const providerName = provider?.name || providerID;
+        const modelName = getModelDisplayName(model);
+        return filterByQuery(modelName, providerName);
+    });
+
+    const filteredProviders = providers
+        .map((provider) => {
+            const providerModels = Array.isArray(provider.models) ? provider.models : [];
+            const filteredModels = providerModels.filter((model: ProviderModel) => {
+                const modelName = getModelDisplayName(model);
+                return filterByQuery(modelName, provider.name || provider.id || '');
+            });
+            return { ...provider, models: filteredModels };
+        })
+        .filter((provider) => provider.models.length > 0);
+
+    const hasResults = filteredFavorites.length > 0 || filteredRecents.length > 0 || filteredProviders.length > 0;
 
     const renderMobileModelPanel = () => {
         if (!isActuallyMobile) return null;
@@ -98,7 +233,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                             <div className="border-t border-border/20">
                                 {favoriteModelsList.map(({ model, providerID, modelID }) => {
                                     const isSelectedModel = providerID === providerId && modelID === modelId;
-                                    const metadata = getModelMetadata(providerID, modelID);
 
                                     return (
                                         <div
@@ -124,11 +258,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                     />
                                                     <span className="font-medium truncate">{getModelDisplayName(model)}</span>
                                                 </div>
-                                                {typeof (metadata as unknown as Record<string, unknown>)?.description === 'string' && (
-                                                    <span className="typography-micro text-muted-foreground truncate">
-                                                        {(metadata as unknown as Record<string, unknown>).description as React.ReactNode}
-                                                    </span>
-                                                )}
                                             </button>
                                             
                                             <button
@@ -158,7 +287,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                             <div className="border-t border-border/20">
                                 {recentModelsList.map(({ model, providerID, modelID }) => {
                                     const isSelectedModel = providerID === providerId && modelID === modelId;
-                                    const metadata = getModelMetadata(providerID, modelID);
 
                                     return (
                                         <div
@@ -184,11 +312,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                     />
                                                     <span className="font-medium truncate">{getModelDisplayName(model)}</span>
                                                 </div>
-                                                {typeof (metadata as unknown as Record<string, unknown>)?.description === 'string' && (
-                                                    <span className="typography-micro text-muted-foreground truncate">
-                                                        {(metadata as unknown as Record<string, unknown>).description as React.ReactNode}
-                                                    </span>
-                                                )}
                                             </button>
                                             
                                             <button
@@ -246,7 +369,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     <div className="border-t border-border/20">
                                         {providerModels.map((modelItem: ProviderModel) => {
                                             const isSelectedModel = provider.id === providerId && modelItem.id === modelId;
-                                            const metadata = getModelMetadata(provider.id as string, modelItem.id as string);
 
                                             return (
                                                 <div
@@ -266,11 +388,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                         }}
                                                     >
                                                         <span className="font-medium truncate">{getModelDisplayName(modelItem)}</span>
-                                                        {typeof (metadata as unknown as Record<string, unknown>)?.description === 'string' && (
-                                                            <span className="typography-micro text-muted-foreground truncate">
-                                                                {(metadata as unknown as Record<string, unknown>).description as React.ReactNode}
-                                                            </span>
-                                                        )}
                                                     </button>
                                                     
                                                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -350,7 +467,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                     <RiArrowDownSLine className="h-3 w-3 text-muted-foreground" />
                 </button>
             ) : (
-                <DropdownMenu>
+                <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                     <DropdownMenuTrigger asChild>
                         <div className={cn(
                             'flex items-center gap-2 px-2 rounded-lg bg-accent/20 border border-border/20 cursor-pointer hover:bg-accent/30 h-6 w-fit',
@@ -373,220 +490,165 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                             <RiArrowDownSLine className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
                         </div>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="max-w-[300px]">
-                        {/* Favorites Section */}
-                        {favoriteModelsList.length > 0 && (
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger className="typography-meta">
-                                    <RiStarFill className="h-3 w-3 flex-shrink-0 mr-2 text-yellow-500" />
-                                    Favorites
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent
-                                    className="max-h-[320px] min-w-[200px]"
-                                    sideOffset={2}
-                                    collisionPadding={8}
-                                    avoidCollisions={true}
-                                >
-                                    <ScrollableOverlay
-                                        outerClassName="max-h-[320px] min-w-[200px]"
-                                        className="space-y-1 p-1"
-                                    >
-                                        {favoriteModelsList.map(({ model, providerID, modelID }) => {
-                                            const metadata = getModelMetadata(providerID, modelID);
-                                            return (
-                                                <DropdownMenuItem
-                                                    key={`fav-${providerID}-${modelID}`}
-                                                    className="typography-meta"
-                                                    onSelect={(e) => {
-                                                        e.preventDefault();
-                                                        handleProviderAndModelChange(providerID, modelID);
-                                                    }}
-                                                >
-                                                    <div className="flex items-center gap-2 w-full">
-                                                        <div className="flex flex-col flex-1 min-w-0">
-                                                            <span className="font-medium truncate">{getModelDisplayName(model)}</span>
-                                                            {typeof (metadata as unknown as Record<string, unknown>)?.description === 'string' && (
-                                                                <span className="typography-micro text-muted-foreground truncate">
-                                                                    {(metadata as unknown as Record<string, unknown>).description as React.ReactNode}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                toggleFavoriteModel(providerID, modelID);
-                                                            }}
-                                                            className="model-favorite-button flex h-4 w-4 items-center justify-center text-yellow-500 hover:text-yellow-600"
-                                                            aria-label="Unfavorite"
-                                                        >
-                                                            <RiStarFill className="h-3.5 w-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </DropdownMenuItem>
-                                            );
-                                        })}
-                                    </ScrollableOverlay>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                        )}
-                        
-                        {/* Recents Section */}
-                        {recentModelsList.length > 0 && (
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger className="typography-meta">
-                                    <RiTimeLine className="h-3 w-3 flex-shrink-0 mr-2 text-muted-foreground" />
-                                    Recent
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent
-                                    className="max-h-[320px] min-w-[200px]"
-                                    sideOffset={2}
-                                    collisionPadding={8}
-                                    avoidCollisions={true}
-                                >
-                                    <ScrollableOverlay
-                                        outerClassName="max-h-[320px] min-w-[200px]"
-                                        className="space-y-1 p-1"
-                                    >
-                                        {recentModelsList.map(({ model, providerID, modelID }) => {
-                                            const metadata = getModelMetadata(providerID, modelID);
-                                            return (
-                                                <DropdownMenuItem
-                                                    key={`recent-${providerID}-${modelID}`}
-                                                    className="typography-meta"
-                                                    onSelect={(e) => {
-                                                        e.preventDefault();
-                                                        handleProviderAndModelChange(providerID, modelID);
-                                                    }}
-                                                >
-                                                    <div className="flex items-center gap-2 w-full">
-                                                        <div className="flex flex-col flex-1 min-w-0">
-                                                            <span className="font-medium truncate">{getModelDisplayName(model)}</span>
-                                                            {typeof (metadata as unknown as Record<string, unknown>)?.description === 'string' && (
-                                                                <span className="typography-micro text-muted-foreground truncate">
-                                                                    {(metadata as unknown as Record<string, unknown>).description as React.ReactNode}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                toggleFavoriteModel(providerID, modelID);
-                                                            }}
-                                                            className="model-favorite-button flex h-4 w-4 items-center justify-center text-muted-foreground hover:text-yellow-600"
-                                                            aria-label="Favorite"
-                                                        >
-                                                            <RiStarLine className="h-3.5 w-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </DropdownMenuItem>
-                                            );
-                                        })}
-                                    </ScrollableOverlay>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                        )}
-                        
-                        {/* Separator before providers */}
-                        {(favoriteModelsList.length > 0 || recentModelsList.length > 0) && (
-                            <DropdownMenuSeparator />
-                        )}
+                    <DropdownMenuContent className="w-[min(380px,calc(100vw-2rem))] p-0 flex flex-col" align="start">
+                        {(() => {
+                            // Build flat list for keyboard navigation
+                            type FlatModelItem = { model: ProviderModel; providerID: string; modelID: string; section: string };
+                            const flatModelList: FlatModelItem[] = [];
+                            
+                            filteredFavorites.forEach(({ model, providerID, modelID }) => {
+                                flatModelList.push({ model, providerID, modelID, section: 'fav' });
+                            });
+                            filteredRecents.forEach(({ model, providerID, modelID }) => {
+                                flatModelList.push({ model, providerID, modelID, section: 'recent' });
+                            });
+                            filteredProviders.forEach((provider) => {
+                                (provider.models as ProviderModel[]).forEach((model) => {
+                                    flatModelList.push({ model, providerID: provider.id as string, modelID: model.id as string, section: 'provider' });
+                                });
+                            });
 
-                        {providers.map((provider) => {
-                            const providerModels = Array.isArray(provider.models) ? provider.models : [];
+                            const totalItems = flatModelList.length;
 
-                            if (providerModels.length === 0) {
-                                return (
-                                    <DropdownMenuItem
-                                        key={provider.id}
-                                        disabled
-                                        className="typography-meta text-muted-foreground"
-                                    >
-                                        <ProviderLogo
-                                            providerId={provider.id}
-                                            className="h-3 w-3 flex-shrink-0 mr-2"
-                                        />
-                                        {provider.name} (No models)
-                                    </DropdownMenuItem>
-                                );
-                            }
+                            // Handle keyboard navigation
+                            const handleKeyDown = (e: React.KeyboardEvent) => {
+                                if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const nextIndex = (selectedIndex + 1) % Math.max(1, totalItems);
+                                    setSelectedIndex(nextIndex);
+                                    setTimeout(() => {
+                                        itemRefs.current[nextIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                    }, 0);
+                                } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const prevIndex = (selectedIndex - 1 + Math.max(1, totalItems)) % Math.max(1, totalItems);
+                                    setSelectedIndex(prevIndex);
+                                    setTimeout(() => {
+                                        itemRefs.current[prevIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                    }, 0);
+                                } else if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const selectedItem = flatModelList[selectedIndex];
+                                    if (selectedItem) {
+                                        handleProviderAndModelChange(selectedItem.providerID, selectedItem.modelID);
+                                    }
+                                } else if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setIsDropdownOpen(false);
+                                }
+                            };
+
+                            let currentFlatIndex = 0;
 
                             return (
-                                <DropdownMenuSub key={provider.id}>
-                                    <DropdownMenuSubTrigger className="typography-meta">
-                                        <ProviderLogo
-                                            providerId={provider.id}
-                                            className="h-3 w-3 flex-shrink-0 mr-2"
-                                        />
-                                        {provider.name}
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent
-                                        className="max-h-[320px] min-w-[200px]"
-                                        sideOffset={2}
-                                        collisionPadding={8}
-                                        avoidCollisions={true}
-                                    >
-                                        <ScrollableOverlay
-                                            outerClassName="max-h-[320px] min-w-[200px]"
-                                            className="space-y-1 p-1"
-                                        >
-                                            {providerModels.map((modelItem: ProviderModel) => {
-                                                    const metadata = getModelMetadata(provider.id as string, modelItem.id as string);
+                                <>
+                                    {/* Search Input */}
+                                    <div className="p-2 border-b border-border/40">
+                                        <div className="relative">
+                                            <RiSearchLine className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                            <Input
+                                                type="text"
+                                                placeholder="Search models"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                onKeyDown={handleKeyDown}
+                                                className="pl-8 h-8 typography-meta"
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
 
-                                            return (
-                                                <DropdownMenuItem
-                                                    key={modelItem.id as string}
-                                                    className="typography-meta"
-                                                    onSelect={(e) => {
-                                                        e.preventDefault();
-                                                        handleProviderAndModelChange(provider.id as string, modelItem.id as string);
-                                                    }}
-                                                >
-                                                    <div className="flex items-center gap-2 w-full">
-                                                        <div className="flex flex-col flex-1 min-w-0">
-                                                            <span className="font-medium truncate">{getModelDisplayName(modelItem)}</span>
-                                                            {typeof (metadata as unknown as Record<string, unknown>)?.description === 'string' && (
-                                                                <span className="typography-micro text-muted-foreground truncate">
-                                                                    {(metadata as unknown as Record<string, unknown>).description as React.ReactNode}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                toggleFavoriteModel(provider.id as string, modelItem.id as string);
-                                                            }}
-                                                            className={cn(
-                                                                "flex h-4 w-4 items-center justify-center hover:text-yellow-600",
-                                                                isFavoriteModel(provider.id as string, modelItem.id as string)
-                                                                    ? "text-yellow-500"
-                                                                    : "text-muted-foreground"
-                                                            )}
-                                                            aria-label={isFavoriteModel(provider.id as string, modelItem.id as string) ? "Unfavorite" : "Favorite"}
-                                                        >
-                                                            {isFavoriteModel(provider.id as string, modelItem.id as string) ? (
-                                                                <RiStarFill className="h-3.5 w-3.5" />
-                                                            ) : (
-                                                                <RiStarLine className="h-3.5 w-3.5" />
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </DropdownMenuItem>
-                                            );
-                                        })}
-                                        </ScrollableOverlay>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
+                                    {/* Scrollable content */}
+                                    <ScrollableOverlay outerClassName="max-h-[400px] flex-1">
+                                        <div className="p-1">
+                                            {/* Not selected option */}
+                                            <div
+                                                className={cn(
+                                                    "typography-meta flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer",
+                                                    "hover:bg-accent/50"
+                                                )}
+                                                onClick={() => handleProviderAndModelChange('', '')}
+                                            >
+                                                <RiCloseLine className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <span className="text-muted-foreground">Not selected</span>
+                                                {!providerId && !modelId && (
+                                                    <RiCheckLine className="h-4 w-4 text-primary ml-auto" />
+                                                )}
+                                            </div>
+
+                                            <DropdownMenuSeparator />
+
+                                            {!hasResults && searchQuery && (
+                                                <div className="px-2 py-4 text-center typography-meta text-muted-foreground">
+                                                    No models found
+                                                </div>
+                                            )}
+
+                                            {/* Favorites Section */}
+                                            {filteredFavorites.length > 0 && (
+                                                <>
+                                                    <DropdownMenuLabel className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                                                        <RiStarFill className="h-4 w-4 text-primary" />
+                                                        Favorites
+                                                    </DropdownMenuLabel>
+                                                    {filteredFavorites.map(({ model, providerID, modelID }) => {
+                                                        const idx = currentFlatIndex++;
+                                                        return renderModelRow(model, providerID, modelID, 'fav', idx, selectedIndex === idx);
+                                                    })}
+                                                </>
+                                            )}
+
+                                            {/* Recents Section */}
+                                            {filteredRecents.length > 0 && (
+                                                <>
+                                                    {filteredFavorites.length > 0 && <DropdownMenuSeparator />}
+                                                    <DropdownMenuLabel className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                                                        <RiTimeLine className="h-4 w-4" />
+                                                        Recent
+                                                    </DropdownMenuLabel>
+                                                    {filteredRecents.map(({ model, providerID, modelID }) => {
+                                                        const idx = currentFlatIndex++;
+                                                        return renderModelRow(model, providerID, modelID, 'recent', idx, selectedIndex === idx);
+                                                    })}
+                                                </>
+                                            )}
+
+                                            {/* Separator before providers */}
+                                            {(filteredFavorites.length > 0 || filteredRecents.length > 0) && filteredProviders.length > 0 && (
+                                                <DropdownMenuSeparator />
+                                            )}
+
+                                            {/* All Providers - Flat List */}
+                                            {filteredProviders.map((provider, index) => (
+                                                <React.Fragment key={provider.id}>
+                                                    {index > 0 && <DropdownMenuSeparator />}
+                                                    <DropdownMenuLabel className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                                                        <ProviderLogo
+                                                            providerId={provider.id}
+                                                            className="h-4 w-4 flex-shrink-0"
+                                                        />
+                                                        {provider.name}
+                                                    </DropdownMenuLabel>
+                                                    {(provider.models as ProviderModel[]).map((model: ProviderModel) => {
+                                                        const idx = currentFlatIndex++;
+                                                        return renderModelRow(model, provider.id as string, model.id as string, 'provider', idx, selectedIndex === idx);
+                                                    })}
+                                                </React.Fragment>
+                                            ))}
+                                        </div>
+                                    </ScrollableOverlay>
+
+                                    {/* Keyboard hints footer */}
+                                    <div className="px-3 pt-1 pb-1.5 border-t border-border/40 typography-micro text-muted-foreground">
+                                        ↑↓ navigate • Enter select • Esc close
+                                    </div>
+                                </>
                             );
-                        })}
-                        <DropdownMenuItem
-                            className="typography-meta"
-                            onSelect={() => handleProviderAndModelChange('', '')}
-                        >
-                            <span className="text-muted-foreground">No model (optional)</span>
-                        </DropdownMenuItem>
+                        })()}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}

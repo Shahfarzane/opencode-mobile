@@ -5,6 +5,7 @@ import {
     RiArrowDownSLine,
     RiArrowRightSLine,
     RiBrainAi3Line,
+    RiCheckLine,
     RiCheckboxCircleLine,
     RiCloseCircleLine,
     RiFileImageLine,
@@ -26,10 +27,8 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -237,13 +236,14 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
     } = useSessionStore();
 
     const contextHydrated = useContextStore((state) => state.hasHydrated);
-    const { toggleFavoriteModel, isFavoriteModel, addRecentModel } = useUIStore();
+    const { toggleFavoriteModel, isFavoriteModel, addRecentModel, isModelSelectorOpen, setModelSelectorOpen } = useUIStore();
     const { favoriteModelsList, recentModelsList } = useModelLists();
 
     const { isMobile } = useDeviceInfo();
     const isDesktopRuntime = useIsDesktopRuntime();
     const isVSCodeRuntime = useIsVSCodeRuntime();
-    const isCompact = isMobile || isVSCodeRuntime;
+    // Only use mobile panels on actual mobile devices, VSCode uses desktop dropdowns
+    const isCompact = isMobile;
     const [activeMobilePanel, setActiveMobilePanel] = React.useState<'model' | 'agent' | null>(null);
     const [mobileTooltipOpen, setMobileTooltipOpen] = React.useState<'model' | 'agent' | null>(null);
     const [mobileModelQuery, setMobileModelQuery] = React.useState('');
@@ -258,9 +258,14 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
         return initial;
     });
     const [mobileEditOptionsOpen, setMobileEditOptionsOpen] = React.useState(false);
-    const [agentMenuOpen, setAgentMenuOpen] = React.useState(false);
+    // Use global state for model selector (allows Ctrl+M shortcut)
+    const agentMenuOpen = isModelSelectorOpen;
+    const setAgentMenuOpen = setModelSelectorOpen;
     const [desktopEditOptionsOpen, setDesktopEditOptionsOpen] = React.useState(false);
     const desktopEditOptionsId = React.useId();
+    const [desktopModelQuery, setDesktopModelQuery] = React.useState('');
+    const [modelSelectedIndex, setModelSelectedIndex] = React.useState(0);
+    const modelItemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
     React.useEffect(() => {
         if (activeMobilePanel === 'model') {
@@ -283,11 +288,30 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
         }
     }, [activeMobilePanel]);
 
+    const prevAgentMenuOpenRef = React.useRef(agentMenuOpen);
     React.useEffect(() => {
+        const wasOpen = prevAgentMenuOpenRef.current;
+        prevAgentMenuOpenRef.current = agentMenuOpen;
+
         if (!agentMenuOpen) {
             setDesktopEditOptionsOpen(false);
+            setDesktopModelQuery('');
+            setModelSelectedIndex(0);
+
+            // Restore focus to chat input when model selector closes
+            if (wasOpen && !isCompact) {
+                requestAnimationFrame(() => {
+                    const textarea = document.querySelector<HTMLTextAreaElement>('textarea[data-chat-input="true"]');
+                    textarea?.focus();
+                });
+            }
         }
-    }, [agentMenuOpen]);
+    }, [agentMenuOpen, isCompact]);
+
+    // Reset selected index when search query changes
+    React.useEffect(() => {
+        setModelSelectedIndex(0);
+    }, [desktopModelQuery]);
 
     const currentAgent = getCurrentAgent?.();
     const agentPermissionRaw = currentAgent?.permission?.edit;
@@ -785,6 +809,11 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
             if (isCompact) {
                 closeMobilePanel();
             }
+            // Restore focus to chat input after model selection
+            requestAnimationFrame(() => {
+                const textarea = document.querySelector<HTMLTextAreaElement>('textarea[data-chat-input="true"]');
+                textarea?.focus();
+            });
         } catch (error) {
             console.error('[ModelControls] Handle model change error:', error);
         }
@@ -1171,7 +1200,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                 {favoriteModelsList.map(({ model, providerID, modelID }) => {
                                     const isSelected = providerID === currentProviderId && modelID === currentModelId;
                                     const metadata = getModelMetadata(providerID, modelID);
-                                    
+
                                     return (
                                         <button
                                             key={`fav-mobile-${providerID}-${modelID}`}
@@ -1217,7 +1246,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                 {recentModelsList.map(({ model, providerID, modelID }) => {
                                     const isSelected = providerID === currentProviderId && modelID === currentModelId;
                                     const metadata = getModelMetadata(providerID, modelID);
-                                    
+
                                     return (
                                         <button
                                             key={`recent-mobile-${providerID}-${modelID}`}
@@ -1600,8 +1629,194 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
         </TooltipContent>
     );
 
-    const renderModelSelector = () => (
-        <Tooltip delayDuration={1000}>
+    // Helper to render a single model row in the flat dropdown
+    const renderModelRow = (
+        model: ProviderModel,
+        providerID: string,
+        modelID: string,
+        keyPrefix: string,
+        flatIndex: number,
+        isHighlighted: boolean
+    ) => {
+        const metadata = getModelMetadata(providerID, modelID);
+        const capabilityIcons = getCapabilityIcons(metadata).map((icon) => ({
+            ...icon,
+            id: `cap-${icon.key}`,
+        }));
+        const modalityIcons = [
+            ...getModalityIcons(metadata, 'input'),
+            ...getModalityIcons(metadata, 'output'),
+        ];
+        const uniqueModalityIcons = Array.from(
+            new Map(modalityIcons.map((icon) => [icon.key, icon])).values()
+        ).map((icon) => ({ ...icon, id: `mod-${icon.key}` }));
+        const indicatorIcons = [...capabilityIcons, ...uniqueModalityIcons];
+        const contextTokens = formatTokens(metadata?.limit?.context);
+        const isSelected = currentProviderId === providerID && currentModelId === modelID;
+        const isFavorite = isFavoriteModel(providerID, modelID);
+
+        return (
+            <div
+                key={`${keyPrefix}-${providerID}-${modelID}`}
+                ref={(el) => { modelItemRefs.current[flatIndex] = el; }}
+                className={cn(
+                    "typography-meta group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer",
+                    isHighlighted ? "bg-accent" : "hover:bg-accent/50"
+                )}
+                onClick={() => handleProviderAndModelChange(providerID, modelID)}
+                onMouseEnter={() => setModelSelectedIndex(flatIndex)}
+            >
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span className="font-medium truncate">
+                        {getModelDisplayName(model)}
+                    </span>
+                    {metadata?.limit?.context ? (
+                        <span className="typography-micro text-muted-foreground flex-shrink-0">
+                            {contextTokens}
+                        </span>
+                    ) : null}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {indicatorIcons.length > 0 && (
+                        <div className={cn("items-center gap-0.5", isHighlighted ? "flex" : "hidden group-hover:flex")}>
+                            {indicatorIcons.map(({ id, icon: Icon, label }) => (
+                                <span
+                                    key={id}
+                                    className="flex h-3.5 w-3.5 items-center justify-center text-muted-foreground"
+                                    aria-label={label}
+                                    role="img"
+                                    title={label}
+                                >
+                                    <Icon className="h-2.5 w-2.5" />
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    {isSelected && (
+                        <RiCheckLine className="h-4 w-4 text-primary" />
+                    )}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleFavoriteModel(providerID, modelID);
+                        }}
+                        className={cn(
+                            "model-favorite-button flex h-4 w-4 items-center justify-center hover:text-yellow-600",
+                            isFavorite ? "text-yellow-500" : "text-muted-foreground"
+                        )}
+                        aria-label={isFavorite ? "Unfavorite" : "Favorite"}
+                        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                        {isFavorite ? (
+                            <RiStarFill className="h-3.5 w-3.5" />
+                        ) : (
+                            <RiStarLine className="h-3.5 w-3.5" />
+                        )}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    // Filter models based on search query
+    const filterByQuery = (modelName: string, providerName: string, query: string) => {
+        if (!query.trim()) return true;
+        const lowerQuery = query.toLowerCase();
+        return (
+            modelName.toLowerCase().includes(lowerQuery) ||
+            providerName.toLowerCase().includes(lowerQuery)
+        );
+    };
+
+    const renderModelSelector = () => {
+        // Filter favorites
+        const filteredFavorites = favoriteModelsList.filter(({ model, providerID }) => {
+            const provider = providers.find(p => p.id === providerID);
+            const providerName = provider?.name || providerID;
+            const modelName = getModelDisplayName(model);
+            return filterByQuery(modelName, providerName, desktopModelQuery);
+        });
+
+        // Filter recents
+        const filteredRecents = recentModelsList.filter(({ model, providerID }) => {
+            const provider = providers.find(p => p.id === providerID);
+            const providerName = provider?.name || providerID;
+            const modelName = getModelDisplayName(model);
+            return filterByQuery(modelName, providerName, desktopModelQuery);
+        });
+
+        // Filter providers and their models
+        const filteredProviders = providers
+            .map((provider) => {
+                const providerModels = Array.isArray(provider.models) ? provider.models : [];
+                const filteredModels = providerModels.filter((model: ProviderModel) => {
+                    const modelName = getModelDisplayName(model);
+                    return filterByQuery(modelName, provider.name || provider.id || '', desktopModelQuery);
+                });
+                return { ...provider, models: filteredModels };
+            })
+            .filter((provider) => provider.models.length > 0);
+
+        const hasResults = filteredFavorites.length > 0 || filteredRecents.length > 0 || filteredProviders.length > 0;
+
+        // Build flat list for keyboard navigation
+        type FlatModelItem = { model: ProviderModel; providerID: string; modelID: string; section: string };
+        const flatModelList: FlatModelItem[] = [];
+
+        filteredFavorites.forEach(({ model, providerID, modelID }) => {
+            flatModelList.push({ model, providerID, modelID, section: 'fav' });
+        });
+        filteredRecents.forEach(({ model, providerID, modelID }) => {
+            flatModelList.push({ model, providerID, modelID, section: 'recent' });
+        });
+        filteredProviders.forEach((provider) => {
+            (provider.models as ProviderModel[]).forEach((model) => {
+                flatModelList.push({ model, providerID: provider.id as string, modelID: model.id as string, section: 'provider' });
+            });
+        });
+
+        const totalItems = flatModelList.length;
+
+        // Handle keyboard navigation
+        const handleModelKeyDown = (e: React.KeyboardEvent) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
+                setModelSelectedIndex((prev) => (prev + 1) % Math.max(1, totalItems));
+                // Scroll into view
+                setTimeout(() => {
+                    const nextIndex = (modelSelectedIndex + 1) % Math.max(1, totalItems);
+                    modelItemRefs.current[nextIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 0);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                e.stopPropagation();
+                setModelSelectedIndex((prev) => (prev - 1 + Math.max(1, totalItems)) % Math.max(1, totalItems));
+                // Scroll into view
+                setTimeout(() => {
+                    const prevIndex = (modelSelectedIndex - 1 + Math.max(1, totalItems)) % Math.max(1, totalItems);
+                    modelItemRefs.current[prevIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 0);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                const selectedItem = flatModelList[modelSelectedIndex];
+                if (selectedItem) {
+                    handleProviderAndModelChange(selectedItem.providerID, selectedItem.modelID);
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setAgentMenuOpen(false);
+            }
+        };
+
+        // Build index mapping for rendering
+        let currentFlatIndex = 0;
+
+        return (
+            <Tooltip delayDuration={1000}>
                 {!isCompact ? (
                     <DropdownMenu open={agentMenuOpen} onOpenChange={setAgentMenuOpen}>
                         <TooltipTrigger asChild>
@@ -1637,307 +1852,90 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                 </div>
                             </DropdownMenuTrigger>
                         </TooltipTrigger>
-                        <DropdownMenuContent className="max-w-[300px]">
-                            {/* Favorites Section */}
-                            {favoriteModelsList.length > 0 && (
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger className="typography-meta">
-                                        <RiStarFill className="h-3 w-3 flex-shrink-0 mr-2 text-primary" />
-                                        Favorites
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent
-                                        className="max-h-[320px] min-w-[200px]"
-                                        sideOffset={2}
-                                        collisionPadding={8}
-                                        avoidCollisions={true}
-                                    >
-                                        <ScrollableOverlay
-                                            outerClassName="max-h-[320px] min-w-[200px]"
-                                        >
-                                {favoriteModelsList.map(({ model, providerID, modelID }) => {
-                                                const metadata = getModelMetadata(providerID, modelID);
-                                                const capabilityIcons = getCapabilityIcons(metadata).map((icon) => ({
-                                                    ...icon,
-                                                    id: `cap-${icon.key}`,
-                                                }));
-                                                const modalityIcons = [
-                                                    ...getModalityIcons(metadata, 'input'),
-                                                    ...getModalityIcons(metadata, 'output'),
-                                                ];
-                                                const uniqueModalityIcons = Array.from(
-                                                    new Map(modalityIcons.map((icon) => [icon.key, icon])).values()
-                                                ).map((icon) => ({ ...icon, id: `mod-${icon.key}` }));
-                                                const indicatorIcons = [...capabilityIcons, ...uniqueModalityIcons];
-                                                const contextTokens = formatTokens(metadata?.limit?.context);
-                                                const outputTokens = formatTokens(metadata?.limit?.output);
+                        <DropdownMenuContent className="w-[min(380px,calc(100vw-2rem))] p-0 flex flex-col" align="start" alignOffset={-200}>
+                            {/* Search Input */}
+                            <div className="p-2 border-b border-border/40">
+                                <div className="relative">
+                                    <RiSearchLine className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Search models"
+                                        value={desktopModelQuery}
+                                        onChange={(e) => setDesktopModelQuery(e.target.value)}
+                                        onKeyDown={handleModelKeyDown}
+                                        className="pl-8 h-8 typography-meta"
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
 
-                                                return (
-                                                    <DropdownMenuItem
-                                                        key={`fav-${providerID}-${modelID}`}
-                                                        className="typography-meta"
-                                                        onSelect={() => {
-                                                            handleProviderAndModelChange(providerID, modelID);
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center gap-2 w-full">
-                                                            <div className="flex flex-col flex-1 min-w-0">
-                                                                <span className="font-medium truncate">
-                                                                    {getModelDisplayName(model)}
-                                                                </span>
-                                                                {metadata?.limit?.context || metadata?.limit?.output ? (
-                                                                    <span className="typography-meta text-muted-foreground">
-                                                                        {metadata?.limit?.context ? `${contextTokens} ctx` : ''}
-                                                                        {metadata?.limit?.context && metadata?.limit?.output ? ' • ' : ''}
-                                                                        {metadata?.limit?.output ? `${outputTokens} out` : ''}
-                                                                    </span>
-                                                                ) : null}
-                                                            </div>
-                                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                                {indicatorIcons.map(({ id, icon: Icon, label }) => (
-                                                                    <span
-                                                                        key={id}
-                                                                        className="flex h-4 w-4 items-center justify-center text-muted-foreground"
-                                                                        aria-label={label}
-                                                                        role="img"
-                                                                        title={label}
-                                                                    >
-                                                                        <Icon className="h-3 w-3" />
-                                                                    </span>
-                                                                ))}
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-                                                                        toggleFavoriteModel(providerID, modelID);
-                                                                    }}
-                                                                    className="model-favorite-button flex h-4 w-4 items-center justify-center text-yellow-500 hover:text-yellow-600"
-                                                                    aria-label="Unfavorite"
-                                                                    title="Remove from favorites"
-                                                                >
-                                                                    <RiStarFill className="h-3.5 w-3.5" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </DropdownMenuItem>
-                                                );
+                            {/* Scrollable content */}
+                            <ScrollableOverlay outerClassName="max-h-[400px] flex-1">
+                                <div className="p-1">
+                                    {!hasResults && (
+                                        <div className="px-2 py-4 text-center typography-meta text-muted-foreground">
+                                            No models found
+                                        </div>
+                                    )}
+
+                                    {/* Favorites Section */}
+                                    {filteredFavorites.length > 0 && (
+                                        <>
+                                            <DropdownMenuLabel className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                                                <RiStarFill className="h-4 w-4 text-primary" />
+                                                Favorites
+                                            </DropdownMenuLabel>
+                                            {filteredFavorites.map(({ model, providerID, modelID }) => {
+                                                const idx = currentFlatIndex++;
+                                                return renderModelRow(model, providerID, modelID, 'fav', idx, modelSelectedIndex === idx);
                                             })}
-                                        </ScrollableOverlay>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                            )}
-                            
-                            {/* Recents Section */}
-                            {recentModelsList.length > 0 && (
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger className="typography-meta">
-                                        <RiTimeLine className="h-3 w-3 flex-shrink-0 mr-2 text-muted-foreground" />
-                                        Recent
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent
-                                        className="max-h-[320px] min-w-[200px]"
-                                        sideOffset={2}
-                                        collisionPadding={8}
-                                        avoidCollisions={true}
-                                    >
-                                        <ScrollableOverlay
-                                            outerClassName="max-h-[320px] min-w-[200px]"
-                                        >
-                                {recentModelsList.map(({ model, providerID, modelID }) => {
-                                                const metadata = getModelMetadata(providerID, modelID);
-                                                const capabilityIcons = getCapabilityIcons(metadata).map((icon) => ({
-                                                    ...icon,
-                                                    id: `cap-${icon.key}`,
-                                                }));
-                                                const modalityIcons = [
-                                                    ...getModalityIcons(metadata, 'input'),
-                                                    ...getModalityIcons(metadata, 'output'),
-                                                ];
-                                                const uniqueModalityIcons = Array.from(
-                                                    new Map(modalityIcons.map((icon) => [icon.key, icon])).values()
-                                                ).map((icon) => ({ ...icon, id: `mod-${icon.key}` }));
-                                                const indicatorIcons = [...capabilityIcons, ...uniqueModalityIcons];
-                                                const contextTokens = formatTokens(metadata?.limit?.context);
-                                                const outputTokens = formatTokens(metadata?.limit?.output);
+                                        </>
+                                    )}
 
-                                                return (
-                                                    <DropdownMenuItem
-                                                        key={`recent-${providerID}-${modelID}`}
-                                                        className="typography-meta"
-                                                        onSelect={() => {
-                                                            handleProviderAndModelChange(providerID, modelID);
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center gap-2 w-full">
-                                                            <div className="flex flex-col flex-1 min-w-0">
-                                                                <span className="font-medium truncate">
-                                                                    {getModelDisplayName(model)}
-                                                                </span>
-                                                                {metadata?.limit?.context || metadata?.limit?.output ? (
-                                                                    <span className="typography-meta text-muted-foreground">
-                                                                        {metadata?.limit?.context ? `${contextTokens} ctx` : ''}
-                                                                        {metadata?.limit?.context && metadata?.limit?.output ? ' • ' : ''}
-                                                                        {metadata?.limit?.output ? `${outputTokens} out` : ''}
-                                                                    </span>
-                                                                ) : null}
-                                                            </div>
-                                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                                {indicatorIcons.map(({ id, icon: Icon, label }) => (
-                                                                    <span
-                                                                        key={id}
-                                                                        className="flex h-4 w-4 items-center justify-center text-muted-foreground"
-                                                                        aria-label={label}
-                                                                        role="img"
-                                                                        title={label}
-                                                                    >
-                                                                        <Icon className="h-3 w-3" />
-                                                                    </span>
-                                                                ))}
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-                                                                        toggleFavoriteModel(providerID, modelID);
-                                                                    }}
-                                                                    className="model-favorite-button flex h-4 w-4 items-center justify-center text-muted-foreground hover:text-yellow-600"
-                                                                    aria-label="Favorite"
-                                                                    title="Add to favorites"
-                                                                >
-                                                                    <RiStarLine className="h-3.5 w-3.5" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </DropdownMenuItem>
-                                                );
+                                    {/* Recents Section */}
+                                    {filteredRecents.length > 0 && (
+                                        <>
+                                            {filteredFavorites.length > 0 && <DropdownMenuSeparator />}
+                                            <DropdownMenuLabel className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                                                <RiTimeLine className="h-4 w-4" />
+                                                Recent
+                                            </DropdownMenuLabel>
+                                            {filteredRecents.map(({ model, providerID, modelID }) => {
+                                                const idx = currentFlatIndex++;
+                                                return renderModelRow(model, providerID, modelID, 'recent', idx, modelSelectedIndex === idx);
                                             })}
-                                        </ScrollableOverlay>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                            )}
-                            
-                            {/* Separator before providers */}
-                            {(favoriteModelsList.length > 0 || recentModelsList.length > 0) && (
-                                <DropdownMenuSeparator />
-                            )}
-                            
-                            {/* All Providers Section */}
-                            {providers.map((provider) => {
-                                const providerModels = Array.isArray(provider.models) ? provider.models : [];
+                                        </>
+                                    )}
 
-                                if (providerModels.length === 0) {
-                                    return (
-                                        <DropdownMenuItem
-                                            key={provider.id}
-                                            disabled
-                                            className="typography-meta text-muted-foreground"
-                                        >
-                                            <ProviderLogo
-                                                providerId={provider.id}
-                                                className="h-3 w-3 flex-shrink-0 mr-2"
-                                            />
-                                            {provider.name} (No models)
-                                        </DropdownMenuItem>
-                                    );
-                                }
+                                    {/* Separator before providers */}
+                                    {(filteredFavorites.length > 0 || filteredRecents.length > 0) && filteredProviders.length > 0 && (
+                                        <DropdownMenuSeparator />
+                                    )}
 
-                                return (
-                                    <DropdownMenuSub key={provider.id}>
-                                        <DropdownMenuSubTrigger className="typography-meta">
-                                            <ProviderLogo
-                                                providerId={provider.id}
-                                                className="h-3 w-3 flex-shrink-0 mr-2"
-                                            />
-                                            {provider.name}
-                                        </DropdownMenuSubTrigger>
-                                        <DropdownMenuSubContent
-                                            className="max-h-[320px] min-w-[200px]"
-                                            sideOffset={2}
-                                            collisionPadding={8}
-                                            avoidCollisions={true}
-                                        >
-                                            <ScrollableOverlay
-                                                outerClassName="max-h-[320px] min-w-[200px]"
-                                            >
-                                                {providerModels.map((model: ProviderModel) => {
-                                                const metadata = getModelMetadata(provider.id, model.id!);
-                                                const capabilityIcons = getCapabilityIcons(metadata).map((icon) => ({
-                                                    ...icon,
-                                                    id: `cap-${icon.key}`,
-                                                }));
-                                                const modalityIcons = [
-                                                    ...getModalityIcons(metadata, 'input'),
-                                                    ...getModalityIcons(metadata, 'output'),
-                                                ];
-                                                const uniqueModalityIcons = Array.from(
-                                                    new Map(modalityIcons.map((icon) => [icon.key, icon])).values()
-                                                ).map((icon) => ({ ...icon, id: `mod-${icon.key}` }));
-                                                const indicatorIcons = [...capabilityIcons, ...uniqueModalityIcons];
-                                                const contextTokens = formatTokens(metadata?.limit?.context);
-                                                const outputTokens = formatTokens(metadata?.limit?.output);
+                                    {/* All Providers - Flat List */}
+                                    {filteredProviders.map((provider, index) => (
+                                        <React.Fragment key={provider.id}>
+                                            {index > 0 && <DropdownMenuSeparator />}
+                                            <DropdownMenuLabel className="typography-ui-header font-semibold text-foreground flex items-center gap-2 px-2 py-1.5">
+                                                <ProviderLogo
+                                                    providerId={provider.id}
+                                                    className="h-4 w-4 flex-shrink-0"
+                                                />
+                                                {provider.name}
+                                            </DropdownMenuLabel>
+                                            {(provider.models as ProviderModel[]).map((model: ProviderModel) => {
+                                                const idx = currentFlatIndex++;
+                                                return renderModelRow(model, provider.id as string, model.id as string, 'provider', idx, modelSelectedIndex === idx);
+                                            })}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            </ScrollableOverlay>
 
-                                                return (
-                                                    <DropdownMenuItem
-                                                        key={model.id}
-                                                        className="typography-meta"
-                                                        onSelect={() => {
-                                                            handleProviderAndModelChange(provider.id as string, model.id as string);
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center gap-2 w-full">
-                                                            <div className="flex flex-col flex-1 min-w-0">
-                                                                <span className="font-medium truncate">
-                                                                    {getModelDisplayName(model)}
-                                                                </span>
-                                                                 {metadata?.limit?.context || metadata?.limit?.output ? (
-                                                                     <span className="typography-meta text-muted-foreground">
-                                                                         {metadata?.limit?.context ? `${contextTokens} ctx` : ''}
-                                                                         {metadata?.limit?.context && metadata?.limit?.output ? ' • ' : ''}
-                                                                         {metadata?.limit?.output ? `${outputTokens} out` : ''}
-                                                                     </span>
-                                                                 ) : null}
-                                                            </div>
-                                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                                {indicatorIcons.map(({ id, icon: Icon, label }) => (
-                                                                    <span
-                                                                        key={id}
-                                                                        className="flex h-4 w-4 items-center justify-center text-muted-foreground"
-                                                                        aria-label={label}
-                                                                        role="img"
-                                                                        title={label}
-                                                                    >
-                                                                        <Icon className="h-3 w-3" />
-                                                                    </span>
-                                                                ))}
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-                                                                        toggleFavoriteModel(provider.id as string, model.id as string);
-                                                                    }}
-                                                                    className={cn(
-                                                                        "model-favorite-button flex h-4 w-4 items-center justify-center hover:text-yellow-600",
-                                                                        isFavoriteModel(provider.id as string, model.id as string)
-                                                                            ? "text-yellow-500"
-                                                                            : "text-muted-foreground"
-                                                                    )}
-                                                                    aria-label={isFavoriteModel(provider.id as string, model.id as string) ? "Unfavorite" : "Favorite"}
-                                                                    title={isFavoriteModel(provider.id as string, model.id as string) ? "Remove from favorites" : "Add to favorites"}
-                                                                >
-                                                                    {isFavoriteModel(provider.id as string, model.id as string) ? (
-                                                                        <RiStarFill className="h-3.5 w-3.5" />
-                                                                    ) : (
-                                                                        <RiStarLine className="h-3.5 w-3.5" />
-                                                                    )}
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </DropdownMenuItem>
-                                                    );
-                                                })}
-                                            </ScrollableOverlay>
-                                        </DropdownMenuSubContent>
-                                    </DropdownMenuSub>
-                                );
-                            })}
+                            {/* Keyboard hints footer */}
+                            <div className="px-3 pt-1 pb-1.5 border-t border-border/40 typography-micro text-muted-foreground">
+                                ↑↓ navigate • Enter select • Esc close
+                            </div>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
@@ -1974,6 +1972,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                 {renderModelTooltipContent()}
             </Tooltip>
         );
+    };
 
     const renderAgentTooltipContent = () => {
         if (!currentAgent) {
@@ -2148,7 +2147,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                     </div>
                                 </DropdownMenuTrigger>
                             </TooltipTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" alignOffset={-40} className="w-[min(280px,calc(100vw-2rem))]">
                                 {agents.filter(agent => isPrimaryMode(agent.mode)).map((agent) => (
                                     <DropdownMenuItem
                                         key={agent.name}

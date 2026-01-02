@@ -15,6 +15,7 @@ export const useKeyboardShortcuts = () => {
     setSessionCreateDialogOpen,
     setActiveMainTab,
     setSettingsDialogOpen,
+    setModelSelectorOpen,
   } = useUIStore();
   const { themeMode, setThemeMode } = useThemeSystem();
   const { working } = useAssistantStatus();
@@ -143,6 +144,37 @@ export const useKeyboardShortcuts = () => {
         return;
       }
 
+      // Ctrl+M: Open model selector (same conditions as double-ESC: chat tab, no overlays)
+      if (e.ctrlKey && !e.metaKey && !e.shiftKey && e.key.toLowerCase() === 'm') {
+        const {
+          isSettingsDialogOpen,
+          isCommandPaletteOpen,
+          isHelpDialogOpen,
+          isSessionSwitcherOpen,
+          isSessionCreateDialogOpen,
+          isAboutDialogOpen,
+          activeMainTab,
+          isModelSelectorOpen,
+        } = useUIStore.getState();
+
+        // Skip if settings open
+        if (isSettingsDialogOpen) {
+          return;
+        }
+
+        // Skip if any overlay open or not on chat tab
+        const hasOverlay = isCommandPaletteOpen || isHelpDialogOpen || isSessionSwitcherOpen || isSessionCreateDialogOpen || isAboutDialogOpen;
+        const isChatActive = activeMainTab === 'chat';
+
+        if (hasOverlay || !isChatActive) {
+          return;
+        }
+
+        e.preventDefault();
+        setModelSelectorOpen(!isModelSelectorOpen);
+        return;
+      }
+
       if (e.key === 'Escape') {
         const {
           isSettingsDialogOpen,
@@ -222,6 +254,7 @@ export const useKeyboardShortcuts = () => {
     setSessionCreateDialogOpen,
     setActiveMainTab,
     setSettingsDialogOpen,
+    setModelSelectorOpen,
     setThemeMode,
     themeMode,
     working,
