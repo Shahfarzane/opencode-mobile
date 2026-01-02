@@ -28,6 +28,7 @@ import { cn, formatPathForDisplay } from '@/lib/utils';
 import type { Session } from '@opencode-ai/sdk';
 import type { WorktreeMetadata } from '@/types/worktree';
 import {
+    archiveWorktree,
     createWorktree,
     getWorktreeStatus,
     listWorktrees as listGitWorktrees,
@@ -591,13 +592,30 @@ export const SessionDialogs: React.FC = () => {
         setIsProcessingDelete(true);
 
         try {
-            const archiveWorktree = shouldArchiveWorktree;
-            const removeRemoteBranch = archiveWorktree && deleteDialogShouldRemoveRemote;
+            const shouldArchive = shouldArchiveWorktree;
+            const removeRemoteBranch = shouldArchive && deleteDialogShouldRemoveRemote;
+
+            if (deleteDialog.sessions.length === 0 && isWorktreeDelete && deleteDialog.worktree) {
+                const shouldRemoveRemote = deleteDialogShouldRemoveRemote && canRemoveRemoteBranches;
+                await archiveWorktree({
+                    projectDirectory: projectDirectory,
+                    path: deleteDialog.worktree.path,
+                    branch: deleteDialog.worktree.branch,
+                    force: true,
+                    deleteRemote: shouldRemoveRemote,
+                });
+                const archiveNote = shouldRemoveRemote ? 'Worktree and remote branch removed.' : 'Worktree removed.';
+                toast.success('Worktree removed', {
+                    description: renderToastDescription(archiveNote),
+                });
+                closeDeleteDialog();
+                return;
+            }
 
             if (deleteDialog.sessions.length === 1) {
                 const target = deleteDialog.sessions[0];
                 const success = await deleteSession(target.id, {
-                    archiveWorktree,
+                    archiveWorktree: shouldArchive,
                     deleteRemoteBranch: removeRemoteBranch,
                 });
                 if (!success) {
@@ -605,7 +623,7 @@ export const SessionDialogs: React.FC = () => {
                     setIsProcessingDelete(false);
                     return;
                 }
-                const archiveNote = archiveWorktree
+                const archiveNote = shouldArchive
                     ? removeRemoteBranch
                         ? 'Worktree and remote branch removed.'
                         : 'Attached worktree archived.'
@@ -616,12 +634,12 @@ export const SessionDialogs: React.FC = () => {
             } else {
                 const ids = deleteDialog.sessions.map((session) => session.id);
                 const { deletedIds, failedIds } = await deleteSessions(ids, {
-                    archiveWorktree,
+                    archiveWorktree: shouldArchive,
                     deleteRemoteBranch: removeRemoteBranch,
                 });
 
                 if (deletedIds.length > 0) {
-                    const archiveNote = archiveWorktree
+                    const archiveNote = shouldArchive
                         ? removeRemoteBranch
                             ? 'Archived worktrees and removed remote branches.'
                             : 'Attached worktrees archived.'
@@ -653,7 +671,7 @@ export const SessionDialogs: React.FC = () => {
         } finally {
             setIsProcessingDelete(false);
         }
-    }, [deleteDialog, deleteDialogShouldRemoveRemote, deleteSession, deleteSessions, closeDeleteDialog, shouldArchiveWorktree]);
+    }, [deleteDialog, deleteDialogShouldRemoveRemote, deleteSession, deleteSessions, closeDeleteDialog, shouldArchiveWorktree, isWorktreeDelete, canRemoveRemoteBranches, projectDirectory]);
 
     const worktreeManagerBody = (
         <div className="space-y-4 w-full min-w-0">
@@ -929,27 +947,31 @@ export const SessionDialogs: React.FC = () => {
     const targetWorktree = deleteDialog?.worktree ?? deleteDialogSummaries[0]?.metadata ?? null;
     const deleteDialogDescription = deleteDialog
         ? deleteDialog.mode === 'worktree'
-            ? `This removes the selected worktree and ${deleteDialog.sessions.length === 1 ? '1 linked session' : `${deleteDialog.sessions.length} linked sessions`}.`
+            ? deleteDialog.sessions.length === 0
+                ? 'This removes the selected worktree.'
+                : `This removes the selected worktree and ${deleteDialog.sessions.length === 1 ? '1 linked session' : `${deleteDialog.sessions.length} linked sessions`}.`
             : `This action permanently removes ${deleteDialog.sessions.length === 1 ? '1 session' : `${deleteDialog.sessions.length} sessions`}${deleteDialog.dateLabel ? ` from ${deleteDialog.dateLabel}` : ''
             }.`
         : '';
 
     const deleteDialogBody = deleteDialog ? (
         <div className="space-y-2">
-            <div className="space-y-1.5 rounded-xl border border-border/40 bg-sidebar/60 p-3">
-                <ul className="space-y-0.5">
-                    {deleteDialog.sessions.slice(0, 3).map((session) => (
-                        <li key={session.id} className="typography-micro text-muted-foreground/80">
-                            {session.title || 'Untitled Session'}
-                        </li>
-                    ))}
-                    {deleteDialog.sessions.length > 3 && (
-                        <li className="typography-micro text-muted-foreground/70">
-                            +{deleteDialog.sessions.length - 3} more
-                        </li>
-                    )}
-                </ul>
-            </div>
+            {deleteDialog.sessions.length > 0 && (
+                <div className="space-y-1.5 rounded-xl border border-border/40 bg-sidebar/60 p-3">
+                    <ul className="space-y-0.5">
+                        {deleteDialog.sessions.slice(0, 3).map((session) => (
+                            <li key={session.id} className="typography-micro text-muted-foreground/80">
+                                {session.title || 'Untitled Session'}
+                            </li>
+                        ))}
+                        {deleteDialog.sessions.length > 3 && (
+                            <li className="typography-micro text-muted-foreground/70">
+                                +{deleteDialog.sessions.length - 3} more
+                            </li>
+                        )}
+                    </ul>
+                </div>
+            )}
 
             {isWorktreeDelete ? (
                 <div className="space-y-2 rounded-xl border border-border/40 bg-sidebar/60 p-3">
