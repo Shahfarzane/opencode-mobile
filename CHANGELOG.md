@@ -4,9 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- VS Code extension: added git backend integration for UI to access
-- VS Code extension: Only show the main Worktree in the Chat Sidebar
-- Improve model selector with search and keyboard navigation
+## [1.4.1] - 2026-01-02
+
+- Added the ability to select the same model multiple times in multi-agent runs for response comparison.
+- Model selector now includes search and keyboard navigation for faster model selection.
+- Added revert button to all user messages (including first one).
+- Added HEIC image support for file attachments with automatic MIME type normalization for text format files.
+- VS Code extension: added git backend integration for UI to access (thanks to @wienans).
+- VS Code extension: Only show the main Worktree in the Chat Sidebar (thanks to @wienans).
+- Web app: terminal backend now supports a faster Bun-based PTY when Bun is available, with automatic fallback for existing Node-only setups.
+- Terminal: improved terminal performance and stability by switching to the Ghostty-based terminal renderer, while keeping the existing terminal UX and per-directory sessions.
+- Terminal: fixed several issues with terminal session restore and rendering under heavy output, including switching directories and long-running TUI apps.
+
 
 ## [1.4.0] - 2026-01-01
 

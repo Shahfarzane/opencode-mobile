@@ -120,12 +120,13 @@ Independent project, not affiliated with OpenCode team.
 
 **Special thanks to:**
 
-- [OpenCode](https://opencode.ai) - For the excellent API and extensible architecture
-- [Flexoki](https://github.com/kepano/flexoki) - Beautiful color scheme by [Steph Ango](https://stephango.com/flexoki)
-- [Pierre](https://pierrejs-docs.vercel.app/) - Fast, beautiful diff viewer with syntax highlighting
-- [Tauri](https://github.com/tauri-apps/tauri) - Desktop application framework
-- [David Hill](https://x.com/iamdavidhill) - who inspired me to release this without [overthinking](https://x.com/iamdavidhill/status/1993648326450020746?s=20)
-- My wife, who created a beautiful firework animation for the app while testing it for the first time
+- [OpenCode](https://opencode.ai) - For the excellent API and extensible architecture.
+- [Flexoki](https://github.com/kepano/flexoki) - Beautiful color scheme by [Steph Ango](https://stephango.com/flexoki).
+- [Pierre](https://pierrejs-docs.vercel.app/) - Fast, beautiful diff viewer with syntax highlighting.
+- [Tauri](https://github.com/tauri-apps/tauri) - Desktop application framework.
+- [Ghossty-web](https://github.com/coder/ghostty-web) - for a great implementeation of a Ghostty web renderer.
+- [David Hill](https://x.com/iamdavidhill) - who inspired me to release this without [overthinking](https://x.com/iamdavidhill/status/1993648326450020746?s=20).
+- My wife, who created a beautiful firework animation for the app while testing it for the first time.
 
 ## License
 
