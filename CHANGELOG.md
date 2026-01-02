@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - VS Code extension: added git backend integration for UI to access
 - VS Code extension: Only show the main Worktree in the Chat Sidebar
+- Improve model selector with search and keyboard navigation
 
 ## [1.4.0] - 2026-01-01
 

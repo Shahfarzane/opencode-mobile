@@ -1852,7 +1852,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({ className }) => {
                                 </div>
                             </DropdownMenuTrigger>
                         </TooltipTrigger>
-                        <DropdownMenuContent className="w-[min(380px,calc(100vw-2rem))] p-0 flex flex-col" align="start" alignOffset={-200}>
+                        <DropdownMenuContent className="w-[min(380px,calc(100vw-2rem))] p-0 flex flex-col" align="end" alignOffset={-40}>
                             {/* Search Input */}
                             <div className="p-2 border-b border-border/40">
                                 <div className="relative">
