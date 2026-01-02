@@ -664,6 +664,28 @@ class OpencodeService {
     return response.data;
   }
 
+  async forkSession(sessionId: string, messageId?: string): Promise<Session> {
+    const baseUrl = this.baseUrl.replace(/\/$/, '');
+    const url = new URL(`/api/session/${sessionId}/fork`, baseUrl);
+
+    if (this.currentDirectory) {
+      url.searchParams.set('directory', this.currentDirectory);
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(messageId ? { messageID: messageId } : {}),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to fork session: ${text || response.statusText}`);
+    }
+
+    return response.json();
+  }
+
   async getSessionStatus(): Promise<
     Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }>
   > {
