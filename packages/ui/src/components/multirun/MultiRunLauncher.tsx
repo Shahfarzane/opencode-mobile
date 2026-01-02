@@ -31,6 +31,9 @@ import type { ModelMetadata } from '@/types';
 /** Max file size in bytes (10MB) */
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+/** Max number of concurrent runs */
+const MAX_MODELS = 5;
+
 /** Attached file for multi-run (simplified from sessionStore's AttachedFile) */
 interface MultiRunAttachedFile {
   id: string;
@@ -609,6 +612,9 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
 
 
   const handleAddModel = (model: ModelSelectionWithId) => {
+    if (selectedModels.length >= MAX_MODELS) {
+      return;
+    }
     setSelectedModels((prev) => [...prev, model]);
     clearError();
   };
@@ -942,7 +948,7 @@ export const MultiRunLauncher: React.FC<MultiRunLauncherProps> = ({
             <div className="space-y-2">
               <label className="typography-ui-label font-medium text-foreground">
                 Models <span className="text-destructive">*</span>
-                <span className="ml-1 font-normal text-muted-foreground">(select at least 2)</span>
+                <span className="ml-1 font-normal text-muted-foreground">(select at least 2, maximum 5)</span>
               </label>
               <ModelMultiSelect
                 selectedModels={selectedModels}

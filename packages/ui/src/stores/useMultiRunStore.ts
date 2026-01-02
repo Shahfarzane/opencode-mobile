@@ -91,6 +91,11 @@ export const useMultiRunStore = create<MultiRunStore>()(
           return null;
         }
 
+        if (models.length > 5) {
+          set({ error: 'Maximum 5 models allowed' });
+          return null;
+        }
+
         set({ isLoading: true, error: null });
 
         try {
