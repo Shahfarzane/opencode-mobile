@@ -66,7 +66,6 @@ interface ChatMessageProps {
     scrollToBottom?: (options?: { instant?: boolean; force?: boolean }) => void;
     isPendingAnchor?: boolean;
     turnGroupingContext?: TurnGroupingContext;
-    isFirstMessage?: boolean;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({
@@ -77,7 +76,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     animationHandlers,
     isPendingAnchor = false,
     turnGroupingContext,
-    isFirstMessage = false,
 }) => {
     const { isMobile, hasTouchInput } = useDeviceInfo();
     const { currentTheme } = useThemeSystem();
@@ -790,7 +788,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                         onAuxiliaryContentComplete={handleAuxiliaryContentComplete}
                                         agentMention={agentMention}
                                         onRevert={handleRevert}
-                                        isFirstMessage={isFirstMessage}
                                         errorMessage={assistantErrorText}
                                     />
                                 </div>
