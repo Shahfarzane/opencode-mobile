@@ -1,6 +1,6 @@
 import * as Device from "expo-device";
-import * as SecureStore from "expo-secure-store";
 import { useCallback, useState } from "react";
+import { useConnectionStore } from "../stores/useConnectionStore";
 
 interface ServerConnectionState {
 	isConnecting: boolean;
@@ -38,41 +38,45 @@ export function useServerConnection() {
 		error: null,
 	});
 
-	const pairWithQRCode = useCallback(async (qrData: string) => {
-		setState({ isConnecting: true, error: null });
+	const { setConnection, disconnect: storeDisconnect } = useConnectionStore();
 
-		try {
-			const pairingData = parsePairingUrl(qrData);
-			const deviceName = await getDeviceName();
+	const pairWithQRCode = useCallback(
+		async (qrData: string) => {
+			setState({ isConnecting: true, error: null });
 
-			const response = await fetch(`${pairingData.url}/api/auth/pair`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					pairCode: pairingData.pairCode,
-					pairSecret: pairingData.pairSecret,
-					deviceName,
-				}),
-			});
+			try {
+				const pairingData = parsePairingUrl(qrData);
+				const deviceName = await getDeviceName();
 
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}));
-				throw new Error(errorData.message || "Failed to pair with server");
+				const response = await fetch(`${pairingData.url}/api/auth/pair`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						pairCode: pairingData.pairCode,
+						pairSecret: pairingData.pairSecret,
+						deviceName,
+					}),
+				});
+
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}));
+					throw new Error(errorData.message || "Failed to pair with server");
+				}
+
+				const { token } = await response.json();
+
+				await setConnection(pairingData.url, token);
+
+				setState({ isConnecting: false, error: null });
+				return { token, serverUrl: pairingData.url };
+			} catch (error) {
+				const err = error instanceof Error ? error : new Error("Unknown error");
+				setState({ isConnecting: false, error: err });
+				throw err;
 			}
-
-			const { token } = await response.json();
-
-			await SecureStore.setItemAsync("openchamber_auth_token", token);
-			await SecureStore.setItemAsync("openchamber_server_url", pairingData.url);
-
-			setState({ isConnecting: false, error: null });
-			return { token, serverUrl: pairingData.url };
-		} catch (error) {
-			const err = error instanceof Error ? error : new Error("Unknown error");
-			setState({ isConnecting: false, error: err });
-			throw err;
-		}
-	}, []);
+		},
+		[setConnection],
+	);
 
 	const connectWithPassword = useCallback(
 		async (serverUrl: string, password: string) => {
@@ -102,8 +106,7 @@ export function useServerConnection() {
 
 				const { token } = await loginResponse.json();
 
-				await SecureStore.setItemAsync("openchamber_auth_token", token);
-				await SecureStore.setItemAsync("openchamber_server_url", serverUrl);
+				await setConnection(serverUrl, token);
 
 				setState({ isConnecting: false, error: null });
 				return { token, serverUrl };
@@ -113,18 +116,18 @@ export function useServerConnection() {
 				throw err;
 			}
 		},
-		[],
+		[setConnection],
 	);
 
 	const disconnect = useCallback(async () => {
-		await SecureStore.deleteItemAsync("openchamber_auth_token");
-		await SecureStore.deleteItemAsync("openchamber_server_url");
-	}, []);
+		await storeDisconnect();
+	}, [storeDisconnect]);
 
 	const getStoredConnection = useCallback(async () => {
-		const token = await SecureStore.getItemAsync("openchamber_auth_token");
-		const serverUrl = await SecureStore.getItemAsync("openchamber_server_url");
-		return token && serverUrl ? { token, serverUrl } : null;
+		const state = useConnectionStore.getState();
+		return state.serverUrl && state.authToken
+			? { token: state.authToken, serverUrl: state.serverUrl }
+			: null;
 	}, []);
 
 	return {

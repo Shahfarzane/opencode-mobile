@@ -1,28 +1,21 @@
 import { Redirect } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useConnectionStore } from "../src/stores/useConnectionStore";
 
 export default function Index() {
+	const { initialize, isInitialized, isConnected } = useConnectionStore();
 	const [isLoading, setIsLoading] = useState(true);
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
 
 	useEffect(() => {
-		async function checkAuth() {
-			try {
-				const token = await SecureStore.getItemAsync("openchamber_auth_token");
-				const serverUrl = await SecureStore.getItemAsync("openchamber_server_url");
-				setIsAuthenticated(!!token && !!serverUrl);
-			} catch {
-				setIsAuthenticated(false);
-			} finally {
-				setIsLoading(false);
-			}
+		async function init() {
+			await initialize();
+			setIsLoading(false);
 		}
-		checkAuth();
-	}, []);
+		init();
+	}, [initialize]);
 
-	if (isLoading) {
+	if (isLoading || !isInitialized) {
 		return (
 			<View className="flex-1 items-center justify-center bg-background">
 				<ActivityIndicator size="large" color="#EC8B49" />
@@ -30,7 +23,7 @@ export default function Index() {
 		);
 	}
 
-	if (isAuthenticated) {
+	if (isConnected) {
 		return <Redirect href="/(tabs)/chat" />;
 	}
 
