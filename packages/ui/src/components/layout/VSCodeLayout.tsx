@@ -5,7 +5,7 @@ import { ChatView, SettingsView } from '@/components/views';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { ContextUsageDisplay } from '@/components/ui/ContextUsageDisplay';
-import { RiAddLine, RiArrowLeftLine, RiSettings3Line } from '@remixicon/react';
+import { RiAddLine, RiArrowLeftLine, RiRobot2Line, RiSettings3Line } from '@remixicon/react';
 
 // Width threshold for mobile vs desktop layout in settings
 const MOBILE_WIDTH_THRESHOLD = 550;
@@ -195,10 +195,11 @@ interface VSCodeHeaderProps {
   onBack?: () => void;
   onNewSession?: () => void;
   onSettings?: () => void;
+  onAgentManager?: () => void;
   showContextUsage?: boolean;
 }
 
-const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, onNewSession, onSettings, showContextUsage }) => {
+const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, onNewSession, onSettings, onAgentManager, showContextUsage }) => {
   const { getCurrentModel } = useConfigStore();
   const getContextUsage = useSessionStore((state) => state.getContextUsage);
 
@@ -229,6 +230,15 @@ const VSCodeHeader: React.FC<VSCodeHeaderProps> = ({ title, showBack, onBack, on
           aria-label="New session"
         >
           <RiAddLine className="h-5 w-5" />
+        </button>
+      )}
+      {onAgentManager && (
+        <button
+          onClick={onAgentManager}
+          className="inline-flex h-9 w-9 items-center justify-center p-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="Open Agent Manager"
+        >
+          <RiRobot2Line className="h-5 w-5" />
         </button>
       )}
       {onSettings && (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { VSCodeLayout } from '@/components/layout/VSCodeLayout';
+import { AgentManagerView } from '@/components/views/agent-manager';
 import { FireworksProvider } from '@/contexts/FireworksContext';
 import { Toaster } from '@/components/ui/sonner';
 import { MemoryDebugPanel } from '@/components/ui/MemoryDebugPanel';
@@ -191,6 +192,24 @@ function App({ apis }: AppProps) {
 
   // VS Code runtime - simplified layout without git/terminal views
   if (isVSCodeRuntime) {
+    // Check if this is the Agent Manager panel
+    const panelType = typeof window !== 'undefined' 
+      ? (window as { __OPENCHAMBER_PANEL_TYPE__?: 'chat' | 'agentManager' }).__OPENCHAMBER_PANEL_TYPE__ 
+      : 'chat';
+    
+    if (panelType === 'agentManager') {
+      return (
+        <ErrorBoundary>
+          <RuntimeAPIProvider apis={apis}>
+            <div className="h-full text-foreground bg-background">
+              <AgentManagerView />
+              <Toaster />
+            </div>
+          </RuntimeAPIProvider>
+        </ErrorBoundary>
+      );
+    }
+    
     return (
       <ErrorBoundary>
         <RuntimeAPIProvider apis={apis}>

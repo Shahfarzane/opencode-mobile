@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- VS Code added Agent Manager, run the same promt in parallel with up to 5 models.
+- Change in Branch and Session Naming for Multi Run, <groupSlug>/<provider>/<modelSlug>/<index>
+
 ## [1.4.2] - 2026-01-02
 
 - Added timeline dialog (`/timeline` command or Cmd/Ctrl+T) for navigating, reverting, and forking from any point in the conversation (thanks to @aptdnfapt).
