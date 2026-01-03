@@ -83,9 +83,9 @@ export function useServerConnection() {
 			setState({ isConnecting: true, error: null });
 
 			try {
-				const healthResponse = await fetch(`${serverUrl}/api/health`, {
-					method: "GET",
-				}).catch(() => null);
+			const healthResponse = await fetch(`${serverUrl}/health`, {
+				method: "GET",
+			}).catch(() => null);
 
 				if (!healthResponse?.ok) {
 					throw new Error("Cannot reach server. Check the URL and try again.");
