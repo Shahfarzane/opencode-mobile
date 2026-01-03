@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- VS Code added Agent Manager, run the same promt in parallel with up to 5 models.
-- Change in Branch and Session Naming for Multi Run, <groupSlug>/<provider>/<modelSlug>/<index>
+## [1.4.3] - 2026-01-04
+
+- VS Code extension: added Agent Manager panel to run the same prompt across up to 5 models in parallel (thanks to @wienans).
+- Added permission prompt UI for tools configured with "ask" in opencode.json, showing requested patterns and "Always Allow" options (thanks to @aptdnfapt).
+- Added "Open subAgent session" button on task tool outputs to quickly navigate to child sessions (thanks to @aptdnfapt).
+- VS Code extension: improved activation reliability and error handling.
+
 
 ## [1.4.2] - 2026-01-02
 
