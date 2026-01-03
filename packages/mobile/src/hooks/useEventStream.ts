@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useConnectionStore } from "../stores/useConnectionStore";
 
 export interface StreamEvent {
@@ -39,107 +39,121 @@ type EventHandler = (event: StreamEvent) => void;
 
 export function useEventStream(sessionId: string | null, onEvent: EventHandler) {
 	const { serverUrl, authToken, directory, isConnected } = useConnectionStore();
-	const abortControllerRef = useRef<AbortController | null>(null);
+	const xhrRef = useRef<XMLHttpRequest | null>(null);
 	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const lastProcessedIndexRef = useRef(0);
+	const isConnectingRef = useRef(false);
+	const onEventRef = useRef(onEvent);
+	const sessionIdRef = useRef(sessionId);
 
-	const connect = useCallback(async () => {
+	onEventRef.current = onEvent;
+	sessionIdRef.current = sessionId;
+
+	const connect = useCallback(() => {
 		if (!serverUrl || !authToken || !isConnected) {
 			return;
 		}
 
-		if (abortControllerRef.current) {
-			abortControllerRef.current.abort();
+		if (isConnectingRef.current || xhrRef.current) {
+			return;
 		}
 
-		const abortController = new AbortController();
-		abortControllerRef.current = abortController;
+		isConnectingRef.current = true;
 
-		try {
-			const url = new URL("/api/event", serverUrl);
-			if (directory) {
-				url.searchParams.set("directory", directory);
-			}
+		const url = new URL("/api/event", serverUrl);
+		if (directory) {
+			url.searchParams.set("directory", directory);
+		}
 
-			const response = await fetch(url.toString(), {
-				method: "GET",
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-					Accept: "text/event-stream",
-					"Cache-Control": "no-cache",
-				},
-				signal: abortController.signal,
-			});
+		const xhr = new XMLHttpRequest();
+		xhrRef.current = xhr;
+		lastProcessedIndexRef.current = 0;
 
-			if (!response.ok) {
-				console.error("[EventStream] Failed to connect:", response.status);
-				return;
-			}
+		xhr.open("GET", url.toString(), true);
+		xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
+		xhr.setRequestHeader("Accept", "text/event-stream");
+		xhr.setRequestHeader("Cache-Control", "no-cache");
 
-			if (!response.body) {
-				console.error("[EventStream] No response body");
-				return;
-			}
-
-			console.log("[EventStream] Connected to event stream");
-
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			let buffer = "";
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) {
-					console.log("[EventStream] Stream ended");
-					break;
+		xhr.onreadystatechange = () => {
+			if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+				if (xhr.status === 200) {
+					console.log("[EventStream] Connected");
+					isConnectingRef.current = false;
+				} else {
+					console.error("[EventStream] Failed to connect:", xhr.status);
+					isConnectingRef.current = false;
 				}
+			}
 
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split("\n");
-				buffer = lines.pop() || "";
+			if (xhr.readyState === XMLHttpRequest.LOADING || xhr.readyState === XMLHttpRequest.DONE) {
+				const newData = xhr.responseText.slice(lastProcessedIndexRef.current);
+				lastProcessedIndexRef.current = xhr.responseText.length;
 
-				for (const line of lines) {
-					if (line.startsWith("data: ")) {
-						const data = line.slice(6).trim();
-						if (!data || data === "[DONE]") continue;
+				if (newData) {
+					const lines = newData.split("\n");
+					for (const line of lines) {
+						if (line.startsWith("data: ")) {
+							const data = line.slice(6).trim();
+							if (!data || data === "[DONE]") continue;
 
-						try {
-							const parsed = JSON.parse(data);
-							const event: StreamEvent = {
-								type: parsed.type || "unknown",
-								properties: parsed.properties || parsed,
-							};
+							try {
+								const parsed = JSON.parse(data);
+								const event: StreamEvent = {
+									type: parsed.type || "unknown",
+									properties: parsed.properties || parsed,
+								};
 
-							if (
-								sessionId &&
-								event.properties?.sessionID &&
-								event.properties.sessionID !== sessionId
-							) {
-								continue;
+								const currentSessionId = sessionIdRef.current;
+								if (
+									currentSessionId &&
+									event.properties?.sessionID &&
+									event.properties.sessionID !== currentSessionId
+								) {
+									continue;
+								}
+
+								onEventRef.current(event);
+							} catch (e) {
+								void e;
 							}
-
-							onEvent(event);
-						} catch (error) {
-							console.error("[EventStream] Failed to parse event:", error);
 						}
 					}
 				}
 			}
-		} catch (error) {
-			if ((error as Error)?.name === "AbortError") {
-				console.log("[EventStream] Aborted");
-				return;
+
+			if (xhr.readyState === XMLHttpRequest.DONE) {
+				console.log("[EventStream] Connection closed");
+				xhrRef.current = null;
+				isConnectingRef.current = false;
+
+				if (reconnectTimeoutRef.current) {
+					clearTimeout(reconnectTimeoutRef.current);
+				}
+				reconnectTimeoutRef.current = setTimeout(() => {
+					if (isConnected) {
+						connect();
+					}
+				}, 3000);
 			}
-			console.error("[EventStream] Error:", error);
-		} finally {
+		};
+
+		xhr.onerror = () => {
+			console.error("[EventStream] XHR error");
+			xhrRef.current = null;
+			isConnectingRef.current = false;
+
 			if (reconnectTimeoutRef.current) {
 				clearTimeout(reconnectTimeoutRef.current);
 			}
-			if (!abortController.signal.aborted && isConnected) {
-				console.log("[EventStream] Scheduling reconnect...");
-				reconnectTimeoutRef.current = setTimeout(connect, 3000);
-			}
-		}
-	}, [serverUrl, authToken, directory, isConnected, sessionId, onEvent]);
+			reconnectTimeoutRef.current = setTimeout(() => {
+				if (isConnected) {
+					connect();
+				}
+			}, 3000);
+		};
+
+		xhr.send();
+	}, [serverUrl, authToken, directory, isConnected]);
 
 	useEffect(() => {
 		if (isConnected && sessionId) {
@@ -147,22 +161,28 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 		}
 
 		return () => {
-			if (abortControllerRef.current) {
-				abortControllerRef.current.abort();
+			if (xhrRef.current) {
+				xhrRef.current.abort();
+				xhrRef.current = null;
 			}
 			if (reconnectTimeoutRef.current) {
 				clearTimeout(reconnectTimeoutRef.current);
+				reconnectTimeoutRef.current = null;
 			}
+			isConnectingRef.current = false;
 		};
 	}, [isConnected, sessionId, connect]);
 
 	const disconnect = useCallback(() => {
-		if (abortControllerRef.current) {
-			abortControllerRef.current.abort();
+		if (xhrRef.current) {
+			xhrRef.current.abort();
+			xhrRef.current = null;
 		}
 		if (reconnectTimeoutRef.current) {
 			clearTimeout(reconnectTimeoutRef.current);
+			reconnectTimeoutRef.current = null;
 		}
+		isConnectingRef.current = false;
 	}, []);
 
 	return { disconnect };

@@ -69,8 +69,9 @@ export const sessionsApi = {
 	},
 
 	async getMessages(sessionId: string): Promise<SessionMessage[]> {
+		// OpenCode SDK uses /session/{id}/message (singular, not 'messages')
 		const response = await apiGet<MessagesResponse>(
-			`/api/session/${sessionId}/messages`,
+			`/api/session/${sessionId}/message`,
 			{},
 			true,
 		);
@@ -99,6 +100,6 @@ export const sessionsApi = {
 			body.model = { providerID, modelID };
 		}
 
-		await apiPost(`/api/session/${sessionId}/prompt`, body, true);
+		await apiPost(`/api/session/${sessionId}/prompt_async`, body, true);
 	},
 };
