@@ -4,7 +4,7 @@ import { opencodeClient } from '@/lib/opencode/client';
 import { useDirectoryStore } from './useDirectoryStore';
 import type { WorktreeMetadata } from '@/types/worktree';
 import { listWorktrees, mapWorktreeToMetadata } from '@/lib/git/worktreeService';
-import type { Session } from '@opencode-ai/sdk';
+import type { Session } from '@opencode-ai/sdk/v2';
 
 const OPENCHAMBER_DIR = '.openchamber';
 
@@ -178,7 +178,7 @@ export const useAgentGroupsStore = create<AgentGroupsStore>()(
           // Fetch all sessions from the main project directory
           // All worktree sessions are visible from here
           const response = await apiClient.session.list({
-            query: { directory: normalizedCurrent },
+            directory: normalizedCurrent,
           });
           const allSessions: Session[] = Array.isArray(response.data) ? response.data : [];
 

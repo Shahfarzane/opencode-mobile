@@ -102,26 +102,6 @@ export async function activate(context: vscode.ExtensionContext) {
   };
 
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand('openchamber.openSidebar', async () => {
-      // Best-effort: open the container (if available), then focus the chat view.
-      try {
-        await vscode.commands.executeCommand('workbench.view.extension.openchamber');
-      } catch {
-        // Ignore: not all VS Code forks expose this command.
-      }
-
-      await vscode.commands.executeCommand('openchamber.chatView.focus');
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('openchamber.focusChat', async () => {
-      await vscode.commands.executeCommand('openchamber.chatView.focus');
-    })
-  );
-
-
   // Migration: clear legacy auto-set API URLs (ports 47680-47689 were auto-assigned by older extension versions)
   const config = vscode.workspace.getConfiguration('openchamber');
   const legacyApiUrl = config.get<string>('apiUrl') || '';
@@ -142,6 +122,31 @@ export async function activate(context: vscode.ExtensionContext) {
       chatViewProvider,
       { webviewOptions: { retainContextWhenHidden: true } }
     )
+  );
+
+  // Register sidebar/focus commands AFTER the webview view provider is registered
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openchamber.openSidebar', async () => {
+      // Best-effort: open the container (if available), then focus the chat view.
+      try {
+        await vscode.commands.executeCommand('workbench.view.extension.openchamber');
+      } catch (e) {
+        outputChannel?.appendLine(`[OpenChamber] workbench.view.extension.openchamber failed: ${e}`);
+      }
+
+      try {
+        await vscode.commands.executeCommand('openchamber.chatView.focus');
+      } catch (e) {
+        outputChannel?.appendLine(`[OpenChamber] openchamber.chatView.focus failed: ${e}`);
+        vscode.window.showErrorMessage(`OpenChamber: Failed to open sidebar - ${e}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openchamber.focusChat', async () => {
+      await vscode.commands.executeCommand('openchamber.chatView.focus');
+    })
   );
 
   void maybeMoveChatToRightSidebarOnStartup();
