@@ -12,7 +12,7 @@ export async function* streamChat(
 	token: string,
 ): AsyncGenerator<StreamEvent> {
 	const response = await fetch(
-		`${serverUrl}/api/session/${sessionId}/message`,
+		`${serverUrl}/api/session/${sessionId}/prompt`,
 		{
 			method: "POST",
 			headers: {
@@ -20,7 +20,9 @@ export async function* streamChat(
 				Authorization: `Bearer ${token}`,
 				Accept: "text/event-stream",
 			},
-			body: JSON.stringify({ content: message }),
+			body: JSON.stringify({
+				parts: [{ type: "text", text: message }],
+			}),
 		},
 	);
 

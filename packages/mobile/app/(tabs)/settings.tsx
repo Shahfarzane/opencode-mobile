@@ -75,8 +75,8 @@ export default function SettingsScreen() {
 					text: "Disconnect",
 					style: "destructive",
 					onPress: async () => {
-						await SecureStore.deleteItemAsync("auth_token");
-						await SecureStore.deleteItemAsync("server_url");
+						await SecureStore.deleteItemAsync("openchamber_auth_token");
+						await SecureStore.deleteItemAsync("openchamber_server_url");
 						router.replace("/onboarding");
 					},
 				},

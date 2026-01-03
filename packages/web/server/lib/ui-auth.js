@@ -3,6 +3,7 @@ import crypto from 'crypto';
 const SESSION_COOKIE_NAME = 'oc_ui_session';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
+const BEARER_TOKEN_PREFIX = 'ocm_';
 
 const isSecureRequest = (req) => {
   if (req.secure) {
@@ -90,6 +91,10 @@ export const createUiAuth = ({
       handleSessionCreate: (_req, res) => {
         res.status(400).json({ error: 'UI password not configured' });
       },
+      handleApiLogin: (_req, res) => {
+        const token = BEARER_TOKEN_PREFIX + crypto.randomBytes(32).toString('base64url');
+        res.json({ token });
+      },
       dispose: () => {
 
       },
@@ -99,6 +104,7 @@ export const createUiAuth = ({
   const salt = crypto.randomBytes(16);
   const expectedHash = crypto.scryptSync(normalizedPassword, salt, 64);
   const sessions = new Map();
+  const bearerTokens = new Map();
 
   let cleanupTimer = null;
 
@@ -179,11 +185,48 @@ export const createUiAuth = ({
     return token;
   };
 
+  const getBearerTokenFromRequest = (req) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || typeof authHeader !== 'string') {
+      return null;
+    }
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    return match ? match[1] : null;
+  };
+
+  const isBearerTokenValid = (token) => {
+    if (!token || !token.startsWith(BEARER_TOKEN_PREFIX)) {
+      return false;
+    }
+    const record = bearerTokens.get(token);
+    if (!record) {
+      return false;
+    }
+    if (Date.now() - record.lastSeen > sessionTtlMs) {
+      bearerTokens.delete(token);
+      return false;
+    }
+    record.lastSeen = Date.now();
+    return true;
+  };
+
+  const issueBearerToken = () => {
+    const token = BEARER_TOKEN_PREFIX + crypto.randomBytes(32).toString('base64url');
+    const now = Date.now();
+    bearerTokens.set(token, { createdAt: now, lastSeen: now });
+    return token;
+  };
+
   const cleanupStaleSessions = () => {
     const now = Date.now();
     for (const [token, record] of sessions.entries()) {
       if (now - record.lastSeen > sessionTtlMs) {
         sessions.delete(token);
+      }
+    }
+    for (const [token, record] of bearerTokens.entries()) {
+      if (now - record.lastSeen > sessionTtlMs) {
+        bearerTokens.delete(token);
       }
     }
   };
@@ -213,8 +256,12 @@ export const createUiAuth = ({
     if (req.method === 'OPTIONS') {
       return next();
     }
-    const token = getTokenFromRequest(req);
-    if (isSessionValid(token)) {
+    const bearerToken = getBearerTokenFromRequest(req);
+    if (isBearerTokenValid(bearerToken)) {
+      return next();
+    }
+    const sessionToken = getTokenFromRequest(req);
+    if (isSessionValid(sessionToken)) {
       return next();
     }
     clearSessionCookie(req, res);
@@ -248,12 +295,24 @@ export const createUiAuth = ({
     res.json({ authenticated: true });
   };
 
+  const handleApiLogin = (req, res) => {
+    const candidate = typeof req.body?.password === 'string' ? req.body.password : '';
+    if (!verifyPassword(candidate)) {
+      res.status(401).json({ error: 'Invalid password', message: 'Invalid password' });
+      return;
+    }
+
+    const token = issueBearerToken();
+    res.json({ token });
+  };
+
   const dispose = () => {
     if (cleanupTimer) {
       clearInterval(cleanupTimer);
       cleanupTimer = null;
     }
     sessions.clear();
+    bearerTokens.clear();
   };
 
   return {
@@ -261,6 +320,7 @@ export const createUiAuth = ({
     requireAuth,
     handleSessionStatus,
     handleSessionCreate,
+    handleApiLogin,
     dispose,
   };
 };

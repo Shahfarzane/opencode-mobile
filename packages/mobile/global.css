@@ -1,3 +1,36 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'uniwind';
+
+@theme {
+  --color-background: #100F0F;
+  --color-foreground: #CECDC3;
+  --color-card: #282726;
+  --color-card-foreground: #CECDC3;
+  --color-popover: #282726;
+  --color-popover-foreground: #CECDC3;
+  --color-primary: #EC8B49;
+  --color-primary-hover: #F9AE77;
+  --color-primary-foreground: #FFFCF0;
+  --color-muted: #1C1B1A;
+  --color-muted-foreground: #878580;
+  --color-secondary: #1C1B1A;
+  --color-secondary-foreground: #CECDC3;
+  --color-accent: #343331;
+  --color-accent-foreground: #CECDC3;
+  --color-destructive: #D14D41;
+  --color-destructive-foreground: #FFFCF0;
+  --color-success: #A0AF54;
+  --color-success-foreground: #FFFCF0;
+  --color-info: #4385BE;
+  --color-info-foreground: #FFFCF0;
+  --color-warning: #D0A215;
+  --color-warning-foreground: #100F0F;
+  --color-border: #343331;
+  --color-input: #1C1B1A;
+  --color-ring: #EC8B49;
+  
+  --font-mono: 'IBMPlexMono-Regular';
+  --font-mono-medium: 'IBMPlexMono-Medium';
+  --font-mono-semibold: 'IBMPlexMono-SemiBold';
+  --font-mono-bold: 'IBMPlexMono-Bold';
+}

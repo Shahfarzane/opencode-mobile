@@ -1890,7 +1890,8 @@ async function main(options = {}) {
       req.path.startsWith('/api/git') ||
       req.path.startsWith('/api/prompts') ||
       req.path.startsWith('/api/terminal') ||
-      req.path.startsWith('/api/opencode')
+      req.path.startsWith('/api/opencode') ||
+      req.path.startsWith('/api/auth')
     ) {
 
       express.json()(req, res, next);
@@ -1917,6 +1918,8 @@ async function main(options = {}) {
 
   app.get('/auth/session', (req, res) => uiAuthController.handleSessionStatus(req, res));
   app.post('/auth/session', (req, res) => uiAuthController.handleSessionCreate(req, res));
+
+  app.post('/api/auth/login', (req, res) => uiAuthController.handleApiLogin(req, res));
 
   app.use('/api', (req, res, next) => uiAuthController.requireAuth(req, res, next));
 
