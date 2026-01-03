@@ -62,7 +62,12 @@ export async function apiRequest<T>(
 	options: RequestOptions = {},
 ): Promise<T> {
 	const { method = "GET", body, params, includeDirectory = false } = options;
-	const { directory } = getConnectionState();
+	const state = getConnectionState();
+	const { directory, serverUrl, authToken } = state;
+
+	console.log(`[API] Request: ${method} ${path}`);
+	console.log(`[API] Server URL: ${serverUrl}`);
+	console.log(`[API] Has auth token: ${Boolean(authToken)}`);
 
 	const queryParams = { ...params };
 	if (includeDirectory && directory) {
@@ -70,6 +75,7 @@ export async function apiRequest<T>(
 	}
 
 	const url = buildUrl(path, queryParams);
+	console.log(`[API] Full URL: ${url}`);
 
 	const headers = getAuthHeaders();
 

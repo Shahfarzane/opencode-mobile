@@ -27,7 +27,11 @@
           "_http._tcp"
         ],
         "LSSupportsOpeningDocumentsInPlace": true,
-        "UIFileSharingEnabled": true
+        "UIFileSharingEnabled": true,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true
+        }
       },
       "config": {
         "usesNonExemptEncryption": false
