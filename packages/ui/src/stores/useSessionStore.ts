@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { Session, Message, Part } from "@opencode-ai/sdk";
+import type { Session, Message, Part } from "@opencode-ai/sdk/v2";
 import type { Permission, PermissionResponse } from "@/types/permission";
 import type { SessionStore, AttachedFile, EditPermissionMode } from "./types/sessionTypes";
 import { ACTIVE_SESSION_WINDOW, MEMORY_LIMITS } from "./types/sessionTypes";

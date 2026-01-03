@@ -12,7 +12,7 @@ import { useSessionStore } from '@/stores/useSessionStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { cn } from '@/lib/utils';
 import { RiLoader4Line, RiSearchLine, RiTimeLine, RiGitBranchLine } from '@remixicon/react';
-import type { Part } from '@opencode-ai/sdk';
+import type { Part } from '@opencode-ai/sdk/v2';
 
 interface TimelineDialogProps {
     open: boolean;

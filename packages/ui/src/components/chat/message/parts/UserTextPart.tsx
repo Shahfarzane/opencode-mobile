@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { cn } from '@/lib/utils';
-import type { Part } from '@opencode-ai/sdk';
+import type { Part } from '@opencode-ai/sdk/v2';
 import type { AgentMentionInfo } from '../types';
 
 type PartWithText = Part & { text?: string; content?: string; value?: string };

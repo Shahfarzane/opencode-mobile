@@ -12,12 +12,12 @@ export default defineConfig({
   root: path.resolve(__dirname, '.'),
   plugins: [react(), themeStoragePlugin()],
   resolve: {
-    alias: {
-      '@desktop': path.resolve(__dirname, './src'),
-      '@openchamber/ui': path.resolve(__dirname, '../ui/src'),
-      '@': path.resolve(__dirname, '../ui/src'),
-      '@opencode-ai/sdk': path.resolve(__dirname, '../../node_modules/@opencode-ai/sdk/dist/client.js'),
-    },
+    alias: [
+      { find: '@opencode-ai/sdk/v2', replacement: path.resolve(__dirname, '../../node_modules/@opencode-ai/sdk/dist/v2/client.js') },
+      { find: '@openchamber/ui', replacement: path.resolve(__dirname, '../ui/src') },
+      { find: '@desktop', replacement: path.resolve(__dirname, './src') },
+      { find: '@', replacement: path.resolve(__dirname, '../ui/src') },
+    ],
   },
   worker: {
     format: 'es',
@@ -31,7 +31,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
   optimizeDeps: {
-    include: ['@opencode-ai/sdk'],
+    include: ['@opencode-ai/sdk/v2'],
     exclude: [
       '@tauri-apps/plugin-dialog',
       '@tauri-apps/api/core',

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import type { Agent } from "@opencode-ai/sdk";
+import type { Agent } from "@opencode-ai/sdk/v2";
 import { opencodeClient } from "@/lib/opencode/client";
 import { emitConfigChange, scopeMatches, subscribeToConfigChanges } from "@/lib/configSync";
 import {
@@ -62,8 +62,10 @@ export type AgentWithExtras = Agent & {
 };
 
 // Helper to check if agent is built-in (handles both SDK 'builtIn' and API 'native')
-export const isAgentBuiltIn = (agent: Agent): boolean =>
-  agent.builtIn || (agent as AgentWithExtras).native === true;
+export const isAgentBuiltIn = (agent: Agent): boolean => {
+  const extended = agent as AgentWithExtras & { builtIn?: boolean };
+  return extended.native === true || extended.builtIn === true;
+};
 
 // Helper to check if agent is hidden (internal agents like title, compaction, summary)
 // Checks both top-level hidden and options.hidden (OpenCode API inconsistency workaround)

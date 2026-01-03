@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Part } from '@opencode-ai/sdk';
+import type { Part } from '@opencode-ai/sdk/v2';
 
 import { MessageFreshnessDetector } from '@/lib/messageFreshness';
 

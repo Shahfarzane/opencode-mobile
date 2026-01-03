@@ -1,7 +1,7 @@
 import React from 'react';
 import { Streamdown } from 'streamdown';
 import { FadeInOnReveal } from './message/FadeInOnReveal';
-import type { Part } from '@opencode-ai/sdk';
+import type { Part } from '@opencode-ai/sdk/v2';
 import { cn } from '@/lib/utils';
 import { RiFileCopyLine, RiCheckLine, RiDownloadLine } from '@remixicon/react';
 

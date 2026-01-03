@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AssistantMessage, Message, Part } from '@opencode-ai/sdk';
+import type { AssistantMessage, Message, Part } from '@opencode-ai/sdk/v2';
 import { useSessionStore, MEMORY_LIMITS } from '@/stores/useSessionStore';
 import { opencodeClient } from '@/lib/opencode/client';
 import { readSessionCursor } from '@/lib/messageCursorPersistence';

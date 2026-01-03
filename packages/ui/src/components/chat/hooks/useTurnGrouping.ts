@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Message, Part } from '@opencode-ai/sdk';
+import type { Message, Part } from '@opencode-ai/sdk/v2';
 import { useCurrentSessionActivity } from '@/hooks/useSessionActivity';
 import { useUIStore } from '@/stores/useUIStore';
 

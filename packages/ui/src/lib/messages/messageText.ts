@@ -1,4 +1,4 @@
-import type { Part } from '@opencode-ai/sdk';
+import type { Part } from '@opencode-ai/sdk/v2';
 
 type TextLikePart = Part & { text?: string; content?: string };
 

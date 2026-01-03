@@ -216,10 +216,8 @@ export const useFileStore = create<FileStore>()(
                                 const filename = lastSlashIndex > 0 ? path.substring(lastSlashIndex + 1) : path;
 
                                 const response = await tempClient.file.read({
-                                    query: {
-                                        path: filename,
-                                        directory: directory,
-                                    },
+                                    path: filename,
+                                    directory: directory,
                                 });
 
                                 if (response.data && "content" in response.data) {
