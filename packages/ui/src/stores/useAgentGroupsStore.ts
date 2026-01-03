@@ -175,23 +175,44 @@ export const useAgentGroupsStore = create<AgentGroupsStore>()(
         try {
           const apiClient = opencodeClient.getApiClient();
 
-          // Fetch all sessions from the main project directory
-          // All worktree sessions are visible from here
-          const response = await apiClient.session.list({
-            directory: normalizedCurrent,
-          });
-          const allSessions: Session[] = Array.isArray(response.data) ? response.data : [];
-
-          // Get git worktree info for metadata
+          // Get git worktree info first - we need to query each worktree separately
           let worktreeInfoMap = new Map<string, Awaited<ReturnType<typeof listWorktrees>>[number]>();
+          let worktreeInfoList: Awaited<ReturnType<typeof listWorktrees>> = [];
           try {
-            const worktreeInfoList = await listWorktrees(normalizedCurrent);
+            worktreeInfoList = await listWorktrees(normalizedCurrent);
             worktreeInfoMap = new Map(
               worktreeInfoList.map((info) => [normalize(info.worktree), info])
             );
           } catch {
             console.debug('Failed to list git worktrees');
           }
+
+          // Fetch sessions from each worktree directory (sessions are stored per-directory in OpenCode)
+          // Filter to only .openchamber worktrees (agent group worktrees)
+          const openchamberWorktrees = worktreeInfoList.filter(
+            (info) => normalize(info.worktree).includes(`/${OPENCHAMBER_DIR}/`)
+          );
+
+          const sessionsMap = new Map<string, Session>();
+          
+          // Fetch sessions from each openchamber worktree
+          await Promise.all(
+            openchamberWorktrees.map(async (worktree) => {
+              try {
+                const response = await apiClient.session.list({
+                  directory: normalize(worktree.worktree),
+                });
+                const sessions: Session[] = Array.isArray(response.data) ? response.data : [];
+                for (const session of sessions) {
+                  sessionsMap.set(session.id, session);
+                }
+              } catch (err) {
+                console.debug('Failed to fetch sessions from worktree:', worktree.worktree, err);
+              }
+            })
+          );
+          
+          const allSessions = Array.from(sessionsMap.values());
 
           // Parse sessions and group by groupSlug
           const groupsMap = new Map<string, AgentGroupSession[]>();

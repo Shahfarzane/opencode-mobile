@@ -34,7 +34,7 @@ interface AttachedFile {
 interface AgentManagerEmptyStateProps {
   className?: string;
   /** Called when the user submits to create a new agent group */
-  onCreateGroup?: (params: CreateMultiRunParams) => void;
+  onCreateGroup?: (params: CreateMultiRunParams) => Promise<void> | void;
   /** Indicates if a group creation is in progress */
   isCreating?: boolean;
 }
@@ -150,7 +150,7 @@ export const AgentManagerEmptyState: React.FC<AgentManagerEmptyStateProps> = ({
           }))
         : undefined;
 
-      onCreateGroup?.({
+      await onCreateGroup?.({
         name: groupName.trim(),
         prompt: prompt.trim(),
         models,
@@ -158,7 +158,7 @@ export const AgentManagerEmptyState: React.FC<AgentManagerEmptyStateProps> = ({
         files,
       });
 
-      // Reset form on success
+      // Reset form on success - only after onCreateGroup completes
       setGroupName('');
       setPrompt('');
       setSelectedModels([]);

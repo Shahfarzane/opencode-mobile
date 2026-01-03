@@ -107,6 +107,7 @@ export const createVSCodeGitAPI = (): GitAPI => ({
       path: payload.path,
       branch: payload.branch,
       createBranch: payload.createBranch,
+      startPoint: payload.startPoint,
     });
   },
 
