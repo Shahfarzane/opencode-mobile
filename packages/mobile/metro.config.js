@@ -1,5 +1,5 @@
 const { getDefaultConfig } = require("expo/metro-config");
-const { withNativeWind } = require("nativewind/metro");
+const { withUniwindConfig } = require("uniwind/metro");
 
 const config = getDefaultConfig(__dirname);
 
@@ -16,11 +16,14 @@ const serverOnlyModules = [
   "@xterm/addon-fit",
 ];
 
+const originalResolveRequest = config.resolver?.resolveRequest;
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (serverOnlyModules.some((mod) => moduleName.startsWith(mod))) {
     return { type: "empty" };
   }
-  return context.resolveRequest(context, moduleName, platform);
+  const resolver = originalResolveRequest ?? context.resolveRequest;
+  return resolver(context, moduleName, platform);
 };
 
 config.resolver.assetExts = [
@@ -31,4 +34,7 @@ config.resolver.assetExts = [
   "woff2",
 ];
 
-module.exports = withNativeWind(config, { input: "./global.css" });
+module.exports = withUniwindConfig(config, {
+  cssEntryFile: "./global.css",
+  dtsFile: "./src/uniwind-types.d.ts",
+});

@@ -11,47 +11,43 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-	const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme();
 
-	const [fontsLoaded, fontError] = useFonts({
-		// eslint-disable-next-line @typescript-eslint/no-require-imports -- require() is necessary for Expo font asset loading
-		"IBMPlexMono-Regular": require("../assets/fonts/IBMPlexMono-Regular.ttf"),
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
-		"IBMPlexMono-Medium": require("../assets/fonts/IBMPlexMono-Medium.ttf"),
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
-		"IBMPlexMono-SemiBold": require("../assets/fonts/IBMPlexMono-SemiBold.ttf"),
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
-		"IBMPlexMono-Bold": require("../assets/fonts/IBMPlexMono-Bold.ttf"),
-	});
+  const [fontsLoaded, fontError] = useFonts({
+    "IBMPlexMono-Regular": require("../assets/fonts/IBMPlexMono-Regular.ttf"),
+    "IBMPlexMono-Medium": require("../assets/fonts/IBMPlexMono-Medium.ttf"),
+    "IBMPlexMono-SemiBold": require("../assets/fonts/IBMPlexMono-SemiBold.ttf"),
+    "IBMPlexMono-Bold": require("../assets/fonts/IBMPlexMono-Bold.ttf"),
+  });
 
-	useEffect(() => {
-		if (fontsLoaded || fontError) {
-			SplashScreen.hideAsync();
-		}
-	}, [fontsLoaded, fontError]);
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
 
-	if (!fontsLoaded && !fontError) {
-		return null;
-	}
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
-	return (
-		<GestureHandlerRootView className="flex-1">
-			<SafeAreaProvider>
-				<Stack
-					screenOptions={{
-						headerShown: false,
-						contentStyle: {
-							backgroundColor: colorScheme === "dark" ? "#100F0F" : "#FFFCF0",
-						},
-						animation: "slide_from_right",
-					}}
-				>
-					<Stack.Screen name="index" />
-					<Stack.Screen name="onboarding" />
-					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-				</Stack>
-				<StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-			</SafeAreaProvider>
-		</GestureHandlerRootView>
-	);
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: {
+              backgroundColor: colorScheme === "dark" ? "#100F0F" : "#FFFCF0",
+            },
+            animation: "slide_from_right",
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
 }

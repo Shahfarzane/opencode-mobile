@@ -1,6 +1,14 @@
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import {
+	KeyboardAvoidingView,
+	Modal,
+	Platform,
+	Pressable,
+	ScrollView,
+	Text,
+	View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Message } from "../../src/components/chat";
 import { ChatInput, MessageList } from "../../src/components/chat";
@@ -11,6 +19,13 @@ const STORAGE_KEYS = {
 	AUTH_TOKEN: "openchamber_auth_token",
 } as const;
 
+interface Session {
+	id: string;
+	title?: string;
+	createdAt?: number;
+	updatedAt?: number;
+}
+
 export default function ChatScreen() {
 	const insets = useSafeAreaInsets();
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -18,9 +33,97 @@ export default function ChatScreen() {
 	const [serverUrl, setServerUrl] = useState<string | null>(null);
 	const [authToken, setAuthToken] = useState<string | null>(null);
 	const [sessionId, setSessionId] = useState<string | null>(null);
+	const [sessions, setSessions] = useState<Session[]>([]);
+	const [showSessionPicker, setShowSessionPicker] = useState(false);
+	const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 	const [connectionStatus, setConnectionStatus] = useState<
 		"connecting" | "connected" | "disconnected"
 	>("connecting");
+
+	const fetchSessions = useCallback(async () => {
+		if (!serverUrl || !authToken) return;
+
+		setIsLoadingSessions(true);
+		try {
+			const response = await fetch(`${serverUrl}/api/session/list`, {
+				headers: {
+					Authorization: `Bearer ${authToken}`,
+				},
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				setSessions(Array.isArray(data) ? data : []);
+			}
+		} catch (error) {
+			console.error("Failed to fetch sessions:", error);
+		} finally {
+			setIsLoadingSessions(false);
+		}
+	}, [serverUrl, authToken]);
+
+	const loadSessionMessages = useCallback(
+		async (id: string) => {
+			if (!serverUrl || !authToken) return;
+
+			try {
+				const response = await fetch(
+					`${serverUrl}/api/session/${id}/messages`,
+					{
+						headers: {
+							Authorization: `Bearer ${authToken}`,
+						},
+					},
+				);
+
+				if (response.ok) {
+					const data = await response.json();
+					const loadedMessages: Message[] = [];
+
+					if (Array.isArray(data)) {
+						for (const msg of data) {
+							if (msg.info) {
+								let content = "";
+								if (Array.isArray(msg.parts)) {
+									for (const part of msg.parts) {
+										if (part.type === "text" && part.text) {
+											content += part.text;
+										}
+									}
+								}
+								loadedMessages.push({
+									id: msg.info.id || `msg-${Date.now()}`,
+									role: msg.info.role === "user" ? "user" : "assistant",
+									content,
+									createdAt: msg.info.createdAt || Date.now(),
+								});
+							}
+						}
+					}
+
+					setMessages(loadedMessages);
+				}
+			} catch (error) {
+				console.error("Failed to load session messages:", error);
+			}
+		},
+		[serverUrl, authToken],
+	);
+
+	const selectSession = useCallback(
+		async (session: Session) => {
+			setSessionId(session.id);
+			setShowSessionPicker(false);
+			await loadSessionMessages(session.id);
+		},
+		[loadSessionMessages],
+	);
+
+	const startNewSession = useCallback(() => {
+		setSessionId(null);
+		setMessages([]);
+		setShowSessionPicker(false);
+	}, []);
 
 	useEffect(() => {
 		const loadCredentials = async () => {
@@ -43,26 +146,35 @@ export default function ChatScreen() {
 		loadCredentials();
 	}, []);
 
+	useEffect(() => {
+		if (connectionStatus === "connected") {
+			fetchSessions();
+		}
+	}, [connectionStatus, fetchSessions]);
+
 	const createSession = useCallback(async (): Promise<string> => {
 		if (!serverUrl || !authToken) {
 			throw new Error("Not connected to server");
 		}
 
-		const response = await fetch(`${serverUrl}/api/session`, {
+		const response = await fetch(`${serverUrl}/api/session/create`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				Authorization: `Bearer ${authToken}`,
 			},
+			body: JSON.stringify({}),
 		});
 
 		if (!response.ok) {
-			throw new Error("Failed to create session");
+			const errorText = await response.text().catch(() => "Unknown error");
+			throw new Error(`Failed to create session: ${response.status} - ${errorText}`);
 		}
 
 		const data = await response.json();
+		fetchSessions();
 		return data.id;
-	}, [serverUrl, authToken]);
+	}, [serverUrl, authToken, fetchSessions]);
 
 	const handleSend = useCallback(
 		async (content: string) => {
@@ -182,6 +294,8 @@ export default function ChatScreen() {
 		}
 	};
 
+	const currentSession = sessions.find((s) => s.id === sessionId);
+
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -192,12 +306,33 @@ export default function ChatScreen() {
 				className="border-b border-border bg-background px-4 py-3"
 				style={{ paddingTop: insets.top + 8 }}
 			>
-				<Text className="text-center font-mono text-lg font-semibold text-foreground">
-					OpenChamber
-				</Text>
-				<Text className={`text-center font-mono text-xs ${getStatusColor()}`}>
-					{getStatusText()}
-				</Text>
+				<View className="flex-row items-center justify-between">
+					<Pressable
+						onPress={() => {
+							fetchSessions();
+							setShowSessionPicker(true);
+						}}
+						className="flex-1"
+					>
+						<Text className="font-mono text-lg font-semibold text-foreground">
+							{currentSession?.title || (sessionId ? "Session" : "New Chat")}
+						</Text>
+						<Text
+							className={`font-mono text-xs ${getStatusColor()}`}
+						>
+							{getStatusText()} • Tap to switch
+						</Text>
+					</Pressable>
+
+					<Pressable
+						onPress={startNewSession}
+						className="rounded-lg bg-primary px-3 py-2"
+					>
+						<Text className="font-mono text-sm font-medium text-primary-foreground">
+							+ New
+						</Text>
+					</Pressable>
+				</View>
 			</View>
 
 			<View className="flex-1">
@@ -218,6 +353,73 @@ export default function ChatScreen() {
 					}
 				/>
 			</View>
+
+			<Modal
+				visible={showSessionPicker}
+				animationType="slide"
+				presentationStyle="pageSheet"
+				onRequestClose={() => setShowSessionPicker(false)}
+			>
+				<View
+					className="flex-1 bg-background"
+					style={{ paddingTop: insets.top }}
+				>
+					<View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+						<Text className="font-mono text-lg font-semibold text-foreground">
+							Sessions
+						</Text>
+						<Pressable
+							onPress={() => setShowSessionPicker(false)}
+							className="rounded-lg bg-muted px-3 py-2"
+						>
+							<Text className="font-mono text-sm text-foreground">Close</Text>
+						</Pressable>
+					</View>
+
+					<ScrollView className="flex-1 p-4">
+						<Pressable
+							onPress={startNewSession}
+							className="mb-3 rounded-lg border border-primary bg-primary/10 p-4"
+						>
+							<Text className="font-mono text-base font-semibold text-primary">
+								+ Start New Session
+							</Text>
+							<Text className="font-mono text-xs text-muted-foreground">
+								Create a fresh conversation
+							</Text>
+						</Pressable>
+
+						{isLoadingSessions ? (
+							<Text className="text-center font-mono text-muted-foreground">
+								Loading sessions...
+							</Text>
+						) : sessions.length === 0 ? (
+							<Text className="text-center font-mono text-muted-foreground">
+								No existing sessions
+							</Text>
+						) : (
+							sessions.map((session) => (
+								<Pressable
+									key={session.id}
+									onPress={() => selectSession(session)}
+									className={`mb-2 rounded-lg border p-4 ${
+										session.id === sessionId
+											? "border-primary bg-primary/5"
+											: "border-border bg-card"
+									}`}
+								>
+									<Text className="font-mono text-base font-medium text-foreground">
+										{session.title || `Session ${session.id.slice(0, 8)}`}
+									</Text>
+									<Text className="font-mono text-xs text-muted-foreground">
+										ID: {session.id.slice(0, 16)}...
+									</Text>
+								</Pressable>
+							))
+						)}
+					</ScrollView>
+				</View>
+			</Modal>
 		</KeyboardAvoidingView>
 	);
 }

@@ -10,8 +10,8 @@ export default function Index() {
 	useEffect(() => {
 		async function checkAuth() {
 			try {
-				const token = await SecureStore.getItemAsync("auth_token");
-				const serverUrl = await SecureStore.getItemAsync("server_url");
+				const token = await SecureStore.getItemAsync("openchamber_auth_token");
+				const serverUrl = await SecureStore.getItemAsync("openchamber_server_url");
 				setIsAuthenticated(!!token && !!serverUrl);
 			} catch {
 				setIsAuthenticated(false);

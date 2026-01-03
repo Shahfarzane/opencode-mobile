@@ -62,8 +62,8 @@ export function useServerConnection() {
 
 			const { token } = await response.json();
 
-			await SecureStore.setItemAsync("auth_token", token);
-			await SecureStore.setItemAsync("server_url", pairingData.url);
+			await SecureStore.setItemAsync("openchamber_auth_token", token);
+			await SecureStore.setItemAsync("openchamber_server_url", pairingData.url);
 
 			setState({ isConnecting: false, error: null });
 			return { token, serverUrl: pairingData.url };
@@ -102,8 +102,8 @@ export function useServerConnection() {
 
 				const { token } = await loginResponse.json();
 
-				await SecureStore.setItemAsync("auth_token", token);
-				await SecureStore.setItemAsync("server_url", serverUrl);
+				await SecureStore.setItemAsync("openchamber_auth_token", token);
+				await SecureStore.setItemAsync("openchamber_server_url", serverUrl);
 
 				setState({ isConnecting: false, error: null });
 				return { token, serverUrl };
@@ -117,13 +117,13 @@ export function useServerConnection() {
 	);
 
 	const disconnect = useCallback(async () => {
-		await SecureStore.deleteItemAsync("auth_token");
-		await SecureStore.deleteItemAsync("server_url");
+		await SecureStore.deleteItemAsync("openchamber_auth_token");
+		await SecureStore.deleteItemAsync("openchamber_server_url");
 	}, []);
 
 	const getStoredConnection = useCallback(async () => {
-		const token = await SecureStore.getItemAsync("auth_token");
-		const serverUrl = await SecureStore.getItemAsync("server_url");
+		const token = await SecureStore.getItemAsync("openchamber_auth_token");
+		const serverUrl = await SecureStore.getItemAsync("openchamber_server_url");
 		return token && serverUrl ? { token, serverUrl } : null;
 	}, []);
 
