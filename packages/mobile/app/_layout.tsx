@@ -14,9 +14,13 @@ export default function RootLayout() {
 	const colorScheme = useColorScheme();
 
 	const [fontsLoaded, fontError] = useFonts({
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- require() is necessary for Expo font asset loading
 		"IBMPlexMono-Regular": require("../assets/fonts/IBMPlexMono-Regular.ttf"),
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		"IBMPlexMono-Medium": require("../assets/fonts/IBMPlexMono-Medium.ttf"),
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		"IBMPlexMono-SemiBold": require("../assets/fonts/IBMPlexMono-SemiBold.ttf"),
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		"IBMPlexMono-Bold": require("../assets/fonts/IBMPlexMono-Bold.ttf"),
 	});
 
