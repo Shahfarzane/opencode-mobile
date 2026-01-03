@@ -29,7 +29,7 @@ export const sessionEvents = {
     };
   },
   requestDelete(payload: SessionDeleteRequest) {
-    if (!payload.sessions.length) {
+    if (!payload.sessions.length && payload.mode !== 'worktree') {
       return;
     }
     deleteListeners.forEach((listener) => listener(payload));

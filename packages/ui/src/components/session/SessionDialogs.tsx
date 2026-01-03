@@ -609,6 +609,7 @@ export const SessionDialogs: React.FC = () => {
                     description: renderToastDescription(archiveNote),
                 });
                 closeDeleteDialog();
+                loadSessions();
                 return;
             }
 
@@ -671,7 +672,7 @@ export const SessionDialogs: React.FC = () => {
         } finally {
             setIsProcessingDelete(false);
         }
-    }, [deleteDialog, deleteDialogShouldRemoveRemote, deleteSession, deleteSessions, closeDeleteDialog, shouldArchiveWorktree, isWorktreeDelete, canRemoveRemoteBranches, projectDirectory]);
+    }, [deleteDialog, deleteDialogShouldRemoveRemote, deleteSession, deleteSessions, closeDeleteDialog, shouldArchiveWorktree, isWorktreeDelete, canRemoveRemoteBranches, projectDirectory, loadSessions]);
 
     const worktreeManagerBody = (
         <div className="space-y-4 w-full min-w-0">
