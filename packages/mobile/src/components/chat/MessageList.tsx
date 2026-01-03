@@ -1,23 +1,8 @@
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useCallback, useRef } from "react";
 import { Text, View } from "react-native";
 import { ChatMessage } from "./ChatMessage";
-
-export type Message = {
-	id: string;
-	role: "user" | "assistant";
-	content: string;
-	isStreaming?: boolean;
-	parts?: MessagePart[];
-	createdAt?: number;
-};
-
-export type MessagePart = {
-	type: "text" | "tool-call" | "tool-result" | "reasoning";
-	content: string;
-	toolName?: string;
-	isCollapsed?: boolean;
-};
+import type { Message } from "./types";
 
 type MessageListProps = {
 	messages: Message[];
@@ -51,7 +36,7 @@ function LoadingIndicator() {
 }
 
 export function MessageList({ messages, isLoading }: MessageListProps) {
-	const listRef = useRef<FlashList<Message>>(null);
+	const listRef = useRef<FlashListRef<Message>>(null);
 
 	const renderItem = useCallback(({ item }: { item: Message }) => {
 		return <ChatMessage message={item} />;
@@ -75,7 +60,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 			data={messages}
 			renderItem={renderItem}
 			keyExtractor={keyExtractor}
-			estimatedItemSize={100}
+			{...({ estimatedItemSize: 100 } as object)}
 			contentContainerStyle={{
 				paddingTop: 16,
 				paddingBottom: isLoading ? 8 : 16,

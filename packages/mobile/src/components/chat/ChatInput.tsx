@@ -1,6 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,
 	Keyboard,
@@ -200,7 +200,6 @@ function AutocompleteOverlay({
 				keyExtractor={(item) =>
 					item.type === "file" ? item.path : `${item.type}-${item.name}`
 				}
-				estimatedItemSize={56}
 				keyboardShouldPersistTaps="handled"
 			/>
 		</Animated.View>
@@ -267,6 +266,36 @@ export function ChatInput({
 		[],
 	);
 
+	const getFilteredAgents = useCallback((query: string): AutocompleteItem[] => {
+		const lowerQuery = query.toLowerCase();
+		return agents
+			.filter((agent) => agent.name.toLowerCase().includes(lowerQuery))
+			.slice(0, 10)
+			.map((agent) => ({
+				type: "agent" as const,
+				name: agent.name,
+				description: agent.description,
+			}));
+	}, [agents]);
+
+	const getFilteredCommands = useCallback((query: string): AutocompleteItem[] => {
+		const lowerQuery = query.toLowerCase();
+		const builtInCommands = [
+			{ name: "init", description: "Create/update AGENTS.md file" },
+			{ name: "summarize", description: "Generate a summary of the session" },
+		];
+
+		const allCommands = [...builtInCommands, ...commands];
+		return allCommands
+			.filter((cmd) => cmd.name.toLowerCase().includes(lowerQuery))
+			.slice(0, 10)
+			.map((cmd) => ({
+				type: "command" as const,
+				name: cmd.name,
+				description: cmd.description,
+			}));
+	}, [commands]);
+
 	const handleTextChange = useCallback(
 		(newText: string) => {
 			setText(newText);
@@ -276,48 +305,20 @@ export function ChatInput({
 			if (trigger) {
 				setAutocompleteType(trigger.type);
 				setAutocompleteQuery(trigger.query);
+				
+				if (trigger.type === "agent") {
+					setAutocompleteItems(getFilteredAgents(trigger.query));
+				} else if (trigger.type === "command") {
+					setAutocompleteItems(getFilteredCommands(trigger.query));
+				}
 			} else {
 				setAutocompleteType(null);
 				setAutocompleteQuery("");
 				setAutocompleteItems([]);
 			}
 		},
-		[parseTrigger],
+		[parseTrigger, getFilteredAgents, getFilteredCommands],
 	);
-
-	const filteredAgents = useMemo((): AutocompleteItem[] => {
-		if (autocompleteType !== "agent") return [];
-
-		const query = autocompleteQuery.toLowerCase();
-		return agents
-			.filter((agent) => agent.name.toLowerCase().includes(query))
-			.slice(0, 10)
-			.map((agent) => ({
-				type: "agent" as const,
-				name: agent.name,
-				description: agent.description,
-			}));
-	}, [agents, autocompleteType, autocompleteQuery]);
-
-	const filteredCommands = useMemo((): AutocompleteItem[] => {
-		if (autocompleteType !== "command") return [];
-
-		const query = autocompleteQuery.toLowerCase();
-		const builtInCommands = [
-			{ name: "init", description: "Create/update AGENTS.md file" },
-			{ name: "summarize", description: "Generate a summary of the session" },
-		];
-
-		const allCommands = [...builtInCommands, ...commands];
-		return allCommands
-			.filter((cmd) => cmd.name.toLowerCase().includes(query))
-			.slice(0, 10)
-			.map((cmd) => ({
-				type: "command" as const,
-				name: cmd.name,
-				description: cmd.description,
-			}));
-	}, [commands, autocompleteType, autocompleteQuery]);
 
 	useEffect(() => {
 		if (autocompleteType !== "file" || !onFileSearch) {
@@ -352,14 +353,6 @@ export function ChatInput({
 			clearTimeout(debounceTimer);
 		};
 	}, [autocompleteType, autocompleteQuery, onFileSearch]);
-
-	useEffect(() => {
-		if (autocompleteType === "agent") {
-			setAutocompleteItems(filteredAgents);
-		} else if (autocompleteType === "command") {
-			setAutocompleteItems(filteredCommands);
-		}
-	}, [autocompleteType, filteredAgents, filteredCommands]);
 
 	const handleAutocompleteSelect = useCallback(
 		(item: AutocompleteItem) => {

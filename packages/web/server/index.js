@@ -3749,7 +3749,22 @@ async function main(options = {}) {
       }
 
       const pty = await getPtyLib();
-      const shell = process.env.SHELL || (process.platform === 'win32' ? 'powershell.exe' : '/bin/zsh');
+      
+      const resolveShellPath = () => {
+        if (process.platform === 'win32') {
+          return process.env.COMSPEC || 'powershell.exe';
+        }
+        
+        if (process.env.SHELL && fs.existsSync(process.env.SHELL)) {
+          return process.env.SHELL;
+        }
+        
+        const universalShellPaths = ['/bin/bash', '/bin/sh', '/bin/zsh', '/usr/bin/bash', '/usr/bin/sh'];
+        const availableShell = universalShellPaths.find(path => fs.existsSync(path));
+        return availableShell || '/bin/sh';
+      };
+      
+      const shell = resolveShellPath();
 
       const sessionId = Math.random().toString(36).substring(2, 15) +
                         Math.random().toString(36).substring(2, 15);

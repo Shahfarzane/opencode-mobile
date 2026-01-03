@@ -13,14 +13,14 @@
       "@/api/*": ["./src/api/*"],
       "@/types/*": ["./src/types/*"]
     },
-    "types": ["nativewind/types"]
+    "types": ["uniwind/types"]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "src/uniwind-types.d.ts"
   ],
   "exclude": ["node_modules"]
 }

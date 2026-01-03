@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
-import type { Message, MessagePart } from "./MessageList";
+import type { Message, MessagePart } from "./types";
+import { ReasoningPart, ToolPart } from "./parts";
 
 type ChatMessageProps = {
 	message: Message;
@@ -19,93 +19,97 @@ function UserMessage({ content }: { content: string }) {
 	);
 }
 
-function ToolCallPart({ part }: { part: MessagePart }) {
-	const [isExpanded, setIsExpanded] = useState(false);
-
-	return (
-		<Pressable
-			onPress={() => setIsExpanded(!isExpanded)}
-			className="mb-2 rounded-lg border border-border bg-muted px-3 py-2"
-		>
-			<View className="flex-row items-center gap-2">
-				<Text className="font-mono text-xs text-info">⚡</Text>
-				<Text className="flex-1 font-mono text-sm text-muted-foreground">
-					{part.toolName || "Tool call"}
-				</Text>
-				<Text className="font-mono text-xs text-muted-foreground">
-					{isExpanded ? "▼" : "▶"}
-				</Text>
-			</View>
-			{isExpanded && (
-				<View className="mt-2 rounded bg-background p-2">
-					<Text className="font-mono text-xs text-muted-foreground">
-						{part.content}
-					</Text>
-				</View>
-			)}
-		</Pressable>
-	);
+function getToolState(part: MessagePart): "pending" | "running" | "completed" | "error" | "aborted" | undefined {
+	if (!part.state) return undefined;
+	if (typeof part.state === "string") return part.state as "pending" | "running" | "completed" | "error" | "aborted";
+	return part.state.status;
 }
 
-function ReasoningPart({ part }: { part: MessagePart }) {
-	const [isExpanded, setIsExpanded] = useState(false);
+function getToolInput(part: MessagePart): Record<string, unknown> | undefined {
+	if (part.input) return part.input;
+	if (part.state && typeof part.state === "object") return part.state.input;
+	return undefined;
+}
 
-	return (
-		<Pressable
-			onPress={() => setIsExpanded(!isExpanded)}
-			className="mb-2 rounded-lg border border-border/50 bg-muted/50 px-3 py-2"
-		>
-			<View className="flex-row items-center gap-2">
-				<Text className="font-mono text-xs text-warning">💭</Text>
-				<Text className="flex-1 font-mono text-sm text-muted-foreground">
-					Reasoning
-				</Text>
-				<Text className="font-mono text-xs text-muted-foreground">
-					{isExpanded ? "▼" : "▶"}
-				</Text>
+function getToolOutput(part: MessagePart): string | undefined {
+	if (part.output) return part.output;
+	if (part.state && typeof part.state === "object") return part.state.output;
+	return undefined;
+}
+
+function getToolError(part: MessagePart): string | undefined {
+	if (part.error) return part.error;
+	if (part.state && typeof part.state === "object") return part.state.error;
+	return undefined;
+}
+
+function renderPart(part: MessagePart, index: number, messageId: string, isLastPart: boolean, isStreaming: boolean) {
+	const partKey = `${messageId}-part-${index}-${part.type}-${part.id || ""}`;
+
+	if (part.type === "tool" || part.type === "tool-call" || part.type === "tool-result") {
+		return (
+			<ToolPart
+				key={partKey}
+				part={{
+					type: part.type,
+					toolName: part.toolName || part.tool,
+					toolId: part.toolId || part.callID,
+					state: getToolState(part),
+					content: part.content,
+					input: getToolInput(part),
+					output: getToolOutput(part),
+					error: getToolError(part),
+				}}
+			/>
+		);
+	}
+
+	if (part.type === "reasoning") {
+		const reasoningContent = part.content || part.text;
+		return (
+			<ReasoningPart
+				key={partKey}
+				part={{
+					type: "reasoning",
+					content: reasoningContent,
+					isStreaming: isLastPart && isStreaming,
+				}}
+			/>
+		);
+	}
+
+	if (part.type === "text") {
+		const textContent = part.content || part.text;
+		if (!textContent) return null;
+		
+		return (
+			<View key={partKey} className="rounded-2xl bg-card px-4 py-3 mb-2">
+				<MarkdownRenderer content={textContent} />
+				{isLastPart && isStreaming && (
+					<Text className="text-muted-foreground">▊</Text>
+				)}
 			</View>
-			{isExpanded && (
-				<View className="mt-2">
-					<Text className="font-mono text-sm text-muted-foreground">
-						{part.content}
-					</Text>
-				</View>
-			)}
-		</Pressable>
-	);
+		);
+	}
+
+	return null;
 }
 
 function AssistantMessage({ message }: { message: Message }) {
 	const hasParts = message.parts && message.parts.length > 0;
+	const isStreaming = message.isStreaming ?? false;
 
 	return (
 		<View className="mb-4 items-start px-4">
 			<View className="max-w-[90%]">
 				{hasParts ? (
-					message.parts!.map((part, partIndex) => {
-						const partKey = `${message.id}-part-${partIndex}-${part.type}`;
-						if (part.type === "tool-call" || part.type === "tool-result") {
-							return <ToolCallPart key={partKey} part={part} />;
-						}
-						if (part.type === "reasoning") {
-							return <ReasoningPart key={partKey} part={part} />;
-						}
-						return (
-							<View key={partKey} className="rounded-2xl bg-card px-4 py-3">
-								<MarkdownRenderer content={part.content} />
-								{message.isStreaming &&
-									partIndex === message.parts!.length - 1 && (
-										<Text className="text-muted-foreground">▊</Text>
-									)}
-							</View>
-						);
-					})
+					message.parts!.map((part, idx) =>
+						renderPart(part, idx, message.id, idx === message.parts!.length - 1, isStreaming)
+					)
 				) : (
 					<View className="rounded-2xl bg-card px-4 py-3">
 						<MarkdownRenderer content={message.content} />
-						{message.isStreaming && (
-							<Text className="text-muted-foreground">▊</Text>
-						)}
+						{isStreaming && <Text className="text-muted-foreground">▊</Text>}
 					</View>
 				)}
 			</View>

@@ -1,5 +1,4 @@
-import * as SecureStore from "expo-secure-store";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
 	Modal,
@@ -10,104 +9,170 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { Message } from "../../src/components/chat";
-import { ChatInput, MessageList } from "../../src/components/chat";
-import { streamChat } from "../../src/lib/streaming";
-
-const STORAGE_KEYS = {
-	SERVER_URL: "openchamber_server_url",
-	AUTH_TOKEN: "openchamber_auth_token",
-} as const;
-
-interface Session {
-	id: string;
-	title?: string;
-	createdAt?: number;
-	updatedAt?: number;
-}
+import { sessionsApi, filesApi, type Session } from "../../src/api";
+import type { Message, MessagePart } from "../../src/components/chat";
+import { ChatInput, MessageList, convertStreamingPart } from "../../src/components/chat";
+import { type MessagePart as StreamingPart } from "../../src/lib/streaming";
+import { useEventStream, type StreamEvent } from "../../src/hooks/useEventStream";
+import { useConnectionStore } from "../../src/stores/useConnectionStore";
 
 export default function ChatScreen() {
 	const insets = useSafeAreaInsets();
+	const { directory, isConnected } = useConnectionStore();
+
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
-	const [serverUrl, setServerUrl] = useState<string | null>(null);
-	const [authToken, setAuthToken] = useState<string | null>(null);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const [sessions, setSessions] = useState<Session[]>([]);
 	const [showSessionPicker, setShowSessionPicker] = useState(false);
 	const [isLoadingSessions, setIsLoadingSessions] = useState(false);
-	const [connectionStatus, setConnectionStatus] = useState<
-		"connecting" | "connected" | "disconnected"
-	>("connecting");
+
+	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
+	const currentAssistantMessageIdRef = useRef<string | null>(null);
+
+	const handleStreamEvent = useCallback((event: StreamEvent) => {
+		const props = event.properties;
+		if (!props) return;
+
+		const eventSessionId = props.sessionID || props.info?.sessionID;
+		if (eventSessionId && sessionId && eventSessionId !== sessionId) {
+			return;
+		}
+
+		if (event.type === "message.part.updated" && props.part) {
+			const streamPart = props.part as StreamingPart;
+			const partId = streamPart.id || `part-${Date.now()}-${Math.random()}`;
+			const converted = convertStreamingPart(streamPart);
+			converted.id = partId;
+
+			partsMapRef.current.set(partId, converted);
+
+			const partsArray = Array.from(partsMapRef.current.values());
+			let textContent = "";
+			for (const p of partsArray) {
+				if (p.type === "text") {
+					textContent += p.content || p.text || "";
+				}
+			}
+
+			const assistantId = currentAssistantMessageIdRef.current;
+			if (assistantId) {
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.id === assistantId
+							? { ...msg, parts: partsArray, content: textContent }
+							: msg,
+					),
+				);
+			}
+		}
+
+		if (event.type === "message.updated") {
+			const info = props.info;
+			const serverParts = props.parts;
+
+			if (serverParts && Array.isArray(serverParts)) {
+				for (const sp of serverParts) {
+					const streamPart = sp as StreamingPart;
+					const partId = streamPart.id || `part-${Date.now()}-${Math.random()}`;
+					const converted = convertStreamingPart(streamPart);
+					converted.id = partId;
+					partsMapRef.current.set(partId, converted);
+				}
+			}
+
+			const partsArray = Array.from(partsMapRef.current.values());
+			let textContent = "";
+			for (const p of partsArray) {
+				if (p.type === "text") {
+					textContent += p.content || p.text || "";
+				}
+			}
+
+			const isComplete =
+				info?.finish === "stop" ||
+				(info?.time?.completed && typeof info.time.completed === "number");
+
+			const assistantId = currentAssistantMessageIdRef.current;
+			if (assistantId) {
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.id === assistantId
+							? {
+									...msg,
+									parts: partsArray,
+									content: textContent,
+									isStreaming: !isComplete,
+								}
+							: msg,
+					),
+				);
+
+				if (isComplete) {
+					setIsLoading(false);
+					currentAssistantMessageIdRef.current = null;
+					partsMapRef.current.clear();
+				}
+			}
+		}
+	}, [sessionId]);
+
+	useEventStream(sessionId, handleStreamEvent);
 
 	const fetchSessions = useCallback(async () => {
-		if (!serverUrl || !authToken) return;
+		if (!isConnected) return;
 
 		setIsLoadingSessions(true);
 		try {
-			const response = await fetch(`${serverUrl}/api/session/list`, {
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-				},
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				setSessions(Array.isArray(data) ? data : []);
-			}
+			const data = await sessionsApi.list();
+			setSessions(data);
 		} catch (error) {
 			console.error("Failed to fetch sessions:", error);
 		} finally {
 			setIsLoadingSessions(false);
 		}
-	}, [serverUrl, authToken]);
+	}, [isConnected]);
 
 	const loadSessionMessages = useCallback(
 		async (id: string) => {
-			if (!serverUrl || !authToken) return;
+			if (!isConnected) return;
 
 			try {
-				const response = await fetch(
-					`${serverUrl}/api/session/${id}/messages`,
-					{
-						headers: {
-							Authorization: `Bearer ${authToken}`,
-						},
-					},
-				);
+				const data = await sessionsApi.getMessages(id);
+				const loadedMessages: Message[] = [];
 
-				if (response.ok) {
-					const data = await response.json();
-					const loadedMessages: Message[] = [];
+				for (const msg of data) {
+					if (msg.info) {
+						const parts: MessagePart[] = [];
+						let content = "";
 
-					if (Array.isArray(data)) {
-						for (const msg of data) {
-							if (msg.info) {
-								let content = "";
-								if (Array.isArray(msg.parts)) {
-									for (const part of msg.parts) {
-										if (part.type === "text" && part.text) {
-											content += part.text;
-										}
-									}
+						if (Array.isArray(msg.parts)) {
+							for (const part of msg.parts) {
+								const converted = convertStreamingPart(part as StreamingPart);
+								parts.push(converted);
+
+								if (part.type === "text") {
+									content += part.text || part.content || "";
 								}
-								loadedMessages.push({
-									id: msg.info.id || `msg-${Date.now()}`,
-									role: msg.info.role === "user" ? "user" : "assistant",
-									content,
-									createdAt: msg.info.createdAt || Date.now(),
-								});
 							}
 						}
-					}
 
-					setMessages(loadedMessages);
+						loadedMessages.push({
+							id: msg.info.id || `msg-${Date.now()}`,
+							role: msg.info.role === "user" ? "user" : "assistant",
+							content,
+							parts: parts.length > 0 ? parts : undefined,
+							createdAt: msg.info.createdAt || Date.now(),
+						});
+					}
 				}
+
+				setMessages(loadedMessages);
 			} catch (error) {
 				console.error("Failed to load session messages:", error);
 			}
 		},
-		[serverUrl, authToken],
+		[isConnected],
 	);
 
 	const selectSession = useCallback(
@@ -126,59 +191,38 @@ export default function ChatScreen() {
 	}, []);
 
 	useEffect(() => {
-		const loadCredentials = async () => {
-			try {
-				const url = await SecureStore.getItemAsync(STORAGE_KEYS.SERVER_URL);
-				const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
-
-				if (url && token) {
-					setServerUrl(url);
-					setAuthToken(token);
-					setConnectionStatus("connected");
-				} else {
-					setConnectionStatus("disconnected");
-				}
-			} catch {
-				setConnectionStatus("disconnected");
-			}
-		};
-
-		loadCredentials();
-	}, []);
-
-	useEffect(() => {
-		if (connectionStatus === "connected") {
+		if (isConnected) {
 			fetchSessions();
 		}
-	}, [connectionStatus, fetchSessions]);
+	}, [isConnected, fetchSessions]);
 
 	const createSession = useCallback(async (): Promise<string> => {
-		if (!serverUrl || !authToken) {
-			throw new Error("Not connected to server");
-		}
-
-		const response = await fetch(`${serverUrl}/api/session/create`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${authToken}`,
-			},
-			body: JSON.stringify({}),
-		});
-
-		if (!response.ok) {
-			const errorText = await response.text().catch(() => "Unknown error");
-			throw new Error(`Failed to create session: ${response.status} - ${errorText}`);
-		}
-
-		const data = await response.json();
+		const data = await sessionsApi.create();
 		fetchSessions();
 		return data.id;
-	}, [serverUrl, authToken, fetchSessions]);
+	}, [fetchSessions]);
+
+	const handleFileSearch = useCallback(
+		async (query: string) => {
+			if (!directory || !query.trim()) return [];
+
+			try {
+				const results = await filesApi.search(directory, query, 15);
+				return results.map((r) => ({
+					name: r.path.split("/").pop() || r.path,
+					path: r.path,
+					extension: r.path.split(".").pop(),
+				}));
+			} catch {
+				return [];
+			}
+		},
+		[directory],
+	);
 
 	const handleSend = useCallback(
 		async (content: string) => {
-			if (!serverUrl || !authToken || isLoading) return;
+			if (!isConnected || isLoading) return;
 
 			setIsLoading(true);
 
@@ -199,65 +243,23 @@ export default function ChatScreen() {
 				}
 
 				const assistantMessageId = `assistant-${Date.now()}`;
+				currentAssistantMessageIdRef.current = assistantMessageId;
+				partsMapRef.current.clear();
+
 				const assistantMessage: Message = {
 					id: assistantMessageId,
 					role: "assistant",
 					content: "",
+					parts: [],
 					isStreaming: true,
 					createdAt: Date.now(),
 				};
 
 				setMessages((prev) => [...prev, assistantMessage]);
 
-				let fullContent = "";
-
-				for await (const event of streamChat(
-					serverUrl,
-					currentSessionId,
-					content,
-					authToken,
-				)) {
-					if (
-						event.type === "message.delta" &&
-						typeof event.data === "object" &&
-						event.data !== null
-					) {
-						const delta = event.data as { content?: string };
-						if (delta.content) {
-							fullContent += delta.content;
-							setMessages((prev) =>
-								prev.map((msg) =>
-									msg.id === assistantMessageId
-										? { ...msg, content: fullContent }
-										: msg,
-								),
-							);
-						}
-					}
-
-					if (event.type === "message.complete") {
-						setMessages((prev) =>
-							prev.map((msg) =>
-								msg.id === assistantMessageId
-									? { ...msg, isStreaming: false }
-									: msg,
-							),
-						);
-					}
-				}
-
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === assistantMessageId
-							? {
-									...msg,
-									isStreaming: false,
-									content: fullContent || "I received your message.",
-								}
-							: msg,
-					),
-				);
+				await sessionsApi.sendMessage(currentSessionId, content);
 			} catch (error) {
+				console.error("Failed to send message:", error);
 				const errorMessage: Message = {
 					id: `error-${Date.now()}`,
 					role: "assistant",
@@ -265,33 +267,22 @@ export default function ChatScreen() {
 					createdAt: Date.now(),
 				};
 				setMessages((prev) => [...prev, errorMessage]);
-			} finally {
 				setIsLoading(false);
+				currentAssistantMessageIdRef.current = null;
+				partsMapRef.current.clear();
 			}
 		},
-		[serverUrl, authToken, sessionId, isLoading, createSession],
+		[isConnected, sessionId, isLoading, createSession],
 	);
 
 	const getStatusColor = () => {
-		switch (connectionStatus) {
-			case "connected":
-				return "text-success";
-			case "connecting":
-				return "text-warning";
-			case "disconnected":
-				return "text-destructive";
-		}
+		if (isConnected) return "text-success";
+		return "text-destructive";
 	};
 
 	const getStatusText = () => {
-		switch (connectionStatus) {
-			case "connected":
-				return "Connected";
-			case "connecting":
-				return "Connecting...";
-			case "disconnected":
-				return "Not connected";
-		}
+		if (isConnected) return "Connected";
+		return "Not connected";
 	};
 
 	const currentSession = sessions.find((s) => s.id === sessionId);
@@ -317,9 +308,7 @@ export default function ChatScreen() {
 						<Text className="font-mono text-lg font-semibold text-foreground">
 							{currentSession?.title || (sessionId ? "Session" : "New Chat")}
 						</Text>
-						<Text
-							className={`font-mono text-xs ${getStatusColor()}`}
-						>
+						<Text className={`font-mono text-xs ${getStatusColor()}`}>
 							{getStatusText()} • Tap to switch
 						</Text>
 					</Pressable>
@@ -347,10 +336,9 @@ export default function ChatScreen() {
 					onSend={handleSend}
 					isLoading={isLoading}
 					placeholder={
-						connectionStatus === "connected"
-							? "Ask anything..."
-							: "Connect to server first"
+						isConnected ? "Ask anything..." : "Connect to server first"
 					}
+					onFileSearch={handleFileSearch}
 				/>
 			</View>
 
