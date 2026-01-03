@@ -74,7 +74,7 @@
     },
     "packages/desktop": {
       "name": "@openchamber/desktop",
-      "version": "1.4.0",
+      "version": "1.4.2",
       "dependencies": {
         "@openchamber/ui": "workspace:*",
         "@tauri-apps/plugin-notification": "^2.3.3",
@@ -97,7 +97,7 @@
     },
     "packages/ui": {
       "name": "@openchamber/ui",
-      "version": "1.4.0",
+      "version": "1.4.2",
       "dependencies": {
         "@fontsource/ibm-plex-mono": "^5.2.7",
         "@fontsource/ibm-plex-sans": "^5.1.1",
@@ -164,10 +164,11 @@
     },
     "packages/vscode": {
       "name": "openchamber",
-      "version": "1.4.0",
+      "version": "1.4.2",
       "dependencies": {
         "@openchamber/ui": "workspace:*",
         "@opencode-ai/sdk": "^1.0.209",
+        "jsonc-parser": "^3.3.1",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
         "yaml": "^2.8.1",
@@ -184,7 +185,7 @@
     },
     "packages/web": {
       "name": "@openchamber/web",
-      "version": "1.4.0",
+      "version": "1.4.2",
       "bin": {
         "openchamber": "./bin/cli.js",
       },

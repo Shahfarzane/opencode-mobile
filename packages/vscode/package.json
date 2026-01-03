@@ -175,6 +175,7 @@
   "dependencies": {
     "@openchamber/ui": "workspace:*",
     "@opencode-ai/sdk": "^1.0.209",
+    "jsonc-parser": "^3.3.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "yaml": "^2.8.1"
