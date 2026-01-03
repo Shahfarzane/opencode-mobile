@@ -4,11 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-01-02
+
 - Added timeline dialog (`/timeline` command or Cmd/Ctrl+T) for navigating, reverting, and forking from any point in the conversation (thanks to @aptdnfapt).
 - Added `/undo` and `/redo` commands for reverting and restoring messages in a session (thanks to @aptdnfapt).
 - Added fork button on user messages to create a new session from any point (thanks to @aptdnfapt).
 - Desktop app: keyboard shortcuts now use Cmd on macOS and Ctrl on web/other platforms (thanks to @sakhnyuk).
 - Migrated to OpenCode SDK v2 with improved API types and streaming.
+
 
 ## [1.4.1] - 2026-01-02
 

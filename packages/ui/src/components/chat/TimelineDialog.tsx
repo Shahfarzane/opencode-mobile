@@ -6,11 +6,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useMessageStore } from '@/stores/messageStore';
-import { cn } from '@/lib/utils';
 import { RiLoader4Line, RiSearchLine, RiTimeLine, RiGitBranchLine, RiArrowGoBackLine } from '@remixicon/react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Part } from '@opencode-ai/sdk/v2';
@@ -110,7 +108,7 @@ export const TimelineDialog: React.FC<TimelineDialogProps> = ({ open, onOpenChan
                             {searchQuery ? 'No messages found' : 'No messages in this session yet'}
                         </div>
                     ) : (
-                        filteredMessages.map((message, index) => {
+                        filteredMessages.map((message) => {
                             const preview = getMessagePreview(message.parts);
                             const timestamp = message.info.time.created;
                             const relativeTime = formatRelativeTime(timestamp);
