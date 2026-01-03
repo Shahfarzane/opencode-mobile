@@ -99,24 +99,10 @@ export const useKeyboardShortcuts = () => {
         setThemeMode(modes[nextIndex]);
       }
 
-      if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 'g') {
+      if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 't') {
         e.preventDefault();
-        const { activeMainTab } = useUIStore.getState();
-        setActiveMainTab(activeMainTab === 'git' ? 'chat' : 'git');
-        return;
-      }
-
-      if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 'e') {
-        e.preventDefault();
-        const { activeMainTab } = useUIStore.getState();
-        setActiveMainTab(activeMainTab === 'diff' ? 'chat' : 'diff');
-        return;
-      }
-
-       if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 't') {
-        e.preventDefault();
-        const { activeMainTab } = useUIStore.getState();
-        setActiveMainTab(activeMainTab === 'terminal' ? 'chat' : 'terminal');
+        const { isTimelineDialogOpen, setTimelineDialogOpen } = useUIStore.getState();
+        setTimelineDialogOpen(!isTimelineDialogOpen);
         return;
       }
 

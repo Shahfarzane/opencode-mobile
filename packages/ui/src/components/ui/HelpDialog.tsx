@@ -21,6 +21,7 @@ import {
   RiSettings3Line,
   RiTerminalBoxLine,
   RiText,
+  RiTimeLine,
 } from "@remixicon/react";
 import { getModifierLabel } from "@/lib/utils";
 
@@ -140,19 +141,24 @@ export const HelpDialog: React.FC = () => {
           icon: RiPaletteLine,
         },
         {
-          keys: [`${mod} + E`],
+          keys: [`${mod} + 2`],
           description: "Open Diff Panel",
           icon: RiCodeLine,
         },
         {
-          keys: [`${mod} + G`],
+          keys: [`${mod} + 3`],
+          description: "Open Terminal",
+          icon: RiTerminalBoxLine,
+        },
+        {
+          keys: [`${mod} + 4`],
           description: "Open Git Panel",
           icon: RiGitBranchLine,
         },
         {
           keys: [`${mod} + T`],
-          description: "Open Terminal",
-          icon: RiTerminalBoxLine,
+          description: "Open Timeline",
+          icon: RiTimeLine,
         },
         {
           keys: [`${mod} + ,`],

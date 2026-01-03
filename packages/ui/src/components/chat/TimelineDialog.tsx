@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { cn } from '@/lib/utils';
-import { RiLoader4Line, RiSearchLine, RiTimeLine, RiGitBranchLine } from '@remixicon/react';
+import { RiLoader4Line, RiSearchLine, RiTimeLine, RiGitBranchLine, RiArrowGoBackLine } from '@remixicon/react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Part } from '@opencode-ai/sdk/v2';
 
 interface TimelineDialogProps {
@@ -93,85 +94,89 @@ export const TimelineDialog: React.FC<TimelineDialogProps> = ({ open, onOpenChan
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex items-center gap-2 mt-2">
-                    <RiSearchLine className="h-4 w-4 text-muted-foreground" />
+                <div className="relative mt-2">
+                    <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search messages..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex-1"
+                        className="pl-9 w-full"
                     />
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-2">
+                <div className="flex-1 overflow-y-auto">
                     {filteredMessages.length === 0 ? (
                         <div className="text-center text-muted-foreground py-8">
                             {searchQuery ? 'No messages found' : 'No messages in this session yet'}
                         </div>
                     ) : (
-                        filteredMessages.map((message) => {
+                        filteredMessages.map((message, index) => {
                             const preview = getMessagePreview(message.parts);
                             const timestamp = message.info.time.created;
                             const relativeTime = formatRelativeTime(timestamp);
+                            const messageNumber = userMessages.length - userMessages.indexOf(message);
 
                             return (
                                 <div
                                     key={message.info.id}
-                                    className={cn(
-                                        "group flex items-start gap-3 p-3 rounded-lg border transition-all",
-                                        "hover:border-primary/50 hover:bg-muted/30"
-                                    )}
+                                    className="group flex items-center gap-2 py-1.5 hover:bg-muted/30 rounded transition-colors cursor-pointer"
+                                    onClick={() => {
+                                        onScrollToMessage?.(message.info.id);
+                                        onOpenChange(false);
+                                    }}
                                 >
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="typography-meta text-muted-foreground">
-                                                Message {userMessages.length - userMessages.indexOf(message)}
-                                            </span>
-                                            <span className="typography-meta text-muted-foreground">
-                                                •
-                                            </span>
-                                            <span className="typography-meta text-muted-foreground">
-                                                {relativeTime}
-                                            </span>
+                                    <span className="typography-meta text-muted-foreground w-5 text-right flex-shrink-0">
+                                        {messageNumber}.
+                                    </span>
+                                    <p className="flex-1 min-w-0 typography-small text-foreground truncate ml-0.5">
+                                        {preview || '[No text content]'}
+                                        {preview && preview.length >= 80 && '…'}
+                                    </p>
+
+                                    <div className="flex-shrink-0 h-5 flex items-center mr-2">
+                                        <span className="typography-meta text-muted-foreground whitespace-nowrap group-hover:hidden">
+                                            {relativeTime}
+                                        </span>
+
+                                        <div className="hidden group-hover:flex gap-1">
+                                            <Tooltip delayDuration={1000}>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            await revertToMessage(currentSessionId, message.info.id);
+                                                            onOpenChange(false);
+                                                        }}
+                                                    >
+                                                        <RiArrowGoBackLine className="h-4 w-4" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent sideOffset={6}>Revert from here</TooltipContent>
+                                            </Tooltip>
+
+                                            <Tooltip delayDuration={1000}>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleFork(message.info.id);
+                                                        }}
+                                                        disabled={forkingMessageId === message.info.id}
+                                                    >
+                                                        {forkingMessageId === message.info.id ? (
+                                                            <RiLoader4Line className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <RiGitBranchLine className="h-4 w-4" />
+                                                        )}
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent sideOffset={6}>Fork from here</TooltipContent>
+                                            </Tooltip>
                                         </div>
-                                        <p className="typography-small text-foreground mt-1 line-clamp-2">
-                                            {preview || '[No text content]'}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => {
-                                                onScrollToMessage?.(message.info.id);
-                                                onOpenChange(false);
-                                            }}
-                                        >
-                                            Go here
-                                        </Button>
-
-                                        <Button
-                                            size="sm"
-                                            variant="default"
-                                            onClick={async () => {
-                                                await revertToMessage(currentSessionId, message.info.id);
-                                                onOpenChange(false);
-                                            }}
-                                        >
-                                            Revert
-                                        </Button>
-
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => handleFork(message.info.id)}
-                                            disabled={forkingMessageId === message.info.id}
-                                        >
-                                            {forkingMessageId === message.info.id ? (
-                                                <RiLoader4Line className="h-4 w-4 animate-spin" />
-                                            ) : 'Fork'}
-                                        </Button>
                                     </div>
                                 </div>
                             );
@@ -180,13 +185,18 @@ export const TimelineDialog: React.FC<TimelineDialogProps> = ({ open, onOpenChan
                 </div>
 
                 <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-start gap-2 typography-meta text-muted-foreground">
-                        <RiGitBranchLine className="h-4 w-4 mt-0.5" />
-                        <div>
-                            <p className="font-medium mb-1">Actions</p>
-                            <p>• <strong>Go here</strong> - Scroll to this message in the conversation</p>
-                            <p>• <strong>Revert</strong> - Undo to this point (message text will populate input)</p>
-                            <p>• <strong>Fork</strong> - Create a new session starting from here</p>
+                    <p className="typography-meta text-muted-foreground font-medium mb-2">Actions</p>
+                    <div className="flex flex-col gap-1.5 typography-meta text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                            <span>Click on a message to scroll to it in the conversation</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <RiArrowGoBackLine className="h-4 w-4 flex-shrink-0" />
+                            <span>Undo to this point (message text will populate input)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <RiGitBranchLine className="h-4 w-4 flex-shrink-0" />
+                            <span>Create a new session starting from here</span>
                         </div>
                     </div>
                 </div>

@@ -14,7 +14,7 @@ import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { useDeviceInfo } from '@/lib/device';
-import { RiAddLine, RiChatAi3Line, RiCheckLine, RiCodeLine, RiComputerLine, RiGitBranchLine, RiLayoutLeftLine, RiMoonLine, RiQuestionLine, RiRestartLine, RiSettings3Line, RiSunLine, RiTerminalBoxLine } from '@remixicon/react';
+import { RiAddLine, RiChatAi3Line, RiCheckLine, RiCodeLine, RiComputerLine, RiGitBranchLine, RiLayoutLeftLine, RiMoonLine, RiQuestionLine, RiRestartLine, RiSettings3Line, RiSunLine, RiTerminalBoxLine, RiTimeLine } from '@remixicon/react';
 import { reloadOpenCodeConfiguration } from '@/stores/useAgentsStore';
 import { getModifierLabel } from '@/lib/utils';
 
@@ -27,6 +27,7 @@ export const CommandPalette: React.FC = () => {
     setActiveMainTab,
     setSettingsDialogOpen,
     setSessionSwitcherOpen,
+    setTimelineDialogOpen,
     toggleSidebar,
   } = useUIStore();
 
@@ -107,6 +108,11 @@ export const CommandPalette: React.FC = () => {
     handleClose();
   };
 
+  const handleOpenTimeline = () => {
+    setTimelineDialogOpen(true);
+    handleClose();
+  };
+
   const directorySessions = getSessionsByDirectory(currentDirectory ?? '');
   const currentSessions = React.useMemo(() => {
     return directorySessions.slice(0, 5);
@@ -142,16 +148,21 @@ export const CommandPalette: React.FC = () => {
           <CommandItem onSelect={handleOpenDiffPanel}>
             <RiCodeLine className="mr-2 h-4 w-4" />
             <span>Open Diff Panel</span>
-            <CommandShortcut>{getModifierLabel()} + E</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={handleOpenGitPanel}>
-            <RiGitBranchLine className="mr-2 h-4 w-4" />
-            <span>Open Git Panel</span>
-            <CommandShortcut>{getModifierLabel()} + G</CommandShortcut>
+            <CommandShortcut>{getModifierLabel()} + 2</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleOpenTerminal}>
             <RiTerminalBoxLine className="mr-2 h-4 w-4" />
             <span>Open Terminal</span>
+            <CommandShortcut>{getModifierLabel()} + 3</CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={handleOpenGitPanel}>
+            <RiGitBranchLine className="mr-2 h-4 w-4" />
+            <span>Open Git Panel</span>
+            <CommandShortcut>{getModifierLabel()} + 4</CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={handleOpenTimeline}>
+            <RiTimeLine className="mr-2 h-4 w-4" />
+            <span>Open Timeline</span>
             <CommandShortcut>{getModifierLabel()} + T</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleOpenSettings}>
