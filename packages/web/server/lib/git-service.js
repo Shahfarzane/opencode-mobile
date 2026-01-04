@@ -467,6 +467,51 @@ export async function getFileDiff(directory, { path: filePath, staged = false } 
   };
 }
 
+export async function stageFile(directory, filePath) {
+  const directoryPath = normalizeDirectoryPath(directory);
+  const git = simpleGit(directoryPath);
+  const repoRoot = path.resolve(directoryPath);
+  const absoluteTarget = path.resolve(repoRoot, filePath);
+
+  if (!absoluteTarget.startsWith(repoRoot + path.sep) && absoluteTarget !== repoRoot) {
+    throw new Error('Invalid file path');
+  }
+
+  try {
+    await git.add([filePath]);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to stage file:', error);
+    throw error;
+  }
+}
+
+export async function unstageFile(directory, filePath) {
+  const directoryPath = normalizeDirectoryPath(directory);
+  const git = simpleGit(directoryPath);
+  const repoRoot = path.resolve(directoryPath);
+  const absoluteTarget = path.resolve(repoRoot, filePath);
+
+  if (!absoluteTarget.startsWith(repoRoot + path.sep) && absoluteTarget !== repoRoot) {
+    throw new Error('Invalid file path');
+  }
+
+  try {
+    // Try modern 'restore --staged' first
+    await git.raw(['restore', '--staged', filePath]);
+    return { success: true };
+  } catch (error) {
+    // Fall back to 'reset HEAD' for older git versions
+    try {
+      await git.raw(['reset', 'HEAD', '--', filePath]);
+      return { success: true };
+    } catch (fallbackError) {
+      console.error('Failed to unstage file:', fallbackError);
+      throw fallbackError;
+    }
+  }
+}
+
 export async function revertFile(directory, filePath) {
   const directoryPath = normalizeDirectoryPath(directory);
   const git = simpleGit(directoryPath);

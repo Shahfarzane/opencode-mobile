@@ -61,6 +61,7 @@ export default function TabsLayout() {
 	const ChatScreen = require("./chat").default;
 	const SettingsScreen = require("./settings").default;
 	const GitScreen = require("./git").default;
+	const TerminalScreen = require("./terminal").default;
 
 	const renderContent = () => {
 		if (showSettings) {
@@ -75,7 +76,7 @@ export default function TabsLayout() {
 			case 'diff':
 				return <PlaceholderScreen title="Diff View" />;
 			case 'terminal':
-				return <PlaceholderScreen title="Terminal" />;
+				return <TerminalScreen />;
 			default:
 				return <ChatScreen />;
 		}

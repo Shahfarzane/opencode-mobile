@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "../lib/httpClient";
+import { apiDelete, apiGet, apiPost } from "../lib/httpClient";
 
 export interface Session {
 	id: string;
@@ -78,7 +78,7 @@ export const sessionsApi = {
 	},
 
 	async delete(sessionId: string): Promise<{ success: boolean }> {
-		return apiPost<{ success: boolean }>(
+		return apiDelete<{ success: boolean }>(
 			`/api/session/${sessionId}`,
 			{},
 			true,
