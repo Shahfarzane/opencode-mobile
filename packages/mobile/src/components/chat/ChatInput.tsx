@@ -46,9 +46,23 @@ interface ChatInputProps {
 	) => Promise<Array<{ name: string; path: string; extension?: string }>>;
 }
 
-function SendIcon({ color }: { color: string }) {
+function AddIcon({ color, size = 20 }: { color: string; size?: number }) {
 	return (
-		<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M12 5v14M5 12h14"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+function SendIcon({ color, size = 18 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
 			<Path
 				d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"
 				stroke={color}
@@ -62,16 +76,34 @@ function SendIcon({ color }: { color: string }) {
 
 function AgentIcon() {
 	return (
-		<View className="h-5 w-5 items-center justify-center rounded bg-info/20">
-			<Text className="font-mono text-xs text-info">#</Text>
+		<View
+			style={{
+				height: 20,
+				width: 20,
+				alignItems: 'center',
+				justifyContent: 'center',
+				borderRadius: 4,
+				backgroundColor: 'rgba(67, 133, 190, 0.2)',
+			}}
+		>
+			<Text style={{ fontFamily: 'IBMPlexMono-Medium', fontSize: 12, color: '#4385BE' }}>#</Text>
 		</View>
 	);
 }
 
 function CommandIcon() {
 	return (
-		<View className="h-5 w-5 items-center justify-center rounded bg-warning/20">
-			<Text className="font-mono text-xs text-warning">/</Text>
+		<View
+			style={{
+				height: 20,
+				width: 20,
+				alignItems: 'center',
+				justifyContent: 'center',
+				borderRadius: 4,
+				backgroundColor: 'rgba(208, 162, 21, 0.2)',
+			}}
+		>
+			<Text style={{ fontFamily: 'IBMPlexMono-Medium', fontSize: 12, color: '#D0A215' }}>/</Text>
 		</View>
 	);
 }
@@ -83,26 +115,35 @@ function FileIcon({ extension }: { extension?: string }) {
 			case "tsx":
 			case "js":
 			case "jsx":
-				return "text-blue-500";
+				return "#4385BE";
 			case "json":
-				return "text-yellow-500";
+				return "#D0A215";
 			case "md":
 			case "mdx":
-				return "text-gray-500";
+				return "#878580";
 			case "png":
 			case "jpg":
 			case "jpeg":
 			case "gif":
 			case "svg":
-				return "text-green-500";
+				return "#879A39";
 			default:
-				return "text-muted-foreground";
+				return "#878580";
 		}
 	};
 
 	return (
-		<View className="h-5 w-5 items-center justify-center rounded bg-muted">
-			<Text className={`font-mono text-xs ${getColor()}`}>@</Text>
+		<View
+			style={{
+				height: 20,
+				width: 20,
+				alignItems: 'center',
+				justifyContent: 'center',
+				borderRadius: 4,
+				backgroundColor: 'rgba(135, 133, 128, 0.2)',
+			}}
+		>
+			<Text style={{ fontFamily: 'IBMPlexMono-Medium', fontSize: 12, color: getColor() }}>@</Text>
 		</View>
 	);
 }
@@ -118,6 +159,16 @@ function AutocompleteOverlay({
 	onClose: () => void;
 }) {
 	const fadeAnim = useRef(new Animated.Value(0)).current;
+	const colorScheme = useColorScheme();
+	const isDark = colorScheme === 'dark';
+
+	const colors = {
+		background: isDark ? "#100F0F" : "#FFFCF0",
+		foreground: isDark ? "#CECDC3" : "#100F0F",
+		border: isDark ? "#343331" : "#DAD8CE",
+		muted: isDark ? "#1C1B1A" : "#F2F0E5",
+		mutedForeground: isDark ? "#878580" : "#6F6E69",
+	};
 
 	useEffect(() => {
 		Animated.timing(fadeAnim, {
@@ -134,20 +185,26 @@ function AutocompleteOverlay({
 					Haptics.selectionAsync();
 					onSelect(item);
 				}}
-				className="flex-row items-center gap-3 px-4 py-3 active:bg-muted"
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					gap: 12,
+					paddingHorizontal: 16,
+					paddingVertical: 12,
+				}}
 			>
 				{item.type === "agent" && <AgentIcon />}
 				{item.type === "command" && <CommandIcon />}
 				{item.type === "file" && <FileIcon extension={item.extension} />}
-				<View className="flex-1">
-					<Text className="font-mono text-sm text-foreground">
+				<View style={{ flex: 1 }}>
+					<Text style={{ fontFamily: 'IBMPlexMono-Medium', fontSize: 14, color: colors.foreground }}>
 						{item.type === "agent" && `#${item.name}`}
 						{item.type === "command" && `/${item.name}`}
 						{item.type === "file" && `@${item.name}`}
 					</Text>
 					{"description" in item && item.description && (
 						<Text
-							className="font-mono text-xs text-muted-foreground"
+							style={{ fontFamily: 'IBMPlexMono-Regular', fontSize: 12, color: colors.mutedForeground }}
 							numberOfLines={1}
 						>
 							{item.description}
@@ -155,7 +212,7 @@ function AutocompleteOverlay({
 					)}
 					{item.type === "file" && (
 						<Text
-							className="font-mono text-xs text-muted-foreground"
+							style={{ fontFamily: 'IBMPlexMono-Regular', fontSize: 12, color: colors.mutedForeground }}
 							numberOfLines={1}
 						>
 							{item.path}
@@ -164,7 +221,7 @@ function AutocompleteOverlay({
 				</View>
 			</Pressable>
 		),
-		[onSelect],
+		[onSelect, colors.foreground, colors.mutedForeground],
 	);
 
 	const getTitle = () => {
@@ -186,11 +243,22 @@ function AutocompleteOverlay({
 
 	return (
 		<Animated.View
-			style={{ opacity: fadeAnim }}
-			className="absolute bottom-full left-0 right-0 mb-2 max-h-64 rounded-2xl border border-border bg-background"
+			style={{
+				opacity: fadeAnim,
+				position: 'absolute',
+				bottom: '100%',
+				left: 0,
+				right: 0,
+				marginBottom: 8,
+				maxHeight: 256,
+				borderRadius: 12,
+				borderWidth: 1,
+				borderColor: colors.border,
+				backgroundColor: colors.background,
+			}}
 		>
-			<View className="border-b border-border px-4 py-2">
-				<Text className="font-mono text-xs font-medium text-muted-foreground">
+			<View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 16, paddingVertical: 8 }}>
+				<Text style={{ fontFamily: 'IBMPlexMono-Medium', fontSize: 12, color: colors.mutedForeground }}>
 					{getTitle()}
 				</Text>
 			</View>
@@ -209,7 +277,7 @@ function AutocompleteOverlay({
 export function ChatInput({
 	onSend,
 	isLoading = false,
-	placeholder = "Ask anything...",
+	placeholder = "# for agents; @ for files; / for commands",
 	agents = [],
 	commands = [],
 	onFileSearch,
@@ -226,6 +294,17 @@ export function ChatInput({
 		AutocompleteItem[]
 	>([]);
 	const [, setCursorPosition] = useState(0);
+
+	const colors = {
+		background: isDark ? "#100F0F" : "#FFFCF0",
+		foreground: isDark ? "#CECDC3" : "#100F0F",
+		muted: isDark ? "#1C1B1A" : "#F2F0E5",
+		mutedForeground: isDark ? "#878580" : "#6F6E69",
+		border: isDark ? "#343331" : "#DAD8CE",
+		primary: "#EC8B49",
+		info: "#4385BE",
+		warning: "#D0A215",
+	};
 
 	const parseTrigger = useCallback(
 		(
@@ -406,7 +485,7 @@ export function ChatInput({
 	const canSend = text.trim().length > 0 && !isLoading;
 
 	return (
-		<View className="relative">
+		<View style={{ position: 'relative' }}>
 			{autocompleteType && (
 				<AutocompleteOverlay
 					type={autocompleteType}
@@ -416,7 +495,15 @@ export function ChatInput({
 				/>
 			)}
 
-			<View className="flex-row items-end gap-2">
+			<View
+				style={{
+					borderRadius: 12,
+					borderWidth: 1,
+					borderColor: colors.border,
+					backgroundColor: isDark ? 'rgba(28, 27, 26, 0.3)' : 'rgba(242, 240, 229, 0.3)',
+					overflow: 'hidden',
+				}}
+			>
 				<TextInput
 					ref={inputRef}
 					value={text}
@@ -425,32 +512,64 @@ export function ChatInput({
 						setCursorPosition(e.nativeEvent.selection.start)
 					}
 					placeholder={placeholder}
-					placeholderTextColor={isDark ? "#878580" : "#6F6E69"}
+					placeholderTextColor={colors.mutedForeground}
 					multiline
 					maxLength={10000}
 					editable={!isLoading}
-					className="min-h-[44px] max-h-32 flex-1 rounded-2xl border border-border bg-input px-4 py-3 font-mono text-base text-foreground"
-					style={{ textAlignVertical: "center" }}
+					style={{
+						minHeight: 48,
+						maxHeight: 128,
+						paddingHorizontal: 16,
+						paddingTop: 14,
+						paddingBottom: 14,
+						fontFamily: 'IBMPlexMono-Regular',
+						fontSize: 14,
+						color: colors.foreground,
+						textAlignVertical: 'center',
+					}}
 				/>
-				<Pressable
-					onPress={handleSend}
-					disabled={!canSend}
-					className="h-11 w-11 items-center justify-center rounded-full bg-primary active:opacity-80 disabled:opacity-50"
+				
+				<View
+					style={{
+						flexDirection: 'row',
+						alignItems: 'center',
+						justifyContent: 'space-between',
+						paddingHorizontal: 12,
+						paddingVertical: 8,
+						borderTopWidth: 1,
+						borderTopColor: isDark ? 'rgba(52, 51, 49, 0.5)' : 'rgba(218, 216, 206, 0.5)',
+					}}
 				>
-					<SendIcon color="#FFFCF0" />
-				</Pressable>
-			</View>
+					<Pressable
+						style={{
+							padding: 6,
+						}}
+						hitSlop={8}
+					>
+						<AddIcon color={colors.mutedForeground} size={18} />
+					</Pressable>
 
-			<View className="mt-2 flex-row flex-wrap gap-2">
-				<Text className="font-mono text-xs text-muted-foreground">
-					<Text className="text-info">#</Text> agent
-				</Text>
-				<Text className="font-mono text-xs text-muted-foreground">
-					<Text className="text-warning">/</Text> command
-				</Text>
-				<Text className="font-mono text-xs text-muted-foreground">
-					<Text className="text-foreground">@</Text> file
-				</Text>
+					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+						<Text style={{ fontFamily: 'IBMPlexMono-Medium', fontSize: 12, color: colors.foreground }}>
+							Model
+						</Text>
+						<Text style={{ fontFamily: 'IBMPlexMono-Medium', fontSize: 12, color: colors.info }}>
+							Provider
+						</Text>
+					</View>
+
+					<Pressable
+						onPress={handleSend}
+						disabled={!canSend}
+						style={{
+							padding: 6,
+							opacity: canSend ? 1 : 0.3,
+						}}
+						hitSlop={8}
+					>
+						<SendIcon color={canSend ? colors.primary : colors.mutedForeground} size={18} />
+					</Pressable>
+				</View>
 			</View>
 		</View>
 	);

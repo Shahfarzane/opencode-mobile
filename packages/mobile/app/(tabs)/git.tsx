@@ -10,9 +10,24 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { gitApi, type GitStatus, type GitStatusFile } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
+
+function FolderIcon({ size = 16 }: { size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+				stroke="#EC8B49"
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
 
 type FileStatusType = "staged" | "modified" | "untracked";
 
@@ -29,9 +44,13 @@ function getFileStatus(file: GitStatusFile): FileStatusType {
 function FileItem({
 	file,
 	onPress,
+	onLongPress,
+	actionLabel,
 }: {
 	file: GitStatusFile;
 	onPress?: () => void;
+	onLongPress?: () => void;
+	actionLabel?: string;
 }) {
 	const status = getFileStatus(file);
 
@@ -50,6 +69,7 @@ function FileItem({
 	return (
 		<Pressable
 			onPress={onPress}
+			onLongPress={onLongPress}
 			className="flex-row items-center gap-3 px-4 py-3 active:bg-muted"
 		>
 			<View className={`w-6 items-center ${statusColors[status]}`}>
@@ -63,6 +83,16 @@ function FileItem({
 			>
 				{file.path}
 			</Text>
+			{actionLabel && (
+				<Pressable
+					onPress={onLongPress}
+					className="rounded bg-muted px-2 py-1"
+				>
+					<Text className="font-mono text-xs text-muted-foreground">
+						{actionLabel}
+					</Text>
+				</Pressable>
+			)}
 		</Pressable>
 	);
 }
@@ -291,6 +321,70 @@ export default function GitScreen() {
 		}
 	};
 
+	const handleStageFile = async (path: string) => {
+		try {
+			await gitApi.stageFile(path);
+			await loadStatus();
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to stage file",
+			);
+		}
+	};
+
+	const handleUnstageFile = async (path: string) => {
+		try {
+			await gitApi.unstageFile(path);
+			await loadStatus();
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to unstage file",
+			);
+		}
+	};
+
+	const handleRevertFile = async (path: string) => {
+		Alert.alert(
+			"Revert Changes",
+			`Discard all changes to ${path.split("/").pop()}?`,
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Revert",
+					style: "destructive",
+					onPress: async () => {
+						try {
+							await gitApi.revertFile(path);
+							await loadStatus();
+						} catch (err) {
+							Alert.alert(
+								"Error",
+								err instanceof Error ? err.message : "Failed to revert file",
+							);
+						}
+					},
+				},
+			],
+		);
+	};
+
+	const handleStageAll = async () => {
+		try {
+			const filesToStage = [...modifiedFiles, ...untrackedFiles];
+			for (const file of filesToStage) {
+				await gitApi.stageFile(file.path);
+			}
+			await loadStatus();
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to stage files",
+			);
+		}
+	};
+
 	const stagedFiles =
 		status?.files.filter((f) => getFileStatus(f) === "staged") ?? [];
 	const modifiedFiles =
@@ -326,39 +420,80 @@ export default function GitScreen() {
 					<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
 				}
 			>
-				{stagedFiles.length > 0 && (
-					<View>
-						<SectionHeader title="Staged Changes" count={stagedFiles.length} />
-						{stagedFiles.map((file) => (
-							<FileItem key={file.path} file={file} />
-						))}
-					</View>
-				)}
+			{stagedFiles.length > 0 && (
+				<View>
+					<SectionHeader title="Staged Changes" count={stagedFiles.length} />
+					{stagedFiles.map((file) => (
+						<FileItem
+							key={file.path}
+							file={file}
+							onLongPress={() => handleUnstageFile(file.path)}
+							actionLabel="Unstage"
+						/>
+					))}
+				</View>
+			)}
 
-				{modifiedFiles.length > 0 && (
-					<View>
-						<SectionHeader title="Modified" count={modifiedFiles.length} />
-						{modifiedFiles.map((file) => (
-							<FileItem key={file.path} file={file} />
-						))}
-					</View>
-				)}
+			{(modifiedFiles.length > 0 || untrackedFiles.length > 0) && (
+				<View className="flex-row items-center justify-between bg-muted px-4 py-2">
+					<Text className="font-mono text-sm font-medium text-muted-foreground">
+						Changes ({modifiedFiles.length + untrackedFiles.length})
+					</Text>
+					<Pressable
+						onPress={handleStageAll}
+						className="rounded bg-card px-2 py-1"
+					>
+						<Text className="font-mono text-xs text-primary">Stage All</Text>
+					</Pressable>
+				</View>
+			)}
 
-				{untrackedFiles.length > 0 && (
-					<View>
-						<SectionHeader title="Untracked" count={untrackedFiles.length} />
-						{untrackedFiles.map((file) => (
-							<FileItem key={file.path} file={file} />
-						))}
-					</View>
-				)}
+			{modifiedFiles.length > 0 && (
+				<View>
+					{modifiedFiles.map((file) => (
+						<FileItem
+							key={file.path}
+							file={file}
+							onPress={() => handleStageFile(file.path)}
+							onLongPress={() => handleRevertFile(file.path)}
+							actionLabel="Stage"
+						/>
+					))}
+				</View>
+			)}
+
+			{untrackedFiles.length > 0 && (
+				<View>
+					<SectionHeader title="Untracked" count={untrackedFiles.length} />
+					{untrackedFiles.map((file) => (
+						<FileItem
+							key={file.path}
+							file={file}
+							onPress={() => handleStageFile(file.path)}
+							actionLabel="Stage"
+						/>
+					))}
+				</View>
+			)}
 			</ScrollView>
 		);
 	};
 
+	const directoryName = directory?.split("/").pop() || "Select Directory";
+
 	return (
 		<View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-			<View className="border-b border-border px-4 py-3">
+			<View className="border-b border-border px-4 py-2">
+				<Pressable
+					onPress={() => router.push("/onboarding/directory")}
+					className="mb-2 flex-row items-center gap-2 rounded-lg bg-muted px-3 py-2"
+				>
+					<FolderIcon />
+					<Text className="flex-1 font-mono text-sm text-foreground" numberOfLines={1}>
+						{directoryName}
+					</Text>
+					<Text className="font-mono text-xs text-muted-foreground">Change</Text>
+				</Pressable>
 				<Text className="font-mono text-lg font-semibold text-foreground">
 					Git
 				</Text>

@@ -156,7 +156,7 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 	}, [serverUrl, authToken, directory, isConnected]);
 
 	useEffect(() => {
-		if (isConnected && sessionId) {
+		if (isConnected) {
 			connect();
 		}
 
@@ -171,7 +171,7 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 			}
 			isConnectingRef.current = false;
 		};
-	}, [isConnected, sessionId, connect]);
+	}, [isConnected, connect]);
 
 	const disconnect = useCallback(() => {
 		if (xhrRef.current) {

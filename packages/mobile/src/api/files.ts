@@ -1,4 +1,4 @@
-import { apiPost } from "../lib/httpClient";
+import { apiGet, apiPost } from "../lib/httpClient";
 
 export interface FileListEntry {
 	name: string;
@@ -9,7 +9,7 @@ export interface FileListEntry {
 }
 
 export interface DirectoryListResult {
-	directory: string;
+	path: string;
 	entries: FileListEntry[];
 }
 
@@ -19,13 +19,35 @@ export interface FileSearchResult {
 	preview?: string[];
 }
 
+interface FileSearchResponse {
+	root: string;
+	count: number;
+	files: Array<{
+		name: string;
+		path: string;
+		relativePath: string;
+		extension?: string;
+	}>;
+}
+
 const normalizePath = (path: string): string => path.replace(/\\/g, "/");
 
 export const filesApi = {
-	async listDirectory(path: string): Promise<DirectoryListResult> {
-		return apiPost<DirectoryListResult>("/api/fs/list", {
-			path: normalizePath(path),
-		});
+	async listDirectory(dirPath: string): Promise<DirectoryListResult> {
+		const response = await apiGet<DirectoryListResult | { error?: string }>(
+			"/api/fs/list",
+			{ path: normalizePath(dirPath) },
+		);
+
+		if (response && "error" in response) {
+			throw new Error(response.error || "Failed to list directory");
+		}
+
+		if (!response || !("entries" in response)) {
+			return { path: dirPath, entries: [] };
+		}
+
+		return response as DirectoryListResult;
 	},
 
 	async search(
@@ -33,14 +55,17 @@ export const filesApi = {
 		query: string,
 		maxResults = 50,
 	): Promise<FileSearchResult[]> {
-		const results = await apiPost<FileSearchResult[]>("/api/fs/search", {
-			directory: normalizePath(directory),
-			query,
-			maxResults,
+		const response = await apiGet<FileSearchResponse>("/api/fs/search", {
+			root: normalizePath(directory),
+			q: query,
+			limit: maxResults,
 		});
 
-		return results.map((item) => ({
-			...item,
+		if (!response?.files) {
+			return [];
+		}
+
+		return response.files.map((item) => ({
 			path: normalizePath(item.path),
 		}));
 	},

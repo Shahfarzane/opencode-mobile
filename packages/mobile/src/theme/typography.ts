@@ -1,3 +1,10 @@
+import { MOBILE_TYPOGRAPHY } from '@openchamber/shared/typography';
+
+function remToPixels(rem: string): number {
+	const value = parseFloat(rem);
+	return Math.round(value * 16);
+}
+
 export const FontFamily = {
 	mono: "IBMPlexMono-Regular",
 	monoMedium: "IBMPlexMono-Medium",
@@ -6,12 +13,12 @@ export const FontFamily = {
 } as const;
 
 export const FontSize = {
-	micro: 13,
-	meta: 14,
-	uiLabel: 14,
-	uiHeader: 15,
-	markdown: 15,
-	code: 14.5,
+	micro: remToPixels(MOBILE_TYPOGRAPHY.micro),
+	meta: remToPixels(MOBILE_TYPOGRAPHY.meta),
+	uiLabel: remToPixels(MOBILE_TYPOGRAPHY.uiLabel),
+	uiHeader: remToPixels(MOBILE_TYPOGRAPHY.uiHeader),
+	markdown: remToPixels(MOBILE_TYPOGRAPHY.markdown),
+	code: remToPixels(MOBILE_TYPOGRAPHY.code),
 	h1: 24,
 	h2: 20,
 	h3: 18,

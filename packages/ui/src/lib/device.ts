@@ -1,6 +1,9 @@
 import React from 'react';
+import { BREAKPOINTS } from '@openchamber/shared/constants';
+import type { DeviceType, BreakpointKey } from '@openchamber/shared/constants';
 
-export type DeviceType = 'desktop' | 'mobile' | 'tablet';
+export { BREAKPOINTS } from '@openchamber/shared/constants';
+export type { DeviceType, BreakpointKey } from '@openchamber/shared/constants';
 
 export interface DeviceInfo {
   isMobile: boolean;
@@ -8,7 +11,7 @@ export interface DeviceInfo {
   isDesktop: boolean;
   deviceType: DeviceType;
   screenWidth: number;
-  breakpoint: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  breakpoint: BreakpointKey;
   hasTouchInput: boolean;
 }
 
@@ -16,15 +19,6 @@ export const CSS_DEVICE_VARIABLES = {
   IS_MOBILE: 'var(--is-mobile)',
   DEVICE_TYPE: 'var(--device-type)',
   HAS_TOUCH_INPUT: 'var(--has-touch-input)',
-} as const;
-
-export const BREAKPOINTS = {
-  xs: 0,
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-  '2xl': 1536,
 } as const;
 
 const setRootDeviceAttributes = (

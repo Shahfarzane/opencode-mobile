@@ -1,0 +1,23 @@
+{
+  "name": "@openchamber/shared",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./themes": "./src/themes/index.ts",
+    "./themes/*": "./src/themes/*.ts",
+    "./typography": "./src/typography/index.ts",
+    "./spacing": "./src/spacing/index.ts",
+    "./constants": "./src/constants/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint \"./src/**/*.ts\" --config ../../eslint.config.js"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}

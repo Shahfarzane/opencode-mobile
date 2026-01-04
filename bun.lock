@@ -105,6 +105,7 @@
       "version": "1.4.0",
       "dependencies": {
         "@expo/vector-icons": "^15.0.3",
+        "@openchamber/shared": "workspace:*",
         "@react-native-async-storage/async-storage": "2.2.0",
         "@react-native-community/netinfo": "^11.4.1",
         "@ronradtke/react-native-markdown-display": "^8.1.0",
@@ -148,6 +149,13 @@
         "typescript": "~5.9.3",
       },
     },
+    "packages/shared": {
+      "name": "@openchamber/shared",
+      "version": "1.4.0",
+      "devDependencies": {
+        "typescript": "~5.8.3",
+      },
+    },
     "packages/ui": {
       "name": "@openchamber/ui",
       "version": "1.4.0",
@@ -155,6 +163,7 @@
         "@fontsource/ibm-plex-mono": "^5.2.7",
         "@fontsource/ibm-plex-sans": "^5.1.1",
         "@ibm/plex": "^6.4.1",
+        "@openchamber/shared": "workspace:*",
         "@opencode-ai/sdk": "^1.0.209",
         "@pierre/diffs": "^1.0.0",
         "@radix-ui/react-collapsible": "^1.1.12",
@@ -797,6 +806,8 @@
     "@openchamber/desktop": ["@openchamber/desktop@workspace:packages/desktop"],
 
     "@openchamber/mobile": ["@openchamber/mobile@workspace:packages/mobile"],
+
+    "@openchamber/shared": ["@openchamber/shared@workspace:packages/shared"],
 
     "@openchamber/ui": ["@openchamber/ui@workspace:packages/ui"],
 

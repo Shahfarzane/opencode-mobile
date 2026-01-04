@@ -140,11 +140,17 @@ export async function apiRequest<T>(
 	}
 
 	const contentType = response.headers.get("content-type");
+	const text = await response.text();
+	
+	if (!text) {
+		return undefined as unknown as T;
+	}
+	
 	if (contentType?.includes("application/json")) {
-		return response.json();
+		return JSON.parse(text) as T;
 	}
 
-	return response.text() as unknown as T;
+	return text as unknown as T;
 }
 
 export async function apiGet<T>(
