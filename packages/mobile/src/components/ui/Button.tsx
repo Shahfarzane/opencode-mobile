@@ -4,9 +4,11 @@ import {
 	ActivityIndicator,
 	Pressable,
 	type PressableProps,
+	StyleSheet,
 	Text,
 	type ViewStyle,
 } from "react-native";
+import { useTheme, typography } from "@/theme";
 
 type ButtonVariant =
 	| "default"
@@ -24,32 +26,10 @@ interface ButtonProps extends Omit<PressableProps, "style"> {
 	style?: ViewStyle;
 }
 
-const variantStyles: Record<ButtonVariant, string> = {
-	default: "bg-primary active:opacity-80",
-	secondary: "bg-secondary active:opacity-80",
-	outline: "border border-border bg-transparent active:bg-muted",
-	ghost: "bg-transparent active:bg-muted",
-	destructive: "bg-destructive active:opacity-80",
-};
-
-const variantTextStyles: Record<ButtonVariant, string> = {
-	default: "text-primary-foreground",
-	secondary: "text-secondary-foreground",
-	outline: "text-foreground",
-	ghost: "text-foreground",
-	destructive: "text-destructive-foreground",
-};
-
-const sizeStyles: Record<ButtonSize, string> = {
-	sm: "h-9 px-3 rounded-lg",
-	md: "h-11 px-4 rounded-xl",
-	lg: "h-14 px-6 rounded-2xl",
-};
-
-const sizeTextStyles: Record<ButtonSize, string> = {
-	sm: "text-sm",
-	md: "text-base",
-	lg: "text-lg",
+const sizeConfig: Record<ButtonSize, { height: number; paddingHorizontal: number; borderRadius: number }> = {
+	sm: { height: 36, paddingHorizontal: 12, borderRadius: 8 },
+	md: { height: 44, paddingHorizontal: 16, borderRadius: 12 },
+	lg: { height: 56, paddingHorizontal: 24, borderRadius: 16 },
 };
 
 export const Button = forwardRef<typeof Pressable, ButtonProps>(
@@ -66,6 +46,8 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 		},
 		ref,
 	) => {
+		const { colors } = useTheme();
+		
 		const handlePress = async (
 			event: Parameters<NonNullable<PressableProps["onPress"]>>[0],
 		) => {
@@ -75,14 +57,60 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 		};
 
 		const isDisabled = disabled || loading;
+		const sizeStyles = sizeConfig[size];
+
+		const getBackgroundColor = () => {
+			switch (variant) {
+				case "default":
+					return colors.primary;
+				case "secondary":
+					return colors.secondary;
+				case "outline":
+				case "ghost":
+					return "transparent";
+				case "destructive":
+					return colors.destructive;
+			}
+		};
+
+		const getTextColor = () => {
+			switch (variant) {
+				case "default":
+					return colors.primaryForeground;
+				case "secondary":
+					return colors.secondaryForeground;
+				case "outline":
+				case "ghost":
+					return colors.foreground;
+				case "destructive":
+					return colors.destructiveForeground;
+			}
+		};
+
+		const getBorderStyle = (): ViewStyle => {
+			if (variant === "outline") {
+				return { borderWidth: 1, borderColor: colors.border };
+			}
+			return {};
+		};
 
 		return (
 			<Pressable
 				ref={ref as never}
 				disabled={isDisabled}
 				onPress={handlePress}
-				className={`flex-row items-center justify-center ${variantStyles[variant]} ${sizeStyles[size]} ${isDisabled ? "opacity-50" : ""}`}
-				style={style}
+				style={[
+					styles.button,
+					{
+						height: sizeStyles.height,
+						paddingHorizontal: sizeStyles.paddingHorizontal,
+						borderRadius: sizeStyles.borderRadius,
+						backgroundColor: getBackgroundColor(),
+						opacity: isDisabled ? 0.5 : 1,
+					},
+					getBorderStyle(),
+					style,
+				]}
 				{...props}
 			>
 				{loading ? (
@@ -90,14 +118,12 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 						size="small"
 						color={
 							variant === "default" || variant === "destructive"
-								? "#FFFCF0"
-								: "#1C1B1A"
+								? colors.primaryForeground
+								: colors.foreground
 						}
 					/>
 				) : typeof children === "string" ? (
-					<Text
-						className={`font-mono font-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`}
-					>
+					<Text style={[typography.button, { color: getTextColor() }]}>
 						{children}
 					</Text>
 				) : (
@@ -109,3 +135,11 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 );
 
 Button.displayName = "Button";
+
+const styles = StyleSheet.create({
+	button: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+});

@@ -4,11 +4,11 @@ import { useCallback, useState } from "react";
 import {
 	Pressable,
 	ScrollView,
+	StyleSheet,
 	Text,
-	useColorScheme,
 	View,
 } from "react-native";
-import { FlexokiDark, FlexokiLight } from "@/theme/colors";
+import { useTheme, typography } from "@/theme";
 
 type CodeBlockProps = {
 	code: string;
@@ -39,9 +39,7 @@ const LANGUAGE_COLORS: Record<string, string> = {
 };
 
 export function CodeBlock({ code, language }: CodeBlockProps) {
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === "dark";
-	const colors = isDark ? FlexokiDark : FlexokiLight;
+	const { colors } = useTheme();
 	const [copied, setCopied] = useState(false);
 
 	const languageColor =
@@ -58,25 +56,18 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 	const lines = trimmedCode.split("\n");
 
 	return (
-		<View className="my-2 overflow-hidden rounded-lg border border-border">
-			<View
-				className="flex-row items-center justify-between px-3 py-2"
-				style={{ backgroundColor: colors.muted }}
-			>
-				<View className="flex-row items-center gap-2">
+		<View style={[styles.container, { borderColor: colors.border }]}>
+			<View style={[styles.header, { backgroundColor: colors.muted }]}>
+				<View style={styles.languageInfo}>
 					<View
-						className="h-2.5 w-2.5 rounded-full"
-						style={{ backgroundColor: languageColor }}
+						style={[styles.languageDot, { backgroundColor: languageColor }]}
 					/>
-					<Text className="font-mono text-xs text-muted-foreground">
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{language || "text"}
 					</Text>
 				</View>
-				<Pressable
-					onPress={handleCopy}
-					className="rounded px-2 py-1 active:bg-accent"
-				>
-					<Text className="font-mono text-xs text-muted-foreground">
+				<Pressable onPress={handleCopy} style={styles.copyButton}>
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{copied ? "Copied!" : "Copy"}
 					</Text>
 				</Pressable>
@@ -87,13 +78,16 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 				showsHorizontalScrollIndicator={false}
 				style={{ backgroundColor: colors.card }}
 			>
-				<View className="flex-row p-3">
-					<View className="mr-3 items-end">
+				<View style={styles.codeContent}>
+					<View style={styles.lineNumbers}>
 						{lines.map((line, lineNum) => (
 							<Text
 								key={`num-${lineNum}-${line.length}`}
-								className="font-mono text-xs leading-5 text-muted-foreground"
-								style={{ opacity: 0.5 }}
+								style={[
+									typography.code,
+									styles.lineNumber,
+									{ color: colors.mutedForeground },
+								]}
 							>
 								{lineNum + 1}
 							</Text>
@@ -103,7 +97,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 						{lines.map((line, lineNum) => (
 							<Text
 								key={`line-${lineNum}-${line.slice(0, 10)}`}
-								className="font-mono text-xs leading-5 text-foreground"
+								style={[typography.code, styles.codeLine, { color: colors.foreground }]}
 							>
 								{line || " "}
 							</Text>
@@ -114,3 +108,49 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		marginVertical: 8,
+		overflow: 'hidden',
+		borderRadius: 8,
+		borderWidth: 1,
+	},
+	header: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+	},
+	languageInfo: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
+	},
+	languageDot: {
+		height: 10,
+		width: 10,
+		borderRadius: 5,
+	},
+	copyButton: {
+		borderRadius: 4,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+	},
+	codeContent: {
+		flexDirection: 'row',
+		padding: 12,
+	},
+	lineNumbers: {
+		marginRight: 12,
+		alignItems: 'flex-end',
+	},
+	lineNumber: {
+		lineHeight: 20,
+		opacity: 0.5,
+	},
+	codeLine: {
+		lineHeight: 20,
+	},
+});

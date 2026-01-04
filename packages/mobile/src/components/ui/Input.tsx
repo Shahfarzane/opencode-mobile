@@ -1,11 +1,12 @@
 import { forwardRef, useState } from "react";
 import {
+	StyleSheet,
 	Text,
 	TextInput,
 	type TextInputProps,
-	useColorScheme,
 	View,
 } from "react-native";
+import { useTheme, typography } from "@/theme";
 
 interface InputProps extends TextInputProps {
 	label?: string;
@@ -23,37 +24,43 @@ export const Input = forwardRef<TextInput, InputProps>(
 			helperText,
 			leftIcon,
 			rightIcon,
-			className = "",
 			editable = true,
+			style,
 			...props
 		},
 		ref,
 	) => {
-		const colorScheme = useColorScheme();
-		const isDark = colorScheme === "dark";
+		const { colors } = useTheme();
 		const [isFocused, setIsFocused] = useState(false);
 
 		const hasError = !!error;
 		const isDisabled = !editable;
 
 		const getBorderColor = () => {
-			if (hasError) return "border-destructive";
-			if (isFocused) return "border-primary";
-			return "border-border";
+			if (hasError) return colors.destructive;
+			if (isFocused) return colors.primary;
+			return colors.border;
 		};
 
 		return (
-			<View className="w-full">
+			<View style={styles.container}>
 				{label && (
-					<Text className="mb-2 font-mono text-sm font-medium text-foreground">
+					<Text style={[typography.uiLabel, styles.label, { color: colors.foreground }]}>
 						{label}
 					</Text>
 				)}
 
 				<View
-					className={`flex-row items-center rounded-xl border bg-input ${getBorderColor()} ${isDisabled ? "opacity-50" : ""}`}
+					style={[
+						styles.inputWrapper,
+						{
+							borderColor: getBorderColor(),
+							backgroundColor: colors.input,
+							opacity: isDisabled ? 0.5 : 1,
+						},
+					]}
 				>
-					{leftIcon && <View className="pl-3">{leftIcon}</View>}
+					{leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
 					<TextInput
 						ref={ref}
@@ -66,17 +73,26 @@ export const Input = forwardRef<TextInput, InputProps>(
 							setIsFocused(false);
 							props.onBlur?.(e);
 						}}
-						placeholderTextColor={isDark ? "#878580" : "#6F6E69"}
-						className={`min-h-[44px] flex-1 px-4 py-3 font-mono text-base text-foreground ${className}`}
+						placeholderTextColor={colors.mutedForeground}
+						style={[
+							styles.input,
+							typography.body,
+							{ color: colors.foreground },
+							style,
+						]}
 						{...props}
 					/>
 
-					{rightIcon && <View className="pr-3">{rightIcon}</View>}
+					{rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
 				</View>
 
 				{(error || helperText) && (
 					<Text
-						className={`mt-1.5 font-mono text-xs ${hasError ? "text-destructive" : "text-muted-foreground"}`}
+						style={[
+							typography.micro,
+							styles.helperText,
+							{ color: hasError ? colors.destructive : colors.mutedForeground },
+						]}
 					>
 						{error || helperText}
 					</Text>
@@ -87,3 +103,33 @@ export const Input = forwardRef<TextInput, InputProps>(
 );
 
 Input.displayName = "Input";
+
+const styles = StyleSheet.create({
+	container: {
+		width: '100%',
+	},
+	label: {
+		marginBottom: 8,
+	},
+	inputWrapper: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		borderRadius: 12,
+		borderWidth: 1,
+	},
+	leftIcon: {
+		paddingLeft: 12,
+	},
+	rightIcon: {
+		paddingRight: 12,
+	},
+	input: {
+		flex: 1,
+		minHeight: 44,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+	helperText: {
+		marginTop: 6,
+	},
+});

@@ -1,47 +1,72 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
-	Modal,
 	Platform,
 	Pressable,
-	ScrollView,
 	Text,
 	View,
-	useColorScheme,
+	StyleSheet,
 } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import BottomSheet from "@gorhom/bottom-sheet";
 import { sessionsApi, filesApi, type Session } from "../../src/api";
-import type { Message, MessagePart } from "../../src/components/chat";
-import { ChatInput, MessageList, convertStreamingPart } from "../../src/components/chat";
+import type { Message, MessagePart, Permission, PermissionResponse } from "../../src/components/chat";
+import { ChatInput, MessageList, PermissionCard, convertStreamingPart } from "../../src/components/chat";
+import { SessionBottomSheet } from "../../src/components/session";
 import { type MessagePart as StreamingPart } from "../../src/lib/streaming";
 import { useEventStream, type StreamEvent } from "../../src/hooks/useEventStream";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { useTheme, typography } from "../../src/theme";
+import { useContextUsageContext } from "./_layout";
+import { useEdgeSwipe } from "../../src/hooks/useEdgeSwipe";
+
+const DEFAULT_CONTEXT_LIMIT = 200000;
+const DEFAULT_OUTPUT_LIMIT = 8192;
+
+type TokenBreakdown = {
+	input?: number;
+	output?: number;
+	reasoning?: number;
+	cache?: { read?: number; write?: number };
+};
+
+function extractTokensFromParts(parts?: MessagePart[]): number {
+	if (!parts || parts.length === 0) return 0;
+
+	for (const part of parts) {
+		const tokens = (part as { tokens?: number | TokenBreakdown }).tokens;
+		if (typeof tokens === "number") return tokens;
+		if (tokens && typeof tokens === "object") {
+			const input = tokens.input ?? 0;
+			const output = tokens.output ?? 0;
+			const reasoning = tokens.reasoning ?? 0;
+			const cacheRead = tokens.cache?.read ?? 0;
+			const cacheWrite = tokens.cache?.write ?? 0;
+			return input + output + reasoning + cacheRead + cacheWrite;
+		}
+	}
+
+	return 0;
+}
 
 export default function ChatScreen() {
 	const insets = useSafeAreaInsets();
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === 'dark';
+	const { colors } = useTheme();
 	const { directory, isConnected } = useConnectionStore();
+	const { setContextUsage } = useContextUsageContext();
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const [sessions, setSessions] = useState<Session[]>([]);
-	const [showSessionPicker, setShowSessionPicker] = useState(false);
 	const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+	const [permissions, setPermissions] = useState<Permission[]>([]);
 
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
-
-	const colors = {
-		background: isDark ? "#100F0F" : "#FFFCF0",
-		foreground: isDark ? "#CECDC3" : "#100F0F",
-		muted: isDark ? "#1C1B1A" : "#F2F0E5",
-		mutedForeground: isDark ? "#878580" : "#6F6E69",
-		border: isDark ? "#343331" : "#DAD8CE",
-		primary: "#EC8B49",
-		card: isDark ? "#282726" : "#F2F0E5",
-	};
+	const lastEventTimeRef = useRef<number>(0);
+	const bottomSheetRef = useRef<BottomSheet>(null);
 
 	const handleStreamEvent = useCallback((event: StreamEvent) => {
 		const props = event.properties;
@@ -49,6 +74,35 @@ export default function ChatScreen() {
 
 		const eventSessionId = props.sessionID || props.info?.sessionID;
 		if (eventSessionId && sessionId && eventSessionId !== sessionId) {
+			return;
+		}
+
+		lastEventTimeRef.current = Date.now();
+
+		if (__DEV__) {
+			console.log("[Chat] Event:", event.type, props.part?.type || props.info?.finish || "");
+		}
+
+		if (event.type === "session.error" || event.type === "message.error") {
+			console.error("[Chat] Stream error:", props);
+			setIsLoading(false);
+			currentAssistantMessageIdRef.current = null;
+			return;
+		}
+
+		if (event.type === "permission.updated") {
+			const permission: Permission = {
+				id: props.id || `perm-${Date.now()}`,
+				type: props.type || "unknown",
+				pattern: props.pattern,
+				sessionID: eventSessionId || sessionId || "",
+				messageID: props.messageID || "",
+				callID: props.callID,
+				title: props.title || "",
+				metadata: props.metadata || {},
+				time: { created: props.time?.created || Date.now() },
+			};
+			setPermissions((prev) => [...prev, permission]);
 			return;
 		}
 
@@ -104,7 +158,13 @@ export default function ChatScreen() {
 
 			const isComplete =
 				info?.finish === "stop" ||
+				info?.finish === "cancelled" ||
+				info?.finish === "error" ||
 				(info?.time?.completed && typeof info.time.completed === "number");
+
+			if (__DEV__ && isComplete) {
+				console.log("[Chat] Message complete:", { finish: info?.finish, partsCount: partsArray.length });
+			}
 
 			const assistantId = currentAssistantMessageIdRef.current;
 			if (assistantId) {
@@ -131,6 +191,55 @@ export default function ChatScreen() {
 	}, [sessionId]);
 
 	useEventStream(sessionId, handleStreamEvent);
+
+	useEffect(() => {
+		const assistantMessages = messages.filter((m) => m.role === "assistant");
+		if (assistantMessages.length === 0) {
+			setContextUsage(null);
+			return;
+		}
+
+		const lastMessage = assistantMessages[assistantMessages.length - 1];
+		const tokens = extractTokensFromParts(lastMessage.parts);
+
+		if (tokens > 0) {
+			const contextLimit = DEFAULT_CONTEXT_LIMIT;
+			const outputLimit = DEFAULT_OUTPUT_LIMIT;
+			const thresholdLimit = contextLimit - Math.min(outputLimit, 32000);
+			const percentage = (tokens / thresholdLimit) * 100;
+
+			setContextUsage({
+				totalTokens: tokens,
+				percentage: Math.min(percentage, 100),
+				contextLimit,
+				outputLimit,
+			});
+		}
+	}, [messages, setContextUsage]);
+
+	useEffect(() => {
+		if (!isLoading) return;
+		
+		const STUCK_TIMEOUT_MS = 60000;
+		const checkInterval = setInterval(() => {
+			const timeSinceLastEvent = Date.now() - lastEventTimeRef.current;
+			if (lastEventTimeRef.current > 0 && timeSinceLastEvent > STUCK_TIMEOUT_MS) {
+				console.warn("[Chat] Stream appears stuck, resetting loading state");
+				setIsLoading(false);
+				currentAssistantMessageIdRef.current = null;
+				
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.isStreaming
+							? { ...msg, isStreaming: false, content: msg.content || "[Response incomplete - connection lost]" }
+							: msg,
+					),
+				);
+			}
+		}, 10000);
+
+		return () => clearInterval(checkInterval);
+	}, [isLoading]);
 
 	const fetchSessions = useCallback(async () => {
 		if (!isConnected) return;
@@ -191,7 +300,7 @@ export default function ChatScreen() {
 	const selectSession = useCallback(
 		async (session: Session) => {
 			setSessionId(session.id);
-			setShowSessionPicker(false);
+			bottomSheetRef.current?.close();
 			await loadSessionMessages(session.id);
 		},
 		[loadSessionMessages],
@@ -200,8 +309,18 @@ export default function ChatScreen() {
 	const startNewSession = useCallback(() => {
 		setSessionId(null);
 		setMessages([]);
-		setShowSessionPicker(false);
+		bottomSheetRef.current?.close();
 	}, []);
+
+	const openSessionPicker = useCallback(() => {
+		fetchSessions();
+		bottomSheetRef.current?.expand();
+	}, [fetchSessions]);
+
+	useEdgeSwipe({
+		enabled: true,
+		onSwipe: openSessionPicker,
+	});
 
 	useEffect(() => {
 		if (isConnected) {
@@ -291,25 +410,76 @@ export default function ChatScreen() {
 	const HEADER_HEIGHT = 52;
 	const keyboardOffset = HEADER_HEIGHT + insets.top;
 
+	const currentSession = sessions.find(s => s.id === sessionId);
+	const sessionLabel = currentSession?.title || (sessionId ? `Session ${sessionId.slice(0, 8)}` : "New Session");
+
+	const handlePermissionResponse = useCallback(
+		async (permissionId: string, response: PermissionResponse) => {
+			if (!sessionId) return;
+
+			await sessionsApi.respondToPermission(sessionId, permissionId, response);
+			setPermissions((prev) => prev.filter((p) => p.id !== permissionId));
+		},
+		[sessionId],
+	);
+
+	const activePermissions = permissions.filter((p) => p.sessionID === sessionId);
+
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			style={{ flex: 1, backgroundColor: colors.background }}
+			style={[styles.container, { backgroundColor: colors.background }]}
 			keyboardVerticalOffset={keyboardOffset}
 		>
-			<View style={{ flex: 1 }}>
+			<Pressable
+				onPress={openSessionPicker}
+				style={[styles.sessionBar, { borderBottomColor: colors.border }]}
+			>
+				<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+					<Path
+						d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+						stroke={colors.mutedForeground}
+						strokeWidth={2}
+					/>
+				</Svg>
+				<Text style={[typography.micro, { color: colors.mutedForeground, flex: 1 }]} numberOfLines={1}>
+					{sessionLabel}
+				</Text>
+				<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+					<Path
+						d="M6 9l6 6 6-6"
+						stroke={colors.mutedForeground}
+						strokeWidth={2}
+						strokeLinecap="round"
+					/>
+				</Svg>
+			</Pressable>
+
+			<View style={styles.messageContainer}>
 				<MessageList messages={messages} isLoading={isLoading} />
 			</View>
 
+			{activePermissions.length > 0 && (
+				<View style={[styles.permissionsContainer, { backgroundColor: colors.background }]}>
+					{activePermissions.map((permission) => (
+						<PermissionCard
+							key={permission.id}
+							permission={permission}
+							onResponse={(response) => handlePermissionResponse(permission.id, response)}
+						/>
+					))}
+				</View>
+			)}
+
 			<View
-				style={{
-					borderTopWidth: 1,
-					borderTopColor: colors.border,
-					backgroundColor: colors.background,
-					paddingHorizontal: 16,
-					paddingTop: 12,
-					paddingBottom: Math.max(insets.bottom, 12),
-				}}
+				style={[
+					styles.inputContainer,
+					{
+						borderTopColor: colors.border,
+						backgroundColor: colors.background,
+						paddingBottom: Math.max(insets.bottom, 12),
+					},
+				]}
 			>
 				<ChatInput
 					onSend={handleSend}
@@ -321,152 +491,41 @@ export default function ChatScreen() {
 				/>
 			</View>
 
-			<Modal
-				visible={showSessionPicker}
-				animationType="slide"
-				presentationStyle="pageSheet"
-				onRequestClose={() => setShowSessionPicker(false)}
-			>
-				<View
-					style={{
-						flex: 1,
-						backgroundColor: colors.background,
-						paddingTop: insets.top,
-					}}
-				>
-					<View
-						style={{
-							flexDirection: 'row',
-							alignItems: 'center',
-							justifyContent: 'space-between',
-							borderBottomWidth: 1,
-							borderBottomColor: colors.border,
-							paddingHorizontal: 16,
-							paddingVertical: 12,
-						}}
-					>
-						<Text
-							style={{
-								fontFamily: 'IBMPlexMono-SemiBold',
-								fontSize: 18,
-								color: colors.foreground,
-							}}
-						>
-							Sessions
-						</Text>
-						<Pressable
-							onPress={() => setShowSessionPicker(false)}
-							style={{
-								borderRadius: 8,
-								backgroundColor: colors.muted,
-								paddingHorizontal: 12,
-								paddingVertical: 8,
-							}}
-						>
-							<Text
-								style={{
-									fontFamily: 'IBMPlexMono-Medium',
-									fontSize: 14,
-									color: colors.foreground,
-								}}
-							>
-								Close
-							</Text>
-						</Pressable>
-					</View>
-
-					<ScrollView style={{ flex: 1, padding: 16 }}>
-						<Pressable
-							onPress={startNewSession}
-							style={{
-								marginBottom: 12,
-								borderRadius: 8,
-								borderWidth: 1,
-								borderColor: colors.primary,
-								backgroundColor: `${colors.primary}15`,
-								padding: 16,
-							}}
-						>
-							<Text
-								style={{
-									fontFamily: 'IBMPlexMono-SemiBold',
-									fontSize: 16,
-									color: colors.primary,
-								}}
-							>
-								+ Start New Session
-							</Text>
-							<Text
-								style={{
-									fontFamily: 'IBMPlexMono-Regular',
-									fontSize: 12,
-									color: colors.mutedForeground,
-									marginTop: 4,
-								}}
-							>
-								Create a fresh conversation
-							</Text>
-						</Pressable>
-
-						{isLoadingSessions ? (
-							<Text
-								style={{
-									fontFamily: 'IBMPlexMono-Regular',
-									textAlign: 'center',
-									color: colors.mutedForeground,
-								}}
-							>
-								Loading sessions...
-							</Text>
-						) : sessions.length === 0 ? (
-							<Text
-								style={{
-									fontFamily: 'IBMPlexMono-Regular',
-									textAlign: 'center',
-									color: colors.mutedForeground,
-								}}
-							>
-								No existing sessions
-							</Text>
-						) : (
-							sessions.map((session) => (
-								<Pressable
-									key={session.id}
-									onPress={() => selectSession(session)}
-									style={{
-										marginBottom: 8,
-										borderRadius: 8,
-										borderWidth: 1,
-										borderColor: session.id === sessionId ? colors.primary : colors.border,
-										backgroundColor: session.id === sessionId ? `${colors.primary}08` : colors.card,
-										padding: 16,
-									}}
-								>
-									<Text
-										style={{
-											fontFamily: 'IBMPlexMono-Medium',
-											fontSize: 16,
-											color: colors.foreground,
-										}}
-									>
-										{session.title || `Session ${session.id.slice(0, 8)}`}
-									</Text>
-									<Text
-										style={{
-											fontFamily: 'IBMPlexMono-Regular',
-											fontSize: 12,
-											color: colors.mutedForeground,
-											marginTop: 4,
-										}}
-									>
-										ID: {session.id.slice(0, 16)}...
-									</Text>
-								</Pressable>
-							))
-						)}
-					</ScrollView>
-				</View>
-			</Modal>
+			<SessionBottomSheet
+				ref={bottomSheetRef}
+				sessions={sessions}
+				currentSessionId={sessionId}
+				isLoading={isLoadingSessions}
+				onSelectSession={selectSession}
+				onNewSession={startNewSession}
+				onClose={() => {}}
+			/>
 		</KeyboardAvoidingView>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	sessionBar: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderBottomWidth: 1,
+	},
+	messageContainer: {
+		flex: 1,
+	},
+	permissionsContainer: {
+		paddingHorizontal: 16,
+		paddingTop: 8,
+	},
+	inputContainer: {
+		borderTopWidth: 1,
+		paddingHorizontal: 16,
+		paddingTop: 12,
+	},
+});

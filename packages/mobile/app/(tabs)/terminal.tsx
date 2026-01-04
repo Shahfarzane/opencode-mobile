@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	Alert,
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
 	ScrollView,
+	StyleSheet,
 	Text,
 	TextInput,
 	View,
-	useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { terminalApi } from "../../src/api";
 import { useTerminalStream } from "../../src/hooks/useTerminalStream";
 import { useTerminalStore } from "../../src/stores/useTerminalStore";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { useTheme, typography } from "../../src/theme";
 
 const SPECIAL_KEYS = [
 	{ label: "Ctrl", key: "ctrl" },
@@ -30,12 +30,11 @@ const SPECIAL_KEYS = [
 
 export default function TerminalScreen() {
 	const insets = useSafeAreaInsets();
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === "dark";
+	const { colors, isDark } = useTheme();
 	const { directory, isConnected: isServerConnected } = useConnectionStore();
 	const scrollViewRef = useRef<ScrollView>(null);
 	const inputRef = useRef<TextInput>(null);
-	
+
 	const [inputValue, setInputValue] = useState("");
 	const [ctrlMode, setCtrlMode] = useState(false);
 	const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -58,18 +57,8 @@ export default function TerminalScreen() {
 		reset,
 	} = useTerminalStore();
 
-	const colors = {
-		background: isDark ? "#100F0F" : "#FFFCF0",
-		foreground: isDark ? "#CECDC3" : "#100F0F",
-		muted: isDark ? "#1C1B1A" : "#F2F0E5",
-		mutedForeground: isDark ? "#878580" : "#6F6E69",
-		border: isDark ? "#343331" : "#DAD8CE",
-		primary: "#EC8B49",
-		terminalBg: isDark ? "#0D0D0D" : "#1C1B1A",
-		terminalText: isDark ? "#CECDC3" : "#CECDC3",
-		success: "#879A39",
-		destructive: "#D14D41",
-	};
+	const terminalBg = isDark ? "#0D0D0D" : "#1C1B1A";
+	const terminalText = "#CECDC3";
 
 	const handleData = useCallback(
 		(data: string) => {
@@ -232,11 +221,11 @@ export default function TerminalScreen() {
 	const renderContent = () => {
 		if (!isServerConnected) {
 			return (
-				<View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 }}>
-					<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 16, color: colors.foreground, textAlign: "center" }}>
+				<View style={styles.centerContainer}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, textAlign: "center" }]}>
 						Not connected to server
 					</Text>
-					<Text style={{ fontFamily: "IBMPlexMono-Regular", fontSize: 14, color: colors.mutedForeground, textAlign: "center", marginTop: 8 }}>
+					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>
 						Connect to a server to use the terminal
 					</Text>
 				</View>
@@ -245,11 +234,11 @@ export default function TerminalScreen() {
 
 		if (!directory) {
 			return (
-				<View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 }}>
-					<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 16, color: colors.foreground, textAlign: "center" }}>
+				<View style={styles.centerContainer}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, textAlign: "center" }]}>
 						No directory selected
 					</Text>
-					<Text style={{ fontFamily: "IBMPlexMono-Regular", fontSize: 14, color: colors.mutedForeground, textAlign: "center", marginTop: 8 }}>
+					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>
 						Select a directory to start a terminal session
 					</Text>
 				</View>
@@ -258,9 +247,9 @@ export default function TerminalScreen() {
 
 		if (isCreatingSession || (isConnecting && !sessionId)) {
 			return (
-				<View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+				<View style={styles.centerContainer}>
 					<ActivityIndicator size="large" color={colors.primary} />
-					<Text style={{ fontFamily: "IBMPlexMono-Regular", fontSize: 14, color: colors.mutedForeground, marginTop: 12 }}>
+					<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 12 }]}>
 						Starting terminal...
 					</Text>
 				</View>
@@ -269,11 +258,11 @@ export default function TerminalScreen() {
 
 		if (error && !sessionId) {
 			return (
-				<View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 }}>
-					<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 16, color: colors.destructive, textAlign: "center" }}>
+				<View style={styles.centerContainer}>
+					<Text style={[typography.uiLabel, { color: colors.destructive, textAlign: "center" }]}>
 						Failed to start terminal
 					</Text>
-					<Text style={{ fontFamily: "IBMPlexMono-Regular", fontSize: 14, color: colors.mutedForeground, textAlign: "center", marginTop: 8, marginBottom: 16 }}>
+					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", marginTop: 8, marginBottom: 16 }]}>
 						{error}
 					</Text>
 					<Pressable
@@ -281,14 +270,9 @@ export default function TerminalScreen() {
 							setCreateAttempted(false);
 							setError(null);
 						}}
-						style={{
-							paddingHorizontal: 24,
-							paddingVertical: 12,
-							borderRadius: 8,
-							backgroundColor: colors.primary,
-						}}
+						style={[styles.retryButton, { backgroundColor: colors.primary }]}
 					>
-						<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 14, color: "#FFFCF0" }}>
+						<Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>
 							Retry
 						</Text>
 					</Pressable>
@@ -297,19 +281,14 @@ export default function TerminalScreen() {
 		}
 
 		return (
-			<View style={{ flex: 1 }}>
+			<View style={styles.terminalContainer}>
 				<ScrollView
 					ref={scrollViewRef}
-					style={{ flex: 1, backgroundColor: colors.terminalBg }}
-					contentContainerStyle={{ padding: 8, paddingBottom: 20 }}
+					style={[styles.terminalOutput, { backgroundColor: terminalBg }]}
+					contentContainerStyle={styles.terminalContent}
 				>
 					<Text
-						style={{
-							fontFamily: "IBMPlexMono-Regular",
-							fontSize: 12,
-							lineHeight: 16,
-							color: colors.terminalText,
-						}}
+						style={[typography.code, styles.terminalText, { color: terminalText }]}
 						selectable
 					>
 						{output || ""}
@@ -317,8 +296,8 @@ export default function TerminalScreen() {
 				</ScrollView>
 
 				{error && (
-					<View style={{ backgroundColor: `${colors.destructive}20`, padding: 8, borderTopWidth: 1, borderTopColor: colors.destructive }}>
-						<Text style={{ fontFamily: "IBMPlexMono-Regular", fontSize: 12, color: colors.destructive }}>
+					<View style={[styles.errorBanner, { backgroundColor: `${colors.destructive}20`, borderTopColor: colors.destructive }]}>
+						<Text style={[typography.code, { color: colors.destructive }]}>
 							{error}
 						</Text>
 					</View>
@@ -330,57 +309,51 @@ export default function TerminalScreen() {
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			style={{ flex: 1, backgroundColor: colors.background }}
+			style={[styles.container, { backgroundColor: colors.background }]}
 			keyboardVerticalOffset={keyboardOffset}
 		>
 			{renderContent()}
 
 			{sessionId && (
-				<View style={{ borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background }}>
+				<View style={[styles.inputArea, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
 					<ScrollView
 						horizontal
 						showsHorizontalScrollIndicator={false}
-						contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8, gap: 6 }}
+						contentContainerStyle={styles.specialKeys}
 					>
 						{SPECIAL_KEYS.map((item) => (
 							<Pressable
 								key={item.label}
 								onPress={() => handleSpecialKey(item.key)}
-								style={{
-									paddingHorizontal: 12,
-									paddingVertical: 8,
-									borderRadius: 6,
-									backgroundColor: item.key === "ctrl" && ctrlMode ? colors.primary : colors.muted,
-									borderWidth: 1,
-									borderColor: item.key === "ctrl" && ctrlMode ? colors.primary : colors.border,
-								}}
+								style={[
+									styles.specialKey,
+									{
+										backgroundColor: item.key === "ctrl" && ctrlMode ? colors.primary : colors.muted,
+										borderColor: item.key === "ctrl" && ctrlMode ? colors.primary : colors.border,
+									},
+								]}
 							>
 								<Text
-									style={{
-										fontFamily: "IBMPlexMono-Medium",
-										fontSize: 12,
-										color: item.key === "ctrl" && ctrlMode ? "#FFFCF0" : colors.foreground,
-									}}
+									style={[
+										typography.micro,
+										{
+											color: item.key === "ctrl" && ctrlMode ? colors.primaryForeground : colors.foreground,
+											fontWeight: "500",
+										},
+									]}
 								>
 									{item.label}
 								</Text>
 							</Pressable>
 						))}
 
-						<View style={{ width: 1, backgroundColor: colors.border, marginHorizontal: 4 }} />
+						<View style={[styles.keyDivider, { backgroundColor: colors.border }]} />
 
 						<Pressable
 							onPress={clearOutput}
-							style={{
-								paddingHorizontal: 12,
-								paddingVertical: 8,
-								borderRadius: 6,
-								backgroundColor: colors.muted,
-								borderWidth: 1,
-								borderColor: colors.border,
-							}}
+							style={[styles.specialKey, { backgroundColor: colors.muted, borderColor: colors.border }]}
 						>
-							<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 12, color: colors.foreground }}>
+							<Text style={[typography.micro, { color: colors.foreground, fontWeight: "500" }]}>
 								Clear
 							</Text>
 						</Pressable>
@@ -388,56 +361,32 @@ export default function TerminalScreen() {
 						{hasExited ? (
 							<Pressable
 								onPress={restartSession}
-								style={{
-									paddingHorizontal: 12,
-									paddingVertical: 8,
-									borderRadius: 6,
-									backgroundColor: colors.success,
-								}}
+								style={[styles.specialKey, { backgroundColor: colors.success }]}
 							>
-								<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 12, color: "#FFFCF0" }}>
+								<Text style={[typography.micro, { color: colors.primaryForeground, fontWeight: "500" }]}>
 									Restart
 								</Text>
 							</Pressable>
 						) : (
 							<Pressable
 								onPress={closeSession}
-								style={{
-									paddingHorizontal: 12,
-									paddingVertical: 8,
-									borderRadius: 6,
-									backgroundColor: colors.destructive,
-								}}
+								style={[styles.specialKey, { backgroundColor: colors.destructive }]}
 							>
-								<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 12, color: "#FFFCF0" }}>
+								<Text style={[typography.micro, { color: colors.primaryForeground, fontWeight: "500" }]}>
 									Kill
 								</Text>
 							</Pressable>
 						)}
 					</ScrollView>
 
-					<View
-						style={{
-							flexDirection: "row",
-							alignItems: "center",
-							paddingHorizontal: 8,
-							paddingBottom: Math.max(insets.bottom, 8),
-							gap: 8,
-						}}
-					>
+					<View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
 						<View
-							style={{
-								flex: 1,
-								flexDirection: "row",
-								alignItems: "center",
-								backgroundColor: colors.terminalBg,
-								borderRadius: 8,
-								borderWidth: 1,
-								borderColor: colors.border,
-								paddingHorizontal: 12,
-							}}
+							style={[
+								styles.inputWrapper,
+								{ backgroundColor: terminalBg, borderColor: colors.border },
+							]}
 						>
-							<Text style={{ fontFamily: "IBMPlexMono-Medium", fontSize: 14, color: colors.success }}>
+							<Text style={[typography.uiLabel, { color: colors.success }]}>
 								$
 							</Text>
 							<TextInput
@@ -457,29 +406,24 @@ export default function TerminalScreen() {
 								autoCorrect={false}
 								returnKeyType="send"
 								blurOnSubmit={false}
-								style={{
-									flex: 1,
-									fontFamily: "IBMPlexMono-Regular",
-									fontSize: 14,
-									color: colors.terminalText,
-									paddingVertical: 12,
-									paddingHorizontal: 8,
-								}}
+								style={[
+									styles.textInput,
+									typography.body,
+									{ color: terminalText },
+								]}
 							/>
 						</View>
 						<Pressable
 							onPress={handleSubmit}
 							disabled={hasExited || !isConnected}
-							style={{
-								width: 44,
-								height: 44,
-								borderRadius: 8,
-								backgroundColor: hasExited || !isConnected ? colors.muted : colors.primary,
-								alignItems: "center",
-								justifyContent: "center",
-							}}
+							style={[
+								styles.sendButton,
+								{
+									backgroundColor: hasExited || !isConnected ? colors.muted : colors.primary,
+								},
+							]}
 						>
-							<Text style={{ fontFamily: "IBMPlexMono-Bold", fontSize: 16, color: "#FFFCF0" }}>
+							<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "700" }]}>
 								{">"}
 							</Text>
 						</Pressable>
@@ -489,3 +433,82 @@ export default function TerminalScreen() {
 		</KeyboardAvoidingView>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	centerContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		padding: 20,
+	},
+	retryButton: {
+		paddingHorizontal: 24,
+		paddingVertical: 12,
+		borderRadius: 8,
+	},
+	terminalContainer: {
+		flex: 1,
+	},
+	terminalOutput: {
+		flex: 1,
+	},
+	terminalContent: {
+		padding: 8,
+		paddingBottom: 20,
+	},
+	terminalText: {
+		lineHeight: 16,
+	},
+	errorBanner: {
+		padding: 8,
+		borderTopWidth: 1,
+	},
+	inputArea: {
+		borderTopWidth: 1,
+	},
+	specialKeys: {
+		paddingHorizontal: 8,
+		paddingVertical: 8,
+		gap: 6,
+		flexDirection: "row",
+	},
+	specialKey: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 6,
+		borderWidth: 1,
+	},
+	keyDivider: {
+		width: 1,
+		marginHorizontal: 4,
+	},
+	inputRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 8,
+		gap: 8,
+	},
+	inputWrapper: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		borderRadius: 8,
+		borderWidth: 1,
+		paddingHorizontal: 12,
+	},
+	textInput: {
+		flex: 1,
+		paddingVertical: 12,
+		paddingHorizontal: 8,
+	},
+	sendButton: {
+		width: 44,
+		height: 44,
+		borderRadius: 8,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+});

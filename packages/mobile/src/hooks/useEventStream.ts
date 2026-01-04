@@ -5,6 +5,7 @@ import { useConnectionStore } from "../stores/useConnectionStore";
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 const CONNECTION_TIMEOUT_MS = 30000;
+const DEBUG_STREAM = __DEV__;
 
 export interface StreamEvent {
 	type: string;
@@ -37,6 +38,13 @@ export interface StreamEvent {
 			callID?: string;
 			state?: unknown;
 		}>;
+		id?: string;
+		type?: string;
+		pattern?: string | string[];
+		callID?: string;
+		title?: string;
+		metadata?: Record<string, unknown>;
+		time?: { created?: number };
 	};
 }
 
@@ -55,6 +63,7 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 	const isActiveRef = useRef(true);
 	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 	const connectRef = useRef<() => void>(() => {});
+	const incompleteLineRef = useRef("");
 
 	onEventRef.current = onEvent;
 	sessionIdRef.current = sessionId;
@@ -137,6 +146,7 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 		const xhr = new XMLHttpRequest();
 		xhrRef.current = xhr;
 		lastProcessedIndexRef.current = 0;
+		incompleteLineRef.current = "";
 
 		connectionTimeoutRef.current = setTimeout(() => {
 			if (xhrRef.current === xhr && isConnectingRef.current) {
@@ -172,10 +182,17 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 				lastProcessedIndexRef.current = xhr.responseText.length;
 
 				if (newData) {
-					const lines = newData.split("\n");
+					const textToParse = incompleteLineRef.current + newData;
+					const lines = textToParse.split("\n");
+					
+					incompleteLineRef.current = lines.pop() || "";
+
 					for (const line of lines) {
-						if (line.startsWith("data: ")) {
-							const data = line.slice(6).trim();
+						const trimmedLine = line.trim();
+						if (!trimmedLine) continue;
+						
+						if (trimmedLine.startsWith("data: ")) {
+							const data = trimmedLine.slice(6);
 							if (!data || data === "[DONE]") continue;
 
 							try {
@@ -194,8 +211,15 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 									continue;
 								}
 
+								if (DEBUG_STREAM) {
+									console.log("[EventStream] Event:", event.type);
+								}
+
 								onEventRef.current(event);
-							} catch {
+							} catch (parseError) {
+								if (DEBUG_STREAM) {
+									console.warn("[EventStream] JSON parse error:", parseError, "Data:", data.slice(0, 200));
+								}
 							}
 						}
 					}
