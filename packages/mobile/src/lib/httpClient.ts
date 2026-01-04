@@ -1,9 +1,21 @@
-import { Platform } from "react-native";
 import { getConnectionState } from "../stores/useConnectionStore";
 
 const DEFAULT_TIMEOUT_MS = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 500;
+
+// Debug logging - set to true to see API requests/responses
+const DEBUG_HTTP = __DEV__;
+
+function debugLog(message: string, data?: unknown) {
+	if (DEBUG_HTTP) {
+		if (data !== undefined) {
+			console.log(`[HTTP] ${message}`, data);
+		} else {
+			console.log(`[HTTP] ${message}`);
+		}
+	}
+}
 
 export class ApiError extends Error {
 	constructor(
@@ -24,6 +36,8 @@ export class ApiError extends Error {
 interface RequestOptions {
 	method?: "GET" | "POST" | "PUT" | "DELETE";
 	body?: unknown;
+	rawBody?: string;
+	contentType?: string;
 	params?: Record<string, string | number | boolean | undefined>;
 	includeDirectory?: boolean;
 	timeout?: number;
@@ -91,15 +105,16 @@ function buildUrl(
 
 function getAuthHeaders(): Record<string, string> {
 	const { authToken } = getConnectionState();
-	if (!authToken) {
-		throw new ApiError("Not authenticated", 401, "NOT_AUTHENTICATED");
-	}
-
-	return {
-		Authorization: `Bearer ${authToken}`,
+	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 		Accept: "application/json",
 	};
+
+	if (authToken) {
+		headers.Authorization = `Bearer ${authToken}`;
+	}
+
+	return headers;
 }
 
 function delay(ms: number): Promise<void> {
@@ -203,56 +218,43 @@ export async function apiRequest<T>(
 ): Promise<T> {
 	const { 
 		method = "GET", 
-		body, 
+		body,
+		rawBody,
+		contentType,
 		params, 
 		includeDirectory = false,
 		timeout = DEFAULT_TIMEOUT_MS,
 		retries = MAX_RETRIES,
 	} = options;
 	
-	const state = getConnectionState();
-	const { directory, serverUrl, authToken } = state;
-
-	console.log(`[API] Request: ${method} ${path}`);
-	console.log(`[API] Server URL: ${serverUrl}`);
-	console.log(`[API] Has auth token: ${Boolean(authToken)}`);
-	console.log(`[API] Platform: ${Platform.OS}`);
+	const { directory } = getConnectionState();
 
 	const queryParams = { ...params };
 	if (includeDirectory && directory) {
 		queryParams.directory = directory;
 	}
 
-	let url: string;
-	try {
-		url = buildUrl(path, queryParams);
-	} catch (error) {
-		console.error(`[API] URL build error:`, error);
-		throw error;
-	}
+	const url = buildUrl(path, queryParams);
+	const headers = getAuthHeaders();
 	
-	console.log(`[API] Full URL: ${url}`);
-
-	let headers: Record<string, string>;
-	try {
-		headers = getAuthHeaders();
-	} catch (error) {
-		console.error(`[API] Auth headers error:`, error);
-		throw error;
+	if (contentType) {
+		headers["Content-Type"] = contentType;
 	}
 
-	const bodyString = body ? JSON.stringify(body) : null;
+	debugLog(`${method} ${url}`, { includeDirectory, directory, hasAuth: !!headers.Authorization });
+
+	const bodyString = rawBody ?? (body ? JSON.stringify(body) : null);
 	let lastError: Error | null = null;
 
 	for (let attempt = 0; attempt <= retries; attempt++) {
 		if (attempt > 0) {
 			const backoffMs = RETRY_DELAY_MS * (2 ** (attempt - 1));
-			console.log(`[API] Retry ${attempt}/${retries} after ${backoffMs}ms delay`);
 			await delay(backoffMs);
 		}
 
 		try {
 			const response = await xhrRequest(method, url, headers, bodyString, timeout);
+			debugLog(`Response ${response.status}`, { url, dataLength: response.data?.length });
 
 			if (!response.status || response.status < 200 || response.status >= 300) {
 				let errorData: unknown = null;
@@ -285,11 +287,9 @@ export async function apiRequest<T>(
 				
 				if (isRetryableError(response.status) && attempt < retries) {
 					lastError = apiError;
-					console.warn(`[API] Retryable error for ${method} ${path}: ${response.status}`);
 					continue;
 				}
 				
-				console.error(`[API] Error for ${method} ${path}: ${response.status} - ${errorMessage}`);
 				throw apiError;
 			}
 
@@ -306,11 +306,11 @@ export async function apiRequest<T>(
 			return response.data as unknown as T;
 
 		} catch (error) {
+			debugLog(`Error on ${url}`, { error: error instanceof Error ? error.message : error, attempt });
 			if (error instanceof ApiError) {
 				if (error.code === "NETWORK_ERROR" || error.code === "TIMEOUT") {
 					if (attempt < retries) {
 						lastError = error;
-						console.warn(`[API] ${error.code} for ${method} ${path}, retrying...`);
 						continue;
 					}
 				}
@@ -325,7 +325,6 @@ export async function apiRequest<T>(
 			
 			if (attempt < retries) {
 				lastError = networkError;
-				console.warn(`[API] Unexpected error for ${method} ${path}:`, error);
 				continue;
 			}
 			
@@ -379,7 +378,6 @@ export async function testServerConnectivity(
 	}
 
 	const healthUrl = `${normalizedUrl}/health`;
-	console.log(`[API] Testing connectivity to: ${healthUrl}`);
 
 	try {
 		const response = await xhrRequest(

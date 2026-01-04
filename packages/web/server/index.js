@@ -3097,6 +3097,48 @@ async function main(options = {}) {
     }
   });
 
+  app.post('/api/git/stage', async (req, res) => {
+    const { stageFile } = await getGitLibraries();
+    try {
+      const directory = req.query.directory;
+      if (!directory) {
+        return res.status(400).json({ error: 'directory parameter is required' });
+      }
+
+      const { path } = req.body || {};
+      if (!path || typeof path !== 'string') {
+        return res.status(400).json({ error: 'path parameter is required' });
+      }
+
+      await stageFile(directory, path);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to stage git file:', error);
+      res.status(500).json({ error: error.message || 'Failed to stage git file' });
+    }
+  });
+
+  app.post('/api/git/unstage', async (req, res) => {
+    const { unstageFile } = await getGitLibraries();
+    try {
+      const directory = req.query.directory;
+      if (!directory) {
+        return res.status(400).json({ error: 'directory parameter is required' });
+      }
+
+      const { path } = req.body || {};
+      if (!path || typeof path !== 'string') {
+        return res.status(400).json({ error: 'path parameter is required' });
+      }
+
+      await unstageFile(directory, path);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to unstage git file:', error);
+      res.status(500).json({ error: error.message || 'Failed to unstage git file' });
+    }
+  });
+
   app.post('/api/git/revert', async (req, res) => {
     const { revertFile } = await getGitLibraries();
     try {
