@@ -202,22 +202,22 @@ export default function SettingsScreen() {
 						subtitle={serverHost}
 						rightElement={<View />}
 					/>
-					<SettingsItem
-						icon={
-							<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-								<Path
-									d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-									stroke="#EC8B49"
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</Svg>
-						}
-						title="Directory"
-						subtitle={directory || "Not selected"}
-						rightElement={<View />}
-					/>
+				<SettingsItem
+					icon={
+						<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+							<Path
+								d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+								stroke="#EC8B49"
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</Svg>
+					}
+					title="Project Directory"
+					subtitle={directory ? directory.split("/").slice(-2).join("/") : "Not selected"}
+					onPress={() => router.push("/onboarding/directory")}
+				/>
 					<SettingsItem
 						icon={
 							<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">

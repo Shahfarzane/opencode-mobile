@@ -27,4 +27,7 @@ export type {
   ValidationResult,
   AccessibilityIssue,
   AccessibilityReport,
-} from '@openchamber/shared/themes';
+} from './types';
+
+export { flexokiDarkTheme } from './flexoki-dark';
+export { flexokiLightTheme } from './flexoki-light';

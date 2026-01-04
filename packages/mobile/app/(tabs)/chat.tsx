@@ -7,6 +7,7 @@ import {
 	ScrollView,
 	Text,
 	View,
+	useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { sessionsApi, filesApi, type Session } from "../../src/api";
@@ -18,6 +19,8 @@ import { useConnectionStore } from "../../src/stores/useConnectionStore";
 
 export default function ChatScreen() {
 	const insets = useSafeAreaInsets();
+	const colorScheme = useColorScheme();
+	const isDark = colorScheme === 'dark';
 	const { directory, isConnected } = useConnectionStore();
 
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -29,6 +32,16 @@ export default function ChatScreen() {
 
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
+
+	const colors = {
+		background: isDark ? "#100F0F" : "#FFFCF0",
+		foreground: isDark ? "#CECDC3" : "#100F0F",
+		muted: isDark ? "#1C1B1A" : "#F2F0E5",
+		mutedForeground: isDark ? "#878580" : "#6F6E69",
+		border: isDark ? "#343331" : "#DAD8CE",
+		primary: "#EC8B49",
+		card: isDark ? "#282726" : "#F2F0E5",
+	};
 
 	const handleStreamEvent = useCallback((event: StreamEvent) => {
 		const props = event.properties;
@@ -275,68 +288,34 @@ export default function ChatScreen() {
 		[isConnected, sessionId, isLoading, createSession],
 	);
 
-	const getStatusColor = () => {
-		if (isConnected) return "text-success";
-		return "text-destructive";
-	};
-
-	const getStatusText = () => {
-		if (isConnected) return "Connected";
-		return "Not connected";
-	};
-
-	const currentSession = sessions.find((s) => s.id === sessionId);
+	const HEADER_HEIGHT = 52;
+	const keyboardOffset = HEADER_HEIGHT + insets.top;
 
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			className="flex-1 bg-background"
-			keyboardVerticalOffset={0}
+			style={{ flex: 1, backgroundColor: colors.background }}
+			keyboardVerticalOffset={keyboardOffset}
 		>
-			<View
-				className="border-b border-border bg-background px-4 py-3"
-				style={{ paddingTop: insets.top + 8 }}
-			>
-				<View className="flex-row items-center justify-between">
-					<Pressable
-						onPress={() => {
-							fetchSessions();
-							setShowSessionPicker(true);
-						}}
-						className="flex-1"
-					>
-						<Text className="font-mono text-lg font-semibold text-foreground">
-							{currentSession?.title || (sessionId ? "Session" : "New Chat")}
-						</Text>
-						<Text className={`font-mono text-xs ${getStatusColor()}`}>
-							{getStatusText()} • Tap to switch
-						</Text>
-					</Pressable>
-
-					<Pressable
-						onPress={startNewSession}
-						className="rounded-lg bg-primary px-3 py-2"
-					>
-						<Text className="font-mono text-sm font-medium text-primary-foreground">
-							+ New
-						</Text>
-					</Pressable>
-				</View>
-			</View>
-
-			<View className="flex-1">
+			<View style={{ flex: 1 }}>
 				<MessageList messages={messages} isLoading={isLoading} />
 			</View>
 
 			<View
-				className="border-t border-border bg-background px-4 py-3"
-				style={{ paddingBottom: insets.bottom + 8 }}
+				style={{
+					borderTopWidth: 1,
+					borderTopColor: colors.border,
+					backgroundColor: colors.background,
+					paddingHorizontal: 16,
+					paddingTop: 12,
+					paddingBottom: Math.max(insets.bottom, 12),
+				}}
 			>
 				<ChatInput
 					onSend={handleSend}
 					isLoading={isLoading}
 					placeholder={
-						isConnected ? "Ask anything..." : "Connect to server first"
+						isConnected ? "# for agents; @ for files; / for commands" : "Connect to server first"
 					}
 					onFileSearch={handleFileSearch}
 				/>
@@ -349,40 +328,104 @@ export default function ChatScreen() {
 				onRequestClose={() => setShowSessionPicker(false)}
 			>
 				<View
-					className="flex-1 bg-background"
-					style={{ paddingTop: insets.top }}
+					style={{
+						flex: 1,
+						backgroundColor: colors.background,
+						paddingTop: insets.top,
+					}}
 				>
-					<View className="flex-row items-center justify-between border-b border-border px-4 py-3">
-						<Text className="font-mono text-lg font-semibold text-foreground">
+					<View
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							justifyContent: 'space-between',
+							borderBottomWidth: 1,
+							borderBottomColor: colors.border,
+							paddingHorizontal: 16,
+							paddingVertical: 12,
+						}}
+					>
+						<Text
+							style={{
+								fontFamily: 'IBMPlexMono-SemiBold',
+								fontSize: 18,
+								color: colors.foreground,
+							}}
+						>
 							Sessions
 						</Text>
 						<Pressable
 							onPress={() => setShowSessionPicker(false)}
-							className="rounded-lg bg-muted px-3 py-2"
+							style={{
+								borderRadius: 8,
+								backgroundColor: colors.muted,
+								paddingHorizontal: 12,
+								paddingVertical: 8,
+							}}
 						>
-							<Text className="font-mono text-sm text-foreground">Close</Text>
+							<Text
+								style={{
+									fontFamily: 'IBMPlexMono-Medium',
+									fontSize: 14,
+									color: colors.foreground,
+								}}
+							>
+								Close
+							</Text>
 						</Pressable>
 					</View>
 
-					<ScrollView className="flex-1 p-4">
+					<ScrollView style={{ flex: 1, padding: 16 }}>
 						<Pressable
 							onPress={startNewSession}
-							className="mb-3 rounded-lg border border-primary bg-primary/10 p-4"
+							style={{
+								marginBottom: 12,
+								borderRadius: 8,
+								borderWidth: 1,
+								borderColor: colors.primary,
+								backgroundColor: `${colors.primary}15`,
+								padding: 16,
+							}}
 						>
-							<Text className="font-mono text-base font-semibold text-primary">
+							<Text
+								style={{
+									fontFamily: 'IBMPlexMono-SemiBold',
+									fontSize: 16,
+									color: colors.primary,
+								}}
+							>
 								+ Start New Session
 							</Text>
-							<Text className="font-mono text-xs text-muted-foreground">
+							<Text
+								style={{
+									fontFamily: 'IBMPlexMono-Regular',
+									fontSize: 12,
+									color: colors.mutedForeground,
+									marginTop: 4,
+								}}
+							>
 								Create a fresh conversation
 							</Text>
 						</Pressable>
 
 						{isLoadingSessions ? (
-							<Text className="text-center font-mono text-muted-foreground">
+							<Text
+								style={{
+									fontFamily: 'IBMPlexMono-Regular',
+									textAlign: 'center',
+									color: colors.mutedForeground,
+								}}
+							>
 								Loading sessions...
 							</Text>
 						) : sessions.length === 0 ? (
-							<Text className="text-center font-mono text-muted-foreground">
+							<Text
+								style={{
+									fontFamily: 'IBMPlexMono-Regular',
+									textAlign: 'center',
+									color: colors.mutedForeground,
+								}}
+							>
 								No existing sessions
 							</Text>
 						) : (
@@ -390,16 +433,32 @@ export default function ChatScreen() {
 								<Pressable
 									key={session.id}
 									onPress={() => selectSession(session)}
-									className={`mb-2 rounded-lg border p-4 ${
-										session.id === sessionId
-											? "border-primary bg-primary/5"
-											: "border-border bg-card"
-									}`}
+									style={{
+										marginBottom: 8,
+										borderRadius: 8,
+										borderWidth: 1,
+										borderColor: session.id === sessionId ? colors.primary : colors.border,
+										backgroundColor: session.id === sessionId ? `${colors.primary}08` : colors.card,
+										padding: 16,
+									}}
 								>
-									<Text className="font-mono text-base font-medium text-foreground">
+									<Text
+										style={{
+											fontFamily: 'IBMPlexMono-Medium',
+											fontSize: 16,
+											color: colors.foreground,
+										}}
+									>
 										{session.title || `Session ${session.id.slice(0, 8)}`}
 									</Text>
-									<Text className="font-mono text-xs text-muted-foreground">
+									<Text
+										style={{
+											fontFamily: 'IBMPlexMono-Regular',
+											fontSize: 12,
+											color: colors.mutedForeground,
+											marginTop: 4,
+										}}
+									>
 										ID: {session.id.slice(0, 16)}...
 									</Text>
 								</Pressable>

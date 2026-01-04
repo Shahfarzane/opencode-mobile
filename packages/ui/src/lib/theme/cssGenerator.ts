@@ -1,4 +1,4 @@
-import type { Theme } from '@/types/theme';
+import type { Theme, MarkdownColors, ChatColors } from '@/types/theme';
 import { SEMANTIC_TYPOGRAPHY, VSCODE_TYPOGRAPHY } from '@/lib/typography';
 import { isVSCodeRuntime } from '@/lib/desktop';
 
@@ -358,7 +358,7 @@ export class CSSVariableGenerator {
     return vars;
   }
 
-  private generateMarkdownColors(markdown: Record<string, string>, theme: Theme): string[] {
+  private generateMarkdownColors(markdown: MarkdownColors, theme: Theme): string[] {
     const vars: string[] = [];
     const primary = theme.colors.primary.base;
     const chatBackground = theme.colors.chat?.background || theme.colors.surface.background;
@@ -406,7 +406,7 @@ export class CSSVariableGenerator {
     return vars;
   }
 
-  private generateChatColors(chat: Record<string, string>, theme: Theme): string[] {
+  private generateChatColors(chat: ChatColors, theme: Theme): string[] {
     const vars: string[] = [];
     const chatBackground = chat.background || theme.colors.surface.background;
 

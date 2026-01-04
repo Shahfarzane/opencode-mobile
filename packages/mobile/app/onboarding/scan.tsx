@@ -35,7 +35,7 @@ export default function ScanScreen() {
 			}
 
 			await pairWithQRCode(data);
-			router.replace("/(tabs)/chat");
+			router.push("/onboarding/directory");
 		} catch (error) {
 			Alert.alert(
 				"Connection Failed",

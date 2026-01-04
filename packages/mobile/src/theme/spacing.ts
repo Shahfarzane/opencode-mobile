@@ -1,3 +1,12 @@
+import { RADII } from '@openchamber/shared/spacing';
+
+function remToPixels(rem: string): number {
+	if (rem === '0') return 0;
+	if (rem === '9999px') return 9999;
+	const value = parseFloat(rem);
+	return Math.round(value * 16);
+}
+
 export const Spacing = {
 	0: 0,
 	0.5: 2,
@@ -25,12 +34,12 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
-	none: 0,
-	sm: 2,
-	md: 6,
-	lg: 8,
-	xl: 12,
-	"2xl": 16,
-	"3xl": 24,
-	full: 9999,
+	none: remToPixels(RADII.none),
+	sm: remToPixels(RADII.sm),
+	md: remToPixels(RADII.md),
+	lg: remToPixels(RADII.lg),
+	xl: remToPixels(RADII.xl),
+	"2xl": remToPixels(RADII['2xl']),
+	"3xl": remToPixels(RADII['3xl']),
+	full: remToPixels(RADII.full),
 } as const;

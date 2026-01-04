@@ -30,7 +30,7 @@ export default function ManualScreen() {
 				: `http://${serverUrl.trim()}`;
 
 			await connectWithPassword(normalizedUrl, password);
-			router.replace("/(tabs)/chat");
+			router.push("/onboarding/directory");
 		} catch (error) {
 			Alert.alert(
 				"Connection Failed",
