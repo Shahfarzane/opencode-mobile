@@ -69,7 +69,6 @@ export const sessionsApi = {
 	},
 
 	async getMessages(sessionId: string): Promise<SessionMessage[]> {
-		// OpenCode SDK uses /session/{id}/message (singular, not 'messages')
 		const response = await apiGet<MessagesResponse>(
 			`/api/session/${sessionId}/message`,
 			{},
