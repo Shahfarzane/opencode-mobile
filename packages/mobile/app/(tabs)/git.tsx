@@ -5,6 +5,7 @@ import {
 	Pressable,
 	RefreshControl,
 	ScrollView,
+	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -14,13 +15,14 @@ import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { gitApi, type GitStatus, type GitStatusFile } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { useTheme, typography } from "../../src/theme";
 
-function FolderIcon({ size = 16 }: { size?: number }) {
+function FolderIcon({ size = 16, color }: { size?: number; color: string }) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
 			<Path
 				d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-				stroke="#EC8B49"
+				stroke={color}
 				strokeWidth={2}
 				strokeLinecap="round"
 				strokeLinejoin="round"
@@ -52,12 +54,13 @@ function FileItem({
 	onLongPress?: () => void;
 	actionLabel?: string;
 }) {
+	const { colors } = useTheme();
 	const status = getFileStatus(file);
 
 	const statusColors = {
-		staged: "text-success",
-		modified: "text-warning",
-		untracked: "text-muted-foreground",
+		staged: colors.success,
+		modified: colors.warning,
+		untracked: colors.mutedForeground,
 	};
 
 	const statusIcons = {
@@ -70,15 +73,18 @@ function FileItem({
 		<Pressable
 			onPress={onPress}
 			onLongPress={onLongPress}
-			className="flex-row items-center gap-3 px-4 py-3 active:bg-muted"
+			style={({ pressed }) => [
+				styles.fileItem,
+				pressed && { backgroundColor: colors.muted },
+			]}
 		>
-			<View className={`w-6 items-center ${statusColors[status]}`}>
-				<Text className={`font-mono font-bold ${statusColors[status]}`}>
+			<View style={styles.statusIcon}>
+				<Text style={[typography.uiLabel, { color: statusColors[status], fontWeight: "700" }]}>
 					{statusIcons[status]}
 				</Text>
 			</View>
 			<Text
-				className="flex-1 font-mono text-sm text-foreground"
+				style={[typography.meta, { color: colors.foreground, flex: 1 }]}
 				numberOfLines={1}
 			>
 				{file.path}
@@ -86,9 +92,9 @@ function FileItem({
 			{actionLabel && (
 				<Pressable
 					onPress={onLongPress}
-					className="rounded bg-muted px-2 py-1"
+					style={[styles.actionButton, { backgroundColor: colors.muted }]}
 				>
-					<Text className="font-mono text-xs text-muted-foreground">
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{actionLabel}
 					</Text>
 				</Pressable>
@@ -98,22 +104,26 @@ function FileItem({
 }
 
 function SectionHeader({ title, count }: { title: string; count: number }) {
+	const { colors } = useTheme();
+
 	return (
-		<View className="flex-row items-center justify-between bg-muted px-4 py-2">
-			<Text className="font-mono text-sm font-medium text-muted-foreground">
+		<View style={[styles.sectionHeader, { backgroundColor: colors.muted }]}>
+			<Text style={[typography.meta, { color: colors.mutedForeground, fontWeight: "500" }]}>
 				{title}
 			</Text>
-			<View className="rounded-full bg-card px-2 py-0.5">
-				<Text className="font-mono text-xs text-muted-foreground">{count}</Text>
+			<View style={[styles.countBadge, { backgroundColor: colors.card }]}>
+				<Text style={[typography.micro, { color: colors.mutedForeground }]}>{count}</Text>
 			</View>
 		</View>
 	);
 }
 
 function EmptyState({ message }: { message: string }) {
+	const { colors } = useTheme();
+
 	return (
-		<View className="flex-1 items-center justify-center px-8 py-16">
-			<Text className="text-center font-mono text-muted-foreground">
+		<View style={styles.emptyState}>
+			<Text style={[typography.body, { color: colors.mutedForeground, textAlign: "center" }]}>
 				{message}
 			</Text>
 		</View>
@@ -133,6 +143,7 @@ function CommitSheet({
 	isCommitting: boolean;
 	stagedFiles: GitStatusFile[];
 }) {
+	const { colors } = useTheme();
 	const [message, setMessage] = useState("");
 	const [isGenerating, setIsGenerating] = useState(false);
 
@@ -147,8 +158,9 @@ function CommitSheet({
 			if (result.message?.subject) {
 				setMessage(result.message.subject);
 			}
-		} catch {
-			Alert.alert("Error", "Failed to generate commit message");
+		} catch (err) {
+			const errorMsg = err instanceof Error ? err.message : "Failed to generate commit message";
+			Alert.alert("Error", errorMsg);
 		} finally {
 			setIsGenerating(false);
 		}
@@ -166,15 +178,15 @@ function CommitSheet({
 	if (!visible) return null;
 
 	return (
-		<View className="absolute inset-0 bg-black/50">
-			<Pressable className="flex-1" onPress={onClose} />
-			<View className="rounded-t-3xl bg-background p-4">
-				<View className="mb-4 flex-row items-center justify-between">
-					<Text className="font-mono text-lg font-semibold text-foreground">
+		<View style={styles.sheetOverlay}>
+			<Pressable style={styles.sheetBackdrop} onPress={onClose} />
+			<View style={[styles.sheetContent, { backgroundColor: colors.background }]}>
+				<View style={styles.sheetHeader}>
+					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 						Commit Changes
 					</Text>
 					<Pressable onPress={onClose}>
-						<Text className="font-mono text-muted-foreground">Cancel</Text>
+						<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>Cancel</Text>
 					</Pressable>
 				</View>
 
@@ -182,23 +194,38 @@ function CommitSheet({
 					value={message}
 					onChangeText={setMessage}
 					placeholder="Commit message..."
-					placeholderTextColor="#878580"
+					placeholderTextColor={colors.mutedForeground}
 					multiline
 					numberOfLines={4}
-					className="mb-4 min-h-[100px] rounded-lg border border-border bg-input p-3 font-mono text-foreground"
+					style={[
+						styles.messageInput,
+						typography.body,
+						{
+							backgroundColor: colors.input,
+							borderColor: colors.border,
+							color: colors.foreground,
+						},
+					]}
 					editable={!isCommitting}
 				/>
 
-				<View className="flex-row gap-3">
+				<View style={styles.sheetActions}>
 					<Pressable
 						onPress={generateMessage}
 						disabled={isGenerating || stagedFiles.length === 0}
-						className="flex-1 items-center rounded-lg border border-border bg-card py-3 active:opacity-80 disabled:opacity-50"
+						style={[
+							styles.sheetButton,
+							{
+								backgroundColor: colors.card,
+								borderColor: colors.border,
+								opacity: isGenerating || stagedFiles.length === 0 ? 0.5 : 1,
+							},
+						]}
 					>
 						{isGenerating ? (
-							<ActivityIndicator size="small" />
+							<ActivityIndicator size="small" color={colors.foreground} />
 						) : (
-							<Text className="font-mono font-medium text-foreground">
+							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>
 								Generate
 							</Text>
 						)}
@@ -207,12 +234,18 @@ function CommitSheet({
 					<Pressable
 						onPress={handleCommit}
 						disabled={isCommitting || !message.trim()}
-						className="flex-1 items-center rounded-lg bg-primary py-3 active:opacity-80 disabled:opacity-50"
+						style={[
+							styles.sheetButton,
+							{
+								backgroundColor: colors.primary,
+								opacity: isCommitting || !message.trim() ? 0.5 : 1,
+							},
+						]}
 					>
 						{isCommitting ? (
-							<ActivityIndicator size="small" color="#FFFCF0" />
+							<ActivityIndicator size="small" color={colors.primaryForeground} />
 						) : (
-							<Text className="font-mono font-medium text-primary-foreground">
+							<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
 								Commit
 							</Text>
 						)}
@@ -225,6 +258,7 @@ function CommitSheet({
 
 export default function GitScreen() {
 	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 	const { isConnected, directory } = useConnectionStore();
 
 	const [status, setStatus] = useState<GitStatus | null>(null);
@@ -395,8 +429,8 @@ export default function GitScreen() {
 	const renderContent = () => {
 		if (isLoading) {
 			return (
-				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" />
+				<View style={styles.loadingContainer}>
+					<ActivityIndicator size="large" color={colors.primary} />
 				</View>
 			);
 		}
@@ -415,66 +449,66 @@ export default function GitScreen() {
 
 		return (
 			<ScrollView
-				className="flex-1"
+				style={styles.scrollView}
 				refreshControl={
 					<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
 				}
 			>
-			{stagedFiles.length > 0 && (
-				<View>
-					<SectionHeader title="Staged Changes" count={stagedFiles.length} />
-					{stagedFiles.map((file) => (
-						<FileItem
-							key={file.path}
-							file={file}
-							onLongPress={() => handleUnstageFile(file.path)}
-							actionLabel="Unstage"
-						/>
-					))}
-				</View>
-			)}
+				{stagedFiles.length > 0 && (
+					<View>
+						<SectionHeader title="Staged Changes" count={stagedFiles.length} />
+						{stagedFiles.map((file) => (
+							<FileItem
+								key={file.path}
+								file={file}
+								onLongPress={() => handleUnstageFile(file.path)}
+								actionLabel="Unstage"
+							/>
+						))}
+					</View>
+				)}
 
-			{(modifiedFiles.length > 0 || untrackedFiles.length > 0) && (
-				<View className="flex-row items-center justify-between bg-muted px-4 py-2">
-					<Text className="font-mono text-sm font-medium text-muted-foreground">
-						Changes ({modifiedFiles.length + untrackedFiles.length})
-					</Text>
-					<Pressable
-						onPress={handleStageAll}
-						className="rounded bg-card px-2 py-1"
-					>
-						<Text className="font-mono text-xs text-primary">Stage All</Text>
-					</Pressable>
-				</View>
-			)}
+				{(modifiedFiles.length > 0 || untrackedFiles.length > 0) && (
+					<View style={[styles.changesHeader, { backgroundColor: colors.muted }]}>
+						<Text style={[typography.meta, { color: colors.mutedForeground, fontWeight: "500" }]}>
+							Changes ({modifiedFiles.length + untrackedFiles.length})
+						</Text>
+						<Pressable
+							onPress={handleStageAll}
+							style={[styles.stageAllButton, { backgroundColor: colors.card }]}
+						>
+							<Text style={[typography.micro, { color: colors.primary }]}>Stage All</Text>
+						</Pressable>
+					</View>
+				)}
 
-			{modifiedFiles.length > 0 && (
-				<View>
-					{modifiedFiles.map((file) => (
-						<FileItem
-							key={file.path}
-							file={file}
-							onPress={() => handleStageFile(file.path)}
-							onLongPress={() => handleRevertFile(file.path)}
-							actionLabel="Stage"
-						/>
-					))}
-				</View>
-			)}
+				{modifiedFiles.length > 0 && (
+					<View>
+						{modifiedFiles.map((file) => (
+							<FileItem
+								key={file.path}
+								file={file}
+								onPress={() => handleStageFile(file.path)}
+								onLongPress={() => handleRevertFile(file.path)}
+								actionLabel="Stage"
+							/>
+						))}
+					</View>
+				)}
 
-			{untrackedFiles.length > 0 && (
-				<View>
-					<SectionHeader title="Untracked" count={untrackedFiles.length} />
-					{untrackedFiles.map((file) => (
-						<FileItem
-							key={file.path}
-							file={file}
-							onPress={() => handleStageFile(file.path)}
-							actionLabel="Stage"
-						/>
-					))}
-				</View>
-			)}
+				{untrackedFiles.length > 0 && (
+					<View>
+						<SectionHeader title="Untracked" count={untrackedFiles.length} />
+						{untrackedFiles.map((file) => (
+							<FileItem
+								key={file.path}
+								file={file}
+								onPress={() => handleStageFile(file.path)}
+								actionLabel="Stage"
+							/>
+						))}
+					</View>
+				)}
 			</ScrollView>
 		);
 	};
@@ -482,52 +516,50 @@ export default function GitScreen() {
 	const directoryName = directory?.split("/").pop() || "Select Directory";
 
 	return (
-		<View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-			<View className="border-b border-border px-4 py-2">
+		<View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Pressable
 					onPress={() => router.push("/onboarding/directory")}
-					className="mb-2 flex-row items-center gap-2 rounded-lg bg-muted px-3 py-2"
+					style={[styles.directoryButton, { backgroundColor: colors.muted }]}
 				>
-					<FolderIcon />
-					<Text className="flex-1 font-mono text-sm text-foreground" numberOfLines={1}>
+					<FolderIcon color={colors.primary} />
+					<Text style={[typography.meta, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
 						{directoryName}
 					</Text>
-					<Text className="font-mono text-xs text-muted-foreground">Change</Text>
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>Change</Text>
 				</Pressable>
-				<Text className="font-mono text-lg font-semibold text-foreground">
-					Git
-				</Text>
+				<Text style={[typography.uiHeader, { color: colors.foreground }]}>Git</Text>
 			</View>
 
 			{status && (
-				<View className="flex-row items-center justify-between border-b border-border px-4 py-4">
-					<View className="flex-row items-center gap-2">
+				<View style={[styles.branchBar, { borderBottomColor: colors.border }]}>
+					<View style={styles.branchInfo}>
 						<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
 							<Path
 								d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-								stroke="#EC8B49"
+								stroke={colors.primary}
 								strokeWidth={2}
 								strokeLinecap="round"
 							/>
 							<Path
 								d="M18 9a9 9 0 0 1-9 9"
-								stroke="#EC8B49"
+								stroke={colors.primary}
 								strokeWidth={2}
 								strokeLinecap="round"
 							/>
 						</Svg>
-						<Text className="font-mono text-base font-medium text-foreground">
+						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>
 							{status.current}
 						</Text>
 					</View>
-					<View className="flex-row items-center gap-2">
+					<View style={styles.syncStatus}>
 						{status.ahead > 0 && (
-							<Text className="font-mono text-sm text-success">
+							<Text style={[typography.meta, { color: colors.success }]}>
 								↑{status.ahead}
 							</Text>
 						)}
 						{status.behind > 0 && (
-							<Text className="font-mono text-sm text-destructive">
+							<Text style={[typography.meta, { color: colors.destructive }]}>
 								↓{status.behind}
 							</Text>
 						)}
@@ -538,38 +570,60 @@ export default function GitScreen() {
 			{renderContent()}
 
 			<View
-				className="flex-row gap-3 border-t border-border px-4 py-4"
-				style={{ paddingBottom: insets.bottom + 16 }}
+				style={[
+					styles.footer,
+					{ borderTopColor: colors.border, paddingBottom: insets.bottom + 16 },
+				]}
 			>
 				<Pressable
 					onPress={handlePull}
 					disabled={isPulling || !status}
-					className="flex-1 items-center rounded-lg border border-border bg-card py-3 active:opacity-80 disabled:opacity-50"
+					style={[
+						styles.footerButton,
+						{
+							backgroundColor: colors.card,
+							borderColor: colors.border,
+							opacity: isPulling || !status ? 0.5 : 1,
+						},
+					]}
 				>
 					{isPulling ? (
-						<ActivityIndicator size="small" />
+						<ActivityIndicator size="small" color={colors.foreground} />
 					) : (
-						<Text className="font-mono font-medium text-foreground">Pull</Text>
+						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>Pull</Text>
 					)}
 				</Pressable>
 				<Pressable
 					onPress={() => setShowCommitSheet(true)}
 					disabled={stagedFiles.length === 0 && modifiedFiles.length === 0}
-					className="flex-1 items-center rounded-lg bg-primary py-3 active:opacity-80 disabled:opacity-50"
+					style={[
+						styles.footerButton,
+						{
+							backgroundColor: colors.primary,
+							opacity: stagedFiles.length === 0 && modifiedFiles.length === 0 ? 0.5 : 1,
+						},
+					]}
 				>
-					<Text className="font-mono font-medium text-primary-foreground">
+					<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
 						Commit
 					</Text>
 				</Pressable>
 				<Pressable
 					onPress={handlePush}
 					disabled={isPushing || !status || status.ahead === 0}
-					className="flex-1 items-center rounded-lg border border-border bg-card py-3 active:opacity-80 disabled:opacity-50"
+					style={[
+						styles.footerButton,
+						{
+							backgroundColor: colors.card,
+							borderColor: colors.border,
+							opacity: isPushing || !status || status.ahead === 0 ? 0.5 : 1,
+						},
+					]}
 				>
 					{isPushing ? (
-						<ActivityIndicator size="small" />
+						<ActivityIndicator size="small" color={colors.foreground} />
 					) : (
-						<Text className="font-mono font-medium text-foreground">Push</Text>
+						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>Push</Text>
 					)}
 				</Pressable>
 			</View>
@@ -584,3 +638,150 @@ export default function GitScreen() {
 		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	header: {
+		borderBottomWidth: 1,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	directoryButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		marginBottom: 8,
+	},
+	branchBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		borderBottomWidth: 1,
+		paddingHorizontal: 16,
+		paddingVertical: 16,
+	},
+	branchInfo: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	syncStatus: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	loadingContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	scrollView: {
+		flex: 1,
+	},
+	fileItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+	statusIcon: {
+		width: 24,
+		alignItems: "center",
+	},
+	actionButton: {
+		borderRadius: 4,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+	},
+	sectionHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	countBadge: {
+		borderRadius: 12,
+		paddingHorizontal: 8,
+		paddingVertical: 2,
+	},
+	changesHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	stageAllButton: {
+		borderRadius: 4,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+	},
+	emptyState: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 32,
+		paddingVertical: 64,
+	},
+	footer: {
+		flexDirection: "row",
+		gap: 12,
+		borderTopWidth: 1,
+		paddingHorizontal: 16,
+		paddingTop: 16,
+	},
+	footerButton: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 8,
+		borderWidth: 1,
+		paddingVertical: 12,
+	},
+	sheetOverlay: {
+		...StyleSheet.absoluteFillObject,
+		backgroundColor: "rgba(0,0,0,0.5)",
+	},
+	sheetBackdrop: {
+		flex: 1,
+	},
+	sheetContent: {
+		borderTopLeftRadius: 24,
+		borderTopRightRadius: 24,
+		padding: 16,
+	},
+	sheetHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginBottom: 16,
+	},
+	messageInput: {
+		minHeight: 100,
+		borderRadius: 8,
+		borderWidth: 1,
+		padding: 12,
+		textAlignVertical: "top",
+		marginBottom: 16,
+	},
+	sheetActions: {
+		flexDirection: "row",
+		gap: 12,
+	},
+	sheetButton: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 8,
+		borderWidth: 1,
+		borderColor: "transparent",
+		paddingVertical: 12,
+	},
+});

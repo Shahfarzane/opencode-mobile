@@ -101,4 +101,16 @@ export const sessionsApi = {
 
 		await apiPost(`/api/session/${sessionId}/prompt_async`, body, true);
 	},
+
+	async respondToPermission(
+		sessionId: string,
+		permissionId: string,
+		response: "once" | "always" | "reject",
+	): Promise<void> {
+		await apiPost(
+			`/api/session/${sessionId}/permission/${permissionId}/respond`,
+			{ response },
+			true,
+		);
+	},
 };

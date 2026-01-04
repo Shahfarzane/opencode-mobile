@@ -1,34 +1,33 @@
-import { useState, useCallback } from "react";
-import { View, Text, useColorScheme } from "react-native";
+import { useState, useCallback, createContext, useContext, useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Header } from "../../src/components/layout/Header";
+import { useTheme, typography } from "../../src/theme";
+import type { ContextUsage } from "../../src/components/chat";
 
 type MainTab = 'chat' | 'diff' | 'terminal' | 'git';
 
+interface ContextUsageContextType {
+	contextUsage: ContextUsage | null;
+	setContextUsage: (usage: ContextUsage | null) => void;
+}
+
+const ContextUsageContext = createContext<ContextUsageContextType>({
+	contextUsage: null,
+	setContextUsage: () => {},
+});
+
+export const useContextUsageContext = () => useContext(ContextUsageContext);
+
 function PlaceholderScreen({ title }: { title: string }) {
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === "dark";
-	
-	const colors = {
-		background: isDark ? "#100F0F" : "#FFFCF0",
-		foreground: isDark ? "#CECDC3" : "#100F0F",
-		mutedForeground: isDark ? "#878580" : "#6F6E69",
-	};
+	const { colors } = useTheme();
 
 	return (
-		<View 
-			style={{ 
-				flex: 1, 
-				alignItems: 'center', 
-				justifyContent: 'center',
-				backgroundColor: colors.background,
-				gap: 8,
-			}}
-		>
-			<Text style={{ fontFamily: 'IBMPlexMono-SemiBold', fontSize: 18, color: colors.foreground }}>
+		<View style={[styles.placeholder, { backgroundColor: colors.background }]}>
+			<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 				{title}
 			</Text>
-			<Text style={{ fontFamily: 'IBMPlexMono-Regular', fontSize: 14, color: colors.mutedForeground }}>
+			<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
 				Coming soon
 			</Text>
 		</View>
@@ -36,14 +35,10 @@ function PlaceholderScreen({ title }: { title: string }) {
 }
 
 export default function TabsLayout() {
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === "dark";
+	const { colors } = useTheme();
 	const [activeTab, setActiveTab] = useState<MainTab>('chat');
 	const [showSettings, setShowSettings] = useState(false);
-
-	const colors = {
-		background: isDark ? "#100F0F" : "#FFFCF0",
-	};
+	const [contextUsage, setContextUsage] = useState<ContextUsage | null>(null);
 
 	const handleMenuPress = useCallback(() => {
 		router.push("/onboarding/directory");
@@ -62,6 +57,11 @@ export default function TabsLayout() {
 	const SettingsScreen = require("./settings").default;
 	const GitScreen = require("./git").default;
 	const TerminalScreen = require("./terminal").default;
+
+	const contextUsageValue = useMemo(() => ({
+		contextUsage,
+		setContextUsage,
+	}), [contextUsage]);
 
 	const renderContent = () => {
 		if (showSettings) {
@@ -83,16 +83,34 @@ export default function TabsLayout() {
 	};
 
 	return (
-		<View style={{ flex: 1, backgroundColor: colors.background }}>
-			<Header
-				activeTab={activeTab}
-				onTabChange={handleTabChange}
-				onMenuPress={handleMenuPress}
-				onSettingsPress={handleSettingsPress}
-			/>
-			<View style={{ flex: 1 }}>
-				{renderContent()}
+		<ContextUsageContext.Provider value={contextUsageValue}>
+			<View style={[styles.container, { backgroundColor: colors.background }]}>
+				<Header
+					activeTab={activeTab}
+					onTabChange={handleTabChange}
+					onMenuPress={handleMenuPress}
+					onSettingsPress={handleSettingsPress}
+					contextUsage={contextUsage}
+				/>
+				<View style={styles.content}>
+					{renderContent()}
+				</View>
 			</View>
-		</View>
+		</ContextUsageContext.Provider>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	content: {
+		flex: 1,
+	},
+	placeholder: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 8,
+	},
+});

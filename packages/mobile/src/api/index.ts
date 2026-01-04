@@ -45,3 +45,12 @@ export type {
 	TerminalSession,
 	TerminalStreamEvent,
 } from "./terminal";
+
+export { agentsApi, isAgentBuiltIn, isAgentHidden } from "./agents";
+export type { Agent, AgentConfig } from "./agents";
+
+export { commandsApi, isCommandBuiltIn } from "./commands";
+export type { Command, CommandConfig } from "./commands";
+
+export { providersApi } from "./providers";
+export type { Provider, Model } from "./providers";

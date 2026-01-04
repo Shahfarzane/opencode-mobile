@@ -4,6 +4,7 @@ import {
 	FlatList,
 	Pressable,
 	RefreshControl,
+	StyleSheet,
 	Text,
 	View,
 } from "react-native";
@@ -12,13 +13,14 @@ import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { filesApi, type FileListEntry } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { useTheme, typography } from "../../src/theme";
 
-function FolderIcon({ size = 20 }: { size?: number }) {
+function FolderIcon({ size = 20, color }: { size?: number; color: string }) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
 			<Path
 				d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-				stroke="#EC8B49"
+				stroke={color}
 				strokeWidth={2}
 				strokeLinecap="round"
 				strokeLinejoin="round"
@@ -27,12 +29,12 @@ function FolderIcon({ size = 20 }: { size?: number }) {
 	);
 }
 
-function FileIcon({ size = 20, extension }: { size?: number; extension?: string }) {
+function FileIcon({ size = 20, extension, colors }: { size?: number; extension?: string; colors: { code: string; config: string; doc: string; default: string } }) {
 	const isCode = ["ts", "tsx", "js", "jsx", "py", "go", "rs", "rb", "java", "c", "cpp", "h"].includes(extension || "");
 	const isConfig = ["json", "yaml", "yml", "toml", "xml", "env"].includes(extension || "");
 	const isDoc = ["md", "txt", "doc", "pdf"].includes(extension || "");
 
-	const color = isCode ? "#4385BE" : isConfig ? "#8B7EC8" : isDoc ? "#879A39" : "#878580";
+	const color = isCode ? colors.code : isConfig ? colors.config : isDoc ? colors.doc : colors.default;
 
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -61,26 +63,41 @@ function FileItem({
 	item: FileListEntry;
 	onPress: () => void;
 }) {
+	const { colors } = useTheme();
 	const extension = item.name.split(".").pop()?.toLowerCase();
+
+	const fileColors = {
+		code: colors.info,
+		config: colors.primary,
+		doc: colors.success,
+		default: colors.mutedForeground,
+	};
 
 	return (
 		<Pressable
 			onPress={onPress}
-			className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-muted"
+			style={({ pressed }) => [
+				styles.fileItem,
+				{ borderBottomColor: colors.border },
+				pressed && { backgroundColor: colors.muted },
+			]}
 		>
 			{item.isDirectory ? (
-				<FolderIcon />
+				<FolderIcon color={colors.primary} />
 			) : (
-				<FileIcon extension={extension} />
+				<FileIcon extension={extension} colors={fileColors} />
 			)}
-			<Text className="flex-1 font-mono text-base text-foreground" numberOfLines={1}>
+			<Text
+				style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]}
+				numberOfLines={1}
+			>
 				{item.name}
 			</Text>
 			{item.isDirectory && (
 				<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
 					<Path
 						d="M9 18l6-6-6-6"
-						stroke="#878580"
+						stroke={colors.mutedForeground}
 						strokeWidth={2}
 						strokeLinecap="round"
 						strokeLinejoin="round"
@@ -100,6 +117,7 @@ function PathBreadcrumb({
 	rootPath: string;
 	onNavigate: (path: string) => void;
 }) {
+	const { colors } = useTheme();
 	const relativePath = path.startsWith(rootPath)
 		? path.slice(rootPath.length)
 		: path;
@@ -107,18 +125,18 @@ function PathBreadcrumb({
 	const parts = relativePath.split("/").filter(Boolean);
 
 	return (
-		<View className="flex-row flex-wrap items-center gap-1 border-b border-border px-4 py-2">
+		<View style={[styles.breadcrumb, { borderBottomColor: colors.border }]}>
 			<Pressable onPress={() => onNavigate(rootPath)}>
-				<Text className="font-mono text-sm text-primary">~</Text>
+				<Text style={[typography.meta, { color: colors.primary }]}>~</Text>
 			</Pressable>
 			{parts.map((part, index) => {
 				const fullPath = rootPath + "/" + parts.slice(0, index + 1).join("/");
 
 				return (
-					<View key={index} className="flex-row items-center gap-1">
-						<Text className="font-mono text-sm text-muted-foreground">/</Text>
+					<View key={fullPath} style={styles.breadcrumbPart}>
+						<Text style={[typography.meta, { color: colors.mutedForeground }]}>/</Text>
 						<Pressable onPress={() => onNavigate(fullPath)}>
-							<Text className="font-mono text-sm text-primary">{part}</Text>
+							<Text style={[typography.meta, { color: colors.primary }]}>{part}</Text>
 						</Pressable>
 					</View>
 				);
@@ -129,6 +147,7 @@ function PathBreadcrumb({
 
 export default function FilesScreen() {
 	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 	const { isConnected, directory } = useConnectionStore();
 
 	const [currentPath, setCurrentPath] = useState<string>(directory || "/");
@@ -200,20 +219,20 @@ export default function FilesScreen() {
 
 	if (!directory) {
 		return (
-			<View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-				<View className="flex-1 items-center justify-center px-8">
-					<FolderIcon size={48} />
-					<Text className="mt-4 text-center font-mono text-lg text-foreground">
+			<View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+				<View style={styles.emptyStateContainer}>
+					<FolderIcon size={48} color={colors.primary} />
+					<Text style={[typography.uiHeader, { color: colors.foreground, marginTop: 16 }]}>
 						No Directory Selected
 					</Text>
-					<Text className="mt-2 text-center font-mono text-muted-foreground">
+					<Text style={[typography.body, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>
 						Select a project directory to browse files
 					</Text>
 					<Pressable
 						onPress={() => router.push("/onboarding/directory")}
-						className="mt-6 rounded-lg bg-primary px-6 py-3"
+						style={[styles.selectButton, { backgroundColor: colors.primary }]}
 					>
-						<Text className="font-mono font-medium text-primary-foreground">
+						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
 							Select Directory
 						</Text>
 					</Pressable>
@@ -223,21 +242,19 @@ export default function FilesScreen() {
 	}
 
 	return (
-		<View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-			<View className="border-b border-border px-4 py-2">
+		<View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Pressable
 					onPress={() => router.push("/onboarding/directory")}
-					className="mb-2 flex-row items-center gap-2 rounded-lg bg-muted px-3 py-2"
+					style={[styles.directoryButton, { backgroundColor: colors.muted }]}
 				>
-					<FolderIcon />
-					<Text className="flex-1 font-mono text-sm text-foreground" numberOfLines={1}>
+					<FolderIcon color={colors.primary} />
+					<Text style={[typography.meta, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
 						{directoryName}
 					</Text>
-					<Text className="font-mono text-xs text-muted-foreground">Change</Text>
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>Change</Text>
 				</Pressable>
-				<Text className="font-mono text-lg font-semibold text-foreground">
-					Files
-				</Text>
+				<Text style={[typography.uiHeader, { color: colors.foreground }]}>Files</Text>
 			</View>
 
 			<PathBreadcrumb
@@ -247,17 +264,17 @@ export default function FilesScreen() {
 			/>
 
 			{isLoading && !isRefreshing ? (
-				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" />
+				<View style={styles.loadingContainer}>
+					<ActivityIndicator size="large" color={colors.primary} />
 				</View>
 			) : error ? (
-				<View className="flex-1 items-center justify-center px-8">
-					<Text className="text-center font-mono text-destructive">{error}</Text>
+				<View style={styles.errorContainer}>
+					<Text style={[typography.body, { color: colors.destructive, textAlign: "center" }]}>{error}</Text>
 					<Pressable
 						onPress={() => loadDirectory(currentPath)}
-						className="mt-4 rounded-lg bg-muted px-4 py-2"
+						style={[styles.retryButton, { backgroundColor: colors.muted }]}
 					>
-						<Text className="font-mono text-foreground">Retry</Text>
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Retry</Text>
 					</Pressable>
 				</View>
 			) : (
@@ -271,18 +288,22 @@ export default function FilesScreen() {
 						canGoUp ? (
 							<Pressable
 								onPress={handleGoUp}
-								className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-muted"
+								style={({ pressed }) => [
+									styles.fileItem,
+									{ borderBottomColor: colors.border },
+									pressed && { backgroundColor: colors.muted },
+								]}
 							>
 								<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
 									<Path
 										d="M17 11l-5-5-5 5M12 6v12"
-										stroke="#878580"
+										stroke={colors.mutedForeground}
 										strokeWidth={2}
 										strokeLinecap="round"
 										strokeLinejoin="round"
 									/>
 								</Svg>
-								<Text className="font-mono text-base text-muted-foreground">..</Text>
+								<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>..</Text>
 							</Pressable>
 						) : null
 					}
@@ -290,8 +311,8 @@ export default function FilesScreen() {
 						<FileItem item={item} onPress={() => handleItemPress(item)} />
 					)}
 					ListEmptyComponent={
-						<View className="items-center py-8">
-							<Text className="font-mono text-muted-foreground">
+						<View style={styles.emptyList}>
+							<Text style={[typography.body, { color: colors.mutedForeground }]}>
 								Empty directory
 							</Text>
 						</View>
@@ -301,3 +322,78 @@ export default function FilesScreen() {
 		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	header: {
+		borderBottomWidth: 1,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	directoryButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		marginBottom: 8,
+	},
+	breadcrumb: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		alignItems: "center",
+		gap: 4,
+		borderBottomWidth: 1,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	breadcrumbPart: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+	},
+	loadingContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	errorContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 32,
+	},
+	retryButton: {
+		marginTop: 16,
+		borderRadius: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	fileItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		borderBottomWidth: 1,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+	emptyList: {
+		alignItems: "center",
+		paddingVertical: 32,
+	},
+	emptyStateContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 32,
+	},
+	selectButton: {
+		marginTop: 24,
+		borderRadius: 8,
+		paddingHorizontal: 24,
+		paddingVertical: 12,
+	},
+});

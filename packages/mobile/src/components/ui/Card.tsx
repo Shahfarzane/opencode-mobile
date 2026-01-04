@@ -1,72 +1,110 @@
-import { View, type ViewProps } from "react-native";
+import { StyleSheet, View, type ViewProps, type ViewStyle } from "react-native";
+import { useTheme } from "@/theme";
 
 interface CardProps extends ViewProps {
-  variant?: "default" | "elevated" | "outlined";
-  padding?: "none" | "sm" | "md" | "lg";
+	variant?: "default" | "elevated" | "outlined";
+	padding?: "none" | "sm" | "md" | "lg";
 }
 
-const variantStyles: Record<NonNullable<CardProps["variant"]>, string> = {
-  default: "bg-card",
-  elevated: "bg-card shadow-sm",
-  outlined: "bg-card border border-border",
-};
-
-const paddingStyles: Record<NonNullable<CardProps["padding"]>, string> = {
-  none: "",
-  sm: "p-3",
-  md: "p-4",
-  lg: "p-6",
+const paddingValues: Record<NonNullable<CardProps["padding"]>, number> = {
+	none: 0,
+	sm: 12,
+	md: 16,
+	lg: 24,
 };
 
 export function Card({
-  variant = "default",
-  padding = "md",
-  className = "",
-  children,
-  ...props
+	variant = "default",
+	padding = "md",
+	style,
+	children,
+	...props
 }: CardProps) {
-  return (
-    <View
-      className={`rounded-2xl ${variantStyles[variant]} ${paddingStyles[padding]} ${className}`}
-      {...props}
-    >
-      {children}
-    </View>
-  );
+	const { colors } = useTheme();
+
+	const getVariantStyle = (): ViewStyle => {
+		switch (variant) {
+			case "elevated":
+				return {
+					backgroundColor: colors.card,
+					shadowColor: "#000",
+					shadowOffset: { width: 0, height: 1 },
+					shadowOpacity: 0.1,
+					shadowRadius: 2,
+					elevation: 2,
+				};
+			case "outlined":
+				return {
+					backgroundColor: colors.card,
+					borderWidth: 1,
+					borderColor: colors.border,
+				};
+			default:
+				return {
+					backgroundColor: colors.card,
+				};
+		}
+	};
+
+	return (
+		<View
+			style={[
+				styles.card,
+				getVariantStyle(),
+				{ padding: paddingValues[padding] },
+				style,
+			]}
+			{...props}
+		>
+			{children}
+		</View>
+	);
 }
 
 interface CardHeaderProps extends ViewProps {
-  className?: string;
+	style?: ViewStyle;
 }
 
-export function CardHeader({ className = "", children, ...props }: CardHeaderProps) {
-  return (
-    <View className={`pb-3 ${className}`} {...props}>
-      {children}
-    </View>
-  );
+export function CardHeader({ style, children, ...props }: CardHeaderProps) {
+	return (
+		<View style={[styles.header, style]} {...props}>
+			{children}
+		</View>
+	);
 }
 
 interface CardContentProps extends ViewProps {
-  className?: string;
+	style?: ViewStyle;
 }
 
-export function CardContent({ className = "", children, ...props }: CardContentProps) {
-  return (
-    <View className={className} {...props}>
-      {children}
-    </View>
-  );
+export function CardContent({ style, children, ...props }: CardContentProps) {
+	return (
+		<View style={style} {...props}>
+			{children}
+		</View>
+	);
 }
 
 interface CardFooterProps extends ViewProps {
-  className?: string;
+	style?: ViewStyle;
 }
 
-export function CardFooter({ className = "", children, ...props }: CardFooterProps) {
-  return (
-    <View className={`pt-3 ${className}`} {...props}>
-      {children}
-    </View>
-  );
+export function CardFooter({ style, children, ...props }: CardFooterProps) {
+	return (
+		<View style={[styles.footer, style]} {...props}>
+			{children}
+		</View>
+	);
 }
+
+const styles = StyleSheet.create({
+	card: {
+		borderRadius: 16,
+	},
+	header: {
+		paddingBottom: 12,
+	},
+	footer: {
+		paddingTop: 12,
+	},
+});

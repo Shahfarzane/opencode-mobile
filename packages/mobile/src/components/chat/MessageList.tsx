@@ -1,10 +1,12 @@
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useCallback, useRef } from "react";
-import { Text, View, useColorScheme } from "react-native";
+import { Text, View, StyleSheet } from "react-native";
 import { ChatMessage } from "./ChatMessage";
 import type { Message } from "./types";
 import { OpenChamberLogo } from "../ui/OpenChamberLogo";
 import { TextLoop } from "../ui/TextLoop";
+import { useTheme, typography } from "@/theme";
+import type { TextStyle } from "react-native";
 
 type MessageListProps = {
 	messages: Message[];
@@ -31,26 +33,19 @@ const phrases = [
 ];
 
 function EmptyState() {
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === 'dark';
-	
+	const { isDark } = useTheme();
 	const textColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
 
 	return (
-		<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 24 }}>
+		<View style={styles.emptyContainer}>
 			<OpenChamberLogo width={140} height={140} opacity={0.2} isAnimated />
 			<TextLoop
 				interval={4}
-				style={{ minHeight: 24 }}
-				textStyle={{
-					fontFamily: 'IBMPlexMono-Regular',
-					fontSize: 14,
-					color: textColor,
-					textAlign: 'center',
-				}}
+				style={styles.textLoopContainer}
+				textStyle={{ ...typography.uiLabel, ...styles.phraseText, color: textColor } as TextStyle}
 			>
 				{phrases.map((phrase) => (
-					<Text key={phrase} style={{ fontFamily: 'IBMPlexMono-Regular', fontSize: 14, color: textColor }}>
+					<Text key={phrase} style={[typography.uiLabel, { color: textColor }]}>
 						"{phrase}..."
 					</Text>
 				))}
@@ -60,18 +55,14 @@ function EmptyState() {
 }
 
 function LoadingIndicator() {
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === 'dark';
-
-	const colors = {
-		card: isDark ? "#282726" : "#F2F0E5",
-		mutedForeground: isDark ? "#878580" : "#6F6E69",
-	};
+	const { colors } = useTheme();
 
 	return (
-		<View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
-			<View style={{ maxWidth: '85%', borderRadius: 12, backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 12 }}>
-				<Text style={{ fontFamily: 'IBMPlexMono-Regular', color: colors.mutedForeground }}>Thinking...</Text>
+		<View style={styles.loadingContainer}>
+			<View style={[styles.loadingBubble, { backgroundColor: colors.card }]}>
+				<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+					Thinking...
+				</Text>
 			</View>
 		</View>
 	);
@@ -113,3 +104,29 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 		/>
 	);
 }
+
+const styles = StyleSheet.create({
+	emptyContainer: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		paddingHorizontal: 32,
+		gap: 24,
+	},
+	textLoopContainer: {
+		minHeight: 24,
+	},
+	phraseText: {
+		textAlign: 'center',
+	},
+	loadingContainer: {
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	loadingBubble: {
+		maxWidth: '85%',
+		borderRadius: 12,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+});

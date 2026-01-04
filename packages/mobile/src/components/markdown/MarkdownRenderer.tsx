@@ -1,8 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType } from "react";
-import { useColorScheme } from "react-native";
-import { FlexokiDark, FlexokiLight } from "@/theme/colors";
 import { CodeBlock } from "./CodeBlock";
+import { useTheme } from "@/theme";
 
 // React 19 compatibility: library types are incompatible with React 19's stricter render() return type
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -16,9 +15,7 @@ type MarkdownRendererProps = {
 };
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === "dark";
-	const colors = isDark ? FlexokiDark : FlexokiLight;
+	const { colors } = useTheme();
 
 	const rules = {
 		fence: (node: { key: string; content: string; sourceInfo: string }) => (
