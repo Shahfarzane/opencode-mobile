@@ -60,19 +60,16 @@ function UserIcon({ color }: { color: string }) {
 	);
 }
 
-function AssistantIcon({ color }: { color: string }) {
+// Brain icon for assistant messages (matching desktop's RiBrainAi3Line)
+function BrainIcon({ color }: { color: string }) {
 	return (
 		<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
 			<Path
-				d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"
+				d="M12 4.5a2.5 2.5 0 0 0-4.96-.46 2.5 2.5 0 0 0-1.98 3 2.5 2.5 0 0 0-1.32 4.24 3 3 0 0 0 .34 5.58 2.5 2.5 0 0 0 2.96 3.08A2.5 2.5 0 0 0 12 19.5V4.5zM12 4.5a2.5 2.5 0 0 1 4.96-.46 2.5 2.5 0 0 1 1.98 3 2.5 2.5 0 0 1 1.32 4.24 3 3 0 0 1-.34 5.58 2.5 2.5 0 0 1-2.96 3.08A2.5 2.5 0 0 1 12 19.5"
 				stroke={color}
 				strokeWidth={2}
 				strokeLinecap="round"
 				strokeLinejoin="round"
-			/>
-			<Path
-				d="M9 14a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM15 14a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"
-				fill={color}
 			/>
 		</Svg>
 	);
@@ -97,17 +94,7 @@ function UserMessage({ content }: { content: string }) {
 	return (
 		<View style={styles.userMessageContainer}>
 			<Pressable onLongPress={openMenu} style={styles.userMessageWrapper}>
-				{/* User avatar */}
-				<View
-					style={[
-						styles.userAvatar,
-						{ backgroundColor: `${colors.primary}1A` },
-					]}
-				>
-					<UserIcon color={colors.primary} />
-				</View>
-
-				{/* Message bubble - right aligned with sharp bottom-right corner */}
+				{/* Message bubble only - no avatar, matching desktop design */}
 				<View
 					style={[styles.userBubble, { backgroundColor: bubbleBackground }]}
 				>
@@ -246,6 +233,10 @@ function AssistantMessage({
 	const { showMenu, openMenu, closeMenu, copyMessageContent } =
 		useMessageActions();
 
+	// Extract model/agent info from message if available
+	const modelName = message.modelName;
+	const agentName = message.agentName;
+
 	const getTextContent = (): string => {
 		if (hasParts) {
 			return message
@@ -256,22 +247,26 @@ function AssistantMessage({
 		return message.content;
 	};
 
+	// Get agent color based on name hash (matching desktop)
+	const getAgentColor = (name: string) => {
+		const agentColors = [
+			"#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+			"#8B5CF6", "#EC4899", "#06B6D4", "#84CC16",
+		];
+		let hash = 0;
+		for (let i = 0; i < name.length; i++) {
+			hash = name.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		return agentColors[Math.abs(hash) % agentColors.length];
+	};
+
 	return (
 		<View style={styles.assistantMessageContainer}>
-			{/* Message header with avatar and model info */}
+			{/* Message header with brain icon and model info - matching desktop */}
 			{showHeader && (
 				<View style={styles.assistantHeader}>
-					<View
-						style={[
-							styles.assistantAvatar,
-							{
-								backgroundColor: isDark
-									? "rgba(255,255,255,0.08)"
-									: "rgba(0,0,0,0.05)",
-							},
-						]}
-					>
-						<AssistantIcon color={colors.mutedForeground} />
+					<View style={styles.assistantAvatarSmall}>
+						<BrainIcon color={colors.mutedForeground} />
 					</View>
 					<Text
 						style={[
@@ -280,8 +275,25 @@ function AssistantMessage({
 							{ color: colors.foreground },
 						]}
 					>
-						Assistant
+						{modelName || "Assistant"}
 					</Text>
+					{agentName && (
+						<View
+							style={[
+								styles.agentBadge,
+								{ backgroundColor: `${getAgentColor(agentName)}20` },
+							]}
+						>
+							<Text
+								style={[
+									typography.micro,
+									{ color: getAgentColor(agentName), fontWeight: "500" },
+								]}
+							>
+								{agentName}
+							</Text>
+						</View>
+					)}
 					{isStreaming && (
 						<View
 							style={[
@@ -395,8 +407,18 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	assistantAvatarSmall: {
+		// Small icon without background - matching desktop MessageHeader
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	assistantName: {
 		fontWeight: "600",
+	},
+	agentBadge: {
+		paddingHorizontal: 6,
+		paddingVertical: 2,
+		borderRadius: 4,
 	},
 	streamingBadge: {
 		paddingHorizontal: 8,

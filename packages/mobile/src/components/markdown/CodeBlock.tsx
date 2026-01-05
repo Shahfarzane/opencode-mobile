@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { typography, useTheme } from "@/theme";
 
@@ -32,8 +32,156 @@ const LANGUAGE_COLORS: Record<string, string> = {
 	jsx: "#61DAFB",
 };
 
+// Simple syntax highlighting tokens
+type TokenType = "keyword" | "string" | "comment" | "number" | "function" | "default";
+
+interface Token {
+	type: TokenType;
+	text: string;
+}
+
+// Get syntax highlighting colors based on theme
+function getTokenColor(type: TokenType, isDark: boolean): string {
+	const colors = isDark
+		? {
+				keyword: "#C586C0",    // purple
+				string: "#CE9178",     // orange
+				comment: "#6A9955",    // green
+				number: "#B5CEA8",     // light green
+				function: "#DCDCAA",   // yellow
+				default: "#D4D4D4",    // light gray
+		  }
+		: {
+				keyword: "#AF00DB",    // purple
+				string: "#A31515",     // red
+				comment: "#008000",    // green
+				number: "#098658",     // teal
+				function: "#795E26",   // brown
+				default: "#000000",    // black
+		  };
+	return colors[type];
+}
+
+// Keywords for common languages
+const KEYWORDS: Record<string, Set<string>> = {
+	typescript: new Set([
+		"const", "let", "var", "function", "return", "if", "else", "for", "while",
+		"class", "interface", "type", "import", "export", "from", "async", "await",
+		"try", "catch", "throw", "new", "this", "true", "false", "null", "undefined",
+		"extends", "implements", "private", "public", "protected", "static", "readonly",
+	]),
+	javascript: new Set([
+		"const", "let", "var", "function", "return", "if", "else", "for", "while",
+		"class", "import", "export", "from", "async", "await", "try", "catch",
+		"throw", "new", "this", "true", "false", "null", "undefined",
+	]),
+	python: new Set([
+		"def", "class", "return", "if", "else", "elif", "for", "while", "import",
+		"from", "try", "except", "raise", "with", "as", "True", "False", "None",
+		"and", "or", "not", "in", "is", "lambda", "pass", "break", "continue",
+	]),
+	rust: new Set([
+		"fn", "let", "mut", "const", "if", "else", "for", "while", "loop", "match",
+		"impl", "struct", "enum", "trait", "pub", "use", "mod", "return", "self",
+		"true", "false", "async", "await", "move", "ref", "where",
+	]),
+	go: new Set([
+		"func", "var", "const", "if", "else", "for", "range", "switch", "case",
+		"return", "struct", "interface", "package", "import", "type", "true",
+		"false", "nil", "go", "defer", "chan", "map", "make", "new",
+	]),
+};
+
+// Simple tokenizer for syntax highlighting
+function tokenize(code: string, language: string): Token[] {
+	const tokens: Token[] = [];
+	const lang = language.toLowerCase().replace("tsx", "typescript").replace("jsx", "javascript");
+	const keywords = KEYWORDS[lang] || KEYWORDS.typescript || new Set();
+
+	let i = 0;
+	while (i < code.length) {
+		// Skip whitespace
+		if (/\s/.test(code[i])) {
+			let ws = "";
+			while (i < code.length && /\s/.test(code[i])) {
+				ws += code[i++];
+			}
+			tokens.push({ type: "default", text: ws });
+			continue;
+		}
+
+		// Comments
+		if (code.slice(i, i + 2) === "//") {
+			let comment = "";
+			while (i < code.length && code[i] !== "\n") {
+				comment += code[i++];
+			}
+			tokens.push({ type: "comment", text: comment });
+			continue;
+		}
+
+		// Multi-line comments
+		if (code.slice(i, i + 2) === "/*") {
+			let comment = "";
+			while (i < code.length && code.slice(i, i + 2) !== "*/") {
+				comment += code[i++];
+			}
+			comment += code.slice(i, i + 2);
+			i += 2;
+			tokens.push({ type: "comment", text: comment });
+			continue;
+		}
+
+		// Strings
+		if (code[i] === '"' || code[i] === "'" || code[i] === "`") {
+			const quote = code[i];
+			let str = code[i++];
+			while (i < code.length && code[i] !== quote) {
+				if (code[i] === "\\") str += code[i++];
+				if (i < code.length) str += code[i++];
+			}
+			if (i < code.length) str += code[i++];
+			tokens.push({ type: "string", text: str });
+			continue;
+		}
+
+		// Numbers
+		if (/[0-9]/.test(code[i])) {
+			let num = "";
+			while (i < code.length && /[0-9.xXa-fA-F]/.test(code[i])) {
+				num += code[i++];
+			}
+			tokens.push({ type: "number", text: num });
+			continue;
+		}
+
+		// Words (keywords, identifiers, functions)
+		if (/[a-zA-Z_$]/.test(code[i])) {
+			let word = "";
+			while (i < code.length && /[a-zA-Z0-9_$]/.test(code[i])) {
+				word += code[i++];
+			}
+			// Check if it's a function call
+			const isFunction = code[i] === "(";
+			if (keywords.has(word)) {
+				tokens.push({ type: "keyword", text: word });
+			} else if (isFunction) {
+				tokens.push({ type: "function", text: word });
+			} else {
+				tokens.push({ type: "default", text: word });
+			}
+			continue;
+		}
+
+		// Operators and punctuation
+		tokens.push({ type: "default", text: code[i++] });
+	}
+
+	return tokens;
+}
+
 export function CodeBlock({ code, language }: CodeBlockProps) {
-	const { colors } = useTheme();
+	const { colors, isDark } = useTheme();
 	const [copied, setCopied] = useState(false);
 
 	const languageColor =
@@ -48,6 +196,11 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 
 	const trimmedCode = code.replace(/\n$/, "");
 	const lines = trimmedCode.split("\n");
+
+	// Tokenize each line for syntax highlighting
+	const highlightedLines = useMemo(() => {
+		return lines.map((line) => tokenize(line, language));
+	}, [lines, language]);
 
 	return (
 		<View style={[styles.container, { borderColor: colors.border }]}>
@@ -69,14 +222,15 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 
 			<ScrollView
 				horizontal
-				showsHorizontalScrollIndicator={false}
-				style={{ backgroundColor: colors.card }}
+				showsHorizontalScrollIndicator={true}
+				style={[styles.codeScrollView, { backgroundColor: colors.card }]}
+				contentContainerStyle={styles.codeScrollContent}
 			>
 				<View style={styles.codeContent}>
 					<View style={styles.lineNumbers}>
-						{lines.map((line, lineNum) => (
+						{lines.map((_, lineNum) => (
 							<Text
-								key={`num-${lineNum}-${line.length}`}
+								key={`num-${lineNum}`}
 								style={[
 									typography.code,
 									styles.lineNumber,
@@ -87,17 +241,24 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 							</Text>
 						))}
 					</View>
-					<View>
-						{lines.map((line, lineNum) => (
+					<View style={styles.codeLines}>
+						{highlightedLines.map((tokens, lineNum) => (
 							<Text
-								key={`line-${lineNum}-${line.slice(0, 10)}`}
-								style={[
-									typography.code,
-									styles.codeLine,
-									{ color: colors.foreground },
-								]}
+								key={`line-${lineNum}`}
+								style={[typography.code, styles.codeLine]}
 							>
-								{line || " "}
+								{tokens.length > 0 ? (
+									tokens.map((token, tokenIdx) => (
+										<Text
+											key={`token-${lineNum}-${tokenIdx}`}
+											style={{ color: getTokenColor(token.type, isDark) }}
+										>
+											{token.text}
+										</Text>
+									))
+								) : (
+									<Text style={{ color: colors.foreground }}> </Text>
+								)}
 							</Text>
 						))}
 					</View>
@@ -113,6 +274,8 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 		borderRadius: 8,
 		borderWidth: 1,
+		// Ensure container doesn't overflow parent
+		maxWidth: "100%",
 	},
 	header: {
 		flexDirection: "row",
@@ -136,9 +299,19 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 	},
+	codeScrollView: {
+		// Ensure scroll view respects container bounds
+		flexGrow: 0,
+	},
+	codeScrollContent: {
+		minWidth: "100%",
+	},
 	codeContent: {
 		flexDirection: "row",
 		padding: 12,
+	},
+	codeLines: {
+		flexShrink: 0,
 	},
 	lineNumbers: {
 		marginRight: 12,

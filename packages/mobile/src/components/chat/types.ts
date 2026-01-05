@@ -46,6 +46,9 @@ export type Message = {
 	isStreaming?: boolean;
 	parts?: MessagePart[];
 	createdAt?: number;
+	// Model/agent info for assistant messages
+	modelName?: string;
+	agentName?: string;
 };
 
 export function convertStreamingPart(part: StreamingPart): MessagePart {
