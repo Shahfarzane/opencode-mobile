@@ -64,9 +64,7 @@ function SettingsItem({
 				pressed && { backgroundColor: colors.muted },
 			]}
 		>
-			<View style={[styles.iconContainer, { backgroundColor: colors.muted }]}>
-				{icon}
-			</View>
+			{icon}
 			<View style={styles.itemContent}>
 				<Text
 					style={[
@@ -83,7 +81,7 @@ function SettingsItem({
 				)}
 			</View>
 			{rightElement || (
-				<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+				<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 					<Path
 						d="M9 18l6-6-6-6"
 						stroke={colors.mutedForeground}
@@ -219,7 +217,7 @@ function GeneralSettings() {
 			<SectionDivider title="Connection" />
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Circle
 							cx="12"
 							cy="12"
@@ -241,7 +239,7 @@ function GeneralSettings() {
 			/>
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Path
 							d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
 							stroke={colors.primary}
@@ -259,7 +257,7 @@ function GeneralSettings() {
 			/>
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Path
 							d="M23 4v6h-6M1 20v-6h6"
 							stroke={colors.primary}
@@ -284,7 +282,7 @@ function GeneralSettings() {
 			<SectionDivider title="Preferences" />
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Path
 							d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"
 							stroke={colors.primary}
@@ -309,7 +307,7 @@ function GeneralSettings() {
 			/>
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Path
 							d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
 							stroke={colors.primary}
@@ -338,7 +336,7 @@ function GeneralSettings() {
 			/>
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Rect
 							x="3"
 							y="3"
@@ -373,7 +371,7 @@ function GeneralSettings() {
 			<SectionDivider title="About" />
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Circle
 							cx="12"
 							cy="12"
@@ -395,7 +393,7 @@ function GeneralSettings() {
 			/>
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Path
 							d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
 							stroke={colors.primary}
@@ -414,7 +412,7 @@ function GeneralSettings() {
 
 			<SettingsItem
 				icon={
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Path
 							d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
 							stroke={colors.destructive}
@@ -610,7 +608,7 @@ export default function SettingsScreen() {
 			{showDetail && (
 				<View style={[styles.header, { borderBottomColor: colors.border }]}>
 					<Pressable onPress={handleBack} style={styles.backButton}>
-						<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 							<Path
 								d="M15 18l-6-6 6-6"
 								stroke={colors.foreground}
@@ -701,13 +699,6 @@ const styles = StyleSheet.create({
 		gap: 16,
 		paddingHorizontal: 16,
 		paddingVertical: 16,
-	},
-	iconContainer: {
-		width: 40,
-		height: 40,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 8,
 	},
 	itemContent: {
 		flex: 1,

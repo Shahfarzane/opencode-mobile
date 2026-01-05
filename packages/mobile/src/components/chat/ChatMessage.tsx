@@ -301,7 +301,7 @@ function AssistantMessage({
 							]}
 						>
 							<Text style={[typography.micro, { color: colors.primary }]}>
-								typing...
+								Working...
 							</Text>
 						</View>
 					)}

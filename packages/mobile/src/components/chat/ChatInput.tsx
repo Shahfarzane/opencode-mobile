@@ -717,15 +717,14 @@ export function ChatInput({
 	);
 }
 
-// Desktop-aligned spacing constants
-const DESKTOP_SPACING = {
+// Mobile-optimized spacing constants (matches PWA mobile CSS)
+const MOBILE_SPACING = {
 	inputBorderRadius: 12, // rounded-xl
 	inputPaddingH: 12, // px-3
-	inputPaddingTop: 16, // pt-4
-	inputPaddingBottom: 8, // pb-2
-	toolbarPaddingH: 10, // px-2.5
+	inputPaddingV: 10, // py-2.5 - PWA mobile uses symmetric padding
+	toolbarPaddingH: 6, // px-1.5 - tighter for mobile
 	toolbarPaddingV: 6, // py-1.5
-	toolbarButtonSize: 36, // h-9 w-9
+	toolbarButtonSize: 36, // h-9 w-9 - touch-friendly
 	toolbarButtonRadius: 8,
 	toolbarGap: 6, // gap-x-1.5
 	bubbleRadius: 12, // rounded-xl
@@ -739,32 +738,31 @@ const styles = StyleSheet.create({
 		position: "relative",
 	},
 	inputContainer: {
-		borderRadius: DESKTOP_SPACING.inputBorderRadius,
+		borderRadius: MOBILE_SPACING.inputBorderRadius,
 		borderWidth: 1,
 		overflow: "hidden",
 	},
 	textInput: {
 		minHeight: 52,
 		maxHeight: 140,
-		paddingHorizontal: DESKTOP_SPACING.inputPaddingH,
-		paddingTop: DESKTOP_SPACING.inputPaddingTop,
-		paddingBottom: DESKTOP_SPACING.inputPaddingBottom,
+		paddingHorizontal: MOBILE_SPACING.inputPaddingH,
+		paddingVertical: MOBILE_SPACING.inputPaddingV, // symmetric padding for mobile
 		textAlignVertical: "top",
 	},
 	toolbar: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: DESKTOP_SPACING.toolbarPaddingH,
-		paddingVertical: DESKTOP_SPACING.toolbarPaddingV,
-		gap: DESKTOP_SPACING.toolbarGap,
+		paddingHorizontal: MOBILE_SPACING.toolbarPaddingH,
+		paddingVertical: MOBILE_SPACING.toolbarPaddingV,
+		gap: MOBILE_SPACING.toolbarGap,
 	},
 	toolbarButton: {
-		width: DESKTOP_SPACING.toolbarButtonSize,
-		height: DESKTOP_SPACING.toolbarButtonSize,
+		width: MOBILE_SPACING.toolbarButtonSize,
+		height: MOBILE_SPACING.toolbarButtonSize,
 		alignItems: "center",
 		justifyContent: "center",
-		borderRadius: DESKTOP_SPACING.toolbarButtonRadius,
+		borderRadius: MOBILE_SPACING.toolbarButtonRadius,
 	},
 	sendButton: {
 		// Additional styling for send button
@@ -785,9 +783,9 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 	},
 	agentBadge: {
-		paddingHorizontal: DESKTOP_SPACING.agentBadgePaddingH,
-		paddingVertical: DESKTOP_SPACING.agentBadgePaddingV,
-		borderRadius: DESKTOP_SPACING.agentBadgeRadius,
+		paddingHorizontal: MOBILE_SPACING.agentBadgePaddingH,
+		paddingVertical: MOBILE_SPACING.agentBadgePaddingV,
+		borderRadius: MOBILE_SPACING.agentBadgeRadius,
 		flexShrink: 0,
 	},
 	triggerIcon: {
@@ -808,7 +806,7 @@ const styles = StyleSheet.create({
 		right: 0,
 		marginBottom: 8,
 		maxHeight: 280,
-		borderRadius: DESKTOP_SPACING.inputBorderRadius,
+		borderRadius: MOBILE_SPACING.inputBorderRadius,
 		borderWidth: 1,
 		shadowOffset: { width: 0, height: -2 },
 		shadowOpacity: 0.08,

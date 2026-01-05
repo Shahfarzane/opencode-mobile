@@ -1,5 +1,15 @@
-import { MOBILE_TYPOGRAPHY } from "@openchamber/shared/typography";
 import { StyleSheet, type TextStyle } from "react-native";
+
+// Font sizes matching PWA mobile CSS overrides (index.css @media max-width: 1024px)
+// These values match the actual CSS custom properties used by the PWA on mobile screens
+const PWA_MOBILE_TYPOGRAPHY = {
+	markdown: "1rem", // 16px
+	code: "0.875rem", // 14px - matches --text-code in PWA mobile CSS
+	uiHeader: "0.9375rem", // 15px - matches --text-ui-header in PWA mobile CSS
+	uiLabel: "0.875rem", // 14px - matches --text-ui-label in PWA mobile CSS
+	meta: "0.875rem", // 14px - matches --text-meta in PWA mobile CSS
+	micro: "0.8125rem", // 13px - matches --text-micro in PWA mobile CSS
+} as const;
 
 function remToPixels(rem: string): number {
 	const value = parseFloat(rem);
@@ -14,12 +24,12 @@ export const FontFamily = {
 } as const;
 
 export const FontSizes = {
-	markdown: remToPixels(MOBILE_TYPOGRAPHY.markdown),
-	code: remToPixels(MOBILE_TYPOGRAPHY.code),
-	uiHeader: remToPixels(MOBILE_TYPOGRAPHY.uiHeader),
-	uiLabel: remToPixels(MOBILE_TYPOGRAPHY.uiLabel),
-	meta: remToPixels(MOBILE_TYPOGRAPHY.meta),
-	micro: remToPixels(MOBILE_TYPOGRAPHY.micro),
+	markdown: remToPixels(PWA_MOBILE_TYPOGRAPHY.markdown), // 16px
+	code: remToPixels(PWA_MOBILE_TYPOGRAPHY.code), // 14px
+	uiHeader: remToPixels(PWA_MOBILE_TYPOGRAPHY.uiHeader), // 15px
+	uiLabel: remToPixels(PWA_MOBILE_TYPOGRAPHY.uiLabel), // 14px
+	meta: remToPixels(PWA_MOBILE_TYPOGRAPHY.meta), // 14px
+	micro: remToPixels(PWA_MOBILE_TYPOGRAPHY.micro), // 13px
 	h1: 24,
 	h2: 20,
 	h3: 18,

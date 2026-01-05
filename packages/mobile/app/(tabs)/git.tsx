@@ -1168,6 +1168,8 @@ const styles = StyleSheet.create({
 	sheetOverlay: {
 		...StyleSheet.absoluteFillObject,
 		backgroundColor: "rgba(0,0,0,0.5)",
+		zIndex: 500, // Below SessionSheet (1000) but above other content
+		elevation: 500,
 	},
 	sheetBackdrop: {
 		flex: 1,
