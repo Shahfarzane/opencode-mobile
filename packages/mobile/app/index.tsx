@@ -1,11 +1,15 @@
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
+import { SplashScreen } from "../src/components/ui/SplashScreen";
 import { useConnectionStore } from "../src/stores/useConnectionStore";
+import { useTheme } from "../src/theme";
 
 export default function Index() {
 	const { initialize, isInitialized, isConnected } = useConnectionStore();
+	const { colors } = useTheme();
 	const [isLoading, setIsLoading] = useState(true);
+	const [showSplash, setShowSplash] = useState(true);
 
 	useEffect(() => {
 		async function init() {
@@ -15,10 +19,16 @@ export default function Index() {
 		init();
 	}, [initialize]);
 
-	if (isLoading || !isInitialized) {
+	const isReady = !isLoading && isInitialized;
+
+	// Show splash screen while loading
+	if (showSplash) {
 		return (
-			<View className="flex-1 items-center justify-center bg-background">
-				<ActivityIndicator size="large" color="#EC8B49" />
+			<View style={{ flex: 1, backgroundColor: colors.background }}>
+				<SplashScreen
+					isReady={isReady}
+					onComplete={() => setShowSplash(false)}
+				/>
 			</View>
 		);
 	}

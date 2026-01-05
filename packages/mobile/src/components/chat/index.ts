@@ -8,6 +8,7 @@ export { ContextUsageDisplay } from "./ContextUsageDisplay";
 export { MessageActionsMenu, useMessageActions } from "./MessageActionsMenu";
 export { MessageList } from "./MessageList";
 export { ModelControls } from "./ModelControls";
+export { ModelPicker } from "./ModelPicker";
 export type { Permission, PermissionResponse } from "./PermissionCard";
 export type { AttachedFile } from "./FileAttachment";
 export { PermissionCard } from "./PermissionCard";
