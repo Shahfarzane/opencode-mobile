@@ -12,6 +12,11 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
+import {
+	AttachedFilesList,
+	type AttachedFile,
+	FileAttachmentButton,
+} from "./FileAttachment";
 
 type AutocompleteType = "agent" | "command" | "file" | null;
 
@@ -51,7 +56,7 @@ interface AgentInfo {
 }
 
 interface ChatInputProps {
-	onSend: (message: string) => void;
+	onSend: (message: string, attachedFiles?: AttachedFile[]) => void;
 	isLoading?: boolean;
 	placeholder?: string;
 	agents?: Array<{ name: string; description?: string }>;
@@ -64,25 +69,6 @@ interface ChatInputProps {
 	activeAgent?: AgentInfo;
 	onModelPress?: () => void;
 	onAgentPress?: () => void;
-}
-
-function AddIcon({ color, size = 20 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 8v8M8 12h8"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<Path
-				d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
-				stroke={color}
-				strokeWidth={2}
-			/>
-		</Svg>
-	);
 }
 
 function SendIcon({ color, size = 20 }: { color: string; size?: number }) {
@@ -389,11 +375,12 @@ export function ChatInput({
 	onModelPress,
 	onAgentPress,
 }: ChatInputProps) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 	const permissionColors = getPermissionModeColors(permissionMode, colors);
 	const inputRef = useRef<TextInput>(null);
 
 	const [text, setText] = useState("");
+	const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 	const [autocompleteType, setAutocompleteType] =
 		useState<AutocompleteType>(null);
 	const [autocompleteQuery, setAutocompleteQuery] = useState("");
@@ -401,6 +388,14 @@ export function ChatInput({
 		AutocompleteItem[]
 	>([]);
 	const [, setCursorPosition] = useState(0);
+
+	const handleFileAttached = useCallback((file: AttachedFile) => {
+		setAttachedFiles((prev) => [...prev, file]);
+	}, []);
+
+	const handleFileRemove = useCallback((fileId: string) => {
+		setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
+	}, []);
 
 	const parseTrigger = useCallback(
 		(
@@ -567,16 +562,17 @@ export function ChatInput({
 	);
 
 	const handleSend = useCallback(async () => {
-		if (!text.trim() || isLoading) return;
+		if ((!text.trim() && attachedFiles.length === 0) || isLoading) return;
 
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-		onSend(text.trim());
+		onSend(text.trim(), attachedFiles.length > 0 ? attachedFiles : undefined);
 		setText("");
+		setAttachedFiles([]);
 		setAutocompleteType(null);
 		setAutocompleteQuery("");
 		setAutocompleteItems([]);
 		Keyboard.dismiss();
-	}, [text, isLoading, onSend]);
+	}, [text, attachedFiles, isLoading, onSend]);
 
 	const closeAutocomplete = useCallback(() => {
 		setAutocompleteType(null);
@@ -584,7 +580,7 @@ export function ChatInput({
 		setAutocompleteItems([]);
 	}, []);
 
-	const canSend = text.trim().length > 0 && !isLoading;
+	const canSend = (text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
 	// Use transparent background like desktop - just border defines the input
 	const inputBackground = "transparent";
@@ -598,6 +594,10 @@ export function ChatInput({
 					onSelect={handleAutocompleteSelect}
 					onClose={closeAutocomplete}
 				/>
+			)}
+
+			{attachedFiles.length > 0 && (
+				<AttachedFilesList files={attachedFiles} onRemove={handleFileRemove} />
 			)}
 
 			<View
@@ -630,15 +630,12 @@ export function ChatInput({
 
 				<View style={styles.toolbar}>
 					{/* Left: Attachment button */}
-					<Pressable
-						style={({ pressed }) => [
-							styles.toolbarButton,
-							pressed && { backgroundColor: `${colors.foreground}10` },
-						]}
-						hitSlop={8}
-					>
-						<AddIcon color={colors.mutedForeground} size={20} />
-					</Pressable>
+					<View style={styles.toolbarButton}>
+						<FileAttachmentButton
+							onFileAttached={handleFileAttached}
+							disabled={isLoading}
+						/>
+					</View>
 
 					{/* Center: Model info and Agent */}
 					<View style={styles.modelInfo}>

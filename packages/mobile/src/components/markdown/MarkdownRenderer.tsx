@@ -1,5 +1,6 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType } from "react";
+import { Text, View } from "react-native";
 import { useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
@@ -26,22 +27,21 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			/>
 		),
 		code_inline: (node: { key: string; content: string }) => (
-			<Markdown
+			<Text
 				key={node.key}
 				style={{
-					code_inline: {
-						fontFamily: "IBMPlexMono-Regular",
-						fontSize: 13,
-						backgroundColor: colors.muted,
-						color: colors.foreground,
-						paddingHorizontal: 4,
-						paddingVertical: 2,
-						borderRadius: 4,
-					},
+					fontFamily: "IBMPlexMono-Regular",
+					fontSize: 13,
+					backgroundColor: colors.muted,
+					color: colors.foreground,
+					paddingHorizontal: 5,
+					paddingVertical: 2,
+					borderRadius: 4,
+					includeFontPadding: false,
 				}}
 			>
-				{`\`${node.content}\``}
-			</Markdown>
+				{node.content}
+			</Text>
 		),
 	};
 

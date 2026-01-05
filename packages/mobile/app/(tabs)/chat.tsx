@@ -10,16 +10,27 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { filesApi, gitApi, providersApi, type Provider, type Session, sessionsApi } from "../../src/api";
+import {
+	type Agent,
+	agentsApi,
+	filesApi,
+	gitApi,
+	type Provider,
+	providersApi,
+	type Session,
+	sessionsApi,
+} from "../../src/api";
 import type {
+	AgentInfo,
 	Message,
 	MessagePart,
+	ModelInfo,
 	Permission,
 	PermissionResponse,
-	ModelInfo,
-	AgentInfo,
 } from "../../src/components/chat";
 import {
+	AgentPicker,
+	type AttachedFile,
 	ChatInput,
 	convertStreamingPart,
 	MessageList,
@@ -81,25 +92,68 @@ export default function ChatScreen() {
 	const [permissions, setPermissions] = useState<Permission[]>([]);
 	const [isGitRepo, setIsGitRepo] = useState(false);
 
-	// Provider and model state
 	const [providers, setProviders] = useState<Provider[]>([]);
-	const [currentProviderId, setCurrentProviderId] = useState<string | undefined>();
+	const [currentProviderId, setCurrentProviderId] = useState<
+		string | undefined
+	>();
 	const [currentModelId, setCurrentModelId] = useState<string | undefined>();
-	const [showModelPicker, setShowModelPicker] = useState(false);
-	const [activeAgent] = useState<AgentInfo | undefined>(undefined);
+
+	const [agents, setAgents] = useState<Agent[]>([]);
+	const [currentAgentName, setCurrentAgentName] = useState<string | undefined>();
+	const [showAgentPicker, setShowAgentPicker] = useState(false);
+
+	const activeAgent: AgentInfo | undefined = useMemo(() => {
+		if (!currentAgentName) return undefined;
+		const agent = agents.find((a) => a.name === currentAgentName);
+		if (!agent) return undefined;
+		return { name: agent.name };
+	}, [agents, currentAgentName]);
 
 	// Derive modelInfo from current selection
 	const modelInfo: ModelInfo | undefined = useMemo(() => {
-		if (!currentProviderId || !currentModelId) return undefined;
+		if (__DEV__) {
+			console.log("[Chat] Deriving modelInfo:", {
+				currentProviderId,
+				currentModelId,
+				providersCount: providers.length,
+				providerIds: providers.map(p => p.id),
+			});
+		}
+		
+		if (!currentProviderId || !currentModelId) {
+			if (__DEV__) console.log("[Chat] modelInfo: undefined (no provider/model selected)");
+			return undefined;
+		}
+		
 		const provider = providers.find((p) => p.id === currentProviderId);
 		const model = provider?.models?.find((m) => m.id === currentModelId);
-		if (!provider || !model) return undefined;
-		return {
+		
+		if (__DEV__) {
+			console.log("[Chat] Found provider/model:", {
+				providerFound: !!provider,
+				providerModelsCount: provider?.models?.length,
+				modelFound: !!model,
+				modelId: model?.id,
+				modelName: model?.name,
+				modelNameType: typeof model?.name,
+			});
+		}
+		
+		if (!provider || !model) {
+			if (__DEV__) console.log("[Chat] modelInfo: undefined (provider/model not found)");
+			return undefined;
+		}
+		
+		const displayName = model.name || model.id;
+		const result = {
 			modelId: model.id,
-			modelName: model.name,
+			modelName: displayName.length > 40 ? `${displayName.substring(0, 37)}...` : displayName,
 			providerId: provider.id,
 			providerName: provider.name,
 		};
+		
+		if (__DEV__) console.log("[Chat] modelInfo result:", result);
+		return result;
 	}, [providers, currentProviderId, currentModelId]);
 
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
@@ -287,16 +341,39 @@ export default function ChatScreen() {
 
 		const fetchProviders = async () => {
 			try {
+				if (__DEV__) console.log("[Chat] Fetching providers...");
 				const data = await providersApi.list();
+				
+				if (__DEV__) {
+					console.log("[Chat] Providers fetched:", {
+						count: data.length,
+						providers: data.map(p => ({
+							id: p.id,
+							name: p.name,
+							modelsCount: p.models?.length,
+							firstModel: p.models?.[0],
+						})),
+					});
+				}
+				
 				setProviders(data);
 
 				// Set default provider/model if not already set
 				if (!currentProviderId && data.length > 0) {
-					const defaultProvider = data.find((p) => p.id === "anthropic") || data[0];
+					const defaultProvider =
+						data.find((p) => p.id === "anthropic") || data[0];
 					if (defaultProvider) {
+						if (__DEV__) {
+							console.log("[Chat] Setting default provider:", {
+								id: defaultProvider.id,
+								modelsCount: defaultProvider.models?.length,
+								firstModel: defaultProvider.models?.[0],
+							});
+						}
 						setCurrentProviderId(defaultProvider.id);
 						const defaultModel = defaultProvider.models?.[0];
 						if (defaultModel) {
+							if (__DEV__) console.log("[Chat] Setting default model:", defaultModel);
 							setCurrentModelId(defaultModel.id);
 						}
 					}
@@ -308,6 +385,33 @@ export default function ChatScreen() {
 
 		fetchProviders();
 	}, [isConnected, currentProviderId]);
+
+	// Fetch agents
+	useEffect(() => {
+		if (!isConnected) return;
+
+		const fetchAgents = async () => {
+			try {
+				const data = await agentsApi.list();
+				setAgents(data);
+
+				// Set default agent if not already set
+				if (!currentAgentName && data.length > 0) {
+					const defaultAgent =
+						data.find((a) => a.name === "build") ||
+						data.find((a) => a.mode === "primary" || a.mode === "all") ||
+						data[0];
+					if (defaultAgent) {
+						setCurrentAgentName(defaultAgent.name);
+					}
+				}
+			} catch (err) {
+				console.error("Failed to fetch agents:", err);
+			}
+		};
+
+		fetchAgents();
+	}, [isConnected, currentAgentName]);
 
 	useEffect(() => {
 		const assistantMessages = messages.filter((m) => m.role === "assistant");
@@ -458,25 +562,18 @@ export default function ChatScreen() {
 		return data.id;
 	}, [fetchSessions]);
 
-	const handleNewSession = useCallback(
-		(newDirectory?: string | null) => {
-			// For now, we just start a new session in the current directory
-			// Directory-specific session creation could be added later
-			setSessionId(null);
-			setMessages([]);
-			sheetRef.current?.close();
-		},
-		[],
-	);
+	const handleNewSession = useCallback((_newDirectory?: string | null) => {
+		setSessionId(null);
+		setMessages([]);
+		sheetRef.current?.close();
+	}, []);
 
 	const handleRenameSession = useCallback(
 		async (targetSessionId: string, title: string) => {
 			try {
 				await sessionsApi.updateTitle(targetSessionId, title);
 				setSessions((prev) =>
-					prev.map((s) =>
-						s.id === targetSessionId ? { ...s, title } : s,
-					),
+					prev.map((s) => (s.id === targetSessionId ? { ...s, title } : s)),
 				);
 			} catch (error) {
 				console.error("Failed to rename session:", error);
@@ -573,7 +670,7 @@ export default function ChatScreen() {
 	);
 
 	const handleSend = useCallback(
-		async (content: string) => {
+		async (content: string, _attachedFiles?: AttachedFile[]) => {
 			if (!isConnected || isLoading) return;
 
 			setIsLoading(true);
@@ -609,7 +706,12 @@ export default function ChatScreen() {
 
 				setMessages((prev) => [...prev, assistantMessage]);
 
-				await sessionsApi.sendMessage(currentSessionId, content, currentProviderId, currentModelId);
+				await sessionsApi.sendMessage(
+					currentSessionId,
+					content,
+					currentProviderId,
+					currentModelId,
+				);
 			} catch (error) {
 				console.error("Failed to send message:", error);
 				const errorMessage: Message = {
@@ -624,24 +726,40 @@ export default function ChatScreen() {
 				partsMapRef.current.clear();
 			}
 		},
-		[isConnected, sessionId, isLoading, createSession, currentProviderId, currentModelId],
+		[
+			isConnected,
+			sessionId,
+			isLoading,
+			createSession,
+			currentProviderId,
+			currentModelId,
+		],
 	);
 
 	// Model change handlers
-	const handleProviderChange = useCallback((providerId: string) => {
-		setCurrentProviderId(providerId);
-		// Reset model when provider changes
-		const provider = providers.find((p) => p.id === providerId);
-		const defaultModel = provider?.models?.[0];
-		if (defaultModel) {
-			setCurrentModelId(defaultModel.id);
-		}
-	}, [providers]);
+	const handleProviderChange = useCallback(
+		(providerId: string) => {
+			setCurrentProviderId(providerId);
+			// Reset model when provider changes
+			const provider = providers.find((p) => p.id === providerId);
+			const defaultModel = provider?.models?.[0];
+			if (defaultModel) {
+				setCurrentModelId(defaultModel.id);
+			}
+		},
+		[providers],
+	);
 
-	const handleModelChange = useCallback((providerId: string, modelId: string) => {
-		setCurrentProviderId(providerId);
-		setCurrentModelId(modelId);
-		setShowModelPicker(false);
+	const handleModelChange = useCallback(
+		(providerId: string, modelId: string) => {
+			setCurrentProviderId(providerId);
+			setCurrentModelId(modelId);
+		},
+		[],
+	);
+
+	const handleAgentChange = useCallback((agentName: string) => {
+		setCurrentAgentName(agentName);
 	}, []);
 
 	const HEADER_HEIGHT = 52;
@@ -732,6 +850,44 @@ export default function ChatScreen() {
 					},
 				]}
 			>
+				{/* Model Picker - renders as button + modal */}
+				{providers.length > 0 && (
+					<View style={styles.modelPickerRow}>
+						{(() => {
+							const mappedProviders = providers.map((p) => {
+								const mappedModels = p.models?.map((m) => ({ id: m.id, name: m.name })) || [];
+								if (__DEV__) {
+									console.log("[Chat] Mapping provider for ModelControls:", {
+										providerId: p.id,
+										originalModelsType: typeof p.models,
+										originalModelsIsArray: Array.isArray(p.models),
+										originalModelsLength: p.models?.length,
+										mappedModelsLength: mappedModels.length,
+										firstMappedModel: mappedModels[0],
+									});
+								}
+								return {
+									id: p.id,
+									name: p.name,
+									models: mappedModels,
+								};
+							});
+							if (__DEV__) {
+								console.log("[Chat] Final providers for ModelControls:", mappedProviders);
+							}
+							return (
+								<ModelControls
+									providers={mappedProviders}
+									currentProviderId={currentProviderId}
+									currentModelId={currentModelId}
+									onProviderChange={handleProviderChange}
+									onModelChange={handleModelChange}
+									disabled={isLoading}
+								/>
+							);
+						})()}
+					</View>
+				)}
 				<ChatInput
 					onSend={handleSend}
 					isLoading={isLoading}
@@ -744,13 +900,9 @@ export default function ChatScreen() {
 					modelInfo={modelInfo}
 					activeAgent={activeAgent}
 					onModelPress={() => {
-						// TODO: Open model picker modal
-						console.log("Model picker pressed");
+						// Model picker is now handled by ModelControls above
 					}}
-					onAgentPress={() => {
-						// TODO: Open agent picker modal
-						console.log("Agent picker pressed");
-					}}
+					onAgentPress={() => setShowAgentPicker(true)}
 				/>
 			</View>
 
@@ -771,6 +923,14 @@ export default function ChatScreen() {
 				onChangeDirectory={handleChangeDirectory}
 				onOpenWorktreeManager={handleOpenWorktreeManager}
 				onOpenMultiRunLauncher={handleOpenMultiRunLauncher}
+			/>
+
+			<AgentPicker
+				agents={agents}
+				currentAgentName={currentAgentName}
+				onAgentChange={handleAgentChange}
+				visible={showAgentPicker}
+				onClose={() => setShowAgentPicker(false)}
 			/>
 		</KeyboardAvoidingView>
 	);
@@ -799,5 +959,10 @@ const styles = StyleSheet.create({
 		borderTopWidth: 1,
 		paddingHorizontal: 16,
 		paddingTop: 12,
+	},
+	modelPickerRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginBottom: 8,
 	},
 });

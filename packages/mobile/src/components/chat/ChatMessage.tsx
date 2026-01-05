@@ -46,32 +46,29 @@ function FadeInView({
 	);
 }
 
-function UserIcon({ color }: { color: string }) {
-	return (
-		<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
+function ProviderLogo({ modelName, color }: { modelName?: string; color: string }) {
+	const getProviderSymbol = (name?: string): string => {
+		if (!name) return "AI";
+		const lower = name.toLowerCase();
+		if (lower.includes("claude") || lower.includes("anthropic")) return "A\\";
+		if (lower.includes("gpt") || lower.includes("openai")) return "O";
+		if (lower.includes("gemini") || lower.includes("google")) return "G";
+		if (lower.includes("mistral")) return "M";
+		if (lower.includes("llama")) return "L";
+		if (lower.includes("deepseek")) return "DS";
+		return "AI";
+	};
 
-// Brain icon for assistant messages (matching desktop's RiBrainAi3Line)
-function BrainIcon({ color }: { color: string }) {
 	return (
-		<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 4.5a2.5 2.5 0 0 0-4.96-.46 2.5 2.5 0 0 0-1.98 3 2.5 2.5 0 0 0-1.32 4.24 3 3 0 0 0 .34 5.58 2.5 2.5 0 0 0 2.96 3.08A2.5 2.5 0 0 0 12 19.5V4.5zM12 4.5a2.5 2.5 0 0 1 4.96-.46 2.5 2.5 0 0 1 1.98 3 2.5 2.5 0 0 1 1.32 4.24 3 3 0 0 1-.34 5.58 2.5 2.5 0 0 1-2.96 3.08A2.5 2.5 0 0 1 12 19.5"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
+		<Text
+			style={{
+				fontFamily: "IBMPlexMono-SemiBold",
+				fontSize: 12,
+				color,
+			}}
+		>
+			{getProviderSymbol(modelName)}
+		</Text>
 	);
 }
 
@@ -86,17 +83,22 @@ function UserMessage({ content }: { content: string }) {
 	const { showMenu, openMenu, closeMenu, copyMessageContent } =
 		useMessageActions();
 
-	// Desktop uses bg-primary/10 for light mode, bg-primary/8 for dark
 	const bubbleBackground = isDark
-		? `${colors.primary}14` // ~8% opacity
-		: `${colors.primary}1A`; // ~10% opacity
+		? `${colors.primary}14`
+		: `${colors.primary}1A`;
 
 	return (
 		<View style={styles.userMessageContainer}>
 			<Pressable onLongPress={openMenu} style={styles.userMessageWrapper}>
-				{/* Message bubble only - no avatar, matching desktop design */}
 				<View
-					style={[styles.userBubble, { backgroundColor: bubbleBackground }]}
+					style={[
+						styles.userBubble,
+						{
+							backgroundColor: bubbleBackground,
+							borderRadius: 16,
+							borderBottomRightRadius: 4,
+						},
+					]}
 				>
 					<Text style={[typography.body, { color: colors.foreground }]}>
 						{content}
@@ -233,7 +235,6 @@ function AssistantMessage({
 	const { showMenu, openMenu, closeMenu, copyMessageContent } =
 		useMessageActions();
 
-	// Extract model/agent info from message if available
 	const modelName = message.modelName;
 	const agentName = message.agentName;
 
@@ -247,7 +248,6 @@ function AssistantMessage({
 		return message.content;
 	};
 
-	// Get agent color based on name hash (matching desktop)
 	const getAgentColor = (name: string) => {
 		const agentColors = [
 			"#3B82F6", "#10B981", "#F59E0B", "#EF4444",
@@ -262,11 +262,10 @@ function AssistantMessage({
 
 	return (
 		<View style={styles.assistantMessageContainer}>
-			{/* Message header with brain icon and model info - matching desktop */}
 			{showHeader && (
 				<View style={styles.assistantHeader}>
 					<View style={styles.assistantAvatarSmall}>
-						<BrainIcon color={colors.mutedForeground} />
+						<ProviderLogo modelName={modelName} color={colors.mutedForeground} />
 					</View>
 					<Text
 						style={[
@@ -274,6 +273,7 @@ function AssistantMessage({
 							styles.assistantName,
 							{ color: colors.foreground },
 						]}
+						numberOfLines={1}
 					>
 						{modelName || "Assistant"}
 					</Text>
@@ -362,7 +362,6 @@ export function ChatMessage({
 }
 
 const styles = StyleSheet.create({
-	// User message styles - right aligned like desktop
 	userMessageContainer: {
 		marginBottom: 8,
 		paddingHorizontal: 16,
@@ -373,22 +372,12 @@ const styles = StyleSheet.create({
 		alignItems: "flex-start",
 		gap: 8,
 	},
-	userAvatar: {
-		width: 32,
-		height: 32,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
-	},
 	userBubble: {
-		maxWidth: "80%",
-		borderRadius: 16,
-		borderBottomRightRadius: 4, // Sharp corner on bottom-right like desktop
+		maxWidth: "85%",
 		paddingHorizontal: 14,
 		paddingVertical: 10,
 	},
 
-	// Assistant message styles - left aligned, no bubble
 	assistantMessageContainer: {
 		marginBottom: 16,
 		paddingHorizontal: 16,
@@ -408,7 +397,6 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	assistantAvatarSmall: {
-		// Small icon without background - matching desktop MessageHeader
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -430,7 +418,6 @@ const styles = StyleSheet.create({
 		paddingLeft: 4,
 	},
 	textContainer: {
-		// No background - text flows naturally like desktop
 		marginBottom: 4,
 	},
 	cursor: {

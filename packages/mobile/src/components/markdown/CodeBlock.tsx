@@ -274,8 +274,8 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 		borderRadius: 8,
 		borderWidth: 1,
-		// Ensure container doesn't overflow parent
-		maxWidth: "100%",
+		width: "100%",
+		alignSelf: "stretch",
 	},
 	header: {
 		flexDirection: "row",
@@ -300,7 +300,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 	},
 	codeScrollView: {
-		// Ensure scroll view respects container bounds
 		flexGrow: 0,
 	},
 	codeScrollContent: {
