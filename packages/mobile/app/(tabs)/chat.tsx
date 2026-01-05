@@ -16,6 +16,8 @@ import {
 	type Provider,
 	providersApi,
 	sessionsApi,
+	settingsApi,
+	type SettingsPayload,
 } from "../../src/api";
 import type {
 	AgentInfo,
@@ -100,6 +102,7 @@ export default function ChatScreen() {
 	const [agents, setAgents] = useState<Agent[]>([]);
 	const [currentAgentName, setCurrentAgentName] = useState<string | undefined>();
 	const [showAgentPicker, setShowAgentPicker] = useState(false);
+	const [openChamberSettings, setOpenChamberSettings] = useState<SettingsPayload | null>(null);
 
 	const activeAgent: AgentInfo | undefined = useMemo(() => {
 		if (!currentAgentName) return undefined;
@@ -319,7 +322,28 @@ export default function ChatScreen() {
 	// Sync with context's currentSessionId - defined after loadSessionMessages
 	const prevContextSessionIdRef = useRef<string | null>(null);
 
-	// Fetch providers and set default model
+	// Fetch OpenChamber settings (includes defaultAgent and defaultModel)
+	useEffect(() => {
+		if (!isConnected) return;
+
+		const fetchSettings = async () => {
+			try {
+				const result = await settingsApi.load();
+				console.log("[Chat] === SETTINGS FETCH DEBUG ===");
+				console.log("[Chat] Settings loaded:", {
+					defaultAgent: result.settings.defaultAgent,
+					defaultModel: result.settings.defaultModel,
+				});
+				setOpenChamberSettings(result.settings);
+			} catch (err) {
+				console.error("[Chat] Failed to fetch settings:", err);
+			}
+		};
+
+		fetchSettings();
+	}, [isConnected]);
+
+	// Fetch providers (model selection is handled by dedicated effect below)
 	useEffect(() => {
 		if (!isConnected) return;
 
@@ -327,90 +351,65 @@ export default function ChatScreen() {
 			try {
 				if (__DEV__) console.log("[Chat] Fetching providers...");
 				const data = await providersApi.list();
-				
+
 				if (__DEV__) {
-					console.log("[Chat] Providers fetched:", {
-						count: data.length,
-						providers: data.map(p => ({
-							id: p.id,
-							name: p.name,
-							modelsCount: p.models?.length,
-							firstModel: p.models?.[0],
-						})),
-					});
+					console.log("[Chat] Providers fetched:", data.length);
 				}
-				
+
 				setProviders(data);
-
-				// Set default provider/model if not already set
-				if (!currentProviderId && data.length > 0) {
-					const defaultProvider =
-						data.find((p) => p.id === "anthropic") || data[0];
-					if (defaultProvider) {
-						console.log("[Chat] === DEFAULT MODEL SELECTION DEBUG ===");
-						console.log("[Chat] Provider:", defaultProvider.id);
-						console.log("[Chat] All models:", JSON.stringify(defaultProvider.models?.map(m => ({
-							id: m.id,
-							name: m.name,
-						})), null, 2));
-
-						setCurrentProviderId(defaultProvider.id);
-
-						// Prefer Claude Sonnet as default, otherwise use first model
-						const models = defaultProvider.models ?? [];
-
-						// Debug: Check each model for matching
-						models.forEach((m, idx) => {
-							const matchesSonnet =
-								m.id.includes("claude-3-5-sonnet") ||
-								m.id.includes("claude-sonnet") ||
-								m.name?.toLowerCase().includes("sonnet");
-							console.log(`[Chat] Model ${idx}: id="${m.id}", name="${m.name}", matchesSonnet=${matchesSonnet}`);
-						});
-
-						const preferredModel = models.find((m) =>
-							m.id.includes("claude-3-5-sonnet") ||
-							m.id.includes("claude-sonnet") ||
-							m.name?.toLowerCase().includes("sonnet")
-						) || models[0];
-
-						console.log("[Chat] Selected preferredModel:", preferredModel ? {
-							id: preferredModel.id,
-							name: preferredModel.name,
-						} : "NONE (using first)");
-
-						if (preferredModel) {
-							setCurrentModelId(preferredModel.id);
-							console.log("[Chat] Set currentModelId to:", preferredModel.id);
-						}
-						console.log("[Chat] === END DEBUG ===");
-					}
-				}
 			} catch (err) {
 				console.error("Failed to fetch providers:", err);
 			}
 		};
 
 		fetchProviders();
-	}, [isConnected, currentProviderId]);
+	}, [isConnected]);
 
-	// Fetch agents
+	// Fetch agents (depends on settings for default agent selection)
 	useEffect(() => {
 		if (!isConnected) return;
 
 		const fetchAgents = async () => {
 			try {
 				const data = await agentsApi.list();
+				console.log("[Chat] === AGENTS FETCH DEBUG ===");
+				console.log("[Chat] Agents loaded:", data.length);
+				console.log("[Chat] Agents with models:", data.filter(a => a.model?.providerID && a.model?.modelID).map(a => ({
+					name: a.name,
+					model: a.model,
+				})));
+				console.log("[Chat] settings.defaultAgent:", openChamberSettings?.defaultAgent);
 				setAgents(data);
 
 				// Set default agent if not already set
+				// Priority (like desktop): settings.defaultAgent → build → first primary → first agent
 				if (!currentAgentName && data.length > 0) {
-					const defaultAgent =
-						data.find((a) => a.name === "build") ||
-						data.find((a) => a.mode === "primary" || a.mode === "all") ||
-						data[0];
-					if (defaultAgent) {
-						setCurrentAgentName(defaultAgent.name);
+					const primaryAgents = data.filter((a) => a.mode === "primary" || a.mode === "all");
+					const buildAgent = primaryAgents.find((a) => a.name === "build");
+					const fallbackAgent = buildAgent || primaryAgents[0] || data[0];
+
+					let resolvedAgent: Agent | undefined;
+
+					// 1. Check settings for default agent (like desktop)
+					if (openChamberSettings?.defaultAgent) {
+						const settingsAgent = data.find((a) => a.name === openChamberSettings.defaultAgent);
+						if (settingsAgent) {
+							resolvedAgent = settingsAgent;
+							console.log("[Chat] Using settings.defaultAgent:", settingsAgent.name);
+						} else {
+							console.log("[Chat] settings.defaultAgent not found in agents list:", openChamberSettings.defaultAgent);
+						}
+					}
+
+					// 2. Fall back to default logic
+					if (!resolvedAgent) {
+						resolvedAgent = fallbackAgent;
+						console.log("[Chat] Using fallback agent:", resolvedAgent?.name);
+					}
+
+					console.log("[Chat] Final selected agent:", resolvedAgent?.name, "model:", JSON.stringify(resolvedAgent?.model));
+					if (resolvedAgent) {
+						setCurrentAgentName(resolvedAgent.name);
 					}
 				}
 			} catch (err) {
@@ -419,7 +418,111 @@ export default function ChatScreen() {
 		};
 
 		fetchAgents();
-	}, [isConnected, currentAgentName]);
+	}, [isConnected, currentAgentName, openChamberSettings]);
+
+	// Update model based on settings and agent's preferred model (like desktop does)
+	// Priority: settings.defaultModel → agent's preferred model → fallback
+	const hasAppliedDefaultModelRef = useRef(false);
+	useEffect(() => {
+		console.log("[Chat] === MODEL SELECTION EFFECT DEBUG ===");
+		console.log("[Chat] hasAppliedDefaultModelRef:", hasAppliedDefaultModelRef.current);
+		console.log("[Chat] currentAgentName:", currentAgentName);
+		console.log("[Chat] agents.length:", agents.length);
+		console.log("[Chat] providers.length:", providers.length);
+		console.log("[Chat] settings.defaultModel:", openChamberSettings?.defaultModel);
+
+		// Only apply default model once (for initial default)
+		// Don't override user's manual model selection
+		if (hasAppliedDefaultModelRef.current) {
+			console.log("[Chat] Skipping: already applied");
+			return;
+		}
+		if (providers.length === 0) {
+			console.log("[Chat] Skipping: no providers");
+			return;
+		}
+
+		// Helper to validate model exists in providers
+		const validateModel = (providerId: string, modelId: string): boolean => {
+			const provider = providers.find((p) => p.id === providerId);
+			if (!provider) return false;
+			return provider.models?.some((m) => m.id === modelId) ?? false;
+		};
+
+		// Helper to parse "provider/model" format
+		const parseModelString = (modelString: string): { providerId: string; modelId: string } | null => {
+			if (!modelString || typeof modelString !== 'string') return null;
+			const parts = modelString.split('/');
+			if (parts.length >= 2) {
+				const providerId = parts[0];
+				const modelId = parts.slice(1).join('/'); // Handle model IDs that contain '/'
+				return { providerId, modelId };
+			}
+			return null;
+		};
+
+		let resolvedProviderId: string | undefined;
+		let resolvedModelId: string | undefined;
+
+		// 1. Check settings for default model (like desktop Step 1)
+		if (openChamberSettings?.defaultModel) {
+			console.log("[Chat] Step 1: Checking settings.defaultModel:", openChamberSettings.defaultModel);
+			const parsed = parseModelString(openChamberSettings.defaultModel);
+			console.log("[Chat] Parsed model string:", parsed);
+			if (parsed && validateModel(parsed.providerId, parsed.modelId)) {
+				resolvedProviderId = parsed.providerId;
+				resolvedModelId = parsed.modelId;
+				console.log("[Chat] Using settings.defaultModel:", resolvedProviderId, resolvedModelId);
+			}
+		}
+
+		// 2. Fall back to agent's preferred model (like desktop Step 2)
+		if (!resolvedProviderId && currentAgentName) {
+			const agent = agents.find((a) => a.name === currentAgentName);
+			console.log("[Chat] Step 2: Checking agent's preferred model:", agent?.name, agent?.model);
+			if (agent?.model?.providerID && agent?.model?.modelID) {
+				if (validateModel(agent.model.providerID, agent.model.modelID)) {
+					resolvedProviderId = agent.model.providerID;
+					resolvedModelId = agent.model.modelID;
+					console.log("[Chat] Using agent's preferred model:", resolvedProviderId, resolvedModelId);
+				}
+			}
+		}
+
+		// 3. Fall back to opencode/big-pickle (like desktop Step 3)
+		if (!resolvedProviderId) {
+			console.log("[Chat] Step 3: Checking fallback opencode/big-pickle");
+			if (validateModel("opencode", "big-pickle")) {
+				resolvedProviderId = "opencode";
+				resolvedModelId = "big-pickle";
+				console.log("[Chat] Using fallback opencode/big-pickle");
+			}
+		}
+
+		// 4. Last resort: find Anthropic provider and use first model
+		if (!resolvedProviderId) {
+			console.log("[Chat] Step 4: Last resort - first Anthropic model");
+			const anthropicProvider = providers.find((p) => p.id === "anthropic");
+			const firstModel = anthropicProvider?.models?.[0];
+			if (anthropicProvider && firstModel) {
+				resolvedProviderId = anthropicProvider.id;
+				resolvedModelId = firstModel.id;
+				console.log("[Chat] Using first Anthropic model:", resolvedProviderId, resolvedModelId);
+			}
+		}
+
+		// Apply the resolved model
+		if (resolvedProviderId && resolvedModelId) {
+			console.log("[Chat] === FINAL MODEL SELECTION ===");
+			console.log("[Chat] Provider:", resolvedProviderId);
+			console.log("[Chat] Model:", resolvedModelId);
+			hasAppliedDefaultModelRef.current = true;
+			setCurrentProviderId(resolvedProviderId);
+			setCurrentModelId(resolvedModelId);
+		} else {
+			console.log("[Chat] No model resolved, keeping default");
+		}
+	}, [currentAgentName, agents, providers, openChamberSettings]);
 
 	useEffect(() => {
 		const assistantMessages = messages.filter((m) => m.role === "assistant");
@@ -561,17 +664,25 @@ export default function ChatScreen() {
 	);
 
 	// Sync with context's currentSessionId
+	// Note: Don't reload messages if we're currently streaming (would overwrite the placeholder)
 	useEffect(() => {
 		if (currentSessionId !== prevContextSessionIdRef.current) {
+			console.log("[Chat] Context session changed:", prevContextSessionIdRef.current, "→", currentSessionId);
 			prevContextSessionIdRef.current = currentSessionId;
 			setSessionId(currentSessionId);
 			if (currentSessionId) {
-				loadSessionMessages(currentSessionId);
+				// Don't reload if we're streaming - would overwrite the assistant placeholder
+				if (!isLoading) {
+					console.log("[Chat] Loading messages for session:", currentSessionId);
+					loadSessionMessages(currentSessionId);
+				} else {
+					console.log("[Chat] Skipping message load - currently streaming");
+				}
 			} else {
 				setMessages([]);
 			}
 		}
-	}, [currentSessionId, loadSessionMessages]);
+	}, [currentSessionId, loadSessionMessages, isLoading]);
 
 	// Update context when local sessionId changes (e.g., after creating a new session)
 	useEffect(() => {
@@ -608,7 +719,18 @@ export default function ChatScreen() {
 
 	const handleSend = useCallback(
 		async (content: string, _attachedFiles?: AttachedFile[]) => {
-			if (!isConnected || isLoading) return;
+			console.log("[Chat] === SEND MESSAGE DEBUG ===");
+			console.log("[Chat] isConnected:", isConnected);
+			console.log("[Chat] isLoading:", isLoading);
+			console.log("[Chat] currentProviderId:", currentProviderId);
+			console.log("[Chat] currentModelId:", currentModelId);
+			console.log("[Chat] currentAgentName:", currentAgentName);
+			console.log("[Chat] sessionId:", sessionId);
+
+			if (!isConnected || isLoading) {
+				console.log("[Chat] Blocked: isConnected=", isConnected, "isLoading=", isLoading);
+				return;
+			}
 
 			setIsLoading(true);
 
@@ -624,7 +746,9 @@ export default function ChatScreen() {
 			try {
 				let currentSessionId = sessionId;
 				if (!currentSessionId) {
+					console.log("[Chat] Creating new session...");
 					currentSessionId = await createSession();
+					console.log("[Chat] Created session:", currentSessionId);
 					setSessionId(currentSessionId);
 				}
 
@@ -645,6 +769,7 @@ export default function ChatScreen() {
 
 				setMessages((prev) => [...prev, assistantMessage]);
 
+				console.log("[Chat] Sending message to session:", currentSessionId);
 				await sessionsApi.sendMessage(
 					currentSessionId,
 					content,
@@ -652,6 +777,7 @@ export default function ChatScreen() {
 					currentModelId,
 					currentAgentName,
 				);
+				console.log("[Chat] Message sent successfully");
 			} catch (error) {
 				console.error("Failed to send message:", error);
 				const errorMessage: Message = {
