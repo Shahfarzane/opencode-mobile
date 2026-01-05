@@ -15,6 +15,8 @@ export type {
 	GitCommitResult,
 	GitIdentityProfile,
 	GitIdentitySummary,
+	GitLog,
+	GitLogEntry,
 	GitPullResult,
 	GitPushResult,
 	GitStatus,

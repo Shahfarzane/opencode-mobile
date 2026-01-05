@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import type { Provider, Agent } from "@opencode-ai/sdk/v2";
+import type { Provider } from "@opencode-ai/sdk/v2";
+import type { Agent } from "@/types";
 import { opencodeClient } from "@/lib/opencode/client";
 import { scopeMatches, subscribeToConfigChanges } from "@/lib/configSync";
 import type { ModelMetadata } from "@/types";
@@ -429,11 +430,13 @@ export const useConfigStore = create<ConfigStore>()(
                     for (let attempt = 0; attempt < 3; attempt++) {
                         try {
                             // Fetch agents and OpenChamber settings in parallel
-                            const [agents, openChamberDefaults] = await Promise.all([
+                            const [sdkAgents, openChamberDefaults] = await Promise.all([
                                 opencodeClient.listAgents(),
                                 fetchOpenChamberDefaults(),
                             ]);
-                            const safeAgents = Array.isArray(agents) ? agents : [];
+                            // Cast SDK agents to local Agent type for UI compatibility
+                            // Uses unknown to bridge incompatible SDK PermissionRuleset to local AgentPermissionObject
+                            const safeAgents = (Array.isArray(sdkAgents) ? sdkAgents : []) as unknown as Agent[];
                             set({
                                 agents: safeAgents,
                                 // Store settings defaults so setAgent can respect them
@@ -482,7 +485,7 @@ export const useConfigStore = create<ConfigStore>()(
                                 resolvedAgent = fallbackAgent;
                             }
 
-                            set({ currentAgentName: resolvedAgent.name });
+                            set({ currentAgentName: resolvedAgent?.name });
 
                             // --- Model Selection ---
                             // Priority: settings.defaultModel → agent's preferred model → opencode/big-pickle

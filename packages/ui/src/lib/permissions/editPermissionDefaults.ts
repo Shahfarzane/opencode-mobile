@@ -2,7 +2,7 @@ import type { EditPermissionMode } from '@/stores/types/sessionTypes';
 
 export type BashPermissionValue = 'allow' | 'ask' | 'deny';
 export type BashPermissionSetting = BashPermissionValue | Record<string, BashPermissionValue | undefined>;
-export type SimplePermissionValue = 'allow' | 'ask' | 'deny' | undefined;
+export type SimplePermissionValue = 'allow' | 'ask' | 'deny' | 'full' | undefined;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);

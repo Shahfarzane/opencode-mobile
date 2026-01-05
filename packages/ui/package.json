@@ -11,10 +11,10 @@
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js"
   },
   "dependencies": {
-    "@openchamber/shared": "workspace:*",
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@fontsource/ibm-plex-sans": "^5.1.1",
     "@ibm/plex": "^6.4.1",
+    "@openchamber/shared": "workspace:*",
     "@opencode-ai/sdk": "^1.0.209",
     "@pierre/diffs": "^1.0.0",
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -34,6 +34,8 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "express": "^5.1.0",
+    "ghostty-web": "^0.4.0",
+    "heic2any": "^0.0.4",
     "http-proxy-middleware": "^3.0.5",
     "motion": "^12.23.24",
     "next-themes": "^0.4.6",
