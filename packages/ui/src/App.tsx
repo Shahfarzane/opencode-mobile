@@ -1,6 +1,7 @@
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { VSCodeLayout } from '@/components/layout/VSCodeLayout';
+import { AgentManagerView } from '@/components/views/agent-manager';
 import { FireworksProvider } from '@/contexts/FireworksContext';
 import { Toaster } from '@/components/ui/sonner';
 import { MemoryDebugPanel } from '@/components/ui/MemoryDebugPanel';
@@ -13,6 +14,7 @@ import { useSessionStatusBootstrap } from '@/hooks/useSessionStatusBootstrap';
 import { useSessionAutoCleanup } from '@/hooks/useSessionAutoCleanup';
 import { GitPollingProvider } from '@/hooks/useGitPolling';
 import { useConfigStore } from '@/stores/useConfigStore';
+import { hasModifier } from '@/lib/utils';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { opencodeClient } from '@/lib/opencode/client';
@@ -156,7 +158,7 @@ function App({ apis }: AppProps) {
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'M') {
+      if (hasModifier(e) && e.shiftKey && e.key === 'D') {
         e.preventDefault();
         setShowMemoryDebug(prev => !prev);
       }
@@ -190,6 +192,24 @@ function App({ apis }: AppProps) {
 
   // VS Code runtime - simplified layout without git/terminal views
   if (isVSCodeRuntime) {
+    // Check if this is the Agent Manager panel
+    const panelType = typeof window !== 'undefined' 
+      ? (window as { __OPENCHAMBER_PANEL_TYPE__?: 'chat' | 'agentManager' }).__OPENCHAMBER_PANEL_TYPE__ 
+      : 'chat';
+    
+    if (panelType === 'agentManager') {
+      return (
+        <ErrorBoundary>
+          <RuntimeAPIProvider apis={apis}>
+            <div className="h-full text-foreground bg-background">
+              <AgentManagerView />
+              <Toaster />
+            </div>
+          </RuntimeAPIProvider>
+        </ErrorBoundary>
+      );
+    }
+    
     return (
       <ErrorBoundary>
         <RuntimeAPIProvider apis={apis}>
