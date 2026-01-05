@@ -115,7 +115,7 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 		const { colors, isDark } = useTheme();
 		const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-		const snapPoints = useMemo(() => ["50%", "85%"], []);
+		const snapPoints = useMemo(() => ["40%", "65%"], []);
 		const dateGroups = useMemo(() => groupSessionsByDate(sessions), [sessions]);
 
 		const toggleGroup = useCallback(async (label: string) => {
@@ -146,7 +146,8 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 					{...props}
 					disappearsOnIndex={-1}
 					appearsOnIndex={0}
-					opacity={0.5}
+					opacity={0.3}
+					pressBehavior="close"
 				/>
 			),
 			[]
@@ -175,6 +176,16 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 				enablePanDownToClose
 				backgroundStyle={{
 					backgroundColor: colors.background,
+					borderTopLeftRadius: 20,
+					borderTopRightRadius: 20,
+					borderWidth: 1,
+					borderBottomWidth: 0,
+					borderColor: colors.border,
+					shadowColor: "#000",
+					shadowOffset: { width: 0, height: -4 },
+					shadowOpacity: isDark ? 0.3 : 0.1,
+					shadowRadius: 12,
+					elevation: 16,
 				}}
 				handleIndicatorStyle={{
 					backgroundColor: colors.mutedForeground,

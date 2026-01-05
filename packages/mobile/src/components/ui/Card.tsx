@@ -9,8 +9,8 @@ interface CardProps extends ViewProps {
 const paddingValues: Record<NonNullable<CardProps["padding"]>, number> = {
 	none: 0,
 	sm: 12,
-	md: 16,
-	lg: 24,
+	md: 24,   // Match desktop p-6 (was 16)
+	lg: 32,
 };
 
 export function Card({
@@ -99,12 +99,15 @@ export function CardFooter({ style, children, ...props }: CardFooterProps) {
 
 const styles = StyleSheet.create({
 	card: {
-		borderRadius: 16,
+		borderRadius: 12,  // Match desktop rounded-xl (was 16)
+		gap: 24,           // Match desktop gap-6 between sections
 	},
 	header: {
-		paddingBottom: 12,
+		gap: 6,            // Match desktop gap-1.5
 	},
 	footer: {
-		paddingTop: 12,
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,            // Match desktop gap-2
 	},
 });

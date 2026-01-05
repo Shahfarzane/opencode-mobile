@@ -107,6 +107,11 @@ export default function ChatScreen() {
 		}
 
 		if (event.type === "message.part.updated" && props.part) {
+			// Only process parts for assistant messages - ignore user message events
+			if (props.info?.role === "user") {
+				return;
+			}
+
 			const streamPart = props.part as StreamingPart;
 			const partId = streamPart.id || `part-${Date.now()}-${Math.random()}`;
 			const converted = convertStreamingPart(streamPart);
@@ -137,6 +142,12 @@ export default function ChatScreen() {
 		if (event.type === "message.updated") {
 			const info = props.info;
 			const serverParts = props.parts;
+
+			// Only process assistant messages - ignore user message events
+			// The server sends message.updated for both user and assistant messages
+			if (info?.role === "user") {
+				return;
+			}
 
 			if (serverParts && Array.isArray(serverParts)) {
 				for (const sp of serverParts) {

@@ -28,8 +28,8 @@ interface ButtonProps extends Omit<PressableProps, "style"> {
 
 const sizeConfig: Record<ButtonSize, { height: number; paddingHorizontal: number; borderRadius: number }> = {
 	sm: { height: 36, paddingHorizontal: 12, borderRadius: 8 },
-	md: { height: 44, paddingHorizontal: 16, borderRadius: 12 },
-	lg: { height: 56, paddingHorizontal: 24, borderRadius: 16 },
+	md: { height: 44, paddingHorizontal: 16, borderRadius: 8 },  // Standardized radius to match desktop
+	lg: { height: 56, paddingHorizontal: 24, borderRadius: 8 },  // Standardized radius to match desktop
 };
 
 export const Button = forwardRef<typeof Pressable, ButtonProps>(
@@ -141,5 +141,6 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
+		gap: 8,  // Match desktop gap-2 for icon+text spacing
 	},
 });

@@ -217,8 +217,8 @@ const styles = StyleSheet.create({
 	},
 	userBubble: {
 		maxWidth: '85%',
-		borderRadius: 16,
-		paddingHorizontal: 16,
+		borderRadius: 12,      // Match desktop rounded-xl (was 16)
+		paddingHorizontal: 12, // Consistent padding
 		paddingVertical: 12,
 	},
 	assistantMessageContainer: {
@@ -227,11 +227,11 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	assistantContent: {
-		maxWidth: '90%',
+		width: '100%',         // Full width for assistant (no maxWidth)
 	},
 	textBubble: {
-		borderRadius: 16,
-		paddingHorizontal: 16,
+		borderRadius: 12,      // Match desktop rounded-xl (was 16)
+		paddingHorizontal: 12, // Consistent padding
 		paddingVertical: 12,
 		marginBottom: 8,
 	},
