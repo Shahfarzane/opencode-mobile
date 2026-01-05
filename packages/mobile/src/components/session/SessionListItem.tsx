@@ -82,14 +82,14 @@ export function SessionListItem({
 	const [editTitle, setEditTitle] = useState("");
 	const animatedOpacity = useRef(new Animated.Value(1)).current;
 
-	// Streaming pulse animation
+	// Streaming pulse animation - matches desktop 1.8s duration
 	useEffect(() => {
 		if (isStreaming) {
 			const animation = Animated.loop(
 				Animated.sequence([
 					Animated.timing(animatedOpacity, {
 						toValue: 0.5,
-						duration: 900,
+						duration: 900, // 900ms * 2 = 1.8s full cycle
 						useNativeDriver: true,
 					}),
 					Animated.timing(animatedOpacity, {
@@ -155,10 +155,10 @@ export function SessionListItem({
 				style={[
 					styles.container,
 					{
-						paddingLeft: 16 + depth * 20,
+						paddingLeft: 6 + depth * 20,
 						backgroundColor: isDark
-							? "rgba(255,255,255,0.05)"
-							: "rgba(0,0,0,0.03)",
+							? `${colors.accent}CC` // 80% opacity - matches dark:bg-accent/80
+							: `${colors.primary}1F`, // 12% opacity - matches bg-primary/12
 					},
 				]}
 			>
@@ -203,13 +203,17 @@ export function SessionListItem({
 				style={({ pressed }) => [
 					styles.container,
 					{
-						paddingLeft: 16 + depth * 20,
-						backgroundColor: pressed
+						paddingLeft: 6 + depth * 20,
+						backgroundColor: isSelected
 							? isDark
-								? "rgba(255,255,255,0.05)"
-								: "rgba(0,0,0,0.03)"
-							: "transparent",
-						opacity: isMissingDirectory ? 0.6 : 1,
+								? `${colors.accent}CC` // 80% opacity - matches dark:bg-accent/80
+								: `${colors.primary}1F` // 12% opacity - matches bg-primary/12
+							: pressed
+								? isDark
+									? `${colors.accent}66` // 40% opacity - matches dark:bg-accent/40
+									: `${colors.primary}0F` // 6% opacity - matches bg-primary/6
+								: "transparent",
+						opacity: isMissingDirectory ? 0.75 : 1,
 					},
 				]}
 			>
@@ -230,7 +234,7 @@ export function SessionListItem({
 						{sessionTitle}
 					</Animated.Text>
 
-					{/* Meta row */}
+					{/* Meta row - matches desktop typography-micro text-muted-foreground/60 */}
 					<View style={styles.metaRow}>
 						{/* Expand/collapse for children */}
 						{hasChildren && (
@@ -241,12 +245,12 @@ export function SessionListItem({
 							>
 								{isExpanded ? (
 									<ChevronDownIcon
-										color={colors.mutedForeground}
+										color={`${colors.mutedForeground}99`} // 60% opacity
 										size={12}
 									/>
 								) : (
 									<ChevronRightIcon
-										color={colors.mutedForeground}
+										color={`${colors.mutedForeground}99`} // 60% opacity
 										size={12}
 									/>
 								)}
@@ -254,7 +258,7 @@ export function SessionListItem({
 						)}
 
 						{/* Date */}
-						<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+						<Text style={[typography.micro, { color: `${colors.mutedForeground}99` }]}>
 							{formatDateLabel(timestamp)}
 						</Text>
 
@@ -296,7 +300,7 @@ export function SessionListItem({
 						{/* Child count */}
 						{hasChildren && (
 							<Text
-								style={[typography.micro, { color: colors.mutedForeground }]}
+								style={[typography.micro, { color: `${colors.mutedForeground}99` }]}
 							>
 								{childCount} {childCount === 1 ? "task" : "tasks"}
 							</Text>
@@ -358,9 +362,10 @@ const styles = StyleSheet.create({
 	container: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingRight: 8,
-		paddingVertical: 12,
-		borderRadius: 8,
+		paddingLeft: 6, // matches desktop px-1.5
+		paddingRight: 6,
+		paddingVertical: 4, // matches desktop py-1
+		borderRadius: 6, // matches desktop rounded-md
 		marginBottom: 2,
 		position: "relative",
 	},
@@ -369,12 +374,12 @@ const styles = StyleSheet.create({
 		minWidth: 0,
 	},
 	title: {
-		marginBottom: 2,
+		marginBottom: 1,
 	},
 	metaRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6,
+		gap: 8, // matches desktop gap-2
 		flexWrap: "wrap",
 	},
 	expandButton: {
@@ -385,11 +390,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	gitStatText: {
-		fontSize: 10,
+		fontSize: 11, // matches desktop text-[0.7rem]
 		fontWeight: "500",
+		lineHeight: 11, // matches desktop leading-none
 	},
 	gitStatDivider: {
-		fontSize: 10,
+		fontSize: 11,
 		opacity: 0.5,
 		marginHorizontal: 1,
 	},
