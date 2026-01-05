@@ -1064,11 +1064,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
                 <ServerFilePicker
                     onFilesSelected={handleServerFilesSelected}
                     multiSelect
-                    presentation={isMobile || isVSCode ? 'modal' : 'dropdown'}
+                    presentation={isMobile ? 'modal' : 'dropdown'}
                     open={projectFilePickerOpen}
                     onOpenChange={setProjectFilePickerOpen}
                 >
-                    {isMobile || isVSCode ? null : (
+                    {isMobile ? null : (
                         <button
                             type="button"
                             tabIndex={-1}
