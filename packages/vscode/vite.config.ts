@@ -17,6 +17,9 @@ export default defineConfig({
       { find: '@', replacement: path.resolve(__dirname, '../ui/src') },
     ],
   },
+  worker: {
+    format: 'es',
+  },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
     'global': 'globalThis',

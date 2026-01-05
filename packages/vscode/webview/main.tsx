@@ -9,6 +9,7 @@ import {
 } from '../../ui/src/lib/theme/vscode/adapter';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'error' | 'disconnected';
+type PanelType = 'chat' | 'agentManager';
 
 declare global {
   interface Window {
@@ -19,11 +20,13 @@ declare global {
       theme: string;
       connectionStatus: string;
       cliAvailable?: boolean;
+      panelType?: PanelType;
     };
     __OPENCHAMBER_VSCODE_THEME__?: VSCodeThemePayload['theme'];
     __OPENCHAMBER_VSCODE_SHIKI_THEMES__?: { light?: Record<string, unknown>; dark?: Record<string, unknown> } | null;
     __OPENCHAMBER_CONNECTION__?: { status: ConnectionStatus; error?: string; cliAvailable?: boolean };
     __OPENCHAMBER_HOME__?: string;
+    __OPENCHAMBER_PANEL_TYPE__?: PanelType;
   }
 }
 
@@ -39,6 +42,9 @@ const bootstrapConnectionStatus = () => {
 };
 
 bootstrapConnectionStatus();
+
+// Expose panel type globally for App.tsx to conditionally render
+window.__OPENCHAMBER_PANEL_TYPE__ = (window.__VSCODE_CONFIG__?.panelType as PanelType) || 'chat';
 
 const handleConnectionMessage = (event: MessageEvent) => {
   const msg = event.data;

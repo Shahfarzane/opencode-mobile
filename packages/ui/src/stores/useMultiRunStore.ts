@@ -74,7 +74,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
       createMultiRun: async (params: CreateMultiRunParams) => {
         const groupName = params.name.trim();
         const prompt = params.prompt.trim();
-        const { models, agent } = params;
+        const { models, agent, files } = params;
 
         if (!groupName) {
           set({ error: 'Group name is required' });
@@ -87,18 +87,13 @@ export const useMultiRunStore = create<MultiRunStore>()(
         }
 
         if (models.length < 2) {
-          set({ error: 'Select at least 2 unique models' });
+          set({ error: 'Select at least 2 models' });
           return null;
         }
 
-        const modelKeys = new Set<string>();
-        for (const model of models) {
-          const key = `${model.providerID}:${model.modelID}`;
-          if (modelKeys.has(key)) {
-            set({ error: `Duplicate model: ${model.providerID}/${model.modelID}` });
-            return null;
-          }
-          modelKeys.add(key);
+        if (models.length > 5) {
+          set({ error: 'Maximum 5 models allowed' });
+          return null;
         }
 
         set({ isLoading: true, error: null });
@@ -130,23 +125,33 @@ export const useMultiRunStore = create<MultiRunStore>()(
             modelID: string;
           }> = [];
 
-          const usedBranches = new Set<string>();
+          // Count occurrences of each model to handle duplicates
+          const modelCounts = new Map<string, number>();
+          for (const model of models) {
+            const key = `${model.providerID}:${model.modelID}`;
+            modelCounts.set(key, (modelCounts.get(key) || 0) + 1);
+          }
+
+          // Track current index per model during iteration
+          const modelIndexes = new Map<string, number>();
 
           // 1) Create worktrees + sessions
           for (const model of models) {
+            const key = `${model.providerID}:${model.modelID}`;
+            const count = modelCounts.get(key) || 1;
+            const index = (modelIndexes.get(key) || 0) + 1;
+            modelIndexes.set(key, index);
+
             const modelSlug = toModelSlug(model.providerID, model.modelID);
-            const branch = generateBranchName(groupSlug, modelSlug);
+            // Append index only when same model is selected multiple times
+            const branch = count > 1
+              ? generateBranchName(groupSlug, `${modelSlug}/${index}`)
+              : generateBranchName(groupSlug, modelSlug);
 
             if (!branch) {
               set({ error: 'Branch name is required for worktree creation', isLoading: false });
               return null;
             }
-
-            if (usedBranches.has(branch)) {
-              set({ error: `Duplicate branch selected: ${branch}`, isLoading: false });
-              return null;
-            }
-            usedBranches.add(branch);
 
             const worktreeSlug = sanitizeWorktreeSlug(branch);
             if (!worktreeSlug) {
@@ -163,9 +168,14 @@ export const useMultiRunStore = create<MultiRunStore>()(
                 startPoint,
               });
 
+              // Session title format: groupSlug/provider/model (or groupSlug/provider/model/index for duplicates)
+              const sessionTitle = count > 1
+                ? `${groupSlug}/${model.providerID}/${model.modelID}/${index}`
+                : `${groupSlug}/${model.providerID}/${model.modelID}`;
+
               const session = await opencodeClient.withDirectory(
                 worktreeMetadata.path,
-                () => opencodeClient.createSession({ title: `${model.providerID}/${model.modelID}` })
+                () => opencodeClient.createSession({ title: sessionTitle })
               );
 
               useSessionStore.getState().setWorktreeMetadata(session.id, worktreeMetadata);
@@ -192,6 +202,14 @@ export const useMultiRunStore = create<MultiRunStore>()(
 
           // 2) Start all runs with the same prompt.
           // IMPORTANT: do not await model/agent execution here; only worktree + session creation.
+          // Convert files to the format expected by sendMessage
+          const filesForMessage = files?.map((f) => ({
+            type: 'file' as const,
+            mime: f.mime,
+            filename: f.filename,
+            url: f.url,
+          }));
+
           void (async () => {
             try {
               await Promise.allSettled(
@@ -204,6 +222,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
                         modelID: run.modelID,
                         text: prompt,
                         agent,
+                        files: filesForMessage,
                       })
                     );
                   } catch (error) {

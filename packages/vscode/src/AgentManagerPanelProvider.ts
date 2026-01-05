@@ -5,15 +5,11 @@ import type { OpenCodeManager, ConnectionStatus } from './opencode';
 import { getWebviewShikiThemes } from './shikiThemes';
 import { getWebviewHtml } from './webviewHtml';
 
-export class ChatViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'openchamber.chatView';
+export class AgentManagerPanelProvider {
+  public static readonly viewType = 'openchamber.agentManager';
 
-  private _view?: vscode.WebviewView;
-
-  public isVisible() {
-    return this._view?.visible ?? false;
-  }
-
+  private _panel?: vscode.WebviewPanel;
+  
   // Cache latest status/URL for when webview is resolved after connection is ready
   private _cachedStatus: ConnectionStatus = 'connecting';
   private _cachedError?: string;
@@ -26,26 +22,47 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private readonly _openCodeManager?: OpenCodeManager
   ) {}
 
-  public resolveWebviewView(
-    webviewView: vscode.WebviewView
-  ) {
-    this._view = webviewView;
+  public createOrShow(): void {
+    // If panel exists, reveal it
+    if (this._panel) {
+      this._panel.reveal(vscode.ViewColumn.One);
+      return;
+    }
 
     const distUri = vscode.Uri.joinPath(this._extensionUri, 'dist');
 
-    webviewView.webview.options = {
-      enableScripts: true,
-      localResourceRoots: [this._extensionUri, distUri],
-    };
+    // Create new panel
+    this._panel = vscode.window.createWebviewPanel(
+      AgentManagerPanelProvider.viewType,
+      'Agent Manager',
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [this._extensionUri, distUri],
+      }
+    );
 
-    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+    this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
+    
     // Send theme payload (including optional Shiki theme JSON) after the webview is set up.
     void this.updateTheme(vscode.window.activeColorTheme.kind);
     
-    // Send cached connection status and API URL (may have been set before webview was resolved)
+    // Send cached connection status
     this._sendCachedState();
 
-    webviewView.webview.onDidReceiveMessage(async (message: BridgeRequest) => {
+    // Handle panel disposal
+    this._panel.onDidDispose(() => {
+      // Clean up SSE streams
+      for (const controller of this._sseStreams.values()) {
+        controller.abort();
+      }
+      this._sseStreams.clear();
+      this._panel = undefined;
+    }, null, this._context.subscriptions);
+
+    // Handle messages
+    this._panel.webview.onDidReceiveMessage(async (message: BridgeRequest) => {
       if (message.type === 'restartApi') {
         await this._openCodeManager?.restart();
         return;
@@ -53,13 +70,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
       if (message.type === 'api:sse:start') {
         const response = await this._startSseProxy(message);
-        webviewView.webview.postMessage(response);
+        this._panel?.webview.postMessage(response);
         return;
       }
 
       if (message.type === 'api:sse:stop') {
         const response = await this._stopSseProxy(message);
-        webviewView.webview.postMessage(response);
+        this._panel?.webview.postMessage(response);
         return;
       }
 
@@ -67,15 +84,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         manager: this._openCodeManager,
         context: this._context,
       });
-      webviewView.webview.postMessage(response);
-    });
+      this._panel?.webview.postMessage(response);
+    }, null, this._context.subscriptions);
   }
 
   public updateTheme(kind: vscode.ColorThemeKind) {
-    if (this._view) {
+    if (this._panel) {
       const themeKind = getThemeKindName(kind);
       void getWebviewShikiThemes().then((shikiThemes) => {
-        this._view?.webview.postMessage({
+        this._panel?.webview.postMessage({
           type: 'themeChange',
           theme: { kind: themeKind, shikiThemes },
         });
@@ -91,63 +108,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Send to webview if it exists
     this._sendCachedState();
   }
-
-  public addTextToInput(text: string) {
-    if (this._view) {
-      // Reveal the webview panel
-      this._view.show(true);
-      
-      this._view.webview.postMessage({
-        type: 'command',
-        command: 'addToContext',
-        payload: { text }
-      });
-    }
-  }
-
-  public createNewSessionWithPrompt(prompt: string) {
-    if (this._view) {
-      // Reveal the webview panel
-      this._view.show(true);
-      
-      this._view.webview.postMessage({
-        type: 'command',
-        command: 'createSessionWithPrompt',
-        payload: { prompt }
-      });
-    }
-  }
-
-  public createNewSession() {
-    if (this._view) {
-      // Reveal the webview panel
-      this._view.show(true);
-      
-      this._view.webview.postMessage({
-        type: 'command',
-        command: 'newSession'
-      });
-    }
-  }
-
-  public showSettings() {
-    if (this._view) {
-      // Reveal the webview panel
-      this._view.show(true);
-      
-      this._view.webview.postMessage({
-        type: 'command',
-        command: 'showSettings'
-      });
-    }
-  }
   
   private _sendCachedState() {
-    if (!this._view) {
+    if (!this._panel) {
       return;
     }
     
-    this._view.webview.postMessage({
+    this._panel.webview.postMessage({
       type: 'connectionStatus',
       status: this._cachedStatus,
       error: this._cachedError,
@@ -244,14 +211,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
               if (!chunk) continue;
 
               // Reduce webview message pressure by forwarding complete SSE blocks.
-              // The SDK SSE parser is block-based (\n\n delimited) and can consume
-              // partial chunks, but VS Code's postMessage channel can be a bottleneck.
               sseBuffer += chunk;
               const blocks = sseBuffer.split('\n\n');
               sseBuffer = blocks.pop() ?? '';
               if (blocks.length > 0) {
                 const joined = blocks.map((block) => `${block}\n\n`).join('');
-                this._view?.webview.postMessage({ type: 'api:sse:chunk', streamId, chunk: joined });
+                this._panel?.webview.postMessage({ type: 'api:sse:chunk', streamId, chunk: joined });
               }
             }
           }
@@ -261,7 +226,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             sseBuffer += tail;
           }
           if (sseBuffer) {
-            this._view?.webview.postMessage({ type: 'api:sse:chunk', streamId, chunk: sseBuffer });
+            this._panel?.webview.postMessage({ type: 'api:sse:chunk', streamId, chunk: sseBuffer });
           }
         } finally {
           try {
@@ -271,11 +236,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           }
         }
 
-        this._view?.webview.postMessage({ type: 'api:sse:end', streamId });
+        this._panel?.webview.postMessage({ type: 'api:sse:end', streamId });
       } catch (error) {
         if (!controller.signal.aborted) {
           const message = error instanceof Error ? error.message : String(error);
-          this._view?.webview.postMessage({ type: 'api:sse:end', streamId, error: message });
+          this._panel?.webview.postMessage({ type: 'api:sse:end', streamId, error: message });
         }
       } finally {
         this._sseStreams.delete(streamId);
@@ -307,18 +272,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return { id, type, success: true, data: { stopped: true } };
   }
 
-  private _getHtmlForWebview(webview: vscode.Webview) {
+  private _getHtmlForWebview(webview: vscode.Webview): string {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-    // Use cached values which are updated by onStatusChange callback
-    const initialStatus = this._cachedStatus;
     const cliAvailable = this._openCodeManager?.isCliAvailable() ?? false;
 
     return getWebviewHtml({
       webview,
       extensionUri: this._extensionUri,
       workspaceFolder,
-      initialStatus,
+      initialStatus: this._cachedStatus,
       cliAvailable,
+      panelType: 'agentManager',
     });
   }
 }
