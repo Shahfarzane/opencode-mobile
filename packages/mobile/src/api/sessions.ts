@@ -28,6 +28,10 @@ export interface MessageInfo {
 	id: string;
 	role: "user" | "assistant";
 	createdAt?: number;
+	// Model/agent info for restoring session state
+	providerID?: string;
+	modelID?: string;
+	mode?: string; // agent name
 }
 
 export interface MessagePart {
@@ -115,6 +119,7 @@ export const sessionsApi = {
 		text: string,
 		providerID?: string,
 		modelID?: string,
+		agentName?: string,
 	): Promise<void> {
 		const body: Record<string, unknown> = {
 			parts: [{ type: "text", text }],
@@ -122,6 +127,10 @@ export const sessionsApi = {
 
 		if (providerID && modelID) {
 			body.model = { providerID, modelID };
+		}
+
+		if (agentName) {
+			body.mode = agentName;
 		}
 
 		await apiPost(`/api/session/${sessionId}/prompt_async`, body, true);

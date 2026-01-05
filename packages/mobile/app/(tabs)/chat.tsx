@@ -492,6 +492,11 @@ export default function ChatScreen() {
 				const data = await sessionsApi.getMessages(id);
 				const loadedMessages: Message[] = [];
 
+				// Track the last assistant message's model/agent info for restoration
+				let lastProviderID: string | undefined;
+				let lastModelID: string | undefined;
+				let lastAgentName: string | undefined;
+
 				for (const msg of data) {
 					if (msg.info) {
 						const parts: MessagePart[] = [];
@@ -515,15 +520,50 @@ export default function ChatScreen() {
 							parts: parts.length > 0 ? parts : undefined,
 							createdAt: msg.info.createdAt || Date.now(),
 						});
+
+						// Extract model/agent info from assistant messages
+						if (msg.info.role === "assistant") {
+							if (msg.info.providerID) lastProviderID = msg.info.providerID;
+							if (msg.info.modelID) lastModelID = msg.info.modelID;
+							if (msg.info.mode) lastAgentName = msg.info.mode;
+						}
 					}
 				}
 
 				setMessages(loadedMessages);
+
+				// Restore model/agent selection from the session's last used values
+				if (lastProviderID && lastModelID) {
+					// Verify the provider/model exists before setting
+					const provider = providers.find((p) => p.id === lastProviderID);
+					const model = provider?.models?.find((m) => m.id === lastModelID);
+					if (provider && model) {
+						if (__DEV__) {
+							console.log("[Chat] Restoring session model:", {
+								providerId: lastProviderID,
+								modelId: lastModelID,
+							});
+						}
+						setCurrentProviderId(lastProviderID);
+						setCurrentModelId(lastModelID);
+					}
+				}
+
+				if (lastAgentName) {
+					// Verify the agent exists before setting
+					const agent = agents.find((a) => a.name === lastAgentName);
+					if (agent) {
+						if (__DEV__) {
+							console.log("[Chat] Restoring session agent:", lastAgentName);
+						}
+						setCurrentAgentName(lastAgentName);
+					}
+				}
 			} catch (error) {
 				console.error("Failed to load session messages:", error);
 			}
 		},
-		[isConnected],
+		[isConnected, providers, agents],
 	);
 
 	const selectSession = useCallback(
@@ -711,6 +751,7 @@ export default function ChatScreen() {
 					content,
 					currentProviderId,
 					currentModelId,
+					currentAgentName,
 				);
 			} catch (error) {
 				console.error("Failed to send message:", error);
@@ -733,6 +774,7 @@ export default function ChatScreen() {
 			createSession,
 			currentProviderId,
 			currentModelId,
+			currentAgentName,
 		],
 	);
 
