@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useUIStore } from '@/stores/useUIStore';
-import { RiAddLine, RiArrowUpSLine, RiArrowUpWideLine, RiCloseCircleLine, RiCodeLine, RiCommandLine, RiGitBranchLine, RiLayoutLeftLine, RiPaletteLine, RiQuestionLine, RiSettings3Line, RiTerminalBoxLine, RiText } from '@remixicon/react';
+import { RiAddLine, RiArrowUpSLine, RiArrowUpWideLine, RiBrainAi3Line, RiCloseCircleLine, RiCodeLine, RiCommandLine, RiGitBranchLine, RiLayoutLeftLine, RiPaletteLine, RiQuestionLine, RiSettings3Line, RiTerminalBoxLine, RiText } from '@remixicon/react';
 
 const renderKeyToken = (token: string, index: number) => {
   const normalized = token.trim().toLowerCase();
@@ -64,6 +64,7 @@ export const HelpDialog: React.FC = () => {
         { keys: ["Ctrl + X"], description: "Open Command Palette", icon: RiCommandLine },
         { keys: ["Ctrl + H"], description: "Show Keyboard Shortcuts (this dialog)", icon: RiQuestionLine },
         { keys: ["Ctrl + L"], description: "Toggle Session Sidebar", icon: RiLayoutLeftLine },
+        { keys: ["Ctrl + M"], description: "Open Model Selector", icon: RiBrainAi3Line },
       ]
     },
     {
