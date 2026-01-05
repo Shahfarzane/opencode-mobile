@@ -62,6 +62,8 @@ interface ChatInputProps {
 	permissionMode?: EditPermissionMode;
 	modelInfo?: ModelInfo;
 	activeAgent?: AgentInfo;
+	onModelPress?: () => void;
+	onAgentPress?: () => void;
 }
 
 function AddIcon({ color, size = 20 }: { color: string; size?: number }) {
@@ -384,6 +386,8 @@ export function ChatInput({
 	permissionMode,
 	modelInfo,
 	activeAgent,
+	onModelPress,
+	onAgentPress,
 }: ChatInputProps) {
 	const { colors, isDark } = useTheme();
 	const permissionColors = getPermissionModeColors(permissionMode, colors);
@@ -582,10 +586,8 @@ export function ChatInput({
 
 	const canSend = text.trim().length > 0 && !isLoading;
 
-	// Background colors matching desktop: bg-input/10 light, bg-input/30 dark
-	const inputBackground = isDark
-		? `${colors.input}4D` // ~30% opacity
-		: `${colors.input}1A`; // ~10% opacity
+	// Use transparent background like desktop - just border defines the input
+	const inputBackground = "transparent";
 
 	return (
 		<View style={styles.container}>
@@ -640,8 +642,20 @@ export function ChatInput({
 
 					{/* Center: Model info and Agent */}
 					<View style={styles.modelInfo}>
-						{/* Provider logo + Model name */}
-						<View style={styles.modelSelector}>
+						{/* Provider logo + Model name - clickable */}
+						<Pressable
+							onPress={() => {
+								if (onModelPress) {
+									Haptics.selectionAsync();
+									onModelPress();
+								}
+							}}
+							style={({ pressed }) => [
+								styles.modelSelector,
+								pressed && onModelPress && { opacity: 0.7 },
+							]}
+							disabled={!onModelPress}
+						>
 							{modelInfo ? (
 								<>
 									<ProviderLogo providerId={modelInfo.providerId} />
@@ -662,11 +676,21 @@ export function ChatInput({
 									Select model
 								</Text>
 							)}
-						</View>
+						</Pressable>
 
-						{/* Agent badge (if active) */}
+						{/* Agent badge (if active) - clickable */}
 						{activeAgent && (
-							<AgentBadge name={activeAgent.name} color={activeAgent.color} />
+							<Pressable
+								onPress={() => {
+									if (onAgentPress) {
+										Haptics.selectionAsync();
+										onAgentPress();
+									}
+								}}
+								disabled={!onAgentPress}
+							>
+								<AgentBadge name={activeAgent.name} color={activeAgent.color} />
+							</Pressable>
 						)}
 					</View>
 

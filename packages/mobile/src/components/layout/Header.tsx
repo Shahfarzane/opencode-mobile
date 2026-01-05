@@ -34,6 +34,7 @@ interface HeaderProps {
 	onSessionsPress?: () => void;
 	hasUpdate?: boolean;
 	contextUsage?: ContextUsage | null;
+	diffFileCount?: number;
 }
 
 function getTabIcon(tabId: MainTab, color: string, size: number) {
@@ -57,6 +58,7 @@ export function Header({
 	onSessionsPress,
 	hasUpdate = false,
 	contextUsage,
+	diffFileCount = 0,
 }: HeaderProps) {
 	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
@@ -94,6 +96,7 @@ export function Header({
 				<View style={styles.tabsSection}>
 					{tabs.map((tab) => {
 						const isActive = activeTab === tab.id;
+						const showGitDot = tab.id === "git" && diffFileCount > 0;
 						return (
 							<Pressable
 								key={tab.id}
@@ -112,6 +115,15 @@ export function Header({
 											style={[
 												styles.activeIndicator,
 												{ backgroundColor: colors.foreground },
+											]}
+										/>
+									)}
+									{/* Orange dot for git tab when there are changes */}
+									{showGitDot && (
+										<View
+											style={[
+												styles.changeDot,
+												{ backgroundColor: colors.primary },
 											]}
 										/>
 									)}
@@ -185,6 +197,14 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		top: 6,
 		right: 6,
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+	},
+	changeDot: {
+		position: "absolute",
+		top: 2,
+		right: 2,
 		width: 8,
 		height: 8,
 		borderRadius: 4,
