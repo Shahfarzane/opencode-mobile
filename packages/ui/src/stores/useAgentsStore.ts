@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import type { Agent } from "@opencode-ai/sdk/v2";
+import type { Agent } from "@/types";
 import { opencodeClient } from "@/lib/opencode/client";
 import { emitConfigChange, scopeMatches, subscribeToConfigChanges } from "@/lib/configSync";
 import {
@@ -42,12 +42,12 @@ export interface AgentConfig {
   mode?: "primary" | "subagent" | "all";
   tools?: Record<string, boolean>;
   permission?: {
-     edit?: "allow" | "ask" | "deny";
-     bash?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
-     skill?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
-     webfetch?: "allow" | "ask" | "deny";
-     doom_loop?: "allow" | "ask" | "deny";
-     external_directory?: "allow" | "ask" | "deny";
+     edit?: "allow" | "ask" | "deny" | "full";
+     bash?: "allow" | "ask" | "deny" | "full" | Record<string, "allow" | "ask" | "deny" | "full">;
+     skill?: "allow" | "ask" | "deny" | "full" | Record<string, "allow" | "ask" | "deny" | "full">;
+     webfetch?: "allow" | "ask" | "deny" | "full";
+     doom_loop?: "allow" | "ask" | "deny" | "full";
+     external_directory?: "allow" | "ask" | "deny" | "full";
    };
 
   disable?: boolean;
@@ -98,12 +98,12 @@ export interface AgentDraft {
   mode?: "primary" | "subagent" | "all";
   tools?: Record<string, boolean>;
   permission?: {
-     edit?: "allow" | "ask" | "deny";
-     bash?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
-     skill?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
-     webfetch?: "allow" | "ask" | "deny";
-     doom_loop?: "allow" | "ask" | "deny";
-     external_directory?: "allow" | "ask" | "deny";
+     edit?: "allow" | "ask" | "deny" | "full";
+     bash?: "allow" | "ask" | "deny" | "full" | Record<string, "allow" | "ask" | "deny" | "full">;
+     skill?: "allow" | "ask" | "deny" | "full" | Record<string, "allow" | "ask" | "deny" | "full">;
+     webfetch?: "allow" | "ask" | "deny" | "full";
+     doom_loop?: "allow" | "ask" | "deny" | "full";
+     external_directory?: "allow" | "ask" | "deny" | "full";
    };
   disable?: boolean;
 }
@@ -179,8 +179,10 @@ export const useAgentsStore = create<AgentsStore>()(
                   return agent;
                 })
               );
-              
-              set({ agents: agentsWithScope, isLoading: false });
+
+              // Cast SDK agents to local Agent type for UI compatibility
+              // Uses unknown to bridge incompatible SDK PermissionRuleset to local AgentPermissionObject
+              set({ agents: agentsWithScope as unknown as Agent[], isLoading: false });
               return true;
             } catch (error) {
               lastError = error;
