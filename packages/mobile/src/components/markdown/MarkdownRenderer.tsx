@@ -1,7 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType } from "react";
-import { CodeBlock } from "./CodeBlock";
 import { useTheme } from "@/theme";
+import { CodeBlock } from "./CodeBlock";
 
 // React 19 compatibility: library types are incompatible with React 19's stricter render() return type
 const Markdown = MarkdownLib as unknown as ComponentType<{

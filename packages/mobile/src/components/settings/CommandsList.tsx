@@ -6,10 +6,10 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { commandsApi, isCommandBuiltIn, type Command } from "@/api";
-import { useTheme, typography } from "@/theme";
-import { SettingsListItem } from "./SettingsListItem";
+import { type Command, commandsApi, isCommandBuiltIn } from "@/api";
 import { CommandIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
+import { SettingsListItem } from "./SettingsListItem";
 
 interface CommandsListProps {
 	selectedCommand?: string | null;

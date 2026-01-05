@@ -1,7 +1,13 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { useTheme, typography } from "@/theme";
-import { CheckIcon, ClockIcon, XIcon } from "@/components/icons";
 import * as Haptics from "expo-haptics";
+import {
+	ActivityIndicator,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import { CheckIcon, ClockIcon, XIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
 
 export type PermissionResponse = "once" | "always" | "reject";
 
@@ -10,7 +16,10 @@ interface PermissionActionsProps {
 	isResponding: boolean;
 }
 
-export function PermissionActions({ onResponse, isResponding }: PermissionActionsProps) {
+export function PermissionActions({
+	onResponse,
+	isResponding,
+}: PermissionActionsProps) {
 	const { colors } = useTheme();
 
 	const handlePress = async (response: PermissionResponse) => {
@@ -75,10 +84,7 @@ export function PermissionActions({ onResponse, isResponding }: PermissionAction
 			>
 				<XIcon size={14} color={colors.error} />
 				<Text
-					style={[
-						typography.meta,
-						{ color: colors.error, fontWeight: "500" },
-					]}
+					style={[typography.meta, { color: colors.error, fontWeight: "500" }]}
 				>
 					Deny
 				</Text>

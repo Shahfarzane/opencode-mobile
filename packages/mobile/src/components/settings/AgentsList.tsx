@@ -6,10 +6,10 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { agentsApi, isAgentBuiltIn, isAgentHidden, type Agent } from "@/api";
-import { useTheme, typography } from "@/theme";
-import { SettingsListItem } from "./SettingsListItem";
+import { type Agent, agentsApi, isAgentBuiltIn, isAgentHidden } from "@/api";
 import { RobotIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
+import { SettingsListItem } from "./SettingsListItem";
 
 interface AgentsListProps {
 	selectedAgent?: string | null;

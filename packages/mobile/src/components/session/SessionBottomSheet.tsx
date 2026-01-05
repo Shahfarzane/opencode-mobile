@@ -1,14 +1,14 @@
-import { forwardRef, useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
 import BottomSheet, {
 	BottomSheetBackdrop,
-	BottomSheetScrollView,
 	type BottomSheetBackdropProps,
+	BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
+import { forwardRef, useCallback, useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useTheme, typography } from "@/theme";
 import type { Session } from "@/api/sessions";
+import { typography, useTheme } from "@/theme";
 
 interface DateGroup {
 	label: string;
@@ -62,8 +62,14 @@ function getDateGroupLabel(timestamp: number | string | undefined): string {
 	const date = new Date(timestamp);
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-	const sessionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-	const diffDays = Math.floor((today.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24));
+	const sessionDate = new Date(
+		date.getFullYear(),
+		date.getMonth(),
+		date.getDate(),
+	);
+	const diffDays = Math.floor(
+		(today.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24),
+	);
 
 	if (diffDays === 0) return "Today";
 	if (diffDays === 1) return "Yesterday";
@@ -74,26 +80,32 @@ function getDateGroupLabel(timestamp: number | string | undefined): string {
 
 function groupSessionsByDate(sessions: Session[]): DateGroup[] {
 	const groups = new Map<string, Session[]>();
-	
+
 	for (const session of sessions) {
 		const label = getDateGroupLabel(session.createdAt);
 		const existing = groups.get(label) || [];
 		existing.push(session);
 		groups.set(label, existing);
 	}
-	
+
 	return Array.from(groups.entries()).map(([label, sessions]) => ({
 		label,
 		sessions,
 	}));
 }
 
-function ChevronIcon({ color, expanded }: { color: string; expanded: boolean }) {
+function ChevronIcon({
+	color,
+	expanded,
+}: {
+	color: string;
+	expanded: boolean;
+}) {
 	return (
-		<Svg 
-			width={14} 
-			height={14} 
-			viewBox="0 0 24 24" 
+		<Svg
+			width={14}
+			height={14}
+			viewBox="0 0 24 24"
 			fill="none"
 			style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
 		>
@@ -107,180 +119,195 @@ function ChevronIcon({ color, expanded }: { color: string; expanded: boolean }) 
 	);
 }
 
-export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProps>(
-	function SessionBottomSheet(
-		{ sessions, currentSessionId, isLoading, onSelectSession, onNewSession, onClose },
-		ref
-	) {
-		const { colors, isDark } = useTheme();
-		const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+export const SessionBottomSheet = forwardRef<
+	BottomSheet,
+	SessionBottomSheetProps
+>(function SessionBottomSheet(
+	{
+		sessions,
+		currentSessionId,
+		isLoading,
+		onSelectSession,
+		onNewSession,
+		onClose,
+	},
+	ref,
+) {
+	const { colors, isDark } = useTheme();
+	const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+		new Set(),
+	);
 
-		const snapPoints = useMemo(() => ["40%", "65%"], []);
-		const dateGroups = useMemo(() => groupSessionsByDate(sessions), [sessions]);
+	const snapPoints = useMemo(() => ["40%", "65%"], []);
+	const dateGroups = useMemo(() => groupSessionsByDate(sessions), [sessions]);
 
-		const toggleGroup = useCallback(async (label: string) => {
+	const toggleGroup = useCallback(async (label: string) => {
+		await Haptics.selectionAsync();
+		setCollapsedGroups((prev) => {
+			const next = new Set(prev);
+			if (next.has(label)) {
+				next.delete(label);
+			} else {
+				next.add(label);
+			}
+			return next;
+		});
+	}, []);
+
+	const handleSheetChanges = useCallback(
+		(index: number) => {
+			if (index === -1) {
+				onClose();
+			}
+		},
+		[onClose],
+	);
+
+	const renderBackdrop = useCallback(
+		(props: BottomSheetBackdropProps) => (
+			<BottomSheetBackdrop
+				{...props}
+				disappearsOnIndex={-1}
+				appearsOnIndex={0}
+				opacity={0.3}
+				pressBehavior="close"
+			/>
+		),
+		[],
+	);
+
+	const handleSelectSession = useCallback(
+		async (session: Session) => {
 			await Haptics.selectionAsync();
-			setCollapsedGroups(prev => {
-				const next = new Set(prev);
-				if (next.has(label)) {
-					next.delete(label);
-				} else {
-					next.add(label);
-				}
-				return next;
-			});
-		}, []);
+			onSelectSession(session);
+		},
+		[onSelectSession],
+	);
 
-		const handleSheetChanges = useCallback(
-			(index: number) => {
-				if (index === -1) {
-					onClose();
-				}
-			},
-			[onClose]
-		);
+	const handleNewSession = useCallback(async () => {
+		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		onNewSession();
+	}, [onNewSession]);
 
-		const renderBackdrop = useCallback(
-			(props: BottomSheetBackdropProps) => (
-				<BottomSheetBackdrop
-					{...props}
-					disappearsOnIndex={-1}
-					appearsOnIndex={0}
-					opacity={0.3}
-					pressBehavior="close"
-				/>
-			),
-			[]
-		);
+	return (
+		<BottomSheet
+			ref={ref}
+			index={-1}
+			snapPoints={snapPoints}
+			onChange={handleSheetChanges}
+			backdropComponent={renderBackdrop}
+			enablePanDownToClose
+			backgroundStyle={{
+				backgroundColor: colors.background,
+				borderTopLeftRadius: 20,
+				borderTopRightRadius: 20,
+				borderWidth: 1,
+				borderBottomWidth: 0,
+				borderColor: colors.border,
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: -4 },
+				shadowOpacity: isDark ? 0.3 : 0.1,
+				shadowRadius: 12,
+				elevation: 16,
+			}}
+			handleIndicatorStyle={{
+				backgroundColor: colors.mutedForeground,
+				width: 40,
+			}}
+		>
+			<View style={styles.header}>
+				<Text style={[typography.uiHeader, { color: colors.foreground }]}>
+					Sessions
+				</Text>
+			</View>
 
-		const handleSelectSession = useCallback(
-			async (session: Session) => {
-				await Haptics.selectionAsync();
-				onSelectSession(session);
-			},
-			[onSelectSession]
-		);
-
-		const handleNewSession = useCallback(async () => {
-			await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-			onNewSession();
-		}, [onNewSession]);
-
-		return (
-			<BottomSheet
-				ref={ref}
-				index={-1}
-				snapPoints={snapPoints}
-				onChange={handleSheetChanges}
-				backdropComponent={renderBackdrop}
-				enablePanDownToClose
-				backgroundStyle={{
-					backgroundColor: colors.background,
-					borderTopLeftRadius: 20,
-					borderTopRightRadius: 20,
-					borderWidth: 1,
-					borderBottomWidth: 0,
-					borderColor: colors.border,
-					shadowColor: "#000",
-					shadowOffset: { width: 0, height: -4 },
-					shadowOpacity: isDark ? 0.3 : 0.1,
-					shadowRadius: 12,
-					elevation: 16,
-				}}
-				handleIndicatorStyle={{
-					backgroundColor: colors.mutedForeground,
-					width: 40,
-				}}
+			<BottomSheetScrollView
+				style={styles.scrollView}
+				contentContainerStyle={styles.scrollContent}
 			>
-				<View style={styles.header}>
-					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
-						Sessions
-					</Text>
-				</View>
-
-				<BottomSheetScrollView
-					style={styles.scrollView}
-					contentContainerStyle={styles.scrollContent}
+				<Pressable
+					onPress={handleNewSession}
+					style={({ pressed }) => [
+						styles.newSessionButton,
+						{
+							borderColor: colors.primary,
+							backgroundColor: pressed
+								? `${colors.primary}25`
+								: `${colors.primary}15`,
+						},
+					]}
 				>
-					<Pressable
-						onPress={handleNewSession}
-						style={({ pressed }) => [
-							styles.newSessionButton,
-							{
-								borderColor: colors.primary,
-								backgroundColor: pressed
-									? `${colors.primary}25`
-									: `${colors.primary}15`,
-							},
-						]}
-					>
-						<View style={styles.newSessionContent}>
-							<PlusIcon color={colors.primary} />
-							<View style={styles.newSessionText}>
-								<Text
-									style={[
-										typography.uiLabel,
-										{ color: colors.primary, fontWeight: "600" },
-									]}
-								>
-									New Session
-								</Text>
-								<Text
-									style={[typography.micro, { color: colors.mutedForeground }]}
-								>
-									Start a fresh conversation
-								</Text>
-							</View>
+					<View style={styles.newSessionContent}>
+						<PlusIcon color={colors.primary} />
+						<View style={styles.newSessionText}>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.primary, fontWeight: "600" },
+								]}
+							>
+								New Session
+							</Text>
+							<Text
+								style={[typography.micro, { color: colors.mutedForeground }]}
+							>
+								Start a fresh conversation
+							</Text>
 						</View>
-					</Pressable>
+					</View>
+				</Pressable>
 
-					{isLoading ? (
-						<View style={styles.emptyState}>
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								Loading sessions...
-							</Text>
-						</View>
-					) : sessions.length === 0 ? (
-						<View style={styles.emptyState}>
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								No existing sessions
-							</Text>
-						</View>
-					) : (
-						dateGroups.map((group) => {
-							const isCollapsed = collapsedGroups.has(group.label);
-							return (
-								<View key={group.label} style={styles.dateGroup}>
-									<Pressable
-										onPress={() => toggleGroup(group.label)}
-										style={styles.dateGroupHeader}
+				{isLoading ? (
+					<View style={styles.emptyState}>
+						<Text
+							style={[typography.uiLabel, { color: colors.mutedForeground }]}
+						>
+							Loading sessions...
+						</Text>
+					</View>
+				) : sessions.length === 0 ? (
+					<View style={styles.emptyState}>
+						<Text
+							style={[typography.uiLabel, { color: colors.mutedForeground }]}
+						>
+							No existing sessions
+						</Text>
+					</View>
+				) : (
+					dateGroups.map((group) => {
+						const isCollapsed = collapsedGroups.has(group.label);
+						return (
+							<View key={group.label} style={styles.dateGroup}>
+								<Pressable
+									onPress={() => toggleGroup(group.label)}
+									style={styles.dateGroupHeader}
+								>
+									<Text
+										style={[
+											typography.micro,
+											{ color: colors.mutedForeground, fontWeight: "600" },
+										]}
 									>
+										{group.label}
+									</Text>
+									<View style={styles.dateGroupHeaderRight}>
 										<Text
 											style={[
 												typography.micro,
-												{ color: colors.mutedForeground, fontWeight: "600" },
+												{ color: colors.mutedForeground },
 											]}
 										>
-											{group.label}
+											{group.sessions.length}
 										</Text>
-										<View style={styles.dateGroupHeaderRight}>
-											<Text
-												style={[
-													typography.micro,
-													{ color: colors.mutedForeground },
-												]}
-											>
-												{group.sessions.length}
-											</Text>
-											<ChevronIcon color={colors.mutedForeground} expanded={!isCollapsed} />
-										</View>
-									</Pressable>
-									
-									{!isCollapsed && group.sessions.map((session) => {
+										<ChevronIcon
+											color={colors.mutedForeground}
+											expanded={!isCollapsed}
+										/>
+									</View>
+								</Pressable>
+
+								{!isCollapsed &&
+									group.sessions.map((session) => {
 										const isSelected = session.id === currentSessionId;
 										return (
 											<Pressable
@@ -305,7 +332,9 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 												<View style={styles.sessionItemLeft}>
 													<ChatIcon
 														color={
-															isSelected ? colors.primary : colors.mutedForeground
+															isSelected
+																? colors.primary
+																: colors.mutedForeground
 														}
 													/>
 												</View>
@@ -320,7 +349,8 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 														]}
 														numberOfLines={1}
 													>
-														{session.title || `Session ${session.id.slice(0, 8)}`}
+														{session.title ||
+															`Session ${session.id.slice(0, 8)}`}
 													</Text>
 													<Text
 														style={[
@@ -336,15 +366,14 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 											</Pressable>
 										);
 									})}
-								</View>
-							);
-						})
-					)}
-				</BottomSheetScrollView>
-			</BottomSheet>
-		);
-	}
-);
+							</View>
+						);
+					})
+				)}
+			</BottomSheetScrollView>
+		</BottomSheet>
+	);
+});
 
 const styles = StyleSheet.create({
 	header: {

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from "../lib/httpClient";
+import { apiDelete, apiGet, apiPost } from "../lib/httpClient";
 
 export interface Command {
 	name: string;

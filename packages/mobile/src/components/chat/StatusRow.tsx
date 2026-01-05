@@ -1,13 +1,7 @@
 import { useEffect, useRef } from "react";
-import {
-	Animated,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-import { useTheme, typography } from "@/theme";
-import { StopIcon, LoaderIcon } from "@/components/icons";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { LoaderIcon, StopIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
 
 interface StatusRowProps {
 	isWorking?: boolean;
@@ -32,7 +26,7 @@ export function StatusRow({
 					toValue: 1,
 					duration: 1000,
 					useNativeDriver: true,
-				})
+				}),
 			).start();
 		} else {
 			spinAnim.setValue(0);
@@ -45,7 +39,7 @@ export function StatusRow({
 
 	const spin = spinAnim.interpolate({
 		inputRange: [0, 1],
-		outputRange: ['0deg', '360deg'],
+		outputRange: ["0deg", "360deg"],
 	});
 
 	return (
@@ -76,7 +70,9 @@ export function StatusRow({
 					hitSlop={8}
 				>
 					<StopIcon size={12} color={colors.destructiveForeground} />
-					<Text style={[typography.micro, { color: colors.destructiveForeground }]}>
+					<Text
+						style={[typography.micro, { color: colors.destructiveForeground }]}
+					>
 						Stop
 					</Text>
 				</Pressable>
@@ -87,23 +83,23 @@ export function StatusRow({
 
 const styles = StyleSheet.create({
 	container: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		borderRadius: 8,
 		marginBottom: 8,
 	},
 	left: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 		flex: 1,
 	},
 	abortButton: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 4,
 		paddingHorizontal: 10,
 		paddingVertical: 6,

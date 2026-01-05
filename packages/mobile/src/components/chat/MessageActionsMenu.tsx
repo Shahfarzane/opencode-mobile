@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
+import { useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 interface MessageActionsMenuProps {
 	visible: boolean;
@@ -105,7 +105,9 @@ export function MessageActionsMenu({
 
 					{isAssistantMessage && onBranchSession && (
 						<>
-							<View style={[styles.divider, { backgroundColor: colors.border }]} />
+							<View
+								style={[styles.divider, { backgroundColor: colors.border }]}
+							/>
 							<Pressable
 								onPress={handleBranch}
 								style={({ pressed }) => [
@@ -114,7 +116,9 @@ export function MessageActionsMenu({
 								]}
 							>
 								<BranchIcon color={colors.foreground} />
-								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+								<Text
+									style={[typography.uiLabel, { color: colors.foreground }]}
+								>
 									Branch Session
 								</Text>
 							</Pressable>
@@ -128,7 +132,7 @@ export function MessageActionsMenu({
 
 interface UseMessageActionsReturn {
 	showMenu: boolean;
-	openMenu: () => void;
+	openMenu: () => Promise<void>;
 	closeMenu: () => void;
 	copyMessageContent: (content: string) => Promise<void>;
 }

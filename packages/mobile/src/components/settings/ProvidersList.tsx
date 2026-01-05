@@ -6,10 +6,10 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { providersApi, type Provider } from "@/api";
-import { useTheme, typography } from "@/theme";
-import { SettingsListItem } from "./SettingsListItem";
+import { type Provider, providersApi } from "@/api";
 import { KeyIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
+import { SettingsListItem } from "./SettingsListItem";
 
 interface ProvidersListProps {
 	selectedProvider?: string | null;

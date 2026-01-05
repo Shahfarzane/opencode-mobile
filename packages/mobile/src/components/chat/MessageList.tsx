@@ -34,11 +34,11 @@ const phrases = [
 
 function EmptyState() {
 	const { isDark } = useTheme();
-	const textColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+	const textColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
 
 	return (
 		<View style={styles.emptyContainer}>
-			<OpenChamberLogo width={140} height={140} opacity={0.2} isAnimated />
+			<OpenChamberLogo width={120} height={120} opacity={0.15} isAnimated />
 			<TextLoop
 				interval={4}
 				style={styles.textLoopContainer}
@@ -54,26 +54,16 @@ function EmptyState() {
 	);
 }
 
-function LoadingIndicator() {
-	const { colors } = useTheme();
-
-	return (
-		<View style={styles.loadingContainer}>
-			<View style={[styles.loadingBubble, { backgroundColor: colors.card }]}>
-				<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
-					Thinking...
-				</Text>
-			</View>
-		</View>
-	);
-}
-
 export function MessageList({ messages, isLoading }: MessageListProps) {
 	const listRef = useRef<FlashListRef<Message>>(null);
 
-	const renderItem = useCallback(({ item }: { item: Message }) => {
-		return <ChatMessage message={item} />;
-	}, []);
+	const renderItem = useCallback(({ item, index }: { item: Message; index: number }) => {
+		// Determine if we should show header based on previous message
+		const previousMessage = index > 0 ? messages[index - 1] : null;
+		const showHeader = !previousMessage || previousMessage.role === "user";
+
+		return <ChatMessage message={item} showHeader={showHeader} />;
+	}, [messages]);
 
 	const keyExtractor = useCallback((item: Message) => item.id, []);
 
@@ -93,13 +83,10 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 			data={messages}
 			renderItem={renderItem}
 			keyExtractor={keyExtractor}
-			{...({ estimatedItemSize: 100 } as object)}
-			contentContainerStyle={{
-				paddingTop: 16,
-				paddingBottom: isLoading ? 8 : 16,
-			}}
+			extraData={messages}
+			{...({ estimatedItemSize: 120 } as object)}
+			contentContainerStyle={styles.listContent}
 			onContentSizeChange={handleContentSizeChange}
-			ListFooterComponent={isLoading ? <LoadingIndicator /> : null}
 			showsVerticalScrollIndicator={false}
 		/>
 	);
@@ -111,7 +98,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 		paddingHorizontal: 32,
-		gap: 24,
+		gap: 20,
 	},
 	textLoopContainer: {
 		minHeight: 24,
@@ -119,14 +106,8 @@ const styles = StyleSheet.create({
 	phraseText: {
 		textAlign: 'center',
 	},
-	loadingContainer: {
-		paddingHorizontal: 16,
-		paddingVertical: 8,
-	},
-	loadingBubble: {
-		maxWidth: '85%',
-		borderRadius: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+	listContent: {
+		paddingTop: 12,
+		paddingBottom: 16,
 	},
 });

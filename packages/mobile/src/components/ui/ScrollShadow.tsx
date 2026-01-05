@@ -1,17 +1,17 @@
-import { useRef, useState, useCallback } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useRef, useState } from "react";
 import {
 	Animated,
-	ScrollView,
-	StyleSheet,
-	View,
 	type NativeScrollEvent,
 	type NativeSyntheticEvent,
+	ScrollView,
 	type ScrollViewProps,
+	StyleSheet,
+	View,
 	type ViewStyle,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "@/theme";
 import { TRANSITION_DURATION } from "@/lib/animations";
+import { useTheme } from "@/theme";
 
 interface ScrollShadowProps extends ScrollViewProps {
 	/**
@@ -51,7 +51,6 @@ export function ScrollShadow({
 	const { colors } = useTheme();
 	const topOpacity = useRef(new Animated.Value(0)).current;
 	const bottomOpacity = useRef(new Animated.Value(0)).current;
-	const [contentHeight, setContentHeight] = useState(0);
 	const [scrollViewHeight, setScrollViewHeight] = useState(0);
 
 	const handleScroll = useCallback(
@@ -86,8 +85,7 @@ export function ScrollShadow({
 	);
 
 	const handleContentSizeChange = useCallback(
-		(width: number, height: number) => {
-			setContentHeight(height);
+		(_width: number, height: number) => {
 			// Check if content overflows initially
 			if (height > scrollViewHeight && scrollViewHeight > 0) {
 				Animated.timing(bottomOpacity, {
@@ -169,7 +167,10 @@ export function ScrollShadowHorizontal({
 	onScroll,
 	children,
 	...scrollViewProps
-}: Omit<ScrollShadowProps, "shadowHeight" | "showTopShadow" | "showBottomShadow"> & {
+}: Omit<
+	ScrollShadowProps,
+	"shadowHeight" | "showTopShadow" | "showBottomShadow"
+> & {
 	shadowWidth?: number;
 	showLeftShadow?: boolean;
 	showRightShadow?: boolean;
@@ -177,7 +178,6 @@ export function ScrollShadowHorizontal({
 	const { colors } = useTheme();
 	const leftOpacity = useRef(new Animated.Value(0)).current;
 	const rightOpacity = useRef(new Animated.Value(0)).current;
-	const [contentWidth, setContentWidth] = useState(0);
 	const [scrollViewWidth, setScrollViewWidth] = useState(0);
 
 	const handleScroll = useCallback(
@@ -209,8 +209,7 @@ export function ScrollShadowHorizontal({
 	);
 
 	const handleContentSizeChange = useCallback(
-		(width: number, height: number) => {
-			setContentWidth(width);
+		(width: number) => {
 			if (width > scrollViewWidth && scrollViewWidth > 0) {
 				Animated.timing(rightOpacity, {
 					toValue: showRightShadow ? 1 : 0,

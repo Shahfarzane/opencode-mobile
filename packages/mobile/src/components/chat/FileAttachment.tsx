@@ -1,22 +1,10 @@
-import { useCallback, useState } from "react";
-import {
-	Alert,
-	Image,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
-import { useTheme, typography } from "@/theme";
-import {
-	AttachmentIcon,
-	ImageIcon,
-	FileIcon,
-	XIcon,
-} from "@/components/icons";
+import * as ImagePicker from "expo-image-picker";
+import { useCallback, useState } from "react";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { AttachmentIcon, FileIcon, ImageIcon, XIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
 
 export interface AttachedFile {
 	id: string;
@@ -61,7 +49,10 @@ export function FileAttachmentButton({
 
 		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 		if (!permission.granted) {
-			Alert.alert("Permission Required", "Please allow access to your photo library.");
+			Alert.alert(
+				"Permission Required",
+				"Please allow access to your photo library.",
+			);
 			return;
 		}
 
@@ -78,7 +69,10 @@ export function FileAttachmentButton({
 		const fileName = asset.fileName || `image_${Date.now()}.jpg`;
 
 		if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE) {
-			Alert.alert("File Too Large", `Maximum file size is ${formatFileSize(MAX_FILE_SIZE)}`);
+			Alert.alert(
+				"File Too Large",
+				`Maximum file size is ${formatFileSize(MAX_FILE_SIZE)}`,
+			);
 			return;
 		}
 
@@ -108,7 +102,10 @@ export function FileAttachmentButton({
 		const asset = result.assets[0];
 
 		if (asset.size && asset.size > MAX_FILE_SIZE) {
-			Alert.alert("File Too Large", `Maximum file size is ${formatFileSize(MAX_FILE_SIZE)}`);
+			Alert.alert(
+				"File Too Large",
+				`Maximum file size is ${formatFileSize(MAX_FILE_SIZE)}`,
+			);
 			return;
 		}
 
@@ -135,10 +132,7 @@ export function FileAttachmentButton({
 			<Pressable
 				onPress={showOptions}
 				disabled={disabled}
-				style={[
-					styles.attachButton,
-					{ opacity: disabled ? 0.5 : 1 },
-				]}
+				style={[styles.attachButton, { opacity: disabled ? 0.5 : 1 }]}
 				hitSlop={8}
 			>
 				<AttachmentIcon size={18} color={colors.mutedForeground} />
@@ -168,10 +162,7 @@ export function FileAttachmentButton({
 								Photo Library
 							</Text>
 						</Pressable>
-						<Pressable
-							onPress={handleDocumentPick}
-							style={styles.optionItem}
-						>
+						<Pressable onPress={handleDocumentPick} style={styles.optionItem}>
 							<FileIcon size={20} color={colors.foreground} />
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 								Files
@@ -207,10 +198,7 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 						]}
 					>
 						{isImage && file.uri ? (
-							<Image
-								source={{ uri: file.uri }}
-								style={styles.fileThumbnail}
-							/>
+							<Image source={{ uri: file.uri }} style={styles.fileThumbnail} />
 						) : (
 							<View
 								style={[
@@ -218,7 +206,9 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 									{ backgroundColor: colors.card },
 								]}
 							>
-								<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+								<Text
+									style={[typography.micro, { color: colors.mutedForeground }]}
+								>
 									{extension.toUpperCase().slice(0, 3)}
 								</Text>
 							</View>
@@ -231,7 +221,9 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 							>
 								{file.name}
 							</Text>
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.micro, { color: colors.mutedForeground }]}
+							>
 								{formatFileSize(file.size)}
 							</Text>
 						</View>

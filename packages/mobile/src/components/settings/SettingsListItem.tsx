@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 interface SettingsListItemProps {
 	title: string;
@@ -33,8 +33,8 @@ export function SettingsListItem({
 					backgroundColor: isSelected
 						? colors.primary + "15"
 						: pressed
-						? colors.muted
-						: "transparent",
+							? colors.muted
+							: "transparent",
 				},
 			]}
 		>
@@ -52,8 +52,15 @@ export function SettingsListItem({
 						{title}
 					</Text>
 					{badge && (
-						<View style={[styles.badge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+						<View
+							style={[
+								styles.badge,
+								{ backgroundColor: colors.muted, borderColor: colors.border },
+							]}
+						>
+							<Text
+								style={[typography.micro, { color: colors.mutedForeground }]}
+							>
 								{badge}
 							</Text>
 						</View>

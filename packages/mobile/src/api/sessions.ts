@@ -28,8 +28,13 @@ export interface SessionMessage {
 	parts: MessagePart[];
 }
 
-type SessionListResponse = Session[] | { data?: Session[]; sessions?: Session[] } | Session;
-type MessagesResponse = SessionMessage[] | { data?: SessionMessage[]; messages?: SessionMessage[] };
+type SessionListResponse =
+	| Session[]
+	| { data?: Session[]; sessions?: Session[] }
+	| Session;
+type MessagesResponse =
+	| SessionMessage[]
+	| { data?: SessionMessage[]; messages?: SessionMessage[] };
 type CreateResponse = { id: string } | { data?: { id: string } } | Session;
 
 function unwrapArray<T>(response: unknown): T[] {
@@ -47,7 +52,11 @@ function unwrapArray<T>(response: unknown): T[] {
 
 export const sessionsApi = {
 	async list(): Promise<Session[]> {
-		const response = await apiGet<SessionListResponse>("/api/session", {}, true);
+		const response = await apiGet<SessionListResponse>(
+			"/api/session",
+			{},
+			true,
+		);
 		return unwrapArray<Session>(response);
 	},
 

@@ -13,7 +13,10 @@ export const toolsApi: ToolsAPI = {
 		}
 
 		return data
-			.filter((tool: unknown): tool is string => typeof tool === "string" && tool !== "invalid")
+			.filter(
+				(tool: unknown): tool is string =>
+					typeof tool === "string" && tool !== "invalid",
+			)
 			.sort();
 	},
 };

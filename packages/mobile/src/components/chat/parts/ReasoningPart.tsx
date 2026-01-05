@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 export interface ReasoningPartData {
 	type: "reasoning";
@@ -41,13 +41,25 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 							strokeWidth={2}
 							strokeLinecap="round"
 						/>
-						<Path d="M9 21h6M10 17v4M14 17v4" stroke={colors.warning} strokeWidth={2} />
+						<Path
+							d="M9 21h6M10 17v4M14 17v4"
+							stroke={colors.warning}
+							strokeWidth={2}
+						/>
 					</Svg>
-					<Text style={[typography.uiLabel, styles.title, { color: colors.warning }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							styles.title,
+							{ color: colors.warning },
+						]}
+					>
 						Thinking
 					</Text>
 					{part.isStreaming && (
-						<Text style={[typography.micro, { color: `${colors.warning}B0` }]}>...</Text>
+						<Text style={[typography.micro, { color: `${colors.warning}B0` }]}>
+							...
+						</Text>
 					)}
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{isExpanded ? "▼" : "▶"}
@@ -55,15 +67,29 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 				</View>
 
 				{isExpanded ? (
-					<View style={[styles.expandedContent, { borderTopColor: `${colors.warning}20` }]}>
-						<Text style={[typography.body, { color: `${colors.foreground}CC`, lineHeight: 22 }]}>
+					<View
+						style={[
+							styles.expandedContent,
+							{ borderTopColor: `${colors.warning}20` },
+						]}
+					>
+						<Text
+							style={[
+								typography.body,
+								{ color: `${colors.foreground}CC`, lineHeight: 22 },
+							]}
+						>
 							{content}
 							{part.isStreaming && "▊"}
 						</Text>
 					</View>
 				) : hasMore ? (
 					<Text
-						style={[typography.micro, styles.preview, { color: colors.mutedForeground }]}
+						style={[
+							typography.micro,
+							styles.preview,
+							{ color: colors.mutedForeground },
+						]}
 						numberOfLines={2}
 					>
 						{content.slice(0, previewLength)}...
@@ -85,8 +111,8 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 	},
 	header: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 	},
 	title: {

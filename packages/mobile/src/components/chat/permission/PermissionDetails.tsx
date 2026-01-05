@@ -1,12 +1,16 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 import type { Permission } from "./types";
 
 interface PermissionDetailsProps {
 	permission: Permission;
 }
 
-function getMeta(metadata: Record<string, unknown>, key: string, fallback: string = ""): string {
+function getMeta(
+	metadata: Record<string, unknown>,
+	key: string,
+	fallback: string = "",
+): string {
 	const val = metadata[key];
 	return typeof val === "string"
 		? val
@@ -15,32 +19,56 @@ function getMeta(metadata: Record<string, unknown>, key: string, fallback: strin
 			: fallback;
 }
 
-function getMetaNum(metadata: Record<string, unknown>, key: string): number | undefined {
+function getMetaNum(
+	metadata: Record<string, unknown>,
+	key: string,
+): number | undefined {
 	const val = metadata[key];
 	return typeof val === "number" ? val : undefined;
 }
 
 function BashDetails({ permission }: { permission: Permission }) {
 	const { colors } = useTheme();
-	const command = getMeta(permission.metadata, "command") || getMeta(permission.metadata, "cmd") || getMeta(permission.metadata, "script");
+	const command =
+		getMeta(permission.metadata, "command") ||
+		getMeta(permission.metadata, "cmd") ||
+		getMeta(permission.metadata, "script");
 	const description = getMeta(permission.metadata, "description");
-	const workingDir = getMeta(permission.metadata, "cwd") || getMeta(permission.metadata, "working_directory") || getMeta(permission.metadata, "directory");
+	const workingDir =
+		getMeta(permission.metadata, "cwd") ||
+		getMeta(permission.metadata, "working_directory") ||
+		getMeta(permission.metadata, "directory");
 	const timeout = getMetaNum(permission.metadata, "timeout");
 
 	return (
 		<View style={styles.content}>
 			{description && (
-				<Text style={[typography.meta, styles.description, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.meta,
+						styles.description,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					{description}
 				</Text>
 			)}
 			{workingDir && (
 				<View style={styles.metaRow}>
-					<Text style={[typography.micro, styles.metaLabel, { color: colors.mutedForeground }]}>
+					<Text
+						style={[
+							typography.micro,
+							styles.metaLabel,
+							{ color: colors.mutedForeground },
+						]}
+					>
 						Directory:
 					</Text>
 					<View style={[styles.codeInline, { backgroundColor: colors.muted }]}>
-						<Text style={[typography.code, { color: colors.foreground }]} numberOfLines={1}>
+						<Text
+							style={[typography.code, { color: colors.foreground }]}
+							numberOfLines={1}
+						>
 							{workingDir}
 						</Text>
 					</View>
@@ -66,23 +94,41 @@ function BashDetails({ permission }: { permission: Permission }) {
 
 function EditDetails({ permission }: { permission: Permission }) {
 	const { colors } = useTheme();
-	const filePath = getMeta(permission.metadata, "file_path") || getMeta(permission.metadata, "path") || getMeta(permission.metadata, "file");
+	const filePath =
+		getMeta(permission.metadata, "file_path") ||
+		getMeta(permission.metadata, "path") ||
+		getMeta(permission.metadata, "file");
 	const description = getMeta(permission.metadata, "description");
 
 	return (
 		<View style={styles.content}>
 			{description && (
-				<Text style={[typography.meta, styles.description, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.meta,
+						styles.description,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					{description}
 				</Text>
 			)}
 			{filePath && (
 				<View style={styles.metaRow}>
-					<Text style={[typography.micro, styles.metaLabel, { color: colors.mutedForeground }]}>
+					<Text
+						style={[
+							typography.micro,
+							styles.metaLabel,
+							{ color: colors.mutedForeground },
+						]}
+					>
 						File:
 					</Text>
 					<View style={[styles.codeInline, { backgroundColor: colors.muted }]}>
-						<Text style={[typography.code, { color: colors.foreground }]} numberOfLines={1}>
+						<Text
+							style={[typography.code, { color: colors.foreground }]}
+							numberOfLines={1}
+						>
 							{filePath}
 						</Text>
 					</View>
@@ -94,23 +140,40 @@ function EditDetails({ permission }: { permission: Permission }) {
 
 function WriteDetails({ permission }: { permission: Permission }) {
 	const { colors } = useTheme();
-	const filePath = getMeta(permission.metadata, "file_path") || getMeta(permission.metadata, "path");
+	const filePath =
+		getMeta(permission.metadata, "file_path") ||
+		getMeta(permission.metadata, "path");
 	const description = getMeta(permission.metadata, "description");
 
 	return (
 		<View style={styles.content}>
 			{description && (
-				<Text style={[typography.meta, styles.description, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.meta,
+						styles.description,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					{description}
 				</Text>
 			)}
 			{filePath && (
 				<View style={styles.metaRow}>
-					<Text style={[typography.micro, styles.metaLabel, { color: colors.mutedForeground }]}>
+					<Text
+						style={[
+							typography.micro,
+							styles.metaLabel,
+							{ color: colors.mutedForeground },
+						]}
+					>
 						File:
 					</Text>
 					<View style={[styles.codeInline, { backgroundColor: colors.muted }]}>
-						<Text style={[typography.code, { color: colors.foreground }]} numberOfLines={1}>
+						<Text
+							style={[typography.code, { color: colors.foreground }]}
+							numberOfLines={1}
+						>
 							{filePath}
 						</Text>
 					</View>
@@ -122,36 +185,67 @@ function WriteDetails({ permission }: { permission: Permission }) {
 
 function WebFetchDetails({ permission }: { permission: Permission }) {
 	const { colors } = useTheme();
-	const url = getMeta(permission.metadata, "url") || getMeta(permission.metadata, "endpoint");
+	const url =
+		getMeta(permission.metadata, "url") ||
+		getMeta(permission.metadata, "endpoint");
 	const method = getMeta(permission.metadata, "method", "GET").toUpperCase();
-	const description = getMeta(permission.metadata, "description") || getMeta(permission.metadata, "prompt");
+	const description =
+		getMeta(permission.metadata, "description") ||
+		getMeta(permission.metadata, "prompt");
 
 	const getMethodColor = () => {
 		switch (method) {
-			case "GET": return colors.info;
-			case "POST": return colors.success;
-			case "PUT": case "PATCH": return colors.warning;
-			case "DELETE": return colors.error;
-			default: return colors.mutedForeground;
+			case "GET":
+				return colors.info;
+			case "POST":
+				return colors.success;
+			case "PUT":
+			case "PATCH":
+				return colors.warning;
+			case "DELETE":
+				return colors.error;
+			default:
+				return colors.mutedForeground;
 		}
 	};
 
 	return (
 		<View style={styles.content}>
 			{description && (
-				<Text style={[typography.meta, styles.description, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.meta,
+						styles.description,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					{description}
 				</Text>
 			)}
 			{url && (
 				<View style={styles.requestRow}>
-					<View style={[styles.methodBadge, { backgroundColor: `${getMethodColor()}20` }]}>
-						<Text style={[typography.micro, { color: getMethodColor(), fontWeight: "600" }]}>
+					<View
+						style={[
+							styles.methodBadge,
+							{ backgroundColor: `${getMethodColor()}20` },
+						]}
+					>
+						<Text
+							style={[
+								typography.micro,
+								{ color: getMethodColor(), fontWeight: "600" },
+							]}
+						>
 							{method}
 						</Text>
 					</View>
-					<View style={[styles.urlContainer, { backgroundColor: colors.muted }]}>
-						<Text style={[typography.code, { color: colors.foreground }]} numberOfLines={2}>
+					<View
+						style={[styles.urlContainer, { backgroundColor: colors.muted }]}
+					>
+						<Text
+							style={[typography.code, { color: colors.foreground }]}
+							numberOfLines={2}
+						>
 							{url}
 						</Text>
 					</View>
@@ -169,7 +263,13 @@ function GenericDetails({ permission }: { permission: Permission }) {
 	return (
 		<View style={styles.content}>
 			{description && (
-				<Text style={[typography.meta, styles.description, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.meta,
+						styles.description,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					{description}
 				</Text>
 			)}
@@ -189,7 +289,12 @@ export function PermissionDetails({ permission }: PermissionDetailsProps) {
 		return <BashDetails permission={permission} />;
 	}
 
-	if (tool === "edit" || tool === "multiedit" || tool === "str_replace" || tool === "str_replace_based_edit_tool") {
+	if (
+		tool === "edit" ||
+		tool === "multiedit" ||
+		tool === "str_replace" ||
+		tool === "str_replace_based_edit_tool"
+	) {
 		return <EditDetails permission={permission} />;
 	}
 
@@ -197,7 +302,12 @@ export function PermissionDetails({ permission }: PermissionDetailsProps) {
 		return <WriteDetails permission={permission} />;
 	}
 
-	if (tool === "webfetch" || tool === "fetch" || tool === "curl" || tool === "wget") {
+	if (
+		tool === "webfetch" ||
+		tool === "fetch" ||
+		tool === "curl" ||
+		tool === "wget"
+	) {
 		return <WebFetchDetails permission={permission} />;
 	}
 

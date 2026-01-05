@@ -37,7 +37,11 @@ export const providersApi = {
 
 	async setApiKey(providerId: string, apiKey: string): Promise<boolean> {
 		try {
-			await apiPost(`/api/provider/${encodeURIComponent(providerId)}/key`, { key: apiKey }, true);
+			await apiPost(
+				`/api/provider/${encodeURIComponent(providerId)}/key`,
+				{ key: apiKey },
+				true,
+			);
 			return true;
 		} catch {
 			return false;

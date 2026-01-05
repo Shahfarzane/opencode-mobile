@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from "react-native";
-import { useTheme, typography } from "@/theme";
 import {
 	ClockIcon,
 	FileEditIcon,
@@ -9,6 +8,8 @@ import {
 	TerminalIcon,
 	ToolIcon,
 } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
+import { getToolDisplayName } from "./utils";
 
 interface PermissionHeaderProps {
 	toolName: string;
@@ -53,41 +54,6 @@ function getToolIcon(toolName: string, color: string, size: number = 16) {
 	return <ToolIcon size={size} color={color} />;
 }
 
-export function getToolDisplayName(toolName: string): string {
-	const tool = toolName.toLowerCase();
-
-	if (
-		tool === "edit" ||
-		tool === "multiedit" ||
-		tool === "str_replace" ||
-		tool === "str_replace_based_edit_tool"
-	) {
-		return "edit";
-	}
-	if (tool === "write" || tool === "create" || tool === "file_write") {
-		return "write";
-	}
-	if (
-		tool === "bash" ||
-		tool === "shell" ||
-		tool === "cmd" ||
-		tool === "terminal" ||
-		tool === "shell_command"
-	) {
-		return "bash";
-	}
-	if (
-		tool === "webfetch" ||
-		tool === "fetch" ||
-		tool === "curl" ||
-		tool === "wget"
-	) {
-		return "webfetch";
-	}
-
-	return toolName;
-}
-
 function formatRelativeTime(timestamp: number): string {
 	const now = Date.now();
 	const diff = now - timestamp;
@@ -98,18 +64,31 @@ function formatRelativeTime(timestamp: number): string {
 	return `${Math.floor(diff / 86400000)}d ago`;
 }
 
-export function PermissionHeader({ toolName, createdTime }: PermissionHeaderProps) {
+export function PermissionHeader({
+	toolName,
+	createdTime,
+}: PermissionHeaderProps) {
 	const { colors } = useTheme();
 	const displayName = getToolDisplayName(toolName);
 
 	return (
 		<View style={[styles.header, { borderBottomColor: colors.border }]}>
 			<View style={styles.headerLeft}>
-				<View style={[styles.iconContainer, { backgroundColor: `${colors.warning}20` }]}>
+				<View
+					style={[
+						styles.iconContainer,
+						{ backgroundColor: `${colors.warning}20` },
+					]}
+				>
 					{getToolIcon(toolName, colors.warning, 16)}
 				</View>
 				<View style={styles.titleContainer}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						{displayName}
 					</Text>
 					<QuestionIcon size={14} color={colors.mutedForeground} />

@@ -13,9 +13,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { terminalApi } from "../../src/api";
 import { useTerminalStream } from "../../src/hooks/useTerminalStream";
-import { useTerminalStore } from "../../src/stores/useTerminalStore";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { useTheme, typography } from "../../src/theme";
+import { useTerminalStore } from "../../src/stores/useTerminalStore";
+import { typography, useTheme } from "../../src/theme";
 
 const SPECIAL_KEYS = [
 	{ label: "Ctrl", key: "ctrl" },
@@ -75,7 +75,9 @@ export default function TerminalScreen() {
 	const handleExit = useCallback(
 		(exitCode: number, signal: number | null) => {
 			setExited(exitCode);
-			appendOutput(`\n\r[Process exited with code ${exitCode}${signal ? `, signal ${signal}` : ""}]\n\r`);
+			appendOutput(
+				`\n\r[Process exited with code ${exitCode}${signal ? `, signal ${signal}` : ""}]\n\r`,
+			);
 		},
 		[setExited, appendOutput],
 	);
@@ -90,7 +92,9 @@ export default function TerminalScreen() {
 
 	const handleReconnecting = useCallback(
 		(attempt: number, maxAttempts: number) => {
-			appendOutput(`\n\r[Reconnecting... attempt ${attempt}/${maxAttempts}]\n\r`);
+			appendOutput(
+				`\n\r[Reconnecting... attempt ${attempt}/${maxAttempts}]\n\r`,
+			);
 		},
 		[appendOutput],
 	);
@@ -122,14 +126,25 @@ export default function TerminalScreen() {
 			setSessionId(session.sessionId);
 			appendOutput(`Terminal session started in ${directory}\n\r`);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Failed to create terminal session";
+			const message =
+				err instanceof Error
+					? err.message
+					: "Failed to create terminal session";
 			setError(message);
 			appendOutput(`[Error: ${message}]\n\r`);
 		} finally {
 			setIsCreatingSession(false);
 			setConnecting(false);
 		}
-	}, [directory, isCreatingSession, setConnecting, setError, clearOutput, setSessionId, appendOutput]);
+	}, [
+		directory,
+		isCreatingSession,
+		setConnecting,
+		setError,
+		clearOutput,
+		setSessionId,
+		appendOutput,
+	]);
 
 	const closeSession = useCallback(async () => {
 		if (sessionId) {
@@ -171,7 +186,9 @@ export default function TerminalScreen() {
 			}
 
 			if (ctrlMode && key.length === 1) {
-				const ctrlChar = String.fromCharCode(key.toUpperCase().charCodeAt(0) - 64);
+				const ctrlChar = String.fromCharCode(
+					key.toUpperCase().charCodeAt(0) - 64,
+				);
 				sendInput(ctrlChar);
 				setCtrlMode(false);
 			} else {
@@ -184,7 +201,9 @@ export default function TerminalScreen() {
 	const handleCharInput = useCallback(
 		(char: string) => {
 			if (ctrlMode && char.length === 1 && /[a-zA-Z]/.test(char)) {
-				const ctrlChar = String.fromCharCode(char.toUpperCase().charCodeAt(0) - 64);
+				const ctrlChar = String.fromCharCode(
+					char.toUpperCase().charCodeAt(0) - 64,
+				);
 				sendInput(ctrlChar);
 				setCtrlMode(false);
 				setInputValue("");
@@ -202,10 +221,25 @@ export default function TerminalScreen() {
 	}, [output]);
 
 	useEffect(() => {
-		if (isServerConnected && directory && !sessionId && !isCreatingSession && !hasExited && !createAttempted) {
+		if (
+			isServerConnected &&
+			directory &&
+			!sessionId &&
+			!isCreatingSession &&
+			!hasExited &&
+			!createAttempted
+		) {
 			createSession();
 		}
-	}, [isServerConnected, directory, sessionId, isCreatingSession, hasExited, createAttempted, createSession]);
+	}, [
+		isServerConnected,
+		directory,
+		sessionId,
+		isCreatingSession,
+		hasExited,
+		createAttempted,
+		createSession,
+	]);
 
 	useEffect(() => {
 		return () => {
@@ -222,10 +256,24 @@ export default function TerminalScreen() {
 		if (!isServerConnected) {
 			return (
 				<View style={styles.centerContainer}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, textAlign: "center" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, textAlign: "center" },
+						]}
+					>
 						Not connected to server
 					</Text>
-					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>
+					<Text
+						style={[
+							typography.meta,
+							{
+								color: colors.mutedForeground,
+								textAlign: "center",
+								marginTop: 8,
+							},
+						]}
+					>
 						Connect to a server to use the terminal
 					</Text>
 				</View>
@@ -235,10 +283,24 @@ export default function TerminalScreen() {
 		if (!directory) {
 			return (
 				<View style={styles.centerContainer}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, textAlign: "center" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, textAlign: "center" },
+						]}
+					>
 						No directory selected
 					</Text>
-					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>
+					<Text
+						style={[
+							typography.meta,
+							{
+								color: colors.mutedForeground,
+								textAlign: "center",
+								marginTop: 8,
+							},
+						]}
+					>
 						Select a directory to start a terminal session
 					</Text>
 				</View>
@@ -249,7 +311,12 @@ export default function TerminalScreen() {
 			return (
 				<View style={styles.centerContainer}>
 					<ActivityIndicator size="large" color={colors.primary} />
-					<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 12 }]}>
+					<Text
+						style={[
+							typography.meta,
+							{ color: colors.mutedForeground, marginTop: 12 },
+						]}
+					>
 						Starting terminal...
 					</Text>
 				</View>
@@ -259,10 +326,25 @@ export default function TerminalScreen() {
 		if (error && !sessionId) {
 			return (
 				<View style={styles.centerContainer}>
-					<Text style={[typography.uiLabel, { color: colors.destructive, textAlign: "center" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.destructive, textAlign: "center" },
+						]}
+					>
 						Failed to start terminal
 					</Text>
-					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", marginTop: 8, marginBottom: 16 }]}>
+					<Text
+						style={[
+							typography.meta,
+							{
+								color: colors.mutedForeground,
+								textAlign: "center",
+								marginTop: 8,
+								marginBottom: 16,
+							},
+						]}
+					>
 						{error}
 					</Text>
 					<Pressable
@@ -272,7 +354,9 @@ export default function TerminalScreen() {
 						}}
 						style={[styles.retryButton, { backgroundColor: colors.primary }]}
 					>
-						<Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>
+						<Text
+							style={[typography.uiLabel, { color: colors.primaryForeground }]}
+						>
 							Retry
 						</Text>
 					</Pressable>
@@ -288,7 +372,11 @@ export default function TerminalScreen() {
 					contentContainerStyle={styles.terminalContent}
 				>
 					<Text
-						style={[typography.code, styles.terminalText, { color: terminalText }]}
+						style={[
+							typography.code,
+							styles.terminalText,
+							{ color: terminalText },
+						]}
 						selectable
 					>
 						{output || ""}
@@ -296,7 +384,15 @@ export default function TerminalScreen() {
 				</ScrollView>
 
 				{error && (
-					<View style={[styles.errorBanner, { backgroundColor: `${colors.destructive}20`, borderTopColor: colors.destructive }]}>
+					<View
+						style={[
+							styles.errorBanner,
+							{
+								backgroundColor: `${colors.destructive}20`,
+								borderTopColor: colors.destructive,
+							},
+						]}
+					>
 						<Text style={[typography.code, { color: colors.destructive }]}>
 							{error}
 						</Text>
@@ -315,7 +411,15 @@ export default function TerminalScreen() {
 			{renderContent()}
 
 			{sessionId && (
-				<View style={[styles.inputArea, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
+				<View
+					style={[
+						styles.inputArea,
+						{
+							borderTopColor: colors.border,
+							backgroundColor: colors.background,
+						},
+					]}
+				>
 					<ScrollView
 						horizontal
 						showsHorizontalScrollIndicator={false}
@@ -328,8 +432,14 @@ export default function TerminalScreen() {
 								style={[
 									styles.specialKey,
 									{
-										backgroundColor: item.key === "ctrl" && ctrlMode ? colors.primary : colors.muted,
-										borderColor: item.key === "ctrl" && ctrlMode ? colors.primary : colors.border,
+										backgroundColor:
+											item.key === "ctrl" && ctrlMode
+												? colors.primary
+												: colors.muted,
+										borderColor:
+											item.key === "ctrl" && ctrlMode
+												? colors.primary
+												: colors.border,
 									},
 								]}
 							>
@@ -337,7 +447,10 @@ export default function TerminalScreen() {
 									style={[
 										typography.micro,
 										{
-											color: item.key === "ctrl" && ctrlMode ? colors.primaryForeground : colors.foreground,
+											color:
+												item.key === "ctrl" && ctrlMode
+													? colors.primaryForeground
+													: colors.foreground,
 											fontWeight: "500",
 										},
 									]}
@@ -347,13 +460,23 @@ export default function TerminalScreen() {
 							</Pressable>
 						))}
 
-						<View style={[styles.keyDivider, { backgroundColor: colors.border }]} />
+						<View
+							style={[styles.keyDivider, { backgroundColor: colors.border }]}
+						/>
 
 						<Pressable
 							onPress={clearOutput}
-							style={[styles.specialKey, { backgroundColor: colors.muted, borderColor: colors.border }]}
+							style={[
+								styles.specialKey,
+								{ backgroundColor: colors.muted, borderColor: colors.border },
+							]}
 						>
-							<Text style={[typography.micro, { color: colors.foreground, fontWeight: "500" }]}>
+							<Text
+								style={[
+									typography.micro,
+									{ color: colors.foreground, fontWeight: "500" },
+								]}
+							>
 								Clear
 							</Text>
 						</Pressable>
@@ -363,23 +486,41 @@ export default function TerminalScreen() {
 								onPress={restartSession}
 								style={[styles.specialKey, { backgroundColor: colors.success }]}
 							>
-								<Text style={[typography.micro, { color: colors.primaryForeground, fontWeight: "500" }]}>
+								<Text
+									style={[
+										typography.micro,
+										{ color: colors.primaryForeground, fontWeight: "500" },
+									]}
+								>
 									Restart
 								</Text>
 							</Pressable>
 						) : (
 							<Pressable
 								onPress={closeSession}
-								style={[styles.specialKey, { backgroundColor: colors.destructive }]}
+								style={[
+									styles.specialKey,
+									{ backgroundColor: colors.destructive },
+								]}
 							>
-								<Text style={[typography.micro, { color: colors.primaryForeground, fontWeight: "500" }]}>
+								<Text
+									style={[
+										typography.micro,
+										{ color: colors.primaryForeground, fontWeight: "500" },
+									]}
+								>
 									Kill
 								</Text>
 							</Pressable>
 						)}
 					</ScrollView>
 
-					<View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+					<View
+						style={[
+							styles.inputRow,
+							{ paddingBottom: Math.max(insets.bottom, 8) },
+						]}
+					>
 						<View
 							style={[
 								styles.inputWrapper,
@@ -419,11 +560,17 @@ export default function TerminalScreen() {
 							style={[
 								styles.sendButton,
 								{
-									backgroundColor: hasExited || !isConnected ? colors.muted : colors.primary,
+									backgroundColor:
+										hasExited || !isConnected ? colors.muted : colors.primary,
 								},
 							]}
 						>
-							<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "700" }]}>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.primaryForeground, fontWeight: "700" },
+								]}
+							>
 								{">"}
 							</Text>
 						</Pressable>

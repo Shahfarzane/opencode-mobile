@@ -1,14 +1,8 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useCallback, useState } from "react";
-import {
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-import { useTheme, typography } from "@/theme";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { typography, useTheme } from "@/theme";
 
 type CodeBlockProps = {
 	code: string;
@@ -97,7 +91,11 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 						{lines.map((line, lineNum) => (
 							<Text
 								key={`line-${lineNum}-${line.slice(0, 10)}`}
-								style={[typography.code, styles.codeLine, { color: colors.foreground }]}
+								style={[
+									typography.code,
+									styles.codeLine,
+									{ color: colors.foreground },
+								]}
 							>
 								{line || " "}
 							</Text>
@@ -112,20 +110,20 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 const styles = StyleSheet.create({
 	container: {
 		marginVertical: 8,
-		overflow: 'hidden',
+		overflow: "hidden",
 		borderRadius: 8,
 		borderWidth: 1,
 	},
 	header: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
 	languageInfo: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 	},
 	languageDot: {
@@ -139,12 +137,12 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 	},
 	codeContent: {
-		flexDirection: 'row',
+		flexDirection: "row",
 		padding: 12,
 	},
 	lineNumbers: {
 		marginRight: 12,
-		alignItems: 'flex-end',
+		alignItems: "flex-end",
 	},
 	lineNumber: {
 		lineHeight: 20,

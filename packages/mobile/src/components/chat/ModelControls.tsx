@@ -8,8 +8,8 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme, typography } from "@/theme";
-import { ChevronDownIcon, CheckIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
 
 interface Provider {
 	id: string;
@@ -40,23 +40,31 @@ export function ModelControls({
 	const { colors } = useTheme();
 	const insets = useSafeAreaInsets();
 	const [showPicker, setShowPicker] = useState(false);
-	const [expandedProvider, setExpandedProvider] = useState<string | null>(currentProviderId || null);
+	const [expandedProvider, setExpandedProvider] = useState<string | null>(
+		currentProviderId || null,
+	);
 
 	const currentProvider = providers.find((p) => p.id === currentProviderId);
-	const currentModel = currentProvider?.models.find((m) => m.id === currentModelId);
+	const currentModel = currentProvider?.models.find(
+		(m) => m.id === currentModelId,
+	);
 
-	const displayText = currentModel?.name || currentProvider?.name || "Select Model";
+	const displayText =
+		currentModel?.name || currentProvider?.name || "Select Model";
 
-	const handleModelSelect = useCallback((providerId: string, modelId: string) => {
-		if (providerId !== currentProviderId) {
-			onProviderChange?.(providerId);
-		}
-		onModelChange?.(providerId, modelId);
-		setShowPicker(false);
-	}, [currentProviderId, onProviderChange, onModelChange]);
+	const handleModelSelect = useCallback(
+		(providerId: string, modelId: string) => {
+			if (providerId !== currentProviderId) {
+				onProviderChange?.(providerId);
+			}
+			onModelChange?.(providerId, modelId);
+			setShowPicker(false);
+		},
+		[currentProviderId, onProviderChange, onModelChange],
+	);
 
 	const toggleProvider = useCallback((providerId: string) => {
-		setExpandedProvider((prev) => prev === providerId ? null : providerId);
+		setExpandedProvider((prev) => (prev === providerId ? null : providerId));
 	}, []);
 
 	return (
@@ -74,7 +82,11 @@ export function ModelControls({
 				]}
 			>
 				<Text
-					style={[typography.micro, styles.buttonText, { color: colors.foreground }]}
+					style={[
+						typography.micro,
+						styles.buttonText,
+						{ color: colors.foreground },
+					]}
 					numberOfLines={1}
 				>
 					{displayText}
@@ -97,7 +109,9 @@ export function ModelControls({
 						},
 					]}
 				>
-					<View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+					<View
+						style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+					>
 						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 							Select Model
 						</Text>
@@ -129,7 +143,9 @@ export function ModelControls({
 												backgroundColor: isCurrentProvider
 													? `${colors.primary}10`
 													: colors.card,
-												borderColor: isCurrentProvider ? colors.primary : colors.border,
+												borderColor: isCurrentProvider
+													? colors.primary
+													: colors.border,
 											},
 										]}
 									>
@@ -137,12 +153,17 @@ export function ModelControls({
 											<Text
 												style={[
 													typography.uiLabel,
-													{ color: colors.foreground, fontWeight: '600' },
+													{ color: colors.foreground, fontWeight: "600" },
 												]}
 											>
 												{provider.name}
 											</Text>
-											<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+											<Text
+												style={[
+													typography.micro,
+													{ color: colors.mutedForeground },
+												]}
+											>
 												{provider.models.length} models
 											</Text>
 										</View>
@@ -150,13 +171,15 @@ export function ModelControls({
 											size={16}
 											color={colors.mutedForeground}
 											style={{
-												transform: [{ rotate: isExpanded ? '180deg' : '0deg' }],
+												transform: [{ rotate: isExpanded ? "180deg" : "0deg" }],
 											}}
 										/>
 									</Pressable>
 
 									{isExpanded && (
-										<View style={[styles.modelList, { borderColor: colors.border }]}>
+										<View
+											style={[styles.modelList, { borderColor: colors.border }]}
+										>
 											{provider.models.map((model) => {
 												const isSelected =
 													provider.id === currentProviderId &&
@@ -165,13 +188,15 @@ export function ModelControls({
 												return (
 													<Pressable
 														key={model.id}
-														onPress={() => handleModelSelect(provider.id, model.id)}
+														onPress={() =>
+															handleModelSelect(provider.id, model.id)
+														}
 														style={[
 															styles.modelItem,
 															{
 																backgroundColor: isSelected
 																	? `${colors.primary}15`
-																	: 'transparent',
+																	: "transparent",
 															},
 														]}
 													>
@@ -208,8 +233,8 @@ export function ModelControls({
 
 const styles = StyleSheet.create({
 	button: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 4,
 		paddingHorizontal: 10,
 		paddingVertical: 6,
@@ -223,9 +248,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	modalHeader: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		borderBottomWidth: 1,
 		paddingHorizontal: 16,
 		paddingVertical: 12,
@@ -245,9 +270,9 @@ const styles = StyleSheet.create({
 		marginBottom: 12,
 	},
 	providerHeader: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		padding: 12,
 		borderRadius: 8,
 		borderWidth: 1,
@@ -259,12 +284,12 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 		borderRadius: 8,
 		borderWidth: 1,
-		overflow: 'hidden',
+		overflow: "hidden",
 	},
 	modelItem: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		paddingHorizontal: 12,
 		paddingVertical: 12,
 	},

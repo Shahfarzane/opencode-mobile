@@ -14,13 +14,17 @@ export interface StartAccessingResult {
 }
 
 export interface PermissionsAPI {
-	requestDirectoryAccess(request: DirectoryPermissionRequest): Promise<DirectoryPermissionResult>;
+	requestDirectoryAccess(
+		request: DirectoryPermissionRequest,
+	): Promise<DirectoryPermissionResult>;
 	startAccessingDirectory(path: string): Promise<StartAccessingResult>;
 	stopAccessingDirectory(path: string): Promise<StartAccessingResult>;
 }
 
 export const permissionsApi: PermissionsAPI = {
-	async requestDirectoryAccess(request: DirectoryPermissionRequest): Promise<DirectoryPermissionResult> {
+	async requestDirectoryAccess(
+		request: DirectoryPermissionRequest,
+	): Promise<DirectoryPermissionResult> {
 		return { success: true, path: request.path };
 	},
 

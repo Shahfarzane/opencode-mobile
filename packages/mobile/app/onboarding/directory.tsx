@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { filesApi, type FileListEntry } from "../../src/api";
+import { type FileListEntry, filesApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 
 function FolderIcon({ size = 20 }: { size?: number }) {
@@ -57,7 +57,10 @@ function DirectoryItem({
 			className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-muted"
 		>
 			<FolderIcon />
-			<Text className="flex-1 font-mono text-base text-foreground" numberOfLines={1}>
+			<Text
+				className="flex-1 font-mono text-base text-foreground"
+				numberOfLines={1}
+			>
 				{item.name}
 			</Text>
 			<ChevronRight />
@@ -74,9 +77,10 @@ function PathBreadcrumb({
 	homePath: string | null;
 	onNavigate: (path: string) => void;
 }) {
-	const displayPath = homePath && path.startsWith(homePath)
-		? "~" + path.slice(homePath.length)
-		: path;
+	const displayPath =
+		homePath && path.startsWith(homePath)
+			? "~" + path.slice(homePath.length)
+			: path;
 
 	const parts = displayPath.split("/").filter(Boolean);
 
@@ -86,12 +90,13 @@ function PathBreadcrumb({
 				<Text className="font-mono text-sm text-primary">~</Text>
 			</Pressable>
 			{parts.slice(displayPath.startsWith("~") ? 1 : 0).map((part, index) => {
-				const fullPath = homePath && displayPath.startsWith("~")
-					? homePath + "/" + parts.slice(1, index + 2).join("/")
-					: "/" + parts.slice(0, index + 1).join("/");
+				const fullPath =
+					homePath && displayPath.startsWith("~")
+						? homePath + "/" + parts.slice(1, index + 2).join("/")
+						: "/" + parts.slice(0, index + 1).join("/");
 
 				return (
-					<View key={index} className="flex-row items-center gap-1">
+					<View key={fullPath} className="flex-row items-center gap-1">
 						<Text className="font-mono text-sm text-muted-foreground">/</Text>
 						<Pressable onPress={() => onNavigate(fullPath)}>
 							<Text className="font-mono text-sm text-primary">{part}</Text>
@@ -149,6 +154,7 @@ export default function DirectoryScreen() {
 				}
 			}
 		} catch {
+			// Ignore - will return null to use fallback
 		}
 		return null;
 	}, [serverUrl]);
@@ -161,9 +167,12 @@ export default function DirectoryScreen() {
 		init();
 	}, [loadDirectory, loadHomePath]);
 
-	const handleNavigate = useCallback((path: string) => {
-		loadDirectory(path);
-	}, [loadDirectory]);
+	const handleNavigate = useCallback(
+		(path: string) => {
+			loadDirectory(path);
+		},
+		[loadDirectory],
+	);
 
 	const handleGoUp = useCallback(() => {
 		const parentPath = currentPath.split("/").slice(0, -1).join("/") || "/";
@@ -189,9 +198,8 @@ export default function DirectoryScreen() {
 	const handlePathSubmit = useCallback(() => {
 		const path = pathInput.trim();
 		if (path) {
-			const expandedPath = path.startsWith("~") && homePath
-				? homePath + path.slice(1)
-				: path;
+			const expandedPath =
+				path.startsWith("~") && homePath ? homePath + path.slice(1) : path;
 			loadDirectory(expandedPath);
 		}
 	}, [pathInput, homePath, loadDirectory]);
@@ -264,7 +272,9 @@ export default function DirectoryScreen() {
 				</View>
 			) : error ? (
 				<View className="flex-1 items-center justify-center px-8">
-					<Text className="text-center font-mono text-destructive">{error}</Text>
+					<Text className="text-center font-mono text-destructive">
+						{error}
+					</Text>
 					<Pressable
 						onPress={() => loadDirectory(currentPath)}
 						className="mt-4 rounded-lg bg-muted px-4 py-2"

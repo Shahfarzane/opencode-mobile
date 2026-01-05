@@ -40,12 +40,12 @@ function trimOutput(output: string): string {
 	if (output.length <= MAX_OUTPUT_LENGTH) {
 		return output;
 	}
-	
+
 	const firstNewline = output.indexOf("\n", output.length - MAX_OUTPUT_LENGTH);
 	if (firstNewline !== -1) {
 		return output.slice(firstNewline + 1);
 	}
-	
+
 	return output.slice(-MAX_OUTPUT_LENGTH);
 }
 
@@ -69,11 +69,11 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
 	appendOutput: (data) =>
 		set((state) => {
 			if (!data) return state;
-			
+
 			let newOutput = state.output + data;
 			newOutput = trimOutput(newOutput);
 			newOutput = trimLines(newOutput);
-			
+
 			return { output: newOutput };
 		}),
 

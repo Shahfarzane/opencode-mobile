@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 import { ToolOutputDialog } from "./ToolOutputDialog";
 
 export interface ToolPartData {
@@ -50,7 +50,11 @@ function getToolIcon(toolName: string, color: string) {
 					strokeWidth={2}
 					strokeLinecap="round"
 				/>
-				<Path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke={color} strokeWidth={2} />
+				<Path
+					d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
+					stroke={color}
+					strokeWidth={2}
+				/>
 			</Svg>
 		);
 	}
@@ -58,8 +62,21 @@ function getToolIcon(toolName: string, color: string) {
 	if (name === "bash" || name === "shell" || name === "terminal") {
 		return (
 			<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-				<Rect x="2" y="4" width="20" height="16" rx="2" stroke={color} strokeWidth={2} />
-				<Path d="M6 9l3 3-3 3M12 15h6" stroke={color} strokeWidth={2} strokeLinecap="round" />
+				<Rect
+					x="2"
+					y="4"
+					width="20"
+					height="16"
+					rx="2"
+					stroke={color}
+					strokeWidth={2}
+				/>
+				<Path
+					d="M6 9l3 3-3 3M12 15h6"
+					stroke={color}
+					strokeWidth={2}
+					strokeLinecap="round"
+				/>
 			</Svg>
 		);
 	}
@@ -68,7 +85,12 @@ function getToolIcon(toolName: string, color: string) {
 		return (
 			<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
 				<Circle cx="11" cy="11" r="8" stroke={color} strokeWidth={2} />
-				<Path d="M21 21l-4.35-4.35" stroke={color} strokeWidth={2} strokeLinecap="round" />
+				<Path
+					d="M21 21l-4.35-4.35"
+					stroke={color}
+					strokeWidth={2}
+					strokeLinecap="round"
+				/>
 			</Svg>
 		);
 	}
@@ -118,8 +140,7 @@ function formatToolDescription(part: ToolPartData): string {
 	if (!input) return "";
 
 	if (part.toolName === "edit" || part.toolName === "write") {
-		const filePath =
-			input.filePath || input.file_path || input.path;
+		const filePath = input.filePath || input.file_path || input.path;
 		if (typeof filePath === "string") {
 			return filePath.split("/").pop() || filePath;
 		}
@@ -187,7 +208,10 @@ export function ToolPart({ part }: ToolPartProps) {
 					</Text>
 					{description && (
 						<Text
-							style={[typography.micro, { color: colors.mutedForeground, flex: 1 }]}
+							style={[
+								typography.micro,
+								{ color: colors.mutedForeground, flex: 1 },
+							]}
 							numberOfLines={1}
 						>
 							{description}
@@ -216,7 +240,13 @@ export function ToolPart({ part }: ToolPartProps) {
 				>
 					{part.input && Object.keys(part.input).length > 0 && (
 						<View style={styles.section}>
-							<Text style={[typography.micro, styles.sectionLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[
+									typography.micro,
+									styles.sectionLabel,
+									{ color: colors.mutedForeground },
+								]}
+							>
 								Input:
 							</Text>
 							<Text style={[typography.code, { color: colors.foreground }]}>
@@ -227,8 +257,19 @@ export function ToolPart({ part }: ToolPartProps) {
 					)}
 
 					{hasOutput && (
-						<View style={[styles.section, part.input ? styles.sectionMargin : undefined]}>
-							<Text style={[typography.micro, styles.sectionLabel, { color: colors.mutedForeground }]}>
+						<View
+							style={[
+								styles.section,
+								part.input ? styles.sectionMargin : undefined,
+							]}
+						>
+							<Text
+								style={[
+									typography.micro,
+									styles.sectionLabel,
+									{ color: colors.mutedForeground },
+								]}
+							>
 								Output:
 							</Text>
 							<Text style={[typography.code, { color: colors.foreground }]}>
@@ -238,31 +279,44 @@ export function ToolPart({ part }: ToolPartProps) {
 						</View>
 					)}
 
-				{hasError && (
-					<View style={[styles.section, (part.input || hasOutput) ? styles.sectionMargin : undefined]}>
-						<Text style={[typography.micro, styles.sectionLabel, { color: colors.destructive }]}>
-							Error:
-						</Text>
-						<Text style={[typography.code, { color: colors.destructive }]}>
-							{part.error}
-						</Text>
-					</View>
-				)}
+					{hasError && (
+						<View
+							style={[
+								styles.section,
+								part.input || hasOutput ? styles.sectionMargin : undefined,
+							]}
+						>
+							<Text
+								style={[
+									typography.micro,
+									styles.sectionLabel,
+									{ color: colors.destructive },
+								]}
+							>
+								Error:
+							</Text>
+							<Text style={[typography.code, { color: colors.destructive }]}>
+								{part.error}
+							</Text>
+						</View>
+					)}
 
-				{(hasOutput || hasError || (part.input && Object.keys(part.input).length > 0)) && (
-					<Pressable
-						onPress={() => setShowDialog(true)}
-						style={[
-							styles.viewFullButton,
-							{ backgroundColor: `${colors.primary}15` },
-						]}
-					>
-						<Text style={[typography.micro, { color: colors.primary }]}>
-							View Full Output
-						</Text>
-					</Pressable>
-				)}
-			</View>
+					{(hasOutput ||
+						hasError ||
+						(part.input && Object.keys(part.input).length > 0)) && (
+						<Pressable
+							onPress={() => setShowDialog(true)}
+							style={[
+								styles.viewFullButton,
+								{ backgroundColor: `${colors.primary}15` },
+							]}
+						>
+							<Text style={[typography.micro, { color: colors.primary }]}>
+								View Full Output
+							</Text>
+						</Pressable>
+					)}
+				</View>
 			)}
 
 			<ToolOutputDialog
@@ -279,8 +333,8 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 	},
 	header: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 		borderRadius: 8,
 		borderWidth: 1,
@@ -288,14 +342,14 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 	},
 	headerLeft: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 		flex: 1,
 	},
 	headerRight: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 	},
 	expandedContent: {
@@ -313,7 +367,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		paddingHorizontal: 12,
 		borderRadius: 6,
-		alignItems: 'center',
+		alignItems: "center",
 	},
 	sectionLabel: {
 		marginBottom: 4,
