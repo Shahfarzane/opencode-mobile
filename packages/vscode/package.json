@@ -2,7 +2,7 @@
   "name": "openchamber",
   "displayName": "OpenChamber",
   "description": "AI coding assistant powered by OpenCode",
-  "version": "1.4.0",
+  "version": "1.4.3",
   "publisher": "fedaykindev",
   "private": true,
   "repository": {
@@ -33,7 +33,10 @@
   ],
   "icon": "assets/app-icon.png",
   "main": "./dist/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:openchamber.openSidebar",
+    "onView:openchamber.chatView"
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -56,7 +59,8 @@
     "commands": [
       {
         "command": "openchamber.openSidebar",
-        "title": "Open OpenChamber Sidebar",
+        "category": "OpenChamber",
+        "title": "Open Sidebar",
         "icon": {
           "light": "assets/icon.svg",
           "dark": "assets/icon-titlebar.svg"
@@ -64,35 +68,49 @@
       },
       {
         "command": "openchamber.focusChat",
-        "title": "OpenChamber: Focus Chat"
+        "category": "OpenChamber",
+        "title": "Focus Chat"
       },
       {
         "command": "openchamber.restartApi",
-        "title": "OpenChamber: Restart API Connection"
+        "category": "OpenChamber",
+        "title": "Restart API Connection"
       },
       {
         "command": "openchamber.showOpenCodeStatus",
-        "title": "OpenChamber: Show OpenCode Status"
+        "category": "OpenChamber",
+        "title": "Show OpenCode Status"
+      },
+      {
+        "command": "openchamber.openAgentManager",
+        "category": "OpenChamber",
+        "title": "Open Agent Manager",
+        "icon": "$(circuit-board)"
       },
       {
         "command": "openchamber.addToContext",
+        "category": "OpenChamber",
         "title": "Add to Context"
       },
       {
         "command": "openchamber.explain",
+        "category": "OpenChamber",
         "title": "Explain"
       },
       {
         "command": "openchamber.improveCode",
+        "category": "OpenChamber",
         "title": "Improve Code"
       },
       {
         "command": "openchamber.newSession",
+        "category": "OpenChamber",
         "title": "New Session",
         "icon": "$(add)"
       },
       {
         "command": "openchamber.showSettings",
+        "category": "OpenChamber",
         "title": "Settings",
         "icon": "$(settings-gear)"
       }
@@ -123,9 +141,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "openchamber.showSettings",
+          "command": "openchamber.openAgentManager",
           "when": "view == openchamber.chatView",
           "group": "navigation@2"
+        },
+        {
+          "command": "openchamber.showSettings",
+          "when": "view == openchamber.chatView",
+          "group": "navigation@3"
         }
       ],
       "openchamber.submenu": [
@@ -154,10 +177,10 @@
   "scripts": {
     "vscode:prepublish": "bun run build",
     "build": "bun run build:extension && bun run build:webview",
-    "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify --main-fields=module,main",
     "build:webview": "VITE_OPENCODE_URL=/api vite build",
     "dev": "concurrently -n \"ext,web\" -c \"cyan,magenta\" \"bun run watch:extension\" \"bun run watch:webview\"",
-    "watch:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch --sourcemap",
+    "watch:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch --sourcemap --main-fields=module,main",
     "watch:webview": "vite build --watch",
     "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
     "lint": "bunx eslint --ext .ts,.tsx src webview",
@@ -175,6 +198,7 @@
   "dependencies": {
     "@openchamber/ui": "workspace:*",
     "@opencode-ai/sdk": "^1.0.209",
+    "jsonc-parser": "^3.3.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "yaml": "^2.8.1"

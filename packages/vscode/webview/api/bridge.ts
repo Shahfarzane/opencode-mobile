@@ -125,6 +125,10 @@ export async function stopSseProxy(options: { streamId: string }): Promise<{ sto
   return sendBridgeMessage<{ stopped: boolean }>('api:sse:stop', options);
 }
 
+export async function executeVSCodeCommand(command: string, args?: unknown[]): Promise<{ result?: unknown }> {
+  return sendBridgeMessage<{ result?: unknown }>('vscode:command', { command, args });
+}
+
 type CommandHandler = (payload: unknown) => void;
 const commandHandlers = new Map<string, CommandHandler>();
 

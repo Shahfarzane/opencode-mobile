@@ -1048,6 +1048,20 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
         }
       }
 
+      case 'vscode:command': {
+        const { command, args } = (payload || {}) as { command?: string; args?: unknown[] };
+        if (!command) {
+          return { id, type, success: false, error: 'Command is required' };
+        }
+        try {
+          const result = await vscode.commands.executeCommand(command, ...(args || []));
+          return { id, type, success: true, data: { result } };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          return { id, type, success: false, error: errorMessage };
+        }
+      }
+
       // ============== Git Operations ==============
 
       case 'api:git/check': {

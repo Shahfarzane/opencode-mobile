@@ -42,6 +42,9 @@ export interface TerminalStreamEvent {
   signal?: number | null;
   attempt?: number;
   maxAttempts?: number;
+
+  runtime?: 'node' | 'bun';
+  ptyBackend?: string;
 }
 
 export interface CreateTerminalOptions {
@@ -397,6 +400,11 @@ export interface EditorAPI {
   openDiff(original: string, modified: string, label?: string): Promise<void>;
 }
 
+export interface VSCodeAPI {
+  executeCommand(command: string, ...args: unknown[]): Promise<unknown>;
+  openAgentManager(): Promise<void>;
+}
+
 export interface RuntimeAPIs {
   runtime: RuntimeDescriptor;
   terminal: TerminalAPI;
@@ -408,6 +416,7 @@ export interface RuntimeAPIs {
   diagnostics?: DiagnosticsAPI;
   tools: ToolsAPI;
   editor?: EditorAPI;
+  vscode?: VSCodeAPI;
   worktrees?: WorktreeMetadata[];
 }
 

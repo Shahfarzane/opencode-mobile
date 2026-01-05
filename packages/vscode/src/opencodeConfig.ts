@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import yaml from 'yaml';
-import stripJsonComments from 'strip-json-comments';
+import { parse as parseJsonc } from 'jsonc-parser';
 
 const OPENCODE_CONFIG_DIR = path.join(os.homedir(), '.config', 'opencode');
 const AGENT_DIR = path.join(OPENCODE_CONFIG_DIR, 'agent');
@@ -186,9 +186,9 @@ const getConfigPaths = (workingDirectory?: string) => ({
 const readConfigFile = (filePath?: string | null): Record<string, unknown> => {
   if (!filePath || !fs.existsSync(filePath)) return {};
   const content = fs.readFileSync(filePath, 'utf8');
-  const normalized = stripJsonComments(content).trim();
+  const normalized = content.trim();
   if (!normalized) return {};
-  return JSON.parse(normalized) as Record<string, unknown>;
+  return parseJsonc(normalized, [], { allowTrailingComma: true }) as Record<string, unknown>;
 };
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
