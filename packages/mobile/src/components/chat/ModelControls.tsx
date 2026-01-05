@@ -49,8 +49,42 @@ export function ModelControls({
 		(m) => m.id === currentModelId,
 	);
 
+	if (__DEV__) {
+		console.log("[ModelControls] State:", {
+			providersCount: providers.length,
+			currentProviderId,
+			currentModelId,
+			currentProviderFound: !!currentProvider,
+			currentProviderModels: currentProvider?.models?.length,
+			currentModelFound: !!currentModel,
+			currentModelData: currentModel
+				? { id: currentModel.id, name: currentModel.name }
+				: null,
+		});
+	}
+
+	const getModelDisplayName = (
+		model: { id: string; name: string } | undefined,
+	) => {
+		const name = model?.name || model?.id || "";
+		if (__DEV__) {
+			console.log("[ModelControls] getModelDisplayName:", {
+				modelName: model?.name,
+				modelId: model?.id,
+				result: name,
+			});
+		}
+		return name.length > 40 ? `${name.substring(0, 37)}...` : name;
+	};
+
 	const displayText =
-		currentModel?.name || currentProvider?.name || "Select Model";
+		getModelDisplayName(currentModel) ||
+		currentProvider?.name ||
+		"Select model";
+
+	if (__DEV__) {
+		console.log("[ModelControls] displayText:", displayText);
+	}
 
 	const handleModelSelect = useCallback(
 		(providerId: string, modelId: string) => {
@@ -211,7 +245,7 @@ export function ModelControls({
 															]}
 															numberOfLines={1}
 														>
-															{model.name}
+															{getModelDisplayName(model)}
 														</Text>
 														{isSelected && (
 															<CheckIcon size={16} color={colors.primary} />
