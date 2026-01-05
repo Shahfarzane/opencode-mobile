@@ -6,6 +6,7 @@ import { Header } from "../../src/components/layout/Header";
 import { typography, useTheme } from "../../src/theme";
 import ChatScreen from "./chat";
 import { ContextUsageContext } from "./context";
+import DiffScreen from "./diff";
 import GitScreen from "./git";
 import SettingsScreen from "./settings";
 import TerminalScreen from "./terminal";
@@ -65,7 +66,7 @@ export default function TabsLayout() {
 			case "git":
 				return <GitScreen />;
 			case "diff":
-				return <PlaceholderScreen title="Diff View" />;
+				return <DiffScreen />;
 			case "terminal":
 				return <TerminalScreen />;
 			default:

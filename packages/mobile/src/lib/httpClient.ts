@@ -34,7 +34,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-	method?: "GET" | "POST" | "PUT" | "DELETE";
+	method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 	body?: unknown;
 	rawBody?: string;
 	contentType?: string;
@@ -365,6 +365,14 @@ export async function apiDelete<T>(
 	includeDirectory = false,
 ): Promise<T> {
 	return apiRequest<T>(path, { method: "DELETE", body, includeDirectory });
+}
+
+export async function apiPatch<T>(
+	path: string,
+	body?: unknown,
+	includeDirectory = false,
+): Promise<T> {
+	return apiRequest<T>(path, { method: "PATCH", body, includeDirectory });
 }
 
 export async function testServerConnectivity(

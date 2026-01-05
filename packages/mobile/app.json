@@ -39,7 +39,17 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/IBMPlexMono-Regular.ttf",
+            "./assets/fonts/IBMPlexMono-Medium.ttf",
+            "./assets/fonts/IBMPlexMono-SemiBold.ttf",
+            "./assets/fonts/IBMPlexMono-Bold.ttf"
+          ]
+        }
+      ],
       "expo-secure-store",
       [
         "expo-camera",

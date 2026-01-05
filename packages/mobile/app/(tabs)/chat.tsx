@@ -1,5 +1,5 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
@@ -10,12 +10,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { filesApi, type Session, sessionsApi } from "../../src/api";
+import { filesApi, gitApi, type Session, sessionsApi } from "../../src/api";
 import type {
 	Message,
 	MessagePart,
 	Permission,
 	PermissionResponse,
+	ModelInfo,
+	AgentInfo,
 } from "../../src/components/chat";
 import {
 	ChatInput,
@@ -75,6 +77,16 @@ export default function ChatScreen() {
 	const [sessions, setSessions] = useState<Session[]>([]);
 	const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 	const [permissions, setPermissions] = useState<Permission[]>([]);
+	const [isGitRepo, setIsGitRepo] = useState(false);
+
+	// Model and agent info for ChatInput display
+	const [modelInfo] = useState<ModelInfo>({
+		modelId: "claude-sonnet-4-20250514",
+		modelName: "Claude Sonnet 4",
+		providerId: "anthropic",
+		providerName: "Anthropic",
+	});
+	const [activeAgent] = useState<AgentInfo | undefined>(undefined);
 
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
@@ -227,6 +239,34 @@ export default function ChatScreen() {
 
 	useEventStream(sessionId, handleStreamEvent);
 
+	// Track which sessions are currently streaming
+	const streamingSessionIds = useMemo(() => {
+		const ids = new Set<string>();
+		if (isLoading && sessionId) {
+			ids.add(sessionId);
+		}
+		return ids;
+	}, [isLoading, sessionId]);
+
+	// Check if directory is a git repo
+	useEffect(() => {
+		if (!isConnected || !directory) {
+			setIsGitRepo(false);
+			return;
+		}
+
+		const checkGitRepo = async () => {
+			try {
+				const status = await gitApi.getStatus();
+				setIsGitRepo(Boolean(status?.current));
+			} catch {
+				setIsGitRepo(false);
+			}
+		};
+
+		checkGitRepo();
+	}, [isConnected, directory]);
+
 	useEffect(() => {
 		const assistantMessages = messages.filter((m) => m.role === "assistant");
 		if (assistantMessages.length === 0) {
@@ -349,12 +389,6 @@ export default function ChatScreen() {
 		[loadSessionMessages],
 	);
 
-	const startNewSession = useCallback(() => {
-		setSessionId(null);
-		setMessages([]);
-		bottomSheetRef.current?.close();
-	}, []);
-
 	const openSessionPicker = useCallback(() => {
 		fetchSessions();
 		bottomSheetRef.current?.expand();
@@ -376,6 +410,102 @@ export default function ChatScreen() {
 		fetchSessions();
 		return data.id;
 	}, [fetchSessions]);
+
+	const handleNewSession = useCallback(
+		(newDirectory?: string | null) => {
+			// For now, we just start a new session in the current directory
+			// Directory-specific session creation could be added later
+			setSessionId(null);
+			setMessages([]);
+			bottomSheetRef.current?.close();
+		},
+		[],
+	);
+
+	const handleRenameSession = useCallback(
+		async (targetSessionId: string, title: string) => {
+			try {
+				await sessionsApi.updateTitle(targetSessionId, title);
+				setSessions((prev) =>
+					prev.map((s) =>
+						s.id === targetSessionId ? { ...s, title } : s,
+					),
+				);
+			} catch (error) {
+				console.error("Failed to rename session:", error);
+			}
+		},
+		[],
+	);
+
+	const handleShareSession = useCallback(
+		async (targetSessionId: string): Promise<Session | null> => {
+			try {
+				const updated = await sessionsApi.share(targetSessionId);
+				setSessions((prev) =>
+					prev.map((s) => (s.id === targetSessionId ? updated : s)),
+				);
+				return updated;
+			} catch (error) {
+				console.error("Failed to share session:", error);
+				return null;
+			}
+		},
+		[],
+	);
+
+	const handleUnshareSession = useCallback(
+		async (targetSessionId: string): Promise<boolean> => {
+			try {
+				const updated = await sessionsApi.unshare(targetSessionId);
+				setSessions((prev) =>
+					prev.map((s) => (s.id === targetSessionId ? updated : s)),
+				);
+				return true;
+			} catch (error) {
+				console.error("Failed to unshare session:", error);
+				return false;
+			}
+		},
+		[],
+	);
+
+	const handleDeleteSession = useCallback(
+		async (targetSessionId: string): Promise<boolean> => {
+			try {
+				await sessionsApi.delete(targetSessionId);
+				setSessions((prev) => prev.filter((s) => s.id !== targetSessionId));
+
+				// If we deleted the current session, clear it
+				if (targetSessionId === sessionId) {
+					setSessionId(null);
+					setMessages([]);
+				}
+				return true;
+			} catch (error) {
+				console.error("Failed to delete session:", error);
+				return false;
+			}
+		},
+		[sessionId],
+	);
+
+	const handleChangeDirectory = useCallback(() => {
+		// This would open a directory picker
+		// For now, this is a placeholder - the actual implementation
+		// would depend on how directory selection works in the app
+		console.log("Change directory requested");
+	}, []);
+
+	const handleOpenWorktreeManager = useCallback(() => {
+		// Placeholder for worktree manager functionality
+		console.log("Open worktree manager requested");
+	}, []);
+
+	const handleOpenMultiRunLauncher = useCallback(() => {
+		// Placeholder for multi-run launcher functionality
+		console.log("Open multi-run launcher requested");
+	}, []);
 
 	const handleFileSearch = useCallback(
 		async (query: string) => {
@@ -547,6 +677,8 @@ export default function ChatScreen() {
 							: "Connect to server first"
 					}
 					onFileSearch={handleFileSearch}
+					modelInfo={modelInfo}
+					activeAgent={activeAgent}
 				/>
 			</View>
 
@@ -554,9 +686,19 @@ export default function ChatScreen() {
 				ref={bottomSheetRef}
 				sessions={sessions}
 				currentSessionId={sessionId}
+				currentDirectory={directory}
 				isLoading={isLoadingSessions}
+				isGitRepo={isGitRepo}
+				streamingSessionIds={streamingSessionIds}
 				onSelectSession={selectSession}
-				onNewSession={startNewSession}
+				onNewSession={handleNewSession}
+				onRenameSession={handleRenameSession}
+				onShareSession={handleShareSession}
+				onUnshareSession={handleUnshareSession}
+				onDeleteSession={handleDeleteSession}
+				onChangeDirectory={handleChangeDirectory}
+				onOpenWorktreeManager={handleOpenWorktreeManager}
+				onOpenMultiRunLauncher={handleOpenMultiRunLauncher}
 				onClose={() => {}}
 			/>
 		</KeyboardAvoidingView>

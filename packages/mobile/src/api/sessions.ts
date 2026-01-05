@@ -1,8 +1,24 @@
-import { apiDelete, apiGet, apiPost } from "../lib/httpClient";
+import { apiDelete, apiGet, apiPatch, apiPost } from "../lib/httpClient";
 
 export interface Session {
 	id: string;
+	projectID?: string;
+	directory?: string;
+	parentID?: string;
 	title?: string;
+	summary?: {
+		additions: number;
+		deletions: number;
+		files: number;
+	};
+	share?: {
+		url: string;
+	};
+	time?: {
+		created: number;
+		updated: number;
+	};
+	// Legacy compatibility
 	createdAt?: number;
 	updatedAt?: number;
 	path?: string;
@@ -119,6 +135,30 @@ export const sessionsApi = {
 		await apiPost(
 			`/api/session/${sessionId}/permission/${permissionId}/respond`,
 			{ response },
+			true,
+		);
+	},
+
+	async updateTitle(sessionId: string, title: string): Promise<Session> {
+		return apiPatch<Session>(
+			`/api/session/${sessionId}`,
+			{ title },
+			true,
+		);
+	},
+
+	async share(sessionId: string): Promise<Session> {
+		return apiPost<Session>(
+			`/api/session/${sessionId}/share`,
+			{},
+			true,
+		);
+	},
+
+	async unshare(sessionId: string): Promise<Session> {
+		return apiDelete<Session>(
+			`/api/session/${sessionId}/share`,
+			{},
 			true,
 		);
 	},
