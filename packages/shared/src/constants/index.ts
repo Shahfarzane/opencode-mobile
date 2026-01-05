@@ -1,10 +1,9 @@
-export {
-  BREAKPOINTS,
-  getDeviceTypeFromWidth,
-  getBreakpointFromWidth,
-} from './breakpoints';
-
 export type {
-  DeviceType,
-  BreakpointKey,
-} from './breakpoints';
+	BreakpointKey,
+	DeviceType,
+} from "./breakpoints";
+export {
+	BREAKPOINTS,
+	getBreakpointFromWidth,
+	getDeviceTypeFromWidth,
+} from "./breakpoints";

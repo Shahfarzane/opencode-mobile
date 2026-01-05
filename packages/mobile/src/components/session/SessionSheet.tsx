@@ -1,19 +1,22 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomSheet, {
 	BottomSheetScrollView,
 	BottomSheetBackdrop,
 	type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
-import { forwardRef, useCallback, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Session } from "@/api/sessions";
-import { PlusIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import { DirectoryRow } from "./DirectoryRow";
 import { SessionListItem } from "./SessionListItem";
 import { SheetHeader } from "./SheetHeader";
 import { WorkspaceGroup } from "./WorkspaceGroup";
+
+// Storage key for expanded parents persistence (matches desktop)
+const EXPANDED_PARENTS_STORAGE_KEY = "oc.sessions.expandedParents";
 
 // Types for session tree structure
 type SessionNode = {
@@ -111,16 +114,18 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			});
 		}, [sessions]);
 
-		// Build parent-child maps
-		const { childrenMap, sessionMap } = useMemo(() => {
+		// Build parent-child maps and parent map (for auto-expand)
+		const { childrenMap, sessionMap, parentMap } = useMemo(() => {
 			const sessionMap = new Map(sortedSessions.map((s) => [s.id, s]));
 			const childrenMap = new Map<string, Session[]>();
+			const parentMap = new Map<string, string>(); // session ID → parent session ID
 
 			sortedSessions.forEach((session) => {
 				if (session.parentID && sessionMap.has(session.parentID)) {
 					const existing = childrenMap.get(session.parentID) || [];
 					existing.push(session);
 					childrenMap.set(session.parentID, existing);
+					parentMap.set(session.id, session.parentID);
 				}
 			});
 
@@ -133,8 +138,44 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				}),
 			);
 
-			return { childrenMap, sessionMap };
+			return { childrenMap, sessionMap, parentMap };
 		}, [sortedSessions]);
+
+		// Load persisted expanded parents on mount
+		useEffect(() => {
+			const loadExpandedParents = async () => {
+				try {
+					const stored = await AsyncStorage.getItem(EXPANDED_PARENTS_STORAGE_KEY);
+					if (stored) {
+						const parsed = JSON.parse(stored);
+						if (Array.isArray(parsed)) {
+							setExpandedParents(new Set(parsed.filter((item) => typeof item === "string")));
+						}
+					}
+				} catch {
+					// Ignore errors
+				}
+			};
+			loadExpandedParents();
+		}, []);
+
+		// Auto-expand ancestors when selecting a child session (matches desktop)
+		useEffect(() => {
+			if (!currentSessionId) return;
+			setExpandedParents((previous) => {
+				const next = new Set(previous);
+				let cursor = parentMap.get(currentSessionId) || null;
+				let changed = false;
+				while (cursor) {
+					if (!next.has(cursor)) {
+						next.add(cursor);
+						changed = true;
+					}
+					cursor = parentMap.get(cursor) || null;
+				}
+				return changed ? next : previous;
+			});
+		}, [currentSessionId, parentMap]);
 
 		// Build session node tree
 		const buildNode = useCallback(
@@ -238,6 +279,13 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				} else {
 					next.add(sessionId);
 				}
+				// Persist to storage (matches desktop behavior)
+				AsyncStorage.setItem(
+					EXPANDED_PARENTS_STORAGE_KEY,
+					JSON.stringify(Array.from(next)),
+				).catch(() => {
+					// Ignore errors
+				});
 				return next;
 			});
 		}, []);
@@ -378,37 +426,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 						{ paddingBottom: Math.max(40, insets.bottom + 20) },
 					]}
 				>
-					{/* New Session Button */}
-					<Pressable
-						onPress={() => handleNewSession(currentDirectory)}
-						style={({ pressed }) => [
-							styles.newSessionButton,
-							{
-								borderColor: colors.primary,
-								backgroundColor: pressed
-									? `${colors.primary}25`
-									: `${colors.primary}15`,
-							},
-						]}
-					>
-						<View style={styles.newSessionContent}>
-							<PlusIcon color={colors.primary} size={18} />
-							<View style={styles.newSessionText}>
-								<Text
-									style={[
-										typography.uiLabel,
-										{ color: colors.primary, fontWeight: "600" },
-									]}
-								>
-									New Session
-								</Text>
-								<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-									Start a fresh conversation
-								</Text>
-							</View>
-						</View>
-					</Pressable>
-
 					{/* Loading State */}
 					{isLoading ? (
 						<View style={styles.emptyState}>
@@ -478,21 +495,6 @@ const styles = StyleSheet.create({
 		paddingLeft: 10, // matches desktop pl-2.5
 		paddingRight: 4, // matches desktop pr-1
 		paddingBottom: 40,
-	},
-	newSessionButton: {
-		borderRadius: 12,
-		borderWidth: 1.5,
-		marginBottom: 12,
-		marginHorizontal: 6, // add margin to align with session items
-	},
-	newSessionContent: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-		padding: 14,
-	},
-	newSessionText: {
-		flex: 1,
 	},
 	emptyState: {
 		alignItems: "center",

@@ -322,6 +322,20 @@ export default function ChatScreen() {
 	// Sync with context's currentSessionId - defined after loadSessionMessages
 	const prevContextSessionIdRef = useRef<string | null>(null);
 
+	// Refs for stable access to providers/agents in loadSessionMessages
+	// This prevents infinite loops when provider/agent arrays get new references
+	const providersRef = useRef<Provider[]>(providers);
+	const agentsRef = useRef<Agent[]>(agents);
+	const isLoadingSessionRef = useRef(false);
+
+	useEffect(() => {
+		providersRef.current = providers;
+	}, [providers]);
+
+	useEffect(() => {
+		agentsRef.current = agents;
+	}, [agents]);
+
 	// Fetch OpenChamber settings (includes defaultAgent and defaultModel)
 	useEffect(() => {
 		if (!isConnected) return;
@@ -585,6 +599,13 @@ export default function ChatScreen() {
 		async (id: string) => {
 			if (!isConnected) return;
 
+			// Prevent multiple simultaneous loads (avoids re-entry during state updates)
+			if (isLoadingSessionRef.current) {
+				if (__DEV__) console.log("[Chat] Skipping load - already loading session");
+				return;
+			}
+			isLoadingSessionRef.current = true;
+
 			try {
 				const data = await sessionsApi.getMessages(id);
 				const loadedMessages: Message[] = [];
@@ -630,9 +651,10 @@ export default function ChatScreen() {
 				setMessages(loadedMessages);
 
 				// Restore model/agent selection from the session's last used values
+				// Use refs for stable access - prevents infinite loops from array reference changes
 				if (lastProviderID && lastModelID) {
 					// Verify the provider/model exists before setting
-					const provider = providers.find((p) => p.id === lastProviderID);
+					const provider = providersRef.current.find((p) => p.id === lastProviderID);
 					const model = provider?.models?.find((m) => m.id === lastModelID);
 					if (provider && model) {
 						if (__DEV__) {
@@ -648,7 +670,7 @@ export default function ChatScreen() {
 
 				if (lastAgentName) {
 					// Verify the agent exists before setting
-					const agent = agents.find((a) => a.name === lastAgentName);
+					const agent = agentsRef.current.find((a) => a.name === lastAgentName);
 					if (agent) {
 						if (__DEV__) {
 							console.log("[Chat] Restoring session agent:", lastAgentName);
@@ -658,9 +680,11 @@ export default function ChatScreen() {
 				}
 			} catch (error) {
 				console.error("Failed to load session messages:", error);
+			} finally {
+				isLoadingSessionRef.current = false;
 			}
 		},
-		[isConnected, providers, agents],
+		[isConnected], // Removed providers, agents - using refs for stable access
 	);
 
 	// Sync with context's currentSessionId
@@ -967,7 +991,8 @@ const styles = StyleSheet.create({
 	},
 	inputContainer: {
 		borderTopWidth: 1,
-		paddingHorizontal: 16,
-		paddingTop: 12,
+		paddingHorizontal: 6, // px-1.5 - matches PWA mobile
+		paddingTop: 0,
+		paddingBottom: 8, // pb-2 - matches PWA mobile
 	},
 });

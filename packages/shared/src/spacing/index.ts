@@ -1,13 +1,12 @@
-export {
-  SPACING,
-  SEMANTIC_SPACING,
-  RADII,
-  GAPS,
-} from './values';
-
 export type {
-  SpacingKey,
-  SemanticSpacingKey,
-  RadiiKey,
-  GapKey,
-} from './values';
+	GapKey,
+	RadiiKey,
+	SemanticSpacingKey,
+	SpacingKey,
+} from "./values";
+export {
+	GAPS,
+	RADII,
+	SEMANTIC_SPACING,
+	SPACING,
+} from "./values";
