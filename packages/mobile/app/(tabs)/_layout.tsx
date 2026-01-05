@@ -1,11 +1,13 @@
 import { router } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { gitApi } from "../../src/api";
 import type { ContextUsage } from "../../src/components/chat";
 import { Header } from "../../src/components/layout/Header";
+import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 import ChatScreen from "./chat";
-import { ContextUsageContext, SessionSheetContext } from "./context";
+import { ContextUsageContext, SessionSheetContext } from "./_context";
 import DiffScreen from "./diff";
 import GitScreen from "./git";
 import SettingsScreen from "./settings";
@@ -30,10 +32,34 @@ function PlaceholderScreen({ title }: { title: string }) {
 
 export default function TabsLayout() {
 	const { colors } = useTheme();
+	const { isConnected, directory } = useConnectionStore();
 	const [activeTab, setActiveTab] = useState<MainTab>("chat");
 	const [showSettings, setShowSettings] = useState(false);
 	const [contextUsage, setContextUsage] = useState<ContextUsage | null>(null);
+	const [diffFileCount, setDiffFileCount] = useState(0);
 	const openSessionSheetRef = useRef<() => void>(() => {});
+
+	// Fetch git status to show file count indicator on git tab
+	useEffect(() => {
+		if (!isConnected || !directory) {
+			setDiffFileCount(0);
+			return;
+		}
+
+		const fetchGitStatus = async () => {
+			try {
+				const status = await gitApi.getStatus();
+				setDiffFileCount(status?.files?.length ?? 0);
+			} catch {
+				setDiffFileCount(0);
+			}
+		};
+
+		fetchGitStatus();
+		// Poll for changes every 10 seconds
+		const interval = setInterval(fetchGitStatus, 10000);
+		return () => clearInterval(interval);
+	}, [isConnected, directory]);
 
 	const handleMenuPress = useCallback(() => {
 		router.push("/onboarding/directory");
@@ -100,6 +126,7 @@ export default function TabsLayout() {
 						onSettingsPress={handleSettingsPress}
 						onSessionsPress={activeTab === "chat" ? handleSessionsPress : undefined}
 						contextUsage={contextUsage}
+						diffFileCount={diffFileCount}
 					/>
 					<View style={styles.content}>{renderContent()}</View>
 				</View>

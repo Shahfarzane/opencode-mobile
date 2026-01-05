@@ -1,22 +1,26 @@
-import type { ToolsAPI } from '@openchamber/ui/lib/api/types';
+import type { ToolsAPI } from "@openchamber/ui/lib/api/types";
 
 export const createDesktopToolsAPI = (): ToolsAPI => ({
-  async getAvailableTools(): Promise<string[]> {
+	async getAvailableTools(): Promise<string[]> {
+		const response = await fetch("/api/experimental/tool/ids");
 
-    const response = await fetch('/api/experimental/tool/ids');
+		if (!response.ok) {
+			throw new Error(
+				`Tools API returned ${response.status} ${response.statusText}`,
+			);
+		}
 
-    if (!response.ok) {
-      throw new Error(`Tools API returned ${response.status} ${response.statusText}`);
-    }
+		const data = await response.json();
 
-    const data = await response.json();
+		if (!Array.isArray(data)) {
+			throw new Error("Tools API returned invalid data format");
+		}
 
-    if (!Array.isArray(data)) {
-      throw new Error('Tools API returned invalid data format');
-    }
-
-    return data
-      .filter((tool: unknown): tool is string => typeof tool === 'string' && tool !== 'invalid')
-      .sort();
-  },
+		return data
+			.filter(
+				(tool: unknown): tool is string =>
+					typeof tool === "string" && tool !== "invalid",
+			)
+			.sort();
+	},
 });

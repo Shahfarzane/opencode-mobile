@@ -511,15 +511,39 @@ export default function DiffScreen() {
 	const loadDiff = useCallback(async (path: string) => {
 		setIsLoadingDiff(true);
 		try {
-			const result = await gitApi.getDiff(path);
-			setDiffContent(result.diff);
+			// Find the file to check if changes are staged or unstaged
+			const file = status?.files.find((f) => f.path === path);
+			const hasUnstagedChanges = file?.working_dir && file.working_dir !== " ";
+			const hasStagedChanges = file?.index && file.index !== " " && file.index !== "?";
+
+			let diffText = "";
+
+			// Try unstaged changes first
+			if (hasUnstagedChanges) {
+				const result = await gitApi.getDiff(path, false);
+				diffText = result.diff || "";
+			}
+
+			// If no unstaged diff, try staged changes
+			if (!diffText && hasStagedChanges) {
+				const result = await gitApi.getDiff(path, true);
+				diffText = result.diff || "";
+			}
+
+			// If still no diff (for untracked files), try to get file content
+			if (!diffText && file?.index === "?") {
+				// Untracked file - no diff available yet
+				diffText = `New untracked file: ${path}\n(Add to staging to see diff)`;
+			}
+
+			setDiffContent(diffText || null);
 		} catch (err) {
 			console.error("Failed to load diff:", err);
 			setDiffContent(null);
 		} finally {
 			setIsLoadingDiff(false);
 		}
-	}, []);
+	}, [status?.files]);
 
 	useEffect(() => {
 		loadStatus();
