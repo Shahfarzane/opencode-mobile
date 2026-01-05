@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import type { Session } from "@opencode-ai/sdk";
+import type { Session } from "@opencode-ai/sdk/v2";
 import { opencodeClient } from "@/lib/opencode/client";
 import { getSafeStorage } from "./utils/safeStorage";
 import type { WorktreeMetadata } from "@/types/worktree";
@@ -254,9 +254,9 @@ export const useSessionStore = create<SessionStore>()(
                         const apiClient = opencodeClient.getApiClient();
 
                         const fetchSessions = async (directoryParam?: string | null): Promise<Session[]> => {
-                            const response = await apiClient.session.list({
-                                query: directoryParam ? { directory: directoryParam } : undefined,
-                            });
+                            const response = await apiClient.session.list(
+                                directoryParam ? { directory: directoryParam } : undefined
+                            );
                             return Array.isArray(response.data) ? response.data : [];
                         };
 
@@ -536,9 +536,9 @@ export const useSessionStore = create<SessionStore>()(
                         const attempts = 20;
                         for (let attempt = 0; attempt < attempts; attempt += 1) {
                             try {
-                                const response = await apiClient.session.list({
-                                    query: targetDirectory ? { directory: targetDirectory } : undefined,
-                                });
+                                const response = await apiClient.session.list(
+                                    targetDirectory ? { directory: targetDirectory } : undefined
+                                );
                                 const list = Array.isArray(response.data) ? response.data : [];
                                 const candidate = list.find((entry) => {
                                     if (existingIds.has(entry.id)) return false;
@@ -817,8 +817,8 @@ export const useSessionStore = create<SessionStore>()(
                         const shareRequest = async () => {
                             const directory = sessionDirectory ?? opencodeClient.getDirectory();
                             return apiClient.session.share({
-                                path: { id },
-                                query: directory ? { directory } : undefined,
+                                sessionID: id,
+                                ...(directory ? { directory } : {})
                             });
                         };
                         const response = overrideDirectory
@@ -849,8 +849,8 @@ export const useSessionStore = create<SessionStore>()(
                         const unshareRequest = async () => {
                             const directory = sessionDirectory ?? opencodeClient.getDirectory();
                             return apiClient.session.unshare({
-                                path: { id },
-                                query: directory ? { directory } : undefined,
+                                sessionID: id,
+                                ...(directory ? { directory } : {})
                             });
                         };
                         const response = overrideDirectory

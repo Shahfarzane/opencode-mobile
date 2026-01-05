@@ -1,4 +1,4 @@
-import type { Agent } from "@opencode-ai/sdk";
+import type { Agent } from "@opencode-ai/sdk/v2";
 
 export interface AgentMentionSource {
   value: string;

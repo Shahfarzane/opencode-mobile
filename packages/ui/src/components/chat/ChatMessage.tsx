@@ -1,4 +1,4 @@
-import type { Message, Part } from "@opencode-ai/sdk";
+import type { Message, Part } from "@opencode-ai/sdk/v2";
 import React from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useThemeSystem } from "@/contexts/useThemeSystem";
@@ -27,6 +27,9 @@ import type {
 	StreamPhase,
 	ToolPopupContent,
 } from "./message/types";
+import React from 'react';
+import type { Message, Part } from '@opencode-ai/sdk/v2';
+import { useShallow } from 'zustand/react/shallow';
 
 const ToolOutputDialog = React.lazy(() => import("./message/ToolOutputDialog"));
 

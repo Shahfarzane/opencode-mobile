@@ -1,4 +1,4 @@
-import type { ToolPart as ToolPartType } from "@opencode-ai/sdk";
+import type { ToolPart as ToolPartType } from "@opencode-ai/sdk/v2";
 import {
 	RiArrowDownSLine,
 	RiArrowRightSLine,
@@ -13,6 +13,17 @@ import type { ToolPopupContent } from "../types";
 import JustificationBlock from "./JustificationBlock";
 import ReasoningPart from "./ReasoningPart";
 import ToolPart from "./ToolPart";
+import React from 'react';
+import { RiArrowDownSLine, RiArrowRightSLine, RiStackLine } from '@remixicon/react';
+import { cn } from '@/lib/utils';
+import type { TurnActivityPart } from '../../hooks/useTurnGrouping';
+import type { ToolPart as ToolPartType } from '@opencode-ai/sdk/v2';
+import type { ContentChangeReason } from '@/hooks/useChatScrollManager';
+import type { ToolPopupContent } from '../types';
+import ToolPart from './ToolPart';
+import ReasoningPart from './ReasoningPart';
+import JustificationBlock from './JustificationBlock';
+import { FadeInOnReveal } from '../FadeInOnReveal';
 
 interface DiffStats {
 	additions: number;

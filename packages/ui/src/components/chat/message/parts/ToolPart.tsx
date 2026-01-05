@@ -1,7 +1,7 @@
 import type {
 	ToolPart as ToolPartType,
 	ToolState as ToolStateUnion,
-} from "@opencode-ai/sdk";
+} from "@opencode-ai/sdk/v2";
 import {
 	RiArrowDownSLine,
 	RiArrowRightSLine,
@@ -33,6 +33,19 @@ import { toolDisplayStyles } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 import { useDirectoryStore } from "@/stores/useDirectoryStore";
 import { SimpleMarkdownRenderer } from "../../MarkdownRenderer";
+
+import React from 'react';
+import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
+import { RiArrowDownSLine, RiArrowRightSLine, RiBookLine, RiFileEditLine, RiFileSearchLine, RiFileTextLine, RiFolder6Line, RiGitBranchLine, RiGlobalLine, RiListCheck3, RiMenuSearchLine, RiPencilLine, RiTerminalBoxLine, RiToolsLine } from '@remixicon/react';
+import { cn } from '@/lib/utils';
+import { SimpleMarkdownRenderer } from '../../MarkdownRenderer';
+import { getToolMetadata, getLanguageFromExtension, isImageFile, getImageMimeType } from '@/lib/toolHelpers';
+import type { ToolPart as ToolPartType, ToolState as ToolStateUnion } from '@opencode-ai/sdk/v2';
+import { toolDisplayStyles } from '@/lib/typography';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { useDirectoryStore } from '@/stores/useDirectoryStore';
+import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
+import type { ContentChangeReason } from '@/hooks/useChatScrollManager';
 
 import {
 	detectLanguageFromOutput,

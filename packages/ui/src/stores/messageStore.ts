@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import type { Message, Part } from "@opencode-ai/sdk";
+import type { Message, Part } from "@opencode-ai/sdk/v2";
 import { opencodeClient } from "@/lib/opencode/client";
 import { isExecutionForkMetaText } from "@/lib/messages/executionMeta";
 import type { SessionMemoryState, MessageStreamLifecycle, AttachedFile } from "./types/sessionTypes";
@@ -586,13 +586,11 @@ export const useMessageStore = create<MessageStore>()(
                                     const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
                                     await apiClient.session.init({
-                                        path: { id: sessionId },
-                                        body: {
-                                            messageID: messageId,
-                                            providerID,
-                                            modelID,
-                                        },
-                                        query: directory ? { directory } : undefined,
+                                        sessionID: sessionId,
+                                        ...(directory ? { directory } : {}),
+                                        messageID: messageId,
+                                        providerID,
+                                        modelID,
                                     });
 
                                     return;
@@ -600,12 +598,10 @@ export const useMessageStore = create<MessageStore>()(
 
                                 if (command === "summarize") {
                                     await apiClient.session.summarize({
-                                        path: { id: sessionId },
-                                        body: {
-                                            providerID,
-                                            modelID,
-                                        },
-                                        query: directory ? { directory } : undefined,
+                                        sessionID: sessionId,
+                                        ...(directory ? { directory } : {}),
+                                        providerID,
+                                        modelID,
                                     });
 
                                     return;

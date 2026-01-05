@@ -1,4 +1,4 @@
-import { createOpencodeClient, OpencodeClient } from "@opencode-ai/sdk";
+import { createOpencodeClient, OpencodeClient } from "@opencode-ai/sdk/v2";
 import type { FilesAPI, RuntimeAPIs } from "../api/types";
 import { getDesktopHomeDirectory } from "../desktop";
 import type {
@@ -12,7 +12,7 @@ import type {
   TextPartInput,
   FilePartInput,
   Event,
-} from "@opencode-ai/sdk";
+} from "@opencode-ai/sdk/v2";
 type StreamEvent<TData> = {
   data: TData;
   event?: string;
@@ -238,9 +238,9 @@ class OpencodeService {
     };
 
     try {
-      const response = await this.client.path.get({
-        query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-      });
+      const response = await this.client.path.get(
+        this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      );
       const info = response.data;
       if (info) {
         addCandidate(info.directory);
@@ -253,9 +253,9 @@ class OpencodeService {
 
     if (!candidates.size) {
       try {
-        const project = await this.client.project.current({
-          query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-        });
+        const project = await this.client.project.current(
+          this.currentDirectory ? { directory: this.currentDirectory } : undefined
+        );
         addCandidate(project.data?.worktree);
       } catch (error) {
         console.debug('Failed to load project info:', error);
@@ -296,19 +296,17 @@ class OpencodeService {
 
   // Session Management
   async listSessions(): Promise<Session[]> {
-    const response = await this.client.session.list({
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-    });
+    const response = await this.client.session.list(
+      this.currentDirectory ? { directory: this.currentDirectory } : undefined
+    );
     return Array.isArray(response.data) ? response.data : [];
   }
 
   async createSession(params?: { parentID?: string; title?: string }): Promise<Session> {
     const response = await this.client.session.create({
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined,
-      body: {
-        parentID: params?.parentID,
-        title: params?.title
-      }
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {}),
+      parentID: params?.parentID,
+      title: params?.title
     });
     if (!response.data) throw new Error('Failed to create session');
     return response.data;
@@ -316,8 +314,8 @@ class OpencodeService {
 
   async getSession(id: string): Promise<Session> {
     const response = await this.client.session.get({
-      path: { id },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      sessionID: id,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {})
     });
     if (!response.data) throw new Error('Session not found');
     return response.data;
@@ -325,17 +323,17 @@ class OpencodeService {
 
   async deleteSession(id: string): Promise<boolean> {
     const response = await this.client.session.delete({
-      path: { id },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      sessionID: id,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {})
     });
     return response.data || false;
   }
 
   async updateSession(id: string, title?: string): Promise<Session> {
     const response = await this.client.session.update({
-      path: { id },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined,
-      body: { title }
+      sessionID: id,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {}),
+      title
     });
     if (!response.data) throw new Error('Failed to update session');
     return response.data;
@@ -343,8 +341,8 @@ class OpencodeService {
 
   async getSessionMessages(id: string): Promise<{ info: Message; parts: Part[] }[]> {
     const response = await this.client.session.messages({
-      path: { id },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      sessionID: id,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {})
     });
     return response.data || [];
   }
@@ -484,17 +482,15 @@ class OpencodeService {
     // Use SDK session.prompt() method
     // DON'T send messageID - let server generate it (fixes Claude empty response issue)
     await this.client.session.prompt({
-      path: { id: params.id },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined,
-      body: {
-        // messageID intentionally omitted - server will generate
-        model: {
-          providerID: params.providerID,
-          modelID: params.modelID
-        },
-        agent: params.agent,
-        parts
-      }
+      sessionID: params.id,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {}),
+      // messageID intentionally omitted - server will generate
+      model: {
+        providerID: params.providerID,
+        modelID: params.modelID
+      },
+      agent: params.agent,
+      parts
     });
 
     // Return temporary ID for optimistic UI
@@ -503,19 +499,22 @@ class OpencodeService {
   }
 
   async abortSession(id: string): Promise<boolean> {
-    const response = await this.client.session.abort({
-      path: { id },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined,
-      throwOnError: true,
-    });
+    const response = await this.client.session.abort(
+      {
+        sessionID: id,
+        ...(this.currentDirectory ? { directory: this.currentDirectory } : {})
+      },
+      { throwOnError: true }
+    );
     return Boolean(response.data);
   }
 
   async revertSession(sessionId: string, messageId: string, partId?: string): Promise<Session> {
     const response = await this.client.session.revert({
-      path: { id: sessionId },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined,
-      body: { messageID: messageId, partID: partId }
+      sessionID: sessionId,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {}),
+      messageID: messageId,
+      partID: partId
     });
     if (!response.data) throw new Error('Failed to revert session');
     return response.data;
@@ -523,10 +522,24 @@ class OpencodeService {
 
   async unrevertSession(sessionId: string): Promise<Session> {
     const response = await this.client.session.unrevert({
-      path: { id: sessionId },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      sessionID: sessionId,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {})
     });
     if (!response.data) throw new Error('Failed to unrevert session');
+    return response.data;
+  }
+
+  async forkSession(sessionId: string, messageId?: string): Promise<Session> {
+    const response = await this.client.session.fork({
+      sessionID: sessionId,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {}),
+      messageID: messageId
+    });
+
+    if (!response.data) {
+      throw new Error('Failed to fork session');
+    }
+
     return response.data;
   }
 
@@ -585,10 +598,11 @@ class OpencodeService {
     permissionId: string,
     response: 'once' | 'always' | 'reject'
   ): Promise<boolean> {
-    const result = await this.client.postSessionIdPermissionsPermissionId({
-      path: { id: sessionId, permissionID: permissionId },
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined,
-      body: { response }
+    const result = await this.client.permission.respond({
+      sessionID: sessionId,
+      permissionID: permissionId,
+      ...(this.currentDirectory ? { directory: this.currentDirectory } : {}),
+      response
     });
     return result.data || false;
   }
@@ -644,9 +658,9 @@ class OpencodeService {
     providers: Provider[];
     default: { [key: string]: string };
   }> {
-    const response = await this.client.config.providers({
-      query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-    });
+    const response = await this.client.config.providers(
+      this.currentDirectory ? { directory: this.currentDirectory } : undefined
+    );
     if (!response.data) throw new Error('Failed to get providers');
     return response.data;
   }
@@ -673,9 +687,9 @@ class OpencodeService {
   // Agent Management
   async listAgents(): Promise<Agent[]> {
     try {
-      const response = await this.client.app.agents({
-        query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-      });
+      const response = await this.client.app.agents(
+        this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      );
       return response.data || [];
     } catch {
       return [];
@@ -712,17 +726,15 @@ class OpencodeService {
 
       const connect = async (attempt: number): Promise<void> => {
         try {
+          const subscribeParameters = resolvedDirectory ? { directory: resolvedDirectory } : undefined;
           const subscribeOptions: {
-            query?: { directory?: string };
             signal: AbortSignal;
             sseDefaultRetryDelay: number;
             sseMaxRetryDelay: number;
             onSseError?: (error: unknown) => void;
             onSseEvent: (event: StreamEvent<unknown>) => void;
             headers?: Record<string, string>;
-            lastEventId?: string;
           } = {
-            query: resolvedDirectory ? { directory: resolvedDirectory } : undefined,
             signal: abortController.signal,
             sseDefaultRetryDelay: 3000,
             sseMaxRetryDelay: 30000,
@@ -748,11 +760,10 @@ class OpencodeService {
           };
 
           if (lastEventId) {
-            subscribeOptions.lastEventId = lastEventId;
             subscribeOptions.headers = { ...(subscribeOptions.headers || {}), 'Last-Event-ID': lastEventId };
           }
 
-          const result = await this.client.event.subscribe(subscribeOptions);
+          const result = await this.client.event.subscribe(subscribeParameters, subscribeOptions);
 
           if (onOpen && !abortController.signal.aborted) {
             console.log('[OpencodeClient] SSE connection opened');
@@ -863,9 +874,9 @@ class OpencodeService {
   // Command Management
   async listCommands(): Promise<Array<{ name: string; description?: string; agent?: string; model?: string }>> {
     try {
-      const response = await this.client.command.list({
-        query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-      });
+      const response = await this.client.command.list(
+        this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      );
       // Return only lightweight info for autocomplete
       return (response.data || []).map((cmd: Record<string, unknown>) => ({
         name: cmd.name as string,
@@ -881,9 +892,9 @@ class OpencodeService {
 
   async listCommandsWithDetails(): Promise<Array<{ name: string; description?: string; agent?: string; model?: string; template?: string; subtask?: boolean }>> {
     try {
-      const response = await this.client.command.list({
-        query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-      });
+      const response = await this.client.command.list(
+        this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      );
       // Return full command details including template
       return (response.data || []).map((cmd: Record<string, unknown>) => ({
         name: cmd.name as string,
@@ -900,9 +911,9 @@ class OpencodeService {
 
   async getCommandDetails(name: string): Promise<{ name: string; template: string; description?: string; agent?: string; model?: string } | null> {
     try {
-      const response = await this.client.command.list({
-        query: this.currentDirectory ? { directory: this.currentDirectory } : undefined
-      });
+      const response = await this.client.command.list(
+        this.currentDirectory ? { directory: this.currentDirectory } : undefined
+      );
 
       if (response.data) {
         const command = response.data.find((cmd: Record<string, unknown>) => cmd.name === name);

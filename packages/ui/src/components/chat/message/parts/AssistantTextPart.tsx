@@ -1,9 +1,15 @@
-import type { Part } from "@opencode-ai/sdk";
+import type { Part } from "@opencode-ai/sdk/v2";
 import React from "react";
 import type { ContentChangeReason } from "@/hooks/useChatScrollManager";
 import { MarkdownRenderer } from "../../MarkdownRenderer";
 import type { StreamPhase } from "../types";
 import { formatReasoningText, ReasoningTimelineBlock } from "./ReasoningPart";
+import React from 'react';
+import type { Part } from '@opencode-ai/sdk/v2';
+import { MarkdownRenderer } from '../../MarkdownRenderer';
+import type { StreamPhase } from '../types';
+import type { ContentChangeReason } from '@/hooks/useChatScrollManager';
+import { ReasoningTimelineBlock, formatReasoningText } from './ReasoningPart';
 
 type PartWithText = Part & {
 	text?: string;

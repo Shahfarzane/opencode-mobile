@@ -15,12 +15,12 @@ export default defineConfig({
     themeStoragePlugin(),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '../ui/src'),
-      '@web': path.resolve(__dirname, './src'),
-      '@openchamber/ui': path.resolve(__dirname, '../ui/src'),
-      '@opencode-ai/sdk': path.resolve(__dirname, '../../node_modules/@opencode-ai/sdk/dist/client.js'),
-    },
+    alias: [
+      { find: '@opencode-ai/sdk/v2', replacement: path.resolve(__dirname, '../../node_modules/@opencode-ai/sdk/dist/v2/client.js') },
+      { find: '@openchamber/ui', replacement: path.resolve(__dirname, '../ui/src') },
+      { find: '@web', replacement: path.resolve(__dirname, './src') },
+      { find: '@', replacement: path.resolve(__dirname, '../ui/src') },
+    ],
   },
   define: {
     'process.env': {},
@@ -28,7 +28,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
   optimizeDeps: {
-    include: ['@opencode-ai/sdk'],
+    include: ['@opencode-ai/sdk/v2'],
   },
   server: {
     port: 5173,

@@ -10,12 +10,12 @@ export default defineConfig({
   base: './',  // Use relative paths for VS Code webview
   plugins: [react()],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '../ui/src'),
-      '@vscode': path.resolve(__dirname, './webview'),
-      '@openchamber/ui': path.resolve(__dirname, '../ui/src'),
-      '@opencode-ai/sdk': path.resolve(__dirname, '../../node_modules/@opencode-ai/sdk/dist/client.js'),
-    },
+    alias: [
+      { find: '@opencode-ai/sdk/v2', replacement: path.resolve(__dirname, '../../node_modules/@opencode-ai/sdk/dist/v2/client.js') },
+      { find: '@openchamber/ui', replacement: path.resolve(__dirname, '../ui/src') },
+      { find: '@vscode', replacement: path.resolve(__dirname, './webview') },
+      { find: '@', replacement: path.resolve(__dirname, '../ui/src') },
+    ],
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
@@ -23,7 +23,7 @@ export default defineConfig({
   },
   envPrefix: ['VITE_'],
   optimizeDeps: {
-    include: ['@opencode-ai/sdk'],
+    include: ['@opencode-ai/sdk/v2'],
   },
   build: {
     outDir: path.resolve(__dirname, 'dist/webview'),
