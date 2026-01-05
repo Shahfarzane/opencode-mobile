@@ -565,7 +565,7 @@ export default function DiffScreen() {
 				style={[
 					styles.container,
 					styles.centered,
-					{ backgroundColor: colors.background, paddingTop: insets.top },
+					{ backgroundColor: colors.background },
 				]}
 			>
 				<ActivityIndicator size="large" color={colors.primary} />
@@ -578,7 +578,7 @@ export default function DiffScreen() {
 			<View
 				style={[
 					styles.container,
-					{ backgroundColor: colors.background, paddingTop: insets.top },
+					{ backgroundColor: colors.background },
 				]}
 			>
 				<EmptyState title="Unable to load" message={error} />
@@ -591,7 +591,7 @@ export default function DiffScreen() {
 			<View
 				style={[
 					styles.container,
-					{ backgroundColor: colors.background, paddingTop: insets.top },
+					{ backgroundColor: colors.background },
 				]}
 			>
 				<EmptyState
@@ -606,7 +606,7 @@ export default function DiffScreen() {
 		<View
 			style={[
 				styles.container,
-				{ backgroundColor: colors.background, paddingTop: insets.top },
+				{ backgroundColor: colors.background },
 			]}
 		>
 			{/* File Selector */}

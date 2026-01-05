@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu, useMessageActions } from "./MessageActionsMenu";
@@ -95,8 +94,8 @@ function UserMessage({ content }: { content: string }) {
 						styles.userBubble,
 						{
 							backgroundColor: bubbleBackground,
-							borderRadius: 16,
-							borderBottomRightRadius: 4,
+							borderRadius: 12, // rounded-xl
+							borderBottomRightRadius: 2, // rounded-br-xs
 						},
 					]}
 				>
@@ -229,7 +228,7 @@ function AssistantMessage({
 	onBranchSession?: (messageId: string) => void;
 	showHeader?: boolean;
 }) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 	const hasParts = message.parts && message.parts.length > 0;
 	const isStreaming = message.isStreaming ?? false;
 	const { showMenu, openMenu, closeMenu, copyMessageContent } =
@@ -269,7 +268,7 @@ function AssistantMessage({
 					</View>
 					<Text
 						style={[
-							typography.uiLabel,
+							typography.uiHeader, // Use header style for bold weight
 							styles.assistantName,
 							{ color: colors.foreground },
 						]}
@@ -361,10 +360,26 @@ export function ChatMessage({
 	);
 }
 
+// Desktop-aligned spacing constants
+const DESKTOP_MESSAGE_SPACING = {
+	containerPaddingH: 12, // Match desktop's chat-column padding
+	bubbleRadius: 12, // rounded-xl
+	bubbleRadiusCutout: 2, // rounded-br-xs
+	bubblePaddingH: 14, // px-3.5
+	bubblePaddingTop: 10, // pt-2.5
+	bubblePaddingBottom: 6, // pb-1.5
+	headerPaddingLeft: 12, // pl-3
+	headerGap: 8, // gap-2
+	headerMarginBottom: 8, // mb-2
+	agentBadgePaddingH: 6, // px-1.5
+	agentBadgePaddingV: 0, // py-0
+	agentBadgeRadius: 4, // rounded
+};
+
 const styles = StyleSheet.create({
 	userMessageContainer: {
 		marginBottom: 8,
-		paddingHorizontal: 16,
+		paddingHorizontal: DESKTOP_MESSAGE_SPACING.containerPaddingH,
 	},
 	userMessageWrapper: {
 		flexDirection: "row",
@@ -374,20 +389,21 @@ const styles = StyleSheet.create({
 	},
 	userBubble: {
 		maxWidth: "85%",
-		paddingHorizontal: 14,
-		paddingVertical: 10,
+		paddingHorizontal: DESKTOP_MESSAGE_SPACING.bubblePaddingH,
+		paddingTop: DESKTOP_MESSAGE_SPACING.bubblePaddingTop,
+		paddingBottom: DESKTOP_MESSAGE_SPACING.bubblePaddingBottom,
 	},
 
 	assistantMessageContainer: {
 		marginBottom: 16,
-		paddingHorizontal: 16,
+		paddingHorizontal: DESKTOP_MESSAGE_SPACING.containerPaddingH,
 	},
 	assistantHeader: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
-		marginBottom: 8,
-		paddingLeft: 4,
+		gap: DESKTOP_MESSAGE_SPACING.headerGap,
+		marginBottom: DESKTOP_MESSAGE_SPACING.headerMarginBottom,
+		paddingLeft: DESKTOP_MESSAGE_SPACING.headerPaddingLeft,
 	},
 	assistantAvatar: {
 		width: 28,
@@ -401,12 +417,12 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	assistantName: {
-		fontWeight: "600",
+		fontWeight: "700", // font-bold
 	},
 	agentBadge: {
-		paddingHorizontal: 6,
-		paddingVertical: 2,
-		borderRadius: 4,
+		paddingHorizontal: DESKTOP_MESSAGE_SPACING.agentBadgePaddingH,
+		paddingVertical: DESKTOP_MESSAGE_SPACING.agentBadgePaddingV,
+		borderRadius: DESKTOP_MESSAGE_SPACING.agentBadgeRadius,
 	},
 	streamingBadge: {
 		paddingHorizontal: 8,
@@ -415,7 +431,7 @@ const styles = StyleSheet.create({
 	},
 	assistantContent: {
 		width: "100%",
-		paddingLeft: 4,
+		paddingLeft: DESKTOP_MESSAGE_SPACING.headerPaddingLeft,
 	},
 	textContainer: {
 		marginBottom: 4,

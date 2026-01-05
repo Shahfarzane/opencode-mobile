@@ -1,4 +1,3 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
@@ -14,10 +13,8 @@ import {
 	type Agent,
 	agentsApi,
 	filesApi,
-	gitApi,
 	type Provider,
 	providersApi,
-	type Session,
 	sessionsApi,
 } from "../../src/api";
 import type {
@@ -34,11 +31,8 @@ import {
 	ChatInput,
 	convertStreamingPart,
 	MessageList,
-	ModelControls,
 	PermissionCard,
 } from "../../src/components/chat";
-import { SessionSheet } from "../../src/components/session";
-import { useEdgeSwipe } from "../../src/hooks/useEdgeSwipe";
 import {
 	type StreamEvent,
 	useEventStream,
@@ -82,15 +76,20 @@ export default function ChatScreen() {
 	const { colors } = useTheme();
 	const { directory, isConnected } = useConnectionStore();
 	const { setContextUsage } = useContextUsageContext();
-	const { setOpenSessionSheet } = useSessionSheetContext();
+	const {
+		sessions,
+		currentSessionId,
+		openSessionSheet,
+		selectSession: contextSelectSession,
+		_updateStreamingSessions,
+		_setCurrentSessionId,
+		_refreshSessions,
+	} = useSessionSheetContext();
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
-	const [sessions, setSessions] = useState<Session[]>([]);
-	const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 	const [permissions, setPermissions] = useState<Permission[]>([]);
-	const [isGitRepo, setIsGitRepo] = useState(false);
 
 	const [providers, setProviders] = useState<Provider[]>([]);
 	const [currentProviderId, setCurrentProviderId] = useState<
@@ -159,7 +158,6 @@ export default function ChatScreen() {
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
 	const lastEventTimeRef = useRef<number>(0);
-	const sheetRef = useRef<BottomSheet>(null);
 
 	const handleStreamEvent = useCallback(
 		(event: StreamEvent) => {
@@ -307,33 +305,19 @@ export default function ChatScreen() {
 
 	useEventStream(sessionId, handleStreamEvent);
 
-	// Track which sessions are currently streaming
-	const streamingSessionIds = useMemo(() => {
-		const ids = new Set<string>();
-		if (isLoading && sessionId) {
-			ids.add(sessionId);
-		}
-		return ids;
-	}, [isLoading, sessionId]);
-
-	// Check if directory is a git repo
+	// Sync streaming state with layout context
 	useEffect(() => {
-		if (!isConnected || !directory) {
-			setIsGitRepo(false);
-			return;
-		}
-
-		const checkGitRepo = async () => {
-			try {
-				const status = await gitApi.getStatus();
-				setIsGitRepo(Boolean(status?.current));
-			} catch {
-				setIsGitRepo(false);
+		if (_updateStreamingSessions) {
+			const ids = new Set<string>();
+			if (isLoading && sessionId) {
+				ids.add(sessionId);
 			}
-		};
+			_updateStreamingSessions(ids);
+		}
+	}, [isLoading, sessionId, _updateStreamingSessions]);
 
-		checkGitRepo();
-	}, [isConnected, directory]);
+	// Sync with context's currentSessionId - defined after loadSessionMessages
+	const prevContextSessionIdRef = useRef<string | null>(null);
 
 	// Fetch providers and set default model
 	useEffect(() => {
@@ -363,19 +347,43 @@ export default function ChatScreen() {
 					const defaultProvider =
 						data.find((p) => p.id === "anthropic") || data[0];
 					if (defaultProvider) {
-						if (__DEV__) {
-							console.log("[Chat] Setting default provider:", {
-								id: defaultProvider.id,
-								modelsCount: defaultProvider.models?.length,
-								firstModel: defaultProvider.models?.[0],
-							});
-						}
+						console.log("[Chat] === DEFAULT MODEL SELECTION DEBUG ===");
+						console.log("[Chat] Provider:", defaultProvider.id);
+						console.log("[Chat] All models:", JSON.stringify(defaultProvider.models?.map(m => ({
+							id: m.id,
+							name: m.name,
+						})), null, 2));
+
 						setCurrentProviderId(defaultProvider.id);
-						const defaultModel = defaultProvider.models?.[0];
-						if (defaultModel) {
-							if (__DEV__) console.log("[Chat] Setting default model:", defaultModel);
-							setCurrentModelId(defaultModel.id);
+
+						// Prefer Claude Sonnet as default, otherwise use first model
+						const models = defaultProvider.models ?? [];
+
+						// Debug: Check each model for matching
+						models.forEach((m, idx) => {
+							const matchesSonnet =
+								m.id.includes("claude-3-5-sonnet") ||
+								m.id.includes("claude-sonnet") ||
+								m.name?.toLowerCase().includes("sonnet");
+							console.log(`[Chat] Model ${idx}: id="${m.id}", name="${m.name}", matchesSonnet=${matchesSonnet}`);
+						});
+
+						const preferredModel = models.find((m) =>
+							m.id.includes("claude-3-5-sonnet") ||
+							m.id.includes("claude-sonnet") ||
+							m.name?.toLowerCase().includes("sonnet")
+						) || models[0];
+
+						console.log("[Chat] Selected preferredModel:", preferredModel ? {
+							id: preferredModel.id,
+							name: preferredModel.name,
+						} : "NONE (using first)");
+
+						if (preferredModel) {
+							setCurrentModelId(preferredModel.id);
+							console.log("[Chat] Set currentModelId to:", preferredModel.id);
 						}
+						console.log("[Chat] === END DEBUG ===");
 					}
 				}
 			} catch (err) {
@@ -470,20 +478,6 @@ export default function ChatScreen() {
 		return () => clearInterval(checkInterval);
 	}, [isLoading]);
 
-	const fetchSessions = useCallback(async () => {
-		if (!isConnected) return;
-
-		setIsLoadingSessions(true);
-		try {
-			const data = await sessionsApi.list();
-			setSessions(data);
-		} catch (error) {
-			console.error("Failed to fetch sessions:", error);
-		} finally {
-			setIsLoadingSessions(false);
-		}
-	}, [isConnected]);
-
 	const loadSessionMessages = useCallback(
 		async (id: string) => {
 			if (!isConnected) return;
@@ -566,130 +560,33 @@ export default function ChatScreen() {
 		[isConnected, providers, agents],
 	);
 
-	const selectSession = useCallback(
-		async (session: Session) => {
-			setSessionId(session.id);
-			sheetRef.current?.close();
-			await loadSessionMessages(session.id);
-		},
-		[loadSessionMessages],
-	);
-
-	const openSessionPicker = useCallback(() => {
-		fetchSessions();
-		sheetRef.current?.expand();
-	}, [fetchSessions]);
-
-	// Register the session picker opener with the layout context
+	// Sync with context's currentSessionId
 	useEffect(() => {
-		setOpenSessionSheet(openSessionPicker);
-	}, [openSessionPicker, setOpenSessionSheet]);
-
-	useEdgeSwipe({
-		enabled: true,
-		onSwipe: openSessionPicker,
-	});
-
-	useEffect(() => {
-		if (isConnected) {
-			fetchSessions();
+		if (currentSessionId !== prevContextSessionIdRef.current) {
+			prevContextSessionIdRef.current = currentSessionId;
+			setSessionId(currentSessionId);
+			if (currentSessionId) {
+				loadSessionMessages(currentSessionId);
+			} else {
+				setMessages([]);
+			}
 		}
-	}, [isConnected, fetchSessions]);
+	}, [currentSessionId, loadSessionMessages]);
+
+	// Update context when local sessionId changes (e.g., after creating a new session)
+	useEffect(() => {
+		if (_setCurrentSessionId && sessionId !== currentSessionId) {
+			_setCurrentSessionId(sessionId);
+		}
+	}, [sessionId, currentSessionId, _setCurrentSessionId]);
 
 	const createSession = useCallback(async (): Promise<string> => {
 		const data = await sessionsApi.create();
-		fetchSessions();
+		if (_refreshSessions) {
+			_refreshSessions();
+		}
 		return data.id;
-	}, [fetchSessions]);
-
-	const handleNewSession = useCallback((_newDirectory?: string | null) => {
-		setSessionId(null);
-		setMessages([]);
-		sheetRef.current?.close();
-	}, []);
-
-	const handleRenameSession = useCallback(
-		async (targetSessionId: string, title: string) => {
-			try {
-				await sessionsApi.updateTitle(targetSessionId, title);
-				setSessions((prev) =>
-					prev.map((s) => (s.id === targetSessionId ? { ...s, title } : s)),
-				);
-			} catch (error) {
-				console.error("Failed to rename session:", error);
-			}
-		},
-		[],
-	);
-
-	const handleShareSession = useCallback(
-		async (targetSessionId: string): Promise<Session | null> => {
-			try {
-				const updated = await sessionsApi.share(targetSessionId);
-				setSessions((prev) =>
-					prev.map((s) => (s.id === targetSessionId ? updated : s)),
-				);
-				return updated;
-			} catch (error) {
-				console.error("Failed to share session:", error);
-				return null;
-			}
-		},
-		[],
-	);
-
-	const handleUnshareSession = useCallback(
-		async (targetSessionId: string): Promise<boolean> => {
-			try {
-				const updated = await sessionsApi.unshare(targetSessionId);
-				setSessions((prev) =>
-					prev.map((s) => (s.id === targetSessionId ? updated : s)),
-				);
-				return true;
-			} catch (error) {
-				console.error("Failed to unshare session:", error);
-				return false;
-			}
-		},
-		[],
-	);
-
-	const handleDeleteSession = useCallback(
-		async (targetSessionId: string): Promise<boolean> => {
-			try {
-				await sessionsApi.delete(targetSessionId);
-				setSessions((prev) => prev.filter((s) => s.id !== targetSessionId));
-
-				// If we deleted the current session, clear it
-				if (targetSessionId === sessionId) {
-					setSessionId(null);
-					setMessages([]);
-				}
-				return true;
-			} catch (error) {
-				console.error("Failed to delete session:", error);
-				return false;
-			}
-		},
-		[sessionId],
-	);
-
-	const handleChangeDirectory = useCallback(() => {
-		// This would open a directory picker
-		// For now, this is a placeholder - the actual implementation
-		// would depend on how directory selection works in the app
-		console.log("Change directory requested");
-	}, []);
-
-	const handleOpenWorktreeManager = useCallback(() => {
-		// Placeholder for worktree manager functionality
-		console.log("Open worktree manager requested");
-	}, []);
-
-	const handleOpenMultiRunLauncher = useCallback(() => {
-		// Placeholder for multi-run launcher functionality
-		console.log("Open multi-run launcher requested");
-	}, []);
+	}, [_refreshSessions]);
 
 	const handleFileSearch = useCallback(
 		async (query: string) => {
@@ -742,6 +639,8 @@ export default function ChatScreen() {
 					parts: [],
 					isStreaming: true,
 					createdAt: Date.now(),
+					modelName: modelInfo?.modelName,
+					agentName: activeAgent?.name,
 				};
 
 				setMessages((prev) => [...prev, assistantMessage]);
@@ -833,7 +732,7 @@ export default function ChatScreen() {
 			keyboardVerticalOffset={keyboardOffset}
 		>
 			<Pressable
-				onPress={openSessionPicker}
+				onPress={openSessionSheet}
 				style={[styles.sessionBar, { borderBottomColor: colors.border }]}
 			>
 				<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
@@ -892,44 +791,6 @@ export default function ChatScreen() {
 					},
 				]}
 			>
-				{/* Model Picker - renders as button + modal */}
-				{providers.length > 0 && (
-					<View style={styles.modelPickerRow}>
-						{(() => {
-							const mappedProviders = providers.map((p) => {
-								const mappedModels = p.models?.map((m) => ({ id: m.id, name: m.name })) || [];
-								if (__DEV__) {
-									console.log("[Chat] Mapping provider for ModelControls:", {
-										providerId: p.id,
-										originalModelsType: typeof p.models,
-										originalModelsIsArray: Array.isArray(p.models),
-										originalModelsLength: p.models?.length,
-										mappedModelsLength: mappedModels.length,
-										firstMappedModel: mappedModels[0],
-									});
-								}
-								return {
-									id: p.id,
-									name: p.name,
-									models: mappedModels,
-								};
-							});
-							if (__DEV__) {
-								console.log("[Chat] Final providers for ModelControls:", mappedProviders);
-							}
-							return (
-								<ModelControls
-									providers={mappedProviders}
-									currentProviderId={currentProviderId}
-									currentModelId={currentModelId}
-									onProviderChange={handleProviderChange}
-									onModelChange={handleModelChange}
-									disabled={isLoading}
-								/>
-							);
-						})()}
-					</View>
-				)}
 				<ChatInput
 					onSend={handleSend}
 					isLoading={isLoading}
@@ -947,25 +808,6 @@ export default function ChatScreen() {
 					onAgentPress={() => setShowAgentPicker(true)}
 				/>
 			</View>
-
-			<SessionSheet
-				ref={sheetRef}
-				sessions={sessions}
-				currentSessionId={sessionId}
-				currentDirectory={directory}
-				isLoading={isLoadingSessions}
-				isGitRepo={isGitRepo}
-				streamingSessionIds={streamingSessionIds}
-				onSelectSession={selectSession}
-				onNewSession={handleNewSession}
-				onRenameSession={handleRenameSession}
-				onShareSession={handleShareSession}
-				onUnshareSession={handleUnshareSession}
-				onDeleteSession={handleDeleteSession}
-				onChangeDirectory={handleChangeDirectory}
-				onOpenWorktreeManager={handleOpenWorktreeManager}
-				onOpenMultiRunLauncher={handleOpenMultiRunLauncher}
-			/>
 
 			<AgentPicker
 				agents={agents}
@@ -987,7 +829,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 8,
 		paddingHorizontal: 16,
-		paddingVertical: 10,
+		paddingVertical: 6,
 		borderBottomWidth: 1,
 	},
 	messageContainer: {
@@ -1001,10 +843,5 @@ const styles = StyleSheet.create({
 		borderTopWidth: 1,
 		paddingHorizontal: 16,
 		paddingTop: 12,
-	},
-	modelPickerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginBottom: 8,
 	},
 });

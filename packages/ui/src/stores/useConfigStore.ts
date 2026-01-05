@@ -489,40 +489,59 @@ export const useConfigStore = create<ConfigStore>()(
                             let resolvedProviderId: string | undefined;
                             let resolvedModelId: string | undefined;
 
+                            console.log("[ConfigStore] === DEFAULT MODEL SELECTION DEBUG ===");
+                            console.log("[ConfigStore] openChamberDefaults:", openChamberDefaults);
+                            console.log("[ConfigStore] resolvedAgent:", resolvedAgent?.name, resolvedAgent?.model);
+
                             // 1. Check OpenChamber settings for default model
                             if (openChamberDefaults.defaultModel) {
+                                console.log("[ConfigStore] Step 1: Found settings defaultModel:", openChamberDefaults.defaultModel);
                                 const parsed = parseModelString(openChamberDefaults.defaultModel);
+                                console.log("[ConfigStore] Parsed model string:", parsed);
                                 if (parsed && validateModel(parsed.providerId, parsed.modelId)) {
                                     resolvedProviderId = parsed.providerId;
                                     resolvedModelId = parsed.modelId;
+                                    console.log("[ConfigStore] Using settings defaultModel:", resolvedProviderId, resolvedModelId);
                                 } else {
                                     // Model no longer exists - mark for clearing
+                                    console.log("[ConfigStore] Settings defaultModel is invalid, clearing");
                                     invalidSettings.defaultModel = '';
                                 }
+                            } else {
+                                console.log("[ConfigStore] Step 1: No settings defaultModel found");
                             }
 
                             // 2. Fall back to agent's preferred model
                             if (!resolvedProviderId && resolvedAgent?.model?.providerID && resolvedAgent?.model?.modelID) {
+                                console.log("[ConfigStore] Step 2: Checking agent's preferred model:", resolvedAgent.model);
                                 if (validateModel(resolvedAgent.model.providerID, resolvedAgent.model.modelID)) {
                                     resolvedProviderId = resolvedAgent.model.providerID;
                                     resolvedModelId = resolvedAgent.model.modelID;
+                                    console.log("[ConfigStore] Using agent's preferred model:", resolvedProviderId, resolvedModelId);
                                 }
                             }
 
                             // 3. Fall back to opencode/big-pickle
                             if (!resolvedProviderId) {
+                                console.log("[ConfigStore] Step 3: Trying fallback opencode/big-pickle");
                                 if (validateModel(FALLBACK_PROVIDER_ID, FALLBACK_MODEL_ID)) {
                                     resolvedProviderId = FALLBACK_PROVIDER_ID;
                                     resolvedModelId = FALLBACK_MODEL_ID;
+                                    console.log("[ConfigStore] Using fallback:", resolvedProviderId, resolvedModelId);
                                 } else {
                                     // Last resort: first provider's first model
+                                    console.log("[ConfigStore] Step 4: Using first provider's first model");
                                     const firstProvider = providers[0];
                                     if (firstProvider && firstProvider.models[0]) {
                                         resolvedProviderId = firstProvider.id;
                                         resolvedModelId = firstProvider.models[0].id;
+                                        console.log("[ConfigStore] Using first model:", resolvedProviderId, resolvedModelId);
                                     }
                                 }
                             }
+
+                            console.log("[ConfigStore] Final selection:", resolvedProviderId, resolvedModelId);
+                            console.log("[ConfigStore] === END DEBUG ===");
 
                             if (resolvedProviderId && resolvedModelId) {
                                 set({

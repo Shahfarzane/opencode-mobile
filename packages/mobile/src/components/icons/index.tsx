@@ -1108,3 +1108,22 @@ export function ArrowsMergeIcon({
 		</Svg>
 	);
 }
+
+export function PlusCircleIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
+			<Path
+				d="M12 8v8M8 12h8"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
