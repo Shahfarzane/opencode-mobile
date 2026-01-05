@@ -458,26 +458,28 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	scrollContent: {
-		paddingHorizontal: 16,
+		paddingLeft: 10, // matches desktop pl-2.5
+		paddingRight: 4, // matches desktop pr-1
 		paddingBottom: 40,
 	},
 	newSessionButton: {
 		borderRadius: 12,
 		borderWidth: 1.5,
-		marginBottom: 16,
+		marginBottom: 12,
+		marginHorizontal: 6, // add margin to align with session items
 	},
 	newSessionContent: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		padding: 16,
+		padding: 14,
 	},
 	newSessionText: {
 		flex: 1,
 	},
 	emptyState: {
 		alignItems: "center",
-		paddingVertical: 40,
+		paddingVertical: 24,
 		gap: 4,
 	},
 });

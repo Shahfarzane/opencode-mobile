@@ -88,7 +88,7 @@ export function WorkspaceGroup({
 					]}
 					hitSlop={8}
 				>
-					<PlusIcon color={colors.mutedForeground} size={16} />
+					<PlusIcon color={`${colors.mutedForeground}B3`} size={18} />
 				</Pressable>
 			</Pressable>
 
@@ -97,7 +97,7 @@ export function WorkspaceGroup({
 				<View style={styles.sessionsContainer}>
 					{children}
 
-					{/* Show more/fewer button */}
+					{/* Show more/fewer button - matches desktop text-muted-foreground/70 */}
 					{showMoreButton && (showMoreButton.remainingCount > 0 || showMoreButton.isExpanded) && (
 						<Pressable
 							onPress={handleToggleShowMore}
@@ -106,7 +106,7 @@ export function WorkspaceGroup({
 							<Text
 								style={[
 									typography.micro,
-									{ color: colors.mutedForeground },
+									{ color: `${colors.mutedForeground}B3`, fontSize: 12 }, // 70% opacity, text-xs
 								]}
 							>
 								{showMoreButton.isExpanded
@@ -136,14 +136,15 @@ export function WorkspaceGroup({
 
 const styles = StyleSheet.create({
 	container: {
-		marginBottom: 8,
+		marginBottom: 4,
 	},
 	headerRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingVertical: 8,
-		paddingHorizontal: 4,
+		paddingTop: 6, // matches desktop pt-1.5
+		paddingBottom: 4, // matches desktop pb-1
+		paddingHorizontal: 4, // matches desktop px-1
 		borderBottomWidth: 1,
 	},
 	headerLabel: {
@@ -151,18 +152,23 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	addButton: {
-		padding: 6,
+		width: 20, // matches desktop h-5 w-5
+		height: 20,
+		alignItems: "center",
+		justifyContent: "center",
 		borderRadius: 6,
 	},
 	sessionsContainer: {
-		paddingTop: 8,
+		paddingTop: 4,
+		gap: 2, // matches desktop space-y-[0.6rem] approximately
 	},
 	showMoreButton: {
-		paddingVertical: 8,
-		paddingHorizontal: 4,
+		paddingVertical: 2,
+		paddingHorizontal: 6,
+		marginTop: 2,
 	},
 	emptyText: {
-		paddingVertical: 12,
+		paddingVertical: 4,
 		paddingHorizontal: 4,
 	},
 });

@@ -63,28 +63,38 @@ export function DirectoryRow({
 					},
 				]}
 			>
-				<View
-					style={[
-						styles.iconContainer,
-						{
-							backgroundColor: isDark
-								? "rgba(255,255,255,0.1)"
-								: "rgba(0,0,0,0.05)",
-						},
-					]}
-				>
-					<FolderIcon color={colors.mutedForeground} size={18} />
-				</View>
-				<Text
-					style={[
-						typography.uiLabel,
-						styles.directoryText,
-						{ color: colors.foreground, fontWeight: "600" },
-					]}
-					numberOfLines={1}
-				>
-					{displayDirectory}
-				</Text>
+				{({ pressed }) => (
+					<>
+						<View
+							style={[
+								styles.iconContainer,
+								{
+									backgroundColor: isDark
+										? "rgba(255,255,255,0.1)"
+										: "rgba(0,0,0,0.05)",
+								},
+							]}
+						>
+							<FolderIcon
+								color={pressed ? colors.foreground : colors.mutedForeground}
+								size={18}
+							/>
+						</View>
+						<Text
+							style={[
+								typography.uiLabel,
+								styles.directoryText,
+								{
+									color: pressed ? colors.foreground : colors.mutedForeground,
+									fontWeight: "600"
+								},
+							]}
+							numberOfLines={1}
+						>
+							{displayDirectory}
+						</Text>
+					</>
+				)}
 			</Pressable>
 
 			{isGitRepo && (
@@ -132,23 +142,23 @@ const styles = StyleSheet.create({
 	container: {
 		flexDirection: "row",
 		alignItems: "center",
-		height: 56,
-		paddingHorizontal: 16,
-		gap: 4,
+		height: 56, // matches desktop h-14
+		paddingHorizontal: 8, // matches desktop px-2
+		gap: 0,
 	},
 	directoryButton: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		paddingVertical: 8,
-		paddingHorizontal: 4,
-		borderRadius: 8,
+		gap: 8,
+		paddingVertical: 4, // matches desktop py-1
+		paddingHorizontal: 0, // matches desktop px-0
+		borderRadius: 6,
 	},
 	iconContainer: {
-		width: 32,
+		width: 32, // matches desktop h-8 w-8
 		height: 32,
-		borderRadius: 8,
+		borderRadius: 6,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -158,12 +168,12 @@ const styles = StyleSheet.create({
 	actionButtons: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 2,
+		gap: 0,
 	},
 	iconButton: {
-		width: 36,
-		height: 36,
-		borderRadius: 8,
+		width: 28, // matches desktop w-7
+		height: 40, // matches desktop h-10
+		borderRadius: 12, // matches desktop rounded-xl
 		alignItems: "center",
 		justifyContent: "center",
 	},
