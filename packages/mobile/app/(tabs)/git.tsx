@@ -1,6 +1,6 @@
+import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import * as Clipboard from "expo-clipboard";
 import {
 	ActivityIndicator,
 	Alert,
@@ -14,7 +14,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { type GitLog, type GitLogEntry, type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
+import {
+	type GitLog,
+	type GitLogEntry,
+	type GitStatus,
+	type GitStatusFile,
+	gitApi,
+} from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 
@@ -70,7 +76,13 @@ function Checkbox({ checked, color }: { checked: boolean; color: string }) {
 	);
 }
 
-function DiffStats({ insertions, deletions }: { insertions: number; deletions: number }) {
+function DiffStats({
+	insertions,
+	deletions,
+}: {
+	insertions: number;
+	deletions: number;
+}) {
 	const { colors } = useTheme();
 
 	if (insertions === 0 && deletions === 0) return null;
@@ -78,12 +90,22 @@ function DiffStats({ insertions, deletions }: { insertions: number; deletions: n
 	return (
 		<View style={styles.diffStats}>
 			{insertions > 0 && (
-				<Text style={[typography.micro, { color: colors.success, fontWeight: "600" }]}>
+				<Text
+					style={[
+						typography.micro,
+						{ color: colors.success, fontWeight: "600" },
+					]}
+				>
 					+{insertions}
 				</Text>
 			)}
 			{deletions > 0 && (
-				<Text style={[typography.micro, { color: colors.destructive, fontWeight: "600" }]}>
+				<Text
+					style={[
+						typography.micro,
+						{ color: colors.destructive, fontWeight: "600" },
+					]}
+				>
 					-{deletions}
 				</Text>
 			)}
@@ -154,7 +176,10 @@ function FileItem({
 				{file.path}
 			</Text>
 			{diffStats && (
-				<DiffStats insertions={diffStats.insertions} deletions={diffStats.deletions} />
+				<DiffStats
+					insertions={diffStats.insertions}
+					deletions={diffStats.deletions}
+				/>
 			)}
 			{actionLabel && !showCheckbox && (
 				<Pressable
@@ -251,12 +276,19 @@ function HistorySection({
 							strokeLinecap="round"
 						/>
 					</Svg>
-					<Text style={[typography.meta, { color: colors.mutedForeground, fontWeight: "500" }]}>
+					<Text
+						style={[
+							typography.meta,
+							{ color: colors.mutedForeground, fontWeight: "500" },
+						]}
+					>
 						History
 					</Text>
 					{history && (
 						<View style={[styles.countBadge, { backgroundColor: colors.card }]}>
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.micro, { color: colors.mutedForeground }]}
+							>
 								{history.total}
 							</Text>
 						</View>
@@ -295,13 +327,28 @@ function HistorySection({
 										{entry.message}
 									</Text>
 									<View style={styles.historyItemMeta}>
-										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+										<Text
+											style={[
+												typography.micro,
+												{ color: colors.mutedForeground },
+											]}
+										>
 											{entry.author_name}
 										</Text>
-										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+										<Text
+											style={[
+												typography.micro,
+												{ color: colors.mutedForeground },
+											]}
+										>
 											•
 										</Text>
-										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+										<Text
+											style={[
+												typography.micro,
+												{ color: colors.mutedForeground },
+											]}
+										>
 											{formatDate(entry.date)}
 										</Text>
 									</View>
@@ -310,14 +357,24 @@ function HistorySection({
 									onPress={() => onCopyHash(entry.hash)}
 									style={[styles.hashButton, { backgroundColor: colors.card }]}
 								>
-									<Text style={[typography.code, { color: colors.mutedForeground, fontSize: 11 }]}>
+									<Text
+										style={[
+											typography.code,
+											{ color: colors.mutedForeground, fontSize: 11 },
+										]}
+									>
 										{entry.hash.slice(0, 7)}
 									</Text>
 								</Pressable>
 							</View>
 						))
 					) : (
-						<Text style={[typography.meta, { color: colors.mutedForeground, padding: 16 }]}>
+						<Text
+							style={[
+								typography.meta,
+								{ color: colors.mutedForeground, padding: 16 },
+							]}
+						>
 							No commits yet
 						</Text>
 					)}
@@ -720,7 +777,10 @@ export default function GitScreen() {
 	const handleCopyHash = async (hash: string) => {
 		try {
 			await Clipboard.setStringAsync(hash);
-			Alert.alert("Copied", `Commit hash ${hash.slice(0, 7)} copied to clipboard`);
+			Alert.alert(
+				"Copied",
+				`Commit hash ${hash.slice(0, 7)} copied to clipboard`,
+			);
 		} catch (err) {
 			console.error("Failed to copy:", err);
 		}
@@ -806,26 +866,50 @@ export default function GitScreen() {
 							<View style={styles.selectionButtons}>
 								<Pressable
 									onPress={handleSelectAll}
-									style={[styles.selectionButton, { backgroundColor: colors.card }]}
+									style={[
+										styles.selectionButton,
+										{ backgroundColor: colors.card },
+									]}
 								>
-									<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+									<Text
+										style={[
+											typography.micro,
+											{ color: colors.mutedForeground },
+										]}
+									>
 										All
 									</Text>
 								</Pressable>
 								<Pressable
 									onPress={handleSelectNone}
-									style={[styles.selectionButton, { backgroundColor: colors.card }]}
+									style={[
+										styles.selectionButton,
+										{ backgroundColor: colors.card },
+									]}
 								>
-									<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+									<Text
+										style={[
+											typography.micro,
+											{ color: colors.mutedForeground },
+										]}
+									>
 										None
 									</Text>
 								</Pressable>
 								{selectedFiles.size > 0 && (
 									<Pressable
 										onPress={handleStageSelected}
-										style={[styles.stageAllButton, { backgroundColor: colors.primary }]}
+										style={[
+											styles.stageAllButton,
+											{ backgroundColor: colors.primary },
+										]}
 									>
-										<Text style={[typography.micro, { color: colors.primaryForeground }]}>
+										<Text
+											style={[
+												typography.micro,
+												{ color: colors.primaryForeground },
+											]}
+										>
 											Stage ({selectedFiles.size})
 										</Text>
 									</Pressable>

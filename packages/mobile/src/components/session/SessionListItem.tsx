@@ -21,7 +21,7 @@ import {
 import { typography, useTheme } from "@/theme";
 import { SessionActionsMenu } from "./SessionActionsMenu";
 
-interface SessionItemProps {
+interface SessionListItemProps {
 	session: Session;
 	isSelected: boolean;
 	isStreaming?: boolean;
@@ -60,7 +60,7 @@ function formatDateLabel(value: number | string | undefined): string {
 	});
 }
 
-export function SessionItem({
+export function SessionListItem({
 	session,
 	isSelected,
 	isStreaming = false,
@@ -75,7 +75,7 @@ export function SessionItem({
 	onUnshare,
 	onCopyLink,
 	onDelete,
-}: SessionItemProps) {
+}: SessionListItemProps) {
 	const { colors, isDark } = useTheme();
 	const [showMenu, setShowMenu] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
@@ -155,12 +155,10 @@ export function SessionItem({
 				style={[
 					styles.container,
 					{
-						paddingLeft: 14 + depth * 20,
-						backgroundColor: isSelected
-							? isDark
-								? `${colors.accent}CC`
-								: `${colors.primary}14`
-							: "transparent",
+						paddingLeft: 16 + depth * 20,
+						backgroundColor: isDark
+							? "rgba(255,255,255,0.05)"
+							: "rgba(0,0,0,0.03)",
 					},
 				]}
 			>
@@ -205,16 +203,12 @@ export function SessionItem({
 				style={({ pressed }) => [
 					styles.container,
 					{
-						paddingLeft: 14 + depth * 20,
+						paddingLeft: 16 + depth * 20,
 						backgroundColor: pressed
 							? isDark
 								? "rgba(255,255,255,0.05)"
 								: "rgba(0,0,0,0.03)"
-							: isSelected
-								? isDark
-									? `${colors.accent}CC`
-									: `${colors.primary}14`
-								: "transparent",
+							: "transparent",
 						opacity: isMissingDirectory ? 0.6 : 1,
 					},
 				]}
@@ -333,6 +327,16 @@ export function SessionItem({
 				>
 					<MoreVerticalIcon color={colors.mutedForeground} size={18} />
 				</Pressable>
+
+				{/* Selection indicator - orange bar on right edge */}
+				{isSelected && (
+					<View
+						style={[
+							styles.selectionBar,
+							{ backgroundColor: colors.primary },
+						]}
+					/>
+				)}
 			</Pressable>
 
 			<SessionActionsMenu
@@ -355,9 +359,10 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		paddingRight: 8,
-		paddingVertical: 10,
+		paddingVertical: 12,
 		borderRadius: 8,
-		marginBottom: 4,
+		marginBottom: 2,
+		position: "relative",
 	},
 	content: {
 		flex: 1,
@@ -409,5 +414,13 @@ const styles = StyleSheet.create({
 	},
 	editButton: {
 		padding: 4,
+	},
+	selectionBar: {
+		position: "absolute",
+		right: 0,
+		top: 4,
+		bottom: 4,
+		width: 4,
+		borderRadius: 2,
 	},
 });

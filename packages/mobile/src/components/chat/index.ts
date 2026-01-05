@@ -1,5 +1,5 @@
+export type { AgentInfo, ModelInfo } from "./ChatInput";
 export { ChatInput } from "./ChatInput";
-export type { ModelInfo, AgentInfo } from "./ChatInput";
 export { ChatMessage } from "./ChatMessage";
 export type { ContextUsage } from "./ContextUsageDisplay";
 export { ContextUsageDisplay } from "./ContextUsageDisplay";

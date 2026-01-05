@@ -1,10 +1,10 @@
 import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { ChevronDownIcon, ChevronRightIcon, PlusIcon } from "@/components/icons";
+import { PlusIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 
-interface SessionGroupProps {
+interface WorkspaceGroupProps {
 	groupId: string;
 	label: string;
 	sessionCount: number;
@@ -19,7 +19,7 @@ interface SessionGroupProps {
 	};
 }
 
-export function SessionGroup({
+export function WorkspaceGroup({
 	groupId,
 	label,
 	sessionCount,
@@ -28,7 +28,7 @@ export function SessionGroup({
 	onCreateSession,
 	children,
 	showMoreButton,
-}: SessionGroupProps) {
+}: WorkspaceGroupProps) {
 	const { colors, isDark } = useTheme();
 
 	const handleToggleCollapse = useCallback(async () => {
@@ -49,48 +49,31 @@ export function SessionGroup({
 	return (
 		<View style={styles.container}>
 			{/* Group Header */}
-			<View style={styles.headerRow}>
-				<Pressable
-					onPress={handleToggleCollapse}
-					style={({ pressed }) => [
-						styles.headerButton,
-						{
-							backgroundColor: pressed
-								? isDark
-									? "rgba(255,255,255,0.05)"
-									: "rgba(0,0,0,0.03)"
-								: "transparent",
-						},
+			<Pressable
+				onPress={handleToggleCollapse}
+				style={({ pressed }) => [
+					styles.headerRow,
+					{
+						backgroundColor: pressed
+							? isDark
+								? "rgba(255,255,255,0.03)"
+								: "rgba(0,0,0,0.02)"
+							: "transparent",
+						borderBottomColor: colors.border,
+					},
+				]}
+			>
+				<Text
+					style={[
+						typography.micro,
+						styles.headerLabel,
+						{ color: colors.mutedForeground },
 					]}
+					numberOfLines={1}
 				>
-					<View style={styles.headerContent}>
-						{isCollapsed ? (
-							<ChevronRightIcon color={colors.mutedForeground} size={14} />
-						) : (
-							<ChevronDownIcon color={colors.mutedForeground} size={14} />
-						)}
-						<Text
-							style={[
-								typography.micro,
-								styles.headerLabel,
-								{ color: colors.mutedForeground },
-							]}
-							numberOfLines={1}
-						>
-							{label}
-						</Text>
-						<Text
-							style={[
-								typography.micro,
-								{ color: colors.mutedForeground, opacity: 0.7 },
-							]}
-						>
-							{sessionCount}
-						</Text>
-					</View>
-				</Pressable>
+					{label}
+				</Text>
 
-				{/* Create session button */}
 				<Pressable
 					onPress={handleCreateSession}
 					style={({ pressed }) => [
@@ -107,7 +90,7 @@ export function SessionGroup({
 				>
 					<PlusIcon color={colors.mutedForeground} size={16} />
 				</Pressable>
-			</View>
+			</Pressable>
 
 			{/* Sessions */}
 			{!isCollapsed && (
@@ -115,7 +98,7 @@ export function SessionGroup({
 					{children}
 
 					{/* Show more/fewer button */}
-					{showMoreButton && showMoreButton.remainingCount > 0 && (
+					{showMoreButton && (showMoreButton.remainingCount > 0 || showMoreButton.isExpanded) && (
 						<Pressable
 							onPress={handleToggleShowMore}
 							style={styles.showMoreButton}
@@ -159,20 +142,9 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingBottom: 4,
-		borderBottomWidth: 1,
-		borderBottomColor: "rgba(128, 128, 128, 0.2)",
-	},
-	headerButton: {
-		flex: 1,
-		paddingVertical: 6,
+		paddingVertical: 8,
 		paddingHorizontal: 4,
-		borderRadius: 6,
-	},
-	headerContent: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
+		borderBottomWidth: 1,
 	},
 	headerLabel: {
 		fontWeight: "500",

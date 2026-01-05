@@ -1,6 +1,6 @@
 import Svg, { Circle, Path, Rect, type SvgProps } from "react-native-svg";
 
-interface IconProps extends Omit<SvgProps, 'width' | 'height'> {
+interface IconProps extends Omit<SvgProps, "width" | "height"> {
 	size?: number;
 	color?: string;
 }
@@ -8,7 +8,11 @@ interface IconProps extends Omit<SvgProps, 'width' | 'height'> {
 const defaultSize = 24;
 const defaultColor = "currentColor";
 
-export function ChatIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ChatIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -22,27 +26,58 @@ export function ChatIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function TerminalIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function TerminalIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
-			<Rect x="2" y="4" width="20" height="16" rx="2" stroke={color} strokeWidth={2} />
-			<Path d="M6 9l3 3-3 3M12 15h6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+			<Rect
+				x="2"
+				y="4"
+				width="20"
+				height="16"
+				rx="2"
+				stroke={color}
+				strokeWidth={2}
+			/>
+			<Path
+				d="M6 9l3 3-3 3M12 15h6"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
 		</Svg>
 	);
 }
 
-export function GitBranchIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function GitBranchIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path d="M6 3v12" stroke={color} strokeWidth={2} strokeLinecap="round" />
 			<Circle cx="6" cy="18" r="3" stroke={color} strokeWidth={2} />
 			<Circle cx="18" cy="6" r="3" stroke={color} strokeWidth={2} />
-			<Path d="M18 9a9 9 0 0 1-9 9" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M18 9a9 9 0 0 1-9 9"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function SettingsIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function SettingsIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -59,7 +94,11 @@ export function SettingsIcon({ size = defaultSize, color = defaultColor, ...prop
 	);
 }
 
-export function CodeIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function CodeIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -73,7 +112,11 @@ export function CodeIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function FolderIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function FolderIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -87,7 +130,11 @@ export function FolderIcon({ size = defaultSize, color = defaultColor, ...props 
 	);
 }
 
-export function FileIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function FileIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -97,12 +144,22 @@ export function FileIcon({ size = defaultSize, color = defaultColor, ...props }:
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
-			<Path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+			<Path
+				d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
 		</Svg>
 	);
 }
 
-export function SendIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function SendIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -116,7 +173,11 @@ export function SendIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function PlusIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function PlusIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -130,7 +191,11 @@ export function PlusIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function ChevronRightIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ChevronRightIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -144,7 +209,11 @@ export function ChevronRightIcon({ size = defaultSize, color = defaultColor, ...
 	);
 }
 
-export function ChevronDownIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ChevronDownIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -158,7 +227,11 @@ export function ChevronDownIcon({ size = defaultSize, color = defaultColor, ...p
 	);
 }
 
-export function ChevronUpIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ChevronUpIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -172,7 +245,11 @@ export function ChevronUpIcon({ size = defaultSize, color = defaultColor, ...pro
 	);
 }
 
-export function CheckIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function CheckIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -186,7 +263,11 @@ export function CheckIcon({ size = defaultSize, color = defaultColor, ...props }
 	);
 }
 
-export function XIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function XIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -200,7 +281,11 @@ export function XIcon({ size = defaultSize, color = defaultColor, ...props }: Ic
 	);
 }
 
-export function RefreshIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function RefreshIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -221,10 +306,22 @@ export function RefreshIcon({ size = defaultSize, color = defaultColor, ...props
 	);
 }
 
-export function CopyIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function CopyIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
-			<Rect x="9" y="9" width="13" height="13" rx="2" stroke={color} strokeWidth={2} />
+			<Rect
+				x="9"
+				y="9"
+				width="13"
+				height="13"
+				rx="2"
+				stroke={color}
+				strokeWidth={2}
+			/>
 			<Path
 				d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
 				stroke={color}
@@ -235,7 +332,11 @@ export function CopyIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function TrashIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function TrashIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -249,7 +350,11 @@ export function TrashIcon({ size = defaultSize, color = defaultColor, ...props }
 	);
 }
 
-export function EditIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function EditIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -269,16 +374,29 @@ export function EditIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function SearchIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function SearchIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="11" cy="11" r="8" stroke={color} strokeWidth={2} />
-			<Path d="M21 21l-4.35-4.35" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M21 21l-4.35-4.35"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function MenuIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function MenuIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -292,16 +410,32 @@ export function MenuIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function SidebarIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function SidebarIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
-			<Rect x="3" y="3" width="18" height="18" rx="2" stroke={color} strokeWidth={2} />
+			<Rect
+				x="3"
+				y="3"
+				width="18"
+				height="18"
+				rx="2"
+				stroke={color}
+				strokeWidth={2}
+			/>
 			<Path d="M9 3v18" stroke={color} strokeWidth={2} />
 		</Svg>
 	);
 }
 
-export function CommandIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function CommandIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -315,7 +449,11 @@ export function CommandIcon({ size = defaultSize, color = defaultColor, ...props
 	);
 }
 
-export function HelpIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function HelpIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
@@ -326,12 +464,21 @@ export function HelpIcon({ size = defaultSize, color = defaultColor, ...props }:
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
-			<Path d="M12 17h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M12 17h.01"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function PlaylistAddIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function PlaylistAddIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -345,25 +492,47 @@ export function PlaylistAddIcon({ size = defaultSize, color = defaultColor, ...p
 	);
 }
 
-export function InfoIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function InfoIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
-			<Path d="M12 16v-4M12 8h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M12 16v-4M12 8h.01"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function ClockIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ClockIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
-			<Path d="M12 6v6l4 2" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M12 6v6l4 2"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function BulbIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function BulbIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -372,12 +541,21 @@ export function BulbIcon({ size = defaultSize, color = defaultColor, ...props }:
 				strokeWidth={2}
 				strokeLinecap="round"
 			/>
-			<Path d="M9 21h6M10 17v4M14 17v4" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M9 21h6M10 17v4M14 17v4"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function ToolIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ToolIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -390,7 +568,11 @@ export function ToolIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function LayersIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function LayersIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -404,7 +586,11 @@ export function LayersIcon({ size = defaultSize, color = defaultColor, ...props 
 	);
 }
 
-export function MoonIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function MoonIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -418,7 +604,11 @@ export function MoonIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function LogoutIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function LogoutIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -432,7 +622,11 @@ export function LogoutIcon({ size = defaultSize, color = defaultColor, ...props 
 	);
 }
 
-export function GithubIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function GithubIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -446,23 +640,48 @@ export function GithubIcon({ size = defaultSize, color = defaultColor, ...props 
 	);
 }
 
-export function StopIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function StopIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
-			<Rect x="3" y="3" width="18" height="18" rx="2" stroke={color} strokeWidth={2} />
+			<Rect
+				x="3"
+				y="3"
+				width="18"
+				height="18"
+				rx="2"
+				stroke={color}
+				strokeWidth={2}
+			/>
 		</Svg>
 	);
 }
 
-export function LoaderIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function LoaderIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
-			<Path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function AttachmentIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function AttachmentIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -476,17 +695,39 @@ export function AttachmentIcon({ size = defaultSize, color = defaultColor, ...pr
 	);
 }
 
-export function ImageIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ImageIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
-			<Rect x="3" y="3" width="18" height="18" rx="2" stroke={color} strokeWidth={2} />
+			<Rect
+				x="3"
+				y="3"
+				width="18"
+				height="18"
+				rx="2"
+				stroke={color}
+				strokeWidth={2}
+			/>
 			<Circle cx="8.5" cy="8.5" r="1.5" fill={color} />
-			<Path d="M21 15l-5-5L5 21" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+			<Path
+				d="M21 15l-5-5L5 21"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
 		</Svg>
 	);
 }
 
-export function UploadIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function UploadIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -500,7 +741,11 @@ export function UploadIcon({ size = defaultSize, color = defaultColor, ...props 
 	);
 }
 
-export function DownloadIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function DownloadIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -514,7 +759,11 @@ export function DownloadIcon({ size = defaultSize, color = defaultColor, ...prop
 	);
 }
 
-export function ArrowUpIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ArrowUpIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -528,7 +777,11 @@ export function ArrowUpIcon({ size = defaultSize, color = defaultColor, ...props
 	);
 }
 
-export function ArrowDownIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ArrowDownIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -542,18 +795,38 @@ export function ArrowDownIcon({ size = defaultSize, color = defaultColor, ...pro
 	);
 }
 
-export function AlertCircleIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function AlertCircleIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
-			<Path d="M12 8v4M12 16h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M12 8v4M12 16h.01"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function StarIcon({ size = defaultSize, color = defaultColor, fill, ...props }: IconProps & { fill?: string }) {
+export function StarIcon({
+	size = defaultSize,
+	color = defaultColor,
+	fill,
+	...props
+}: IconProps & { fill?: string }) {
 	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill={fill || "none"} {...props}>
+		<Svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill={fill || "none"}
+			{...props}
+		>
 			<Path
 				d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
 				stroke={color}
@@ -565,7 +838,11 @@ export function StarIcon({ size = defaultSize, color = defaultColor, fill, ...pr
 	);
 }
 
-export function GridIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function GridIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Rect x="3" y="3" width="7" height="7" stroke={color} strokeWidth={2} />
@@ -576,7 +853,11 @@ export function GridIcon({ size = defaultSize, color = defaultColor, ...props }:
 	);
 }
 
-export function QuestionIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function QuestionIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
@@ -587,12 +868,21 @@ export function QuestionIcon({ size = defaultSize, color = defaultColor, ...prop
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
-			<Path d="M12 17h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M12 17h.01"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function GlobeIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function GlobeIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
@@ -606,7 +896,11 @@ export function GlobeIcon({ size = defaultSize, color = defaultColor, ...props }
 	);
 }
 
-export function PencilIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function PencilIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -620,7 +914,11 @@ export function PencilIcon({ size = defaultSize, color = defaultColor, ...props 
 	);
 }
 
-export function FileEditIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function FileEditIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -630,13 +928,29 @@ export function FileEditIcon({ size = defaultSize, color = defaultColor, ...prop
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
-			<Path d="M14 2v6h6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-			<Path d="M12 18v-6M9 15h6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+			<Path
+				d="M14 2v6h6"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<Path
+				d="M12 18v-6M9 15h6"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
 		</Svg>
 	);
 }
 
-export function RobotIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function RobotIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -652,17 +966,16 @@ export function RobotIcon({ size = defaultSize, color = defaultColor, ...props }
 				strokeWidth={2}
 				strokeLinecap="round"
 			/>
-			<Path
-				d="M9 18h6"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
+			<Path d="M9 18h6" stroke={color} strokeWidth={2} strokeLinecap="round" />
 		</Svg>
 	);
 }
 
-export function KeyIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function KeyIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -676,7 +989,11 @@ export function KeyIcon({ size = defaultSize, color = defaultColor, ...props }: 
 	);
 }
 
-export function UsersIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function UsersIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -698,7 +1015,11 @@ export function UsersIcon({ size = defaultSize, color = defaultColor, ...props }
 	);
 }
 
-export function ShareIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ShareIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="18" cy="5" r="3" stroke={color} strokeWidth={2} />
@@ -714,7 +1035,11 @@ export function ShareIcon({ size = defaultSize, color = defaultColor, ...props }
 	);
 }
 
-export function MoreVerticalIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function MoreVerticalIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Circle cx="12" cy="5" r="1.5" fill={color} />
@@ -724,7 +1049,11 @@ export function MoreVerticalIcon({ size = defaultSize, color = defaultColor, ...
 	);
 }
 
-export function WarningIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function WarningIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -734,12 +1063,21 @@ export function WarningIcon({ size = defaultSize, color = defaultColor, ...props
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
-			<Path d="M12 9v4M12 17h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+			<Path
+				d="M12 9v4M12 17h.01"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
 		</Svg>
 	);
 }
 
-export function LinkOffIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function LinkOffIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path
@@ -753,7 +1091,11 @@ export function LinkOffIcon({ size = defaultSize, color = defaultColor, ...props
 	);
 }
 
-export function ArrowsMergeIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+export function ArrowsMergeIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
 			<Path

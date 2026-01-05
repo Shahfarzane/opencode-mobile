@@ -1,7 +1,7 @@
 import BottomSheet, {
+	BottomSheetScrollView,
 	BottomSheetBackdrop,
 	type BottomSheetBackdropProps,
-	BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo, useState } from "react";
@@ -9,9 +9,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { Session } from "@/api/sessions";
 import { PlusIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
-import { DirectoryHeader } from "./DirectoryHeader";
-import { SessionGroup } from "./SessionGroup";
-import { SessionItem } from "./SessionItem";
+import { DirectoryRow } from "./DirectoryRow";
+import { SessionListItem } from "./SessionListItem";
+import { SheetHeader } from "./SheetHeader";
+import { WorkspaceGroup } from "./WorkspaceGroup";
 
 // Types for session tree structure
 type SessionNode = {
@@ -28,7 +29,7 @@ type SessionGroupData = {
 	sessions: SessionNode[];
 };
 
-interface SessionBottomSheetProps {
+interface SessionSheetProps {
 	sessions: Session[];
 	currentSessionId: string | null;
 	currentDirectory: string | null;
@@ -44,7 +45,6 @@ interface SessionBottomSheetProps {
 	onChangeDirectory?: () => void;
 	onOpenWorktreeManager?: () => void;
 	onOpenMultiRunLauncher?: () => void;
-	onClose: () => void;
 }
 
 const MAX_VISIBLE_SESSIONS = 7;
@@ -61,8 +61,8 @@ function formatDirectoryName(directory: string | null): string {
 	return parts[parts.length - 1] || "/";
 }
 
-export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProps>(
-	function SessionBottomSheet(
+export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
+	function SessionSheet(
 		{
 			sessions,
 			currentSessionId,
@@ -79,16 +79,21 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 			onChangeDirectory,
 			onOpenWorktreeManager,
 			onOpenMultiRunLauncher,
-			onClose,
 		},
 		ref,
 	) {
-		const { colors, isDark } = useTheme();
-		const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-		const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
-		const [expandedSessionGroups, setExpandedSessionGroups] = useState<Set<string>>(new Set());
+		const { colors } = useTheme();
+		const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+			new Set(),
+		);
+		const [expandedParents, setExpandedParents] = useState<Set<string>>(
+			new Set(),
+		);
+		const [expandedSessionGroups, setExpandedSessionGroups] = useState<
+			Set<string>
+		>(new Set());
 
-		const snapPoints = useMemo(() => ["50%", "85%"], []);
+		const snapPoints = useMemo(() => ["50%", "90%"], []);
 
 		// Sort sessions by creation time (newest first)
 		const sortedSessions = useMemo(() => {
@@ -190,28 +195,6 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 			});
 		}, [sortedSessions, sessionMap, currentDirectory, buildNode]);
 
-		const handleSheetChanges = useCallback(
-			(index: number) => {
-				if (index === -1) {
-					onClose();
-				}
-			},
-			[onClose],
-		);
-
-		const renderBackdrop = useCallback(
-			(props: BottomSheetBackdropProps) => (
-				<BottomSheetBackdrop
-					{...props}
-					disappearsOnIndex={-1}
-					appearsOnIndex={0}
-					opacity={0.3}
-					pressBehavior="close"
-				/>
-			),
-			[],
-		);
-
 		const handleSelectSession = useCallback(
 			async (session: Session) => {
 				await Haptics.selectionAsync();
@@ -273,6 +256,22 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 			return count;
 		}, []);
 
+		const handleDismiss = useCallback(() => {
+			(ref as React.RefObject<BottomSheet>)?.current?.close();
+		}, [ref]);
+
+		const renderBackdrop = useCallback(
+			(props: BottomSheetBackdropProps) => (
+				<BottomSheetBackdrop
+					{...props}
+					disappearsOnIndex={-1}
+					appearsOnIndex={0}
+					opacity={0.5}
+				/>
+			),
+			[],
+		);
+
 		const renderSessionNode = useCallback(
 			(node: SessionNode, depth = 0): React.ReactNode => {
 				const session = node.session;
@@ -304,7 +303,7 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 
 				return (
 					<View key={session.id}>
-						<SessionItem
+						<SessionListItem
 							session={session}
 							isSelected={isSelected}
 							isStreaming={isStreaming}
@@ -312,7 +311,9 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 							childCount={childCount}
 							isExpanded={isExpanded}
 							onSelect={() => handleSelectSession(session)}
-							onToggleExpand={hasChildren ? () => toggleParent(session.id) : undefined}
+							onToggleExpand={
+								hasChildren ? () => toggleParent(session.id) : undefined
+							}
 							onRename={handleRename}
 							onShare={handleShare}
 							onUnshare={handleUnshare}
@@ -346,35 +347,14 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 				ref={ref}
 				index={-1}
 				snapPoints={snapPoints}
-				onChange={handleSheetChanges}
+				enablePanDownToClose={true}
+				backgroundStyle={{ backgroundColor: colors.background }}
+				handleIndicatorStyle={{ backgroundColor: colors.mutedForeground }}
 				backdropComponent={renderBackdrop}
-				enablePanDownToClose
-				backgroundStyle={{
-					backgroundColor: colors.background,
-					borderTopLeftRadius: 20,
-					borderTopRightRadius: 20,
-					borderWidth: 1,
-					borderBottomWidth: 0,
-					borderColor: colors.border,
-					shadowColor: "#000",
-					shadowOffset: { width: 0, height: -4 },
-					shadowOpacity: isDark ? 0.3 : 0.1,
-					shadowRadius: 12,
-					elevation: 16,
-				}}
-				handleIndicatorStyle={{
-					backgroundColor: colors.mutedForeground,
-					width: 40,
-				}}
 			>
-				<View style={styles.header}>
-					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
-						Sessions
-					</Text>
-				</View>
+				<SheetHeader title="Sessions" onClose={handleDismiss} />
 
-				{/* Directory Controls */}
-				<DirectoryHeader
+				<DirectoryRow
 					directory={currentDirectory}
 					isGitRepo={isGitRepo}
 					onChangeDirectory={onChangeDirectory}
@@ -444,7 +424,7 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 							const remainingCount = group.sessions.length - visibleSessions.length;
 
 							return (
-								<SessionGroup
+								<WorkspaceGroup
 									key={group.id}
 									groupId={group.id}
 									label={group.label}
@@ -463,7 +443,7 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 									}
 								>
 									{visibleSessions.map((node) => renderSessionNode(node, 0))}
-								</SessionGroup>
+								</WorkspaceGroup>
 							);
 						})
 					)}
@@ -474,10 +454,6 @@ export const SessionBottomSheet = forwardRef<BottomSheet, SessionBottomSheetProp
 );
 
 const styles = StyleSheet.create({
-	header: {
-		paddingHorizontal: 20,
-		paddingVertical: 12,
-	},
 	scrollView: {
 		flex: 1,
 	},
@@ -506,4 +482,4 @@ const styles = StyleSheet.create({
 	},
 });
 
-export default SessionBottomSheet;
+export default SessionSheet;
