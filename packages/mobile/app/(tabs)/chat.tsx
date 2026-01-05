@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { filesApi, gitApi, type Session, sessionsApi } from "../../src/api";
+import { filesApi, gitApi, providersApi, type Provider, type Session, sessionsApi } from "../../src/api";
 import type {
 	Message,
 	MessagePart,
@@ -23,6 +23,7 @@ import {
 	ChatInput,
 	convertStreamingPart,
 	MessageList,
+	ModelControls,
 	PermissionCard,
 } from "../../src/components/chat";
 import { SessionSheet } from "../../src/components/session";
@@ -34,7 +35,7 @@ import {
 import type { MessagePart as StreamingPart } from "../../src/lib/streaming";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
-import { useContextUsageContext, useSessionSheetContext } from "./context";
+import { useContextUsageContext, useSessionSheetContext } from "./_context";
 
 const DEFAULT_CONTEXT_LIMIT = 200000;
 const DEFAULT_OUTPUT_LIMIT = 8192;
@@ -80,14 +81,26 @@ export default function ChatScreen() {
 	const [permissions, setPermissions] = useState<Permission[]>([]);
 	const [isGitRepo, setIsGitRepo] = useState(false);
 
-	// Model and agent info for ChatInput display
-	const [modelInfo] = useState<ModelInfo>({
-		modelId: "claude-sonnet-4-20250514",
-		modelName: "Claude Sonnet 4",
-		providerId: "anthropic",
-		providerName: "Anthropic",
-	});
+	// Provider and model state
+	const [providers, setProviders] = useState<Provider[]>([]);
+	const [currentProviderId, setCurrentProviderId] = useState<string | undefined>();
+	const [currentModelId, setCurrentModelId] = useState<string | undefined>();
+	const [showModelPicker, setShowModelPicker] = useState(false);
 	const [activeAgent] = useState<AgentInfo | undefined>(undefined);
+
+	// Derive modelInfo from current selection
+	const modelInfo: ModelInfo | undefined = useMemo(() => {
+		if (!currentProviderId || !currentModelId) return undefined;
+		const provider = providers.find((p) => p.id === currentProviderId);
+		const model = provider?.models?.find((m) => m.id === currentModelId);
+		if (!provider || !model) return undefined;
+		return {
+			modelId: model.id,
+			modelName: model.name,
+			providerId: provider.id,
+			providerName: provider.name,
+		};
+	}, [providers, currentProviderId, currentModelId]);
 
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
@@ -267,6 +280,34 @@ export default function ChatScreen() {
 
 		checkGitRepo();
 	}, [isConnected, directory]);
+
+	// Fetch providers and set default model
+	useEffect(() => {
+		if (!isConnected) return;
+
+		const fetchProviders = async () => {
+			try {
+				const data = await providersApi.list();
+				setProviders(data);
+
+				// Set default provider/model if not already set
+				if (!currentProviderId && data.length > 0) {
+					const defaultProvider = data.find((p) => p.id === "anthropic") || data[0];
+					if (defaultProvider) {
+						setCurrentProviderId(defaultProvider.id);
+						const defaultModel = defaultProvider.models?.[0];
+						if (defaultModel) {
+							setCurrentModelId(defaultModel.id);
+						}
+					}
+				}
+			} catch (err) {
+				console.error("Failed to fetch providers:", err);
+			}
+		};
+
+		fetchProviders();
+	}, [isConnected, currentProviderId]);
 
 	useEffect(() => {
 		const assistantMessages = messages.filter((m) => m.role === "assistant");
@@ -568,7 +609,7 @@ export default function ChatScreen() {
 
 				setMessages((prev) => [...prev, assistantMessage]);
 
-				await sessionsApi.sendMessage(currentSessionId, content);
+				await sessionsApi.sendMessage(currentSessionId, content, currentProviderId, currentModelId);
 			} catch (error) {
 				console.error("Failed to send message:", error);
 				const errorMessage: Message = {
@@ -583,8 +624,25 @@ export default function ChatScreen() {
 				partsMapRef.current.clear();
 			}
 		},
-		[isConnected, sessionId, isLoading, createSession],
+		[isConnected, sessionId, isLoading, createSession, currentProviderId, currentModelId],
 	);
+
+	// Model change handlers
+	const handleProviderChange = useCallback((providerId: string) => {
+		setCurrentProviderId(providerId);
+		// Reset model when provider changes
+		const provider = providers.find((p) => p.id === providerId);
+		const defaultModel = provider?.models?.[0];
+		if (defaultModel) {
+			setCurrentModelId(defaultModel.id);
+		}
+	}, [providers]);
+
+	const handleModelChange = useCallback((providerId: string, modelId: string) => {
+		setCurrentProviderId(providerId);
+		setCurrentModelId(modelId);
+		setShowModelPicker(false);
+	}, []);
 
 	const HEADER_HEIGHT = 52;
 	const keyboardOffset = HEADER_HEIGHT + insets.top;
@@ -685,6 +743,14 @@ export default function ChatScreen() {
 					onFileSearch={handleFileSearch}
 					modelInfo={modelInfo}
 					activeAgent={activeAgent}
+					onModelPress={() => {
+						// TODO: Open model picker modal
+						console.log("Model picker pressed");
+					}}
+					onAgentPress={() => {
+						// TODO: Open agent picker modal
+						console.log("Agent picker pressed");
+					}}
 				/>
 			</View>
 

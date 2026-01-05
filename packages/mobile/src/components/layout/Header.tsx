@@ -79,15 +79,14 @@ export function Header({
 		>
 			<View style={styles.content}>
 				<View style={styles.leftSection}>
-					{onSessionsPress && (
-						<Pressable
-							onPress={onSessionsPress}
-							style={styles.menuButton}
-							hitSlop={8}
-						>
-							<SidebarIcon color={colors.mutedForeground} size={20} />
-						</Pressable>
-					)}
+					{/* Always show sidebar button - use onSessionsPress on chat tab, onMenuPress otherwise */}
+					<Pressable
+						onPress={onSessionsPress || onMenuPress}
+						style={styles.menuButton}
+						hitSlop={8}
+					>
+						<SidebarIcon color={colors.mutedForeground} size={20} />
+					</Pressable>
 					{showContextUsage && (
 						<ContextUsageDisplay usage={contextUsage} size="compact" />
 					)}
