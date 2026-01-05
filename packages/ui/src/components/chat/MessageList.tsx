@@ -1,4 +1,4 @@
-import type { Message, Part } from "@opencode-ai/sdk";
+import type { Message, Part } from "@opencode-ai/sdk/v2";
 import React from "react";
 import type {
 	AnimationHandlers,
@@ -9,6 +9,15 @@ import type { Permission } from "@/types/permission";
 import ChatMessage from "./ChatMessage";
 import { useTurnGrouping } from "./hooks/useTurnGrouping";
 import { PermissionCard } from "./PermissionCard";
+import React from 'react';
+import type { Message, Part } from '@opencode-ai/sdk/v2';
+
+import ChatMessage from './ChatMessage';
+import { PermissionCard } from './PermissionCard';
+import type { Permission } from '@/types/permission';
+import type { AnimationHandlers, ContentChangeReason } from '@/hooks/useChatScrollManager';
+import { filterSyntheticParts } from '@/lib/messages/synthetic';
+import { useTurnGrouping } from './hooks/useTurnGrouping';
 
 interface MessageListProps {
 	messages: { info: Message; parts: Part[] }[];

@@ -1,4 +1,4 @@
-import type { Part } from "@opencode-ai/sdk";
+import type { Part } from "@opencode-ai/sdk/v2";
 import {
 	RiArrowDownSLine,
 	RiArrowRightSLine,
@@ -10,6 +10,13 @@ import React from "react";
 import { ScrollableOverlay } from "@/components/ui/ScrollableOverlay";
 import type { ContentChangeReason } from "@/hooks/useChatScrollManager";
 import { cn } from "@/lib/utils";
+import React from 'react';
+import type { ComponentType } from 'react';
+import type { Part } from '@opencode-ai/sdk/v2';
+import { RiArrowDownSLine, RiArrowRightSLine, RiBrainAi3Line, RiChatAi3Line } from '@remixicon/react';
+import { cn } from '@/lib/utils';
+import type { ContentChangeReason } from '@/hooks/useChatScrollManager';
+import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 
 type PartWithText = Part & { text?: string; content?: string };
 

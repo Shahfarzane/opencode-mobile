@@ -400,10 +400,8 @@ export const DirectoryTree: React.FC<DirectoryTreeProps> = ({
 
         const tempClient = opencodeClient.getApiClient();
         const response = await tempClient.file.list({
-          query: {
-            path: '.',
-            directory: path
-          }
+          path: '.',
+          directory: path
         });
 
         if (!response.data) {

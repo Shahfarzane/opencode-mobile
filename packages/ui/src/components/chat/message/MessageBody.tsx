@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Part } from '@opencode-ai/sdk';
+import type { Part } from '@opencode-ai/sdk/v2';
 
 import AssistantTextPart from './parts/AssistantTextPart';
 import UserTextPart from './parts/UserTextPart';
@@ -8,7 +8,7 @@ import ToolPart from './parts/ToolPart';
 import ProgressiveGroup from './parts/ProgressiveGroup';
 import MigratingPart from './parts/MigratingPart';
 import { MessageFilesDisplay } from '../FileAttachment';
-import type { ToolPart as ToolPartType } from '@opencode-ai/sdk';
+import type { ToolPart as ToolPartType } from '@opencode-ai/sdk/v2';
 import type { StreamPhase, ToolPopupContent, AgentMentionInfo } from './types';
 import type { TurnGroupingContext } from '../hooks/useTurnGrouping';
 import { cn } from '@/lib/utils';

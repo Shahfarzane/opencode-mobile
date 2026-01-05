@@ -1,4 +1,4 @@
-import type { Session } from '@opencode-ai/sdk';
+import type { Session } from '@opencode-ai/sdk/v2';
 import type { WorktreeMetadata } from '@/types/worktree';
 
 export type SessionDeleteRequest = {

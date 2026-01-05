@@ -1,4 +1,4 @@
-import type { Session, Message, Part } from "@opencode-ai/sdk";
+import type { Session, Message, Part } from "@opencode-ai/sdk/v2";
 import type { Permission, PermissionResponse } from "@/types/permission";
 
 export interface AttachedFile {
