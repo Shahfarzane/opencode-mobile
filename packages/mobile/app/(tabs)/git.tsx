@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
+import * as Clipboard from "expo-clipboard";
 import {
 	ActivityIndicator,
 	Alert,
@@ -13,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
+import { type GitLog, type GitLogEntry, type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 
@@ -43,16 +44,71 @@ function getFileStatus(file: GitStatusFile): FileStatusType {
 	return "modified";
 }
 
+function Checkbox({ checked, color }: { checked: boolean; color: string }) {
+	return (
+		<View
+			style={[
+				styles.checkbox,
+				{
+					borderColor: checked ? color : `${color}40`,
+					backgroundColor: checked ? color : "transparent",
+				},
+			]}
+		>
+			{checked && (
+				<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+					<Path
+						d="M20 6L9 17l-5-5"
+						stroke="white"
+						strokeWidth={3}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					/>
+				</Svg>
+			)}
+		</View>
+	);
+}
+
+function DiffStats({ insertions, deletions }: { insertions: number; deletions: number }) {
+	const { colors } = useTheme();
+
+	if (insertions === 0 && deletions === 0) return null;
+
+	return (
+		<View style={styles.diffStats}>
+			{insertions > 0 && (
+				<Text style={[typography.micro, { color: colors.success, fontWeight: "600" }]}>
+					+{insertions}
+				</Text>
+			)}
+			{deletions > 0 && (
+				<Text style={[typography.micro, { color: colors.destructive, fontWeight: "600" }]}>
+					-{deletions}
+				</Text>
+			)}
+		</View>
+	);
+}
+
 function FileItem({
 	file,
 	onPress,
 	onLongPress,
 	actionLabel,
+	isSelected,
+	onToggleSelect,
+	diffStats,
+	showCheckbox = false,
 }: {
 	file: GitStatusFile;
 	onPress?: () => void;
 	onLongPress?: () => void;
 	actionLabel?: string;
+	isSelected?: boolean;
+	onToggleSelect?: () => void;
+	diffStats?: { insertions: number; deletions: number };
+	showCheckbox?: boolean;
 }) {
 	const { colors } = useTheme();
 	const status = getFileStatus(file);
@@ -71,13 +127,16 @@ function FileItem({
 
 	return (
 		<Pressable
-			onPress={onPress}
+			onPress={showCheckbox ? onToggleSelect : onPress}
 			onLongPress={onLongPress}
 			style={({ pressed }) => [
 				styles.fileItem,
 				pressed && { backgroundColor: colors.muted },
 			]}
 		>
+			{showCheckbox && (
+				<Checkbox checked={isSelected ?? false} color={colors.primary} />
+			)}
 			<View style={styles.statusIcon}>
 				<Text
 					style={[
@@ -94,7 +153,10 @@ function FileItem({
 			>
 				{file.path}
 			</Text>
-			{actionLabel && (
+			{diffStats && (
+				<DiffStats insertions={diffStats.insertions} deletions={diffStats.deletions} />
+			)}
+			{actionLabel && !showCheckbox && (
 				<Pressable
 					onPress={onLongPress}
 					style={[styles.actionButton, { backgroundColor: colors.muted }]}
@@ -143,6 +205,124 @@ function EmptyState({ message }: { message: string }) {
 			>
 				{message}
 			</Text>
+		</View>
+	);
+}
+
+function HistorySection({
+	history,
+	isLoading,
+	isExpanded,
+	onToggle,
+	onCopyHash,
+}: {
+	history: GitLog | null;
+	isLoading: boolean;
+	isExpanded: boolean;
+	onToggle: () => void;
+	onCopyHash: (hash: string) => void;
+}) {
+	const { colors } = useTheme();
+
+	const formatDate = (dateStr: string) => {
+		const date = new Date(dateStr);
+		const now = new Date();
+		const diff = now.getTime() - date.getTime();
+		const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+		if (days === 0) return "Today";
+		if (days === 1) return "Yesterday";
+		if (days < 7) return `${days} days ago`;
+		return date.toLocaleDateString();
+	};
+
+	return (
+		<View style={[styles.historySection, { borderTopColor: colors.border }]}>
+			<Pressable
+				onPress={onToggle}
+				style={[styles.historySectionHeader, { backgroundColor: colors.muted }]}
+			>
+				<View style={styles.historySectionTitle}>
+					<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+						<Path
+							d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+							stroke={colors.mutedForeground}
+							strokeWidth={2}
+							strokeLinecap="round"
+						/>
+					</Svg>
+					<Text style={[typography.meta, { color: colors.mutedForeground, fontWeight: "500" }]}>
+						History
+					</Text>
+					{history && (
+						<View style={[styles.countBadge, { backgroundColor: colors.card }]}>
+							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+								{history.total}
+							</Text>
+						</View>
+					)}
+				</View>
+				<Svg
+					width={16}
+					height={16}
+					viewBox="0 0 24 24"
+					fill="none"
+					style={{ transform: [{ rotate: isExpanded ? "180deg" : "0deg" }] }}
+				>
+					<Path
+						d="M6 9l6 6 6-6"
+						stroke={colors.mutedForeground}
+						strokeWidth={2}
+						strokeLinecap="round"
+					/>
+				</Svg>
+			</Pressable>
+
+			{isExpanded && (
+				<View style={styles.historyList}>
+					{isLoading ? (
+						<View style={styles.historyLoading}>
+							<ActivityIndicator size="small" color={colors.primary} />
+						</View>
+					) : history && history.all.length > 0 ? (
+						history.all.slice(0, 20).map((entry) => (
+							<View key={entry.hash} style={styles.historyItem}>
+								<View style={styles.historyItemContent}>
+									<Text
+										style={[typography.meta, { color: colors.foreground }]}
+										numberOfLines={1}
+									>
+										{entry.message}
+									</Text>
+									<View style={styles.historyItemMeta}>
+										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+											{entry.author_name}
+										</Text>
+										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+											•
+										</Text>
+										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+											{formatDate(entry.date)}
+										</Text>
+									</View>
+								</View>
+								<Pressable
+									onPress={() => onCopyHash(entry.hash)}
+									style={[styles.hashButton, { backgroundColor: colors.card }]}
+								>
+									<Text style={[typography.code, { color: colors.mutedForeground, fontSize: 11 }]}>
+										{entry.hash.slice(0, 7)}
+									</Text>
+								</Pressable>
+							</View>
+						))
+					) : (
+						<Text style={[typography.meta, { color: colors.mutedForeground, padding: 16 }]}>
+							No commits yet
+						</Text>
+					)}
+				</View>
+			)}
 		</View>
 	);
 }
@@ -309,6 +489,14 @@ export default function GitScreen() {
 	const [isPushing, setIsPushing] = useState(false);
 	const [isPulling, setIsPulling] = useState(false);
 
+	// Selection state for batch operations
+	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+
+	// History state
+	const [history, setHistory] = useState<GitLog | null>(null);
+	const [historyExpanded, setHistoryExpanded] = useState(false);
+	const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
 	const loadStatus = useCallback(async () => {
 		if (!isConnected || !directory) {
 			setError("Not connected or no directory selected");
@@ -341,6 +529,14 @@ export default function GitScreen() {
 	useEffect(() => {
 		loadStatus();
 	}, [loadStatus]);
+
+	// File categorization - computed before handlers that use them
+	const stagedFiles =
+		status?.files.filter((f) => getFileStatus(f) === "staged") ?? [];
+	const modifiedFiles =
+		status?.files.filter((f) => getFileStatus(f) === "modified") ?? [];
+	const untrackedFiles =
+		status?.files.filter((f) => getFileStatus(f) === "untracked") ?? [];
 
 	const handleRefresh = useCallback(() => {
 		setIsRefreshing(true);
@@ -460,12 +656,94 @@ export default function GitScreen() {
 		}
 	};
 
-	const stagedFiles =
-		status?.files.filter((f) => getFileStatus(f) === "staged") ?? [];
-	const modifiedFiles =
-		status?.files.filter((f) => getFileStatus(f) === "modified") ?? [];
-	const untrackedFiles =
-		status?.files.filter((f) => getFileStatus(f) === "untracked") ?? [];
+	// Selection handlers
+	const handleToggleSelect = (path: string) => {
+		setSelectedFiles((prev) => {
+			const next = new Set(prev);
+			if (next.has(path)) {
+				next.delete(path);
+			} else {
+				next.add(path);
+			}
+			return next;
+		});
+	};
+
+	const handleSelectAll = () => {
+		const allPaths = [...modifiedFiles, ...untrackedFiles].map((f) => f.path);
+		setSelectedFiles(new Set(allPaths));
+	};
+
+	const handleSelectNone = () => {
+		setSelectedFiles(new Set());
+	};
+
+	const handleStageSelected = async () => {
+		if (selectedFiles.size === 0) return;
+		try {
+			for (const path of selectedFiles) {
+				await gitApi.stageFile(path);
+			}
+			setSelectedFiles(new Set());
+			await loadStatus();
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to stage files",
+			);
+		}
+	};
+
+	// History handlers
+	const loadHistory = useCallback(async () => {
+		if (!isConnected || !directory) return;
+
+		setIsLoadingHistory(true);
+		try {
+			const log = await gitApi.getLog(50);
+			setHistory(log);
+		} catch (err) {
+			console.error("Failed to load history:", err);
+		} finally {
+			setIsLoadingHistory(false);
+		}
+	}, [isConnected, directory]);
+
+	const handleToggleHistory = () => {
+		const newExpanded = !historyExpanded;
+		setHistoryExpanded(newExpanded);
+		if (newExpanded && !history) {
+			loadHistory();
+		}
+	};
+
+	const handleCopyHash = async (hash: string) => {
+		try {
+			await Clipboard.setStringAsync(hash);
+			Alert.alert("Copied", `Commit hash ${hash.slice(0, 7)} copied to clipboard`);
+		} catch (err) {
+			console.error("Failed to copy:", err);
+		}
+	};
+
+	// Commit & Push handler
+	const handleCommitAndPush = async (message: string) => {
+		setIsCommitting(true);
+		try {
+			await gitApi.commit(message);
+			await gitApi.push();
+			setShowCommitSheet(false);
+			await loadStatus();
+			Alert.alert("Success", "Changes committed and pushed successfully");
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to commit and push",
+			);
+		} finally {
+			setIsCommitting(false);
+		}
+	};
 
 	const renderContent = () => {
 		if (isLoading) {
@@ -488,6 +766,8 @@ export default function GitScreen() {
 			return <EmptyState message="Working tree clean" />;
 		}
 
+		const allUnstagedFiles = [...modifiedFiles, ...untrackedFiles];
+
 		return (
 			<ScrollView
 				style={styles.scrollView}
@@ -504,61 +784,81 @@ export default function GitScreen() {
 								file={file}
 								onLongPress={() => handleUnstageFile(file.path)}
 								actionLabel="Unstage"
+								diffStats={status?.diffStats?.[file.path]}
 							/>
 						))}
 					</View>
 				)}
 
-				{(modifiedFiles.length > 0 || untrackedFiles.length > 0) && (
-					<View
-						style={[styles.changesHeader, { backgroundColor: colors.muted }]}
-					>
-						<Text
-							style={[
-								typography.meta,
-								{ color: colors.mutedForeground, fontWeight: "500" },
-							]}
+				{allUnstagedFiles.length > 0 && (
+					<View>
+						<View
+							style={[styles.changesHeader, { backgroundColor: colors.muted }]}
 						>
-							Changes ({modifiedFiles.length + untrackedFiles.length})
-						</Text>
-						<Pressable
-							onPress={handleStageAll}
-							style={[styles.stageAllButton, { backgroundColor: colors.card }]}
-						>
-							<Text style={[typography.micro, { color: colors.primary }]}>
-								Stage All
+							<Text
+								style={[
+									typography.meta,
+									{ color: colors.mutedForeground, fontWeight: "500" },
+								]}
+							>
+								Changes ({allUnstagedFiles.length})
 							</Text>
-						</Pressable>
-					</View>
-				)}
+							<View style={styles.selectionButtons}>
+								<Pressable
+									onPress={handleSelectAll}
+									style={[styles.selectionButton, { backgroundColor: colors.card }]}
+								>
+									<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+										All
+									</Text>
+								</Pressable>
+								<Pressable
+									onPress={handleSelectNone}
+									style={[styles.selectionButton, { backgroundColor: colors.card }]}
+								>
+									<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+										None
+									</Text>
+								</Pressable>
+								{selectedFiles.size > 0 && (
+									<Pressable
+										onPress={handleStageSelected}
+										style={[styles.stageAllButton, { backgroundColor: colors.primary }]}
+									>
+										<Text style={[typography.micro, { color: colors.primaryForeground }]}>
+											Stage ({selectedFiles.size})
+										</Text>
+									</Pressable>
+								)}
+							</View>
+						</View>
 
-				{modifiedFiles.length > 0 && (
-					<View>
-						{modifiedFiles.map((file) => (
+						{allUnstagedFiles.map((file) => (
 							<FileItem
 								key={file.path}
 								file={file}
-								onPress={() => handleStageFile(file.path)}
-								onLongPress={() => handleRevertFile(file.path)}
-								actionLabel="Stage"
+								showCheckbox
+								isSelected={selectedFiles.has(file.path)}
+								onToggleSelect={() => handleToggleSelect(file.path)}
+								onLongPress={() =>
+									getFileStatus(file) === "modified"
+										? handleRevertFile(file.path)
+										: undefined
+								}
+								diffStats={status?.diffStats?.[file.path]}
 							/>
 						))}
 					</View>
 				)}
 
-				{untrackedFiles.length > 0 && (
-					<View>
-						<SectionHeader title="Untracked" count={untrackedFiles.length} />
-						{untrackedFiles.map((file) => (
-							<FileItem
-								key={file.path}
-								file={file}
-								onPress={() => handleStageFile(file.path)}
-								actionLabel="Stage"
-							/>
-						))}
-					</View>
-				)}
+				{/* History Section */}
+				<HistorySection
+					history={history}
+					isLoading={isLoadingHistory}
+					isExpanded={historyExpanded}
+					onToggle={handleToggleHistory}
+					onCopyHash={handleCopyHash}
+				/>
 			</ScrollView>
 		);
 	};
@@ -872,5 +1172,72 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: "transparent",
 		paddingVertical: 12,
+	},
+	checkbox: {
+		width: 20,
+		height: 20,
+		borderRadius: 4,
+		borderWidth: 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	diffStats: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+	},
+	selectionButtons: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+	},
+	selectionButton: {
+		borderRadius: 4,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+	},
+	historySection: {
+		borderTopWidth: 1,
+		marginTop: 16,
+	},
+	historySectionHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+	historySectionTitle: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	historyList: {
+		paddingBottom: 16,
+	},
+	historyLoading: {
+		padding: 16,
+		alignItems: "center",
+	},
+	historyItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+	},
+	historyItemContent: {
+		flex: 1,
+		marginRight: 8,
+	},
+	historyItemMeta: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		marginTop: 2,
+	},
+	hashButton: {
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 4,
 	},
 });

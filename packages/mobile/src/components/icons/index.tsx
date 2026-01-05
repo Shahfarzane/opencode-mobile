@@ -697,3 +697,72 @@ export function UsersIcon({ size = defaultSize, color = defaultColor, ...props }
 		</Svg>
 	);
 }
+
+export function ShareIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Circle cx="18" cy="5" r="3" stroke={color} strokeWidth={2} />
+			<Circle cx="6" cy="12" r="3" stroke={color} strokeWidth={2} />
+			<Circle cx="18" cy="19" r="3" stroke={color} strokeWidth={2} />
+			<Path
+				d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
+		</Svg>
+	);
+}
+
+export function MoreVerticalIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Circle cx="12" cy="5" r="1.5" fill={color} />
+			<Circle cx="12" cy="12" r="1.5" fill={color} />
+			<Circle cx="12" cy="19" r="1.5" fill={color} />
+		</Svg>
+	);
+}
+
+export function WarningIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Path
+				d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<Path d="M12 9v4M12 17h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+		</Svg>
+	);
+}
+
+export function LinkOffIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Path
+				d="M9 17H7A5 5 0 0 1 7 7M15 7h2a5 5 0 0 1 4 8M8 12h4M2 2l20 20"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+export function ArrowsMergeIcon({ size = defaultSize, color = defaultColor, ...props }: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Path
+				d="M7 3v6l5 5 5-5V3M12 14v7"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}

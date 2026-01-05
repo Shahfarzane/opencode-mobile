@@ -82,6 +82,22 @@ export interface GeneratedCommitMessage {
 	highlights: string[];
 }
 
+export interface GitLogEntry {
+	hash: string;
+	date: string;
+	message: string;
+	refs: string;
+	body: string;
+	author_name: string;
+	author_email: string;
+}
+
+export interface GitLog {
+	all: GitLogEntry[];
+	latest: GitLogEntry | null;
+	total: number;
+}
+
 export const gitApi = {
 	async checkIsGitRepository(): Promise<boolean> {
 		const data = await apiGet<{ isGitRepository: boolean }>(
@@ -238,6 +254,30 @@ export const gitApi = {
 		return apiGet<{ diff: string }>(
 			`${API_BASE}/diff`,
 			{ path, staged: staged ? "true" : undefined },
+			true,
+		);
+	},
+
+	async getLog(maxCount = 50): Promise<GitLog> {
+		return apiGet<GitLog>(
+			`${API_BASE}/log`,
+			{ maxCount: String(maxCount) },
+			true,
+		);
+	},
+
+	async stageFiles(paths: string[]): Promise<{ success: boolean }> {
+		return apiPost<{ success: boolean }>(
+			`${API_BASE}/stage-multiple`,
+			{ paths },
+			true,
+		);
+	},
+
+	async unstageFiles(paths: string[]): Promise<{ success: boolean }> {
+		return apiPost<{ success: boolean }>(
+			`${API_BASE}/unstage-multiple`,
+			{ paths },
 			true,
 		);
 	},

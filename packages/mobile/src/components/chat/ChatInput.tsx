@@ -38,6 +38,18 @@ type AutocompleteItem = AgentItem | CommandItem | FileItem;
 
 type EditPermissionMode = "ask" | "allow" | "full" | "deny";
 
+interface ModelInfo {
+	modelId: string;
+	modelName: string;
+	providerId: string;
+	providerName: string;
+}
+
+interface AgentInfo {
+	name: string;
+	color?: string;
+}
+
 interface ChatInputProps {
 	onSend: (message: string) => void;
 	isLoading?: boolean;
@@ -48,6 +60,8 @@ interface ChatInputProps {
 		query: string,
 	) => Promise<Array<{ name: string; path: string; extension?: string }>>;
 	permissionMode?: EditPermissionMode;
+	modelInfo?: ModelInfo;
+	activeAgent?: AgentInfo;
 }
 
 function AddIcon({ color, size = 20 }: { color: string; size?: number }) {
@@ -297,6 +311,69 @@ function getPermissionModeColors(
 	return null;
 }
 
+// Provider logo component matching desktop UI
+function ProviderLogo({ providerId }: { providerId: string }) {
+	const { colors } = useTheme();
+
+	// Map provider IDs to display symbols (matching desktop's ProviderLogo)
+	const getProviderSymbol = (id: string) => {
+		const normalizedId = id.toLowerCase();
+		if (normalizedId.includes("anthropic")) return "A\\";
+		if (normalizedId.includes("openai")) return "O";
+		if (normalizedId.includes("google") || normalizedId.includes("gemini")) return "G";
+		if (normalizedId.includes("mistral")) return "M";
+		if (normalizedId.includes("groq")) return "Gr";
+		if (normalizedId.includes("ollama")) return "Ol";
+		if (normalizedId.includes("openrouter")) return "OR";
+		if (normalizedId.includes("deepseek")) return "DS";
+		return id.charAt(0).toUpperCase();
+	};
+
+	return (
+		<Text style={[typography.micro, { color: colors.mutedForeground, fontWeight: "600" }]}>
+			{getProviderSymbol(providerId)}
+		</Text>
+	);
+}
+
+// Agent badge component with color support
+function AgentBadge({ name, color }: { name: string; color?: string }) {
+	const { colors } = useTheme();
+
+	// Default agent colors based on name hash (matching desktop's getAgentColor)
+	const getAgentColor = (agentName: string) => {
+		if (color) return color;
+
+		// Simple hash-based color selection
+		const agentColors = [
+			"#3B82F6", // blue
+			"#10B981", // emerald
+			"#F59E0B", // amber
+			"#EF4444", // red
+			"#8B5CF6", // violet
+			"#EC4899", // pink
+			"#06B6D4", // cyan
+			"#84CC16", // lime
+		];
+
+		let hash = 0;
+		for (let i = 0; i < agentName.length; i++) {
+			hash = agentName.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		return agentColors[Math.abs(hash) % agentColors.length];
+	};
+
+	const badgeColor = getAgentColor(name);
+
+	return (
+		<View style={[styles.agentBadge, { backgroundColor: `${badgeColor}20` }]}>
+			<Text style={[typography.micro, { color: badgeColor, fontWeight: "500" }]}>
+				{name}
+			</Text>
+		</View>
+	);
+}
+
 export function ChatInput({
 	onSend,
 	isLoading = false,
@@ -305,6 +382,8 @@ export function ChatInput({
 	commands = [],
 	onFileSearch,
 	permissionMode,
+	modelInfo,
+	activeAgent,
 }: ChatInputProps) {
 	const { colors, isDark } = useTheme();
 	const permissionColors = getPermissionModeColors(permissionMode, colors);
@@ -559,26 +638,36 @@ export function ChatInput({
 						<AddIcon color={colors.mutedForeground} size={20} />
 					</Pressable>
 
-					{/* Center: Model info */}
+					{/* Center: Model info and Agent */}
 					<View style={styles.modelInfo}>
-						<Text
-							style={[typography.micro, { color: colors.mutedForeground }]}
-							numberOfLines={1}
-						>
-							Sonnet
-						</Text>
-						<View
-							style={[
-								styles.modelDot,
-								{ backgroundColor: colors.mutedForeground },
-							]}
-						/>
-						<Text
-							style={[typography.micro, { color: colors.mutedForeground }]}
-							numberOfLines={1}
-						>
-							Anthropic
-						</Text>
+						{/* Provider logo + Model name */}
+						<View style={styles.modelSelector}>
+							{modelInfo ? (
+								<>
+									<ProviderLogo providerId={modelInfo.providerId} />
+									<Text
+										style={[typography.micro, { color: colors.mutedForeground }]}
+										numberOfLines={1}
+									>
+										{modelInfo.modelName.length > 20
+											? `${modelInfo.modelName.slice(0, 18)}...`
+											: modelInfo.modelName}
+									</Text>
+								</>
+							) : (
+								<Text
+									style={[typography.micro, { color: colors.mutedForeground }]}
+									numberOfLines={1}
+								>
+									Select model
+								</Text>
+							)}
+						</View>
+
+						{/* Agent badge (if active) */}
+						{activeAgent && (
+							<AgentBadge name={activeAgent.name} color={activeAgent.color} />
+						)}
 					</View>
 
 					{/* Right: Send/Stop button */}
@@ -648,12 +737,21 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 6,
+		gap: 8,
+		minWidth: 0,
 	},
-	modelDot: {
-		width: 3,
-		height: 3,
-		borderRadius: 2,
+	modelSelector: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		minWidth: 0,
+		flexShrink: 1,
+	},
+	agentBadge: {
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		borderRadius: 12,
+		flexShrink: 0,
 	},
 	triggerIcon: {
 		height: 28,
@@ -696,3 +794,5 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 });
+
+export type { ModelInfo, AgentInfo };
