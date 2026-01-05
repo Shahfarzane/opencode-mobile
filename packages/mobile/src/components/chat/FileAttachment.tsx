@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useCallback, useRef, useState } from "react";
 import {
 	Alert,
+	Dimensions,
 	Image,
 	Modal,
 	Pressable,
@@ -176,15 +177,11 @@ export function FileAttachmentButton({
 								borderColor: colors.border,
 								// Position menu above the button
 								position: "absolute",
-								left: buttonLayout?.x ?? 16,
+								left: Math.max(buttonLayout?.x ?? 16, 16),
+								// Always position above the button with proper offset
 								bottom: buttonLayout
-									? (buttonLayout.y > 200
-										? undefined
-										: insets.bottom + 80)
+									? Dimensions.get("window").height - buttonLayout.y + 8
 									: insets.bottom + 80,
-								top: buttonLayout && buttonLayout.y > 200
-									? buttonLayout.y - 110
-									: undefined,
 							},
 						]}
 					>
