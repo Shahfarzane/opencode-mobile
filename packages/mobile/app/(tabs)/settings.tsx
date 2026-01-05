@@ -11,7 +11,6 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { type SettingsPayload, settingsApi } from "../../src/api";
 import {
@@ -436,7 +435,6 @@ function GeneralSettings() {
 }
 
 export default function SettingsScreen() {
-	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
 	const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 	const [selectedItem, setSelectedItem] = useState<string | null>(null);
@@ -585,12 +583,32 @@ export default function SettingsScreen() {
 
 	const renderDetailView = () => {
 		return (
-			<View
-				style={[styles.detailContainer, { backgroundColor: colors.background }]}
-			>
-				<View
-					style={[styles.detailHeader, { borderBottomColor: colors.border }]}
+			<View style={styles.detailContent}>
+				<Text
+					style={[
+						typography.meta,
+						{
+							color: colors.mutedForeground,
+							textAlign: "center",
+							padding: 32,
+						},
+					]}
 				>
+					Detail editing coming soon.{"\n"}View-only mode for now.
+				</Text>
+			</View>
+		);
+	};
+
+	return (
+		<View
+			style={[
+				styles.container,
+				{ backgroundColor: colors.background },
+			]}
+		>
+			{showDetail && (
+				<View style={[styles.header, { borderBottomColor: colors.border }]}>
 					<Pressable onPress={handleBack} style={styles.backButton}>
 						<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
 							<Path
@@ -606,50 +624,7 @@ export default function SettingsScreen() {
 						{selectedItem}
 					</Text>
 				</View>
-				<View style={styles.detailContent}>
-					<Text
-						style={[
-							typography.meta,
-							{
-								color: colors.mutedForeground,
-								textAlign: "center",
-								padding: 32,
-							},
-						]}
-					>
-						Detail editing coming soon.{"\n"}View-only mode for now.
-					</Text>
-				</View>
-			</View>
-		);
-	};
-
-	return (
-		<View
-			style={[
-				styles.container,
-				{ backgroundColor: colors.background, paddingTop: insets.top },
-			]}
-		>
-			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				{showDetail ? (
-					<Pressable onPress={handleBack} style={styles.backButton}>
-						<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-							<Path
-								d="M15 18l-6-6 6-6"
-								stroke={colors.foreground}
-								strokeWidth={2}
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							/>
-						</Svg>
-					</Pressable>
-				) : (
-					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
-						Settings
-					</Text>
-				)}
-			</View>
+			)}
 
 			{!showDetail && (
 				<View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
@@ -765,16 +740,6 @@ const styles = StyleSheet.create({
 	},
 	content: {
 		flex: 1,
-	},
-	detailContainer: {
-		flex: 1,
-	},
-	detailHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
 	},
 	detailContent: {
 		flex: 1,

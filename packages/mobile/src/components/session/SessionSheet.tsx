@@ -5,7 +5,8 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Session } from "@/api/sessions";
 import { PlusIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
@@ -83,6 +84,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		ref,
 	) {
 		const { colors } = useTheme();
+		const insets = useSafeAreaInsets();
+		const { height: windowHeight } = useWindowDimensions();
 		const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
 			new Set(),
 		);
@@ -93,7 +96,11 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			Set<string>
 		>(new Set());
 
-		const snapPoints = useMemo(() => ["50%", "90%"], []);
+		// Calculate snap points based on available height (accounting for status bar)
+		const snapPoints = useMemo(() => {
+			// Use percentage-based snap points that account for safe areas
+			return ["50%", "90%"];
+		}, []);
 
 		// Sort sessions by creation time (newest first)
 		const sortedSessions = useMemo(() => {
@@ -348,9 +355,11 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				index={-1}
 				snapPoints={snapPoints}
 				enablePanDownToClose={true}
+				topInset={insets.top}
 				backgroundStyle={{ backgroundColor: colors.background }}
 				handleIndicatorStyle={{ backgroundColor: colors.mutedForeground }}
 				backdropComponent={renderBackdrop}
+				style={styles.bottomSheet}
 			>
 				<SheetHeader title="Sessions" onClose={handleDismiss} />
 
@@ -364,7 +373,10 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 
 				<BottomSheetScrollView
 					style={styles.scrollView}
-					contentContainerStyle={styles.scrollContent}
+					contentContainerStyle={[
+						styles.scrollContent,
+						{ paddingBottom: Math.max(40, insets.bottom + 20) },
+					]}
 				>
 					{/* New Session Button */}
 					<Pressable
@@ -454,6 +466,11 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 );
 
 const styles = StyleSheet.create({
+	bottomSheet: {
+		// Ensure the sheet is above other content
+		zIndex: 1000,
+		elevation: 1000,
+	},
 	scrollView: {
 		flex: 1,
 	},

@@ -1,5 +1,4 @@
 import * as Clipboard from "expo-clipboard";
-import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -16,27 +15,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import {
 	type GitLog,
-	type GitLogEntry,
 	type GitStatus,
 	type GitStatusFile,
 	gitApi,
 } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
-
-function FolderIcon({ size = 16, color }: { size?: number; color: string }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
 
 type FileStatusType = "staged" | "modified" | "untracked";
 
@@ -947,36 +931,13 @@ export default function GitScreen() {
 		);
 	};
 
-	const directoryName = directory?.split("/").pop() || "Select Directory";
-
 	return (
 		<View
 			style={[
 				styles.container,
-				{ backgroundColor: colors.background, paddingTop: insets.top },
+				{ backgroundColor: colors.background },
 			]}
 		>
-			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<Pressable
-					onPress={() => router.push("/onboarding/directory")}
-					style={[styles.directoryButton, { backgroundColor: colors.muted }]}
-				>
-					<FolderIcon color={colors.primary} />
-					<Text
-						style={[typography.meta, { color: colors.foreground, flex: 1 }]}
-						numberOfLines={1}
-					>
-						{directoryName}
-					</Text>
-					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-						Change
-					</Text>
-				</Pressable>
-				<Text style={[typography.uiHeader, { color: colors.foreground }]}>
-					Git
-				</Text>
-			</View>
-
 			{status && (
 				<View style={[styles.branchBar, { borderBottomColor: colors.border }]}>
 					<View style={styles.branchInfo}>
@@ -1115,20 +1076,6 @@ export default function GitScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-	},
-	header: {
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 8,
-	},
-	directoryButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		borderRadius: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		marginBottom: 8,
 	},
 	branchBar: {
 		flexDirection: "row",

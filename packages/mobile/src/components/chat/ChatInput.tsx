@@ -582,8 +582,8 @@ export function ChatInput({
 
 	const canSend = (text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
-	// Use transparent background like desktop - just border defines the input
-	const inputBackground = "transparent";
+	// Match desktop's semi-transparent input background
+	const inputBackground = colors.input + "1A"; // ~10% opacity like bg-input/10
 
 	return (
 		<View style={styles.container}>
@@ -698,8 +698,7 @@ export function ChatInput({
 						style={({ pressed }) => [
 							styles.toolbarButton,
 							styles.sendButton,
-							canSend && { backgroundColor: `${colors.primary}15` },
-							pressed && canSend && { backgroundColor: `${colors.primary}25` },
+							pressed && canSend && { opacity: 0.7 },
 						]}
 						hitSlop={8}
 					>
@@ -718,37 +717,54 @@ export function ChatInput({
 	);
 }
 
+// Desktop-aligned spacing constants
+const DESKTOP_SPACING = {
+	inputBorderRadius: 12, // rounded-xl
+	inputPaddingH: 12, // px-3
+	inputPaddingTop: 16, // pt-4
+	inputPaddingBottom: 8, // pb-2
+	toolbarPaddingH: 10, // px-2.5
+	toolbarPaddingV: 6, // py-1.5
+	toolbarButtonSize: 36, // h-9 w-9
+	toolbarButtonRadius: 8,
+	toolbarGap: 6, // gap-x-1.5
+	bubbleRadius: 12, // rounded-xl
+	agentBadgePaddingH: 6, // px-1.5
+	agentBadgePaddingV: 0, // py-0
+	agentBadgeRadius: 4, // rounded
+};
+
 const styles = StyleSheet.create({
 	container: {
 		position: "relative",
 	},
 	inputContainer: {
-		borderRadius: 16,
+		borderRadius: DESKTOP_SPACING.inputBorderRadius,
 		borderWidth: 1,
 		overflow: "hidden",
 	},
 	textInput: {
 		minHeight: 52,
 		maxHeight: 140,
-		paddingHorizontal: 16,
-		paddingTop: 14,
-		paddingBottom: 14,
+		paddingHorizontal: DESKTOP_SPACING.inputPaddingH,
+		paddingTop: DESKTOP_SPACING.inputPaddingTop,
+		paddingBottom: DESKTOP_SPACING.inputPaddingBottom,
 		textAlignVertical: "top",
 	},
 	toolbar: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: 8,
-		paddingVertical: 8,
-		gap: 4,
+		paddingHorizontal: DESKTOP_SPACING.toolbarPaddingH,
+		paddingVertical: DESKTOP_SPACING.toolbarPaddingV,
+		gap: DESKTOP_SPACING.toolbarGap,
 	},
 	toolbarButton: {
-		width: 40,
-		height: 40,
+		width: DESKTOP_SPACING.toolbarButtonSize,
+		height: DESKTOP_SPACING.toolbarButtonSize,
 		alignItems: "center",
 		justifyContent: "center",
-		borderRadius: 10,
+		borderRadius: DESKTOP_SPACING.toolbarButtonRadius,
 	},
 	sendButton: {
 		// Additional styling for send button
@@ -769,21 +785,21 @@ const styles = StyleSheet.create({
 		flexShrink: 1,
 	},
 	agentBadge: {
-		paddingHorizontal: 8,
-		paddingVertical: 3,
-		borderRadius: 12,
+		paddingHorizontal: DESKTOP_SPACING.agentBadgePaddingH,
+		paddingVertical: DESKTOP_SPACING.agentBadgePaddingV,
+		borderRadius: DESKTOP_SPACING.agentBadgeRadius,
 		flexShrink: 0,
 	},
 	triggerIcon: {
-		height: 28,
-		width: 28,
+		height: 24,
+		width: 24,
 		alignItems: "center",
 		justifyContent: "center",
-		borderRadius: 8,
+		borderRadius: 6,
 	},
 	triggerIconText: {
 		fontFamily: "IBMPlexMono-Medium",
-		fontSize: 15,
+		fontSize: 14,
 	},
 	autocompleteOverlay: {
 		position: "absolute",
@@ -792,7 +808,7 @@ const styles = StyleSheet.create({
 		right: 0,
 		marginBottom: 8,
 		maxHeight: 280,
-		borderRadius: 14,
+		borderRadius: DESKTOP_SPACING.inputBorderRadius,
 		borderWidth: 1,
 		shadowOffset: { width: 0, height: -2 },
 		shadowOpacity: 0.08,
@@ -801,15 +817,15 @@ const styles = StyleSheet.create({
 	},
 	autocompleteHeader: {
 		borderBottomWidth: 1,
-		paddingHorizontal: 14,
-		paddingVertical: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
 	},
 	autocompleteItem: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 12,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
+		gap: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
 	},
 	autocompleteItemContent: {
 		flex: 1,

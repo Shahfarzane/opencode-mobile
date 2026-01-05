@@ -1,9 +1,19 @@
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useCallback, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { AttachmentIcon, FileIcon, ImageIcon, XIcon } from "@/components/icons";
+import { useCallback, useRef, useState } from "react";
+import {
+	Alert,
+	Image,
+	Modal,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+	type LayoutRectangle,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FileIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 
 export interface AttachedFile {
@@ -42,7 +52,10 @@ export function FileAttachmentButton({
 	disabled = false,
 }: FileAttachmentButtonProps) {
 	const { colors } = useTheme();
+	const insets = useSafeAreaInsets();
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
+	const [buttonLayout, setButtonLayout] = useState<LayoutRectangle | null>(null);
+	const buttonRef = useRef<View>(null);
 
 	const handleImagePick = useCallback(async () => {
 		setIsPickerOpen(false);
@@ -124,32 +137,54 @@ export function FileAttachmentButton({
 	const showOptions = useCallback(async () => {
 		if (disabled) return;
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-		setIsPickerOpen(true);
+
+		// Measure button position for menu placement
+		buttonRef.current?.measureInWindow((x, y, width, height) => {
+			setButtonLayout({ x, y, width, height });
+			setIsPickerOpen(true);
+		});
 	}, [disabled]);
 
 	return (
 		<>
-			<Pressable
-				onPress={showOptions}
-				disabled={disabled}
-				style={[styles.attachButton, { opacity: disabled ? 0.5 : 1 }]}
-				hitSlop={8}
-			>
-				<AttachmentIcon size={18} color={colors.mutedForeground} />
-			</Pressable>
+			<View ref={buttonRef} collapsable={false}>
+				<Pressable
+					onPress={showOptions}
+					disabled={disabled}
+					style={[styles.attachButton, { opacity: disabled ? 0.5 : 1 }]}
+					hitSlop={8}
+				>
+					<PlusCircleIcon size={20} color={colors.mutedForeground} />
+				</Pressable>
+			</View>
 
-			{isPickerOpen && (
-				<View style={[styles.optionsOverlay]}>
-					<Pressable
-						style={styles.overlayBackdrop}
-						onPress={() => setIsPickerOpen(false)}
-					/>
+			<Modal
+				visible={isPickerOpen}
+				transparent
+				animationType="fade"
+				onRequestClose={() => setIsPickerOpen(false)}
+			>
+				<Pressable
+					style={styles.modalBackdrop}
+					onPress={() => setIsPickerOpen(false)}
+				>
 					<View
 						style={[
 							styles.optionsMenu,
 							{
 								backgroundColor: colors.card,
 								borderColor: colors.border,
+								// Position menu above the button
+								position: "absolute",
+								left: buttonLayout?.x ?? 16,
+								bottom: buttonLayout
+									? (buttonLayout.y > 200
+										? undefined
+										: insets.bottom + 80)
+									: insets.bottom + 80,
+								top: buttonLayout && buttonLayout.y > 200
+									? buttonLayout.y - 110
+									: undefined,
 							},
 						]}
 					>
@@ -169,8 +204,8 @@ export function FileAttachmentButton({
 							</Text>
 						</Pressable>
 					</View>
-				</View>
-			)}
+				</Pressable>
+			</Modal>
 		</>
 	);
 }
@@ -246,25 +281,20 @@ const styles = StyleSheet.create({
 	attachButton: {
 		padding: 6,
 	},
-	optionsOverlay: {
-		position: "absolute",
-		bottom: "100%",
-		left: 0,
-		marginBottom: 8,
-		zIndex: 100,
-	},
-	overlayBackdrop: {
-		position: "absolute",
-		top: -1000,
-		left: -1000,
-		right: -1000,
-		bottom: -1000,
+	modalBackdrop: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.3)",
 	},
 	optionsMenu: {
 		borderRadius: 8,
 		borderWidth: 1,
 		overflow: "hidden",
 		minWidth: 160,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.15,
+		shadowRadius: 8,
+		elevation: 8,
 	},
 	optionItem: {
 		flexDirection: "row",
