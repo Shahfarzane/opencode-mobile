@@ -31,3 +31,5 @@ export type {
 
 export { flexokiDarkTheme } from './flexoki-dark';
 export { flexokiLightTheme } from './flexoki-light';
+export { warmSandDarkTheme } from './warm-sand-dark';
+export { warmSandLightTheme } from './warm-sand-light';

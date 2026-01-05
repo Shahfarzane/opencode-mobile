@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
-import { flexokiDarkTheme, flexokiLightTheme, type Theme } from '@openchamber/shared/themes';
+import { warmSandDarkTheme, warmSandLightTheme, type Theme } from '@openchamber/shared/themes';
 
 export interface ThemeColors {
 	background: string;
@@ -237,7 +237,7 @@ export function ThemeProvider({ children, forcedTheme }: ThemeProviderProps) {
 
 	const value = useMemo<ThemeContextValue>(() => {
 		const isDark = forcedTheme ? forcedTheme === 'dark' : systemColorScheme === 'dark';
-		const theme = isDark ? flexokiDarkTheme : flexokiLightTheme;
+		const theme = isDark ? warmSandDarkTheme : warmSandLightTheme;
 		const colors = createColors(theme);
 
 		return {

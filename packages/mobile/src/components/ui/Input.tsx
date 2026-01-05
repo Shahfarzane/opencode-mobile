@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
 	inputWrapper: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		borderRadius: 12,
+		borderRadius: 8,     // Match desktop rounded-lg (was 12)
 		borderWidth: 1,
 	},
 	leftIcon: {
@@ -125,9 +125,9 @@ const styles = StyleSheet.create({
 	},
 	input: {
 		flex: 1,
-		minHeight: 44,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		minHeight: 44,       // Keep mobile-friendly touch target
+		paddingHorizontal: 12, // Match desktop px-3 (was 16)
+		paddingVertical: 8,    // Adjusted for mobile (was 12)
 	},
 	helperText: {
 		marginTop: 6,

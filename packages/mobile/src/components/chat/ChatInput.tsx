@@ -476,8 +476,7 @@ export function ChatInput({
 					styles.inputContainer,
 					{
 						borderColor: permissionColors?.border ?? colors.border,
-						borderWidth: permissionColors ? 2 : 1,
-						backgroundColor: isDark ? 'rgba(28, 27, 26, 0.3)' : 'rgba(242, 240, 229, 0.3)',
+						backgroundColor: `${colors.input}19`,  // 10% opacity using theme color
 					},
 				]}
 			>
@@ -504,7 +503,8 @@ export function ChatInput({
 					style={[
 						styles.toolbar,
 						{
-							borderTopColor: isDark ? 'rgba(52, 51, 49, 0.5)' : 'rgba(218, 216, 206, 0.5)',
+							borderTopColor: `${colors.border}80`,  // 50% opacity using theme border color
+							borderTopWidth: 1,
 						},
 					]}
 				>
@@ -540,8 +540,8 @@ const styles = StyleSheet.create({
 		position: 'relative',
 	},
 	inputContainer: {
-		borderRadius: 12,
-		borderWidth: 1,
+		borderRadius: 12,     // Match desktop rounded-xl
+		borderWidth: 2,       // Thicker border like desktop
 		overflow: 'hidden',
 	},
 	textInput: {
@@ -556,28 +556,31 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderTopWidth: 1,
+		paddingHorizontal: 10,   // Match desktop padding
+		paddingVertical: 6,      // Match desktop padding
+		gap: 6,                  // Match desktop gap
 	},
 	toolbarButton: {
-		padding: 6,
+		padding: 8,              // Better touch target
+		borderRadius: 8,
 	},
 	modelInfo: {
+		flex: 1,
 		flexDirection: 'row',
 		alignItems: 'center',
+		justifyContent: 'center',
 		gap: 8,
 	},
 	triggerIcon: {
-		height: 20,
-		width: 20,
+		height: 24,              // Increased from 20 for better visibility
+		width: 24,
 		alignItems: 'center',
 		justifyContent: 'center',
-		borderRadius: 4,
+		borderRadius: 6,
 	},
 	triggerIconText: {
 		fontFamily: 'IBMPlexMono-Medium',
-		fontSize: 12,
+		fontSize: 14,            // Increased from 12
 	},
 	autocompleteOverlay: {
 		position: 'absolute',
@@ -592,14 +595,14 @@ const styles = StyleSheet.create({
 	autocompleteHeader: {
 		borderBottomWidth: 1,
 		paddingHorizontal: 16,
-		paddingVertical: 8,
+		paddingVertical: 10,
 	},
 	autocompleteItem: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 12,
 		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingVertical: 14,     // Better touch targets
 	},
 	autocompleteItemContent: {
 		flex: 1,
