@@ -14,8 +14,9 @@ import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { useDeviceInfo } from '@/lib/device';
-import { RiAddLine, RiChatAi3Line, RiCheckLine, RiCodeLine, RiComputerLine, RiGitBranchLine, RiLayoutLeftLine, RiMoonLine, RiQuestionLine, RiRestartLine, RiSettings3Line, RiSunLine, RiTerminalBoxLine } from '@remixicon/react';
+import { RiAddLine, RiChatAi3Line, RiCheckLine, RiCodeLine, RiComputerLine, RiGitBranchLine, RiLayoutLeftLine, RiMoonLine, RiQuestionLine, RiRestartLine, RiSettings3Line, RiSunLine, RiTerminalBoxLine, RiTimeLine } from '@remixicon/react';
 import { reloadOpenCodeConfiguration } from '@/stores/useAgentsStore';
+import { getModifierLabel } from '@/lib/utils';
 
 export const CommandPalette: React.FC = () => {
   const {
@@ -26,6 +27,7 @@ export const CommandPalette: React.FC = () => {
     setActiveMainTab,
     setSettingsDialogOpen,
     setSessionSwitcherOpen,
+    setTimelineDialogOpen,
     toggleSidebar,
   } = useUIStore();
 
@@ -106,6 +108,11 @@ export const CommandPalette: React.FC = () => {
     handleClose();
   };
 
+  const handleOpenTimeline = () => {
+    setTimelineDialogOpen(true);
+    handleClose();
+  };
+
   const directorySessions = getSessionsByDirectory(currentDirectory ?? '');
   const currentSessions = React.useMemo(() => {
     return directorySessions.slice(0, 5);
@@ -121,42 +128,47 @@ export const CommandPalette: React.FC = () => {
           <CommandItem onSelect={handleOpenSessionList}>
             <RiLayoutLeftLine className="mr-2 h-4 w-4" />
             <span>Open Session List</span>
-            <CommandShortcut>Ctrl + L</CommandShortcut>
+            <CommandShortcut>{getModifierLabel()} + L</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleCreateSession}>
             <RiAddLine className="mr-2 h-4 w-4" />
             <span>New Session</span>
-            <CommandShortcut>Ctrl + N</CommandShortcut>
+            <CommandShortcut>{getModifierLabel()} + N</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleOpenAdvancedSession}>
             <RiGitBranchLine className="mr-2 h-4 w-4" />
             <span>New Session with Worktree</span>
-            <CommandShortcut>Shift + Ctrl + N</CommandShortcut>
+            <CommandShortcut>Shift + {getModifierLabel()} + N</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleShowHelp}>
             <RiQuestionLine className="mr-2 h-4 w-4" />
             <span>Keyboard Shortcuts</span>
-            <CommandShortcut>Ctrl + H</CommandShortcut>
+            <CommandShortcut>{getModifierLabel()} + .</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleOpenDiffPanel}>
             <RiCodeLine className="mr-2 h-4 w-4" />
             <span>Open Diff Panel</span>
-            <CommandShortcut>Ctrl + E</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={handleOpenGitPanel}>
-            <RiGitBranchLine className="mr-2 h-4 w-4" />
-            <span>Open Git Panel</span>
-            <CommandShortcut>Ctrl + G</CommandShortcut>
+            <CommandShortcut>{getModifierLabel()} + 2</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleOpenTerminal}>
             <RiTerminalBoxLine className="mr-2 h-4 w-4" />
             <span>Open Terminal</span>
-            <CommandShortcut>Ctrl + T</CommandShortcut>
+            <CommandShortcut>{getModifierLabel()} + 3</CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={handleOpenGitPanel}>
+            <RiGitBranchLine className="mr-2 h-4 w-4" />
+            <span>Open Git Panel</span>
+            <CommandShortcut>{getModifierLabel()} + 4</CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={handleOpenTimeline}>
+            <RiTimeLine className="mr-2 h-4 w-4" />
+            <span>Open Timeline</span>
+            <CommandShortcut>{getModifierLabel()} + T</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleOpenSettings}>
             <RiSettings3Line className="mr-2 h-4 w-4" />
             <span>Open Settings</span>
-            <CommandShortcut>Ctrl + ,</CommandShortcut>
+            <CommandShortcut>{getModifierLabel()} + ,</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleReloadConfiguration}>
             <RiRestartLine className="mr-2 h-4 w-4" />
