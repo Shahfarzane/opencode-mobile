@@ -8,7 +8,7 @@ import {
 	Text,
 	type ViewStyle,
 } from "react-native";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 type ButtonVariant =
 	| "default"
@@ -26,10 +26,13 @@ interface ButtonProps extends Omit<PressableProps, "style"> {
 	style?: ViewStyle;
 }
 
-const sizeConfig: Record<ButtonSize, { height: number; paddingHorizontal: number; borderRadius: number }> = {
+const sizeConfig: Record<
+	ButtonSize,
+	{ height: number; paddingHorizontal: number; borderRadius: number }
+> = {
 	sm: { height: 36, paddingHorizontal: 12, borderRadius: 8 },
-	md: { height: 44, paddingHorizontal: 16, borderRadius: 8 },  // Standardized radius to match desktop
-	lg: { height: 56, paddingHorizontal: 24, borderRadius: 8 },  // Standardized radius to match desktop
+	md: { height: 44, paddingHorizontal: 16, borderRadius: 8 }, // Standardized radius to match desktop
+	lg: { height: 56, paddingHorizontal: 24, borderRadius: 8 }, // Standardized radius to match desktop
 };
 
 export const Button = forwardRef<typeof Pressable, ButtonProps>(
@@ -47,7 +50,7 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 		ref,
 	) => {
 		const { colors } = useTheme();
-		
+
 		const handlePress = async (
 			event: Parameters<NonNullable<PressableProps["onPress"]>>[0],
 		) => {
@@ -138,9 +141,9 @@ Button.displayName = "Button";
 
 const styles = StyleSheet.create({
 	button: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 8,  // Match desktop gap-2 for icon+text spacing
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 8, // Match desktop gap-2 for icon+text spacing
 	},
 });

@@ -11,7 +11,7 @@ import {
 	View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 type AutocompleteType = "agent" | "command" | "file" | null;
 
@@ -36,7 +36,7 @@ interface FileItem {
 
 type AutocompleteItem = AgentItem | CommandItem | FileItem;
 
-type EditPermissionMode = 'ask' | 'allow' | 'full' | 'deny';
+type EditPermissionMode = "ask" | "allow" | "full" | "deny";
 
 interface ChatInputProps {
 	onSend: (message: string) => void;
@@ -54,17 +54,22 @@ function AddIcon({ color, size = 20 }: { color: string; size?: number }) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
 			<Path
-				d="M12 5v14M5 12h14"
+				d="M12 8v8M8 12h8"
 				stroke={color}
 				strokeWidth={2}
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
+			<Path
+				d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+				stroke={color}
+				strokeWidth={2}
+			/>
 		</Svg>
 	);
 }
 
-function SendIcon({ color, size = 18 }: { color: string; size?: number }) {
+function SendIcon({ color, size = 20 }: { color: string; size?: number }) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
 			<Path
@@ -78,15 +83,23 @@ function SendIcon({ color, size = 18 }: { color: string; size?: number }) {
 	);
 }
 
+function StopIcon({ color, size = 20 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+				stroke={color}
+				strokeWidth={2}
+			/>
+			<Path d="M15 9H9v6h6V9z" fill={color} />
+		</Svg>
+	);
+}
+
 function AgentIcon() {
 	const { colors } = useTheme();
 	return (
-		<View
-			style={[
-				styles.triggerIcon,
-				{ backgroundColor: `${colors.info}20` },
-			]}
-		>
+		<View style={[styles.triggerIcon, { backgroundColor: `${colors.info}15` }]}>
 			<Text style={[styles.triggerIconText, { color: colors.info }]}>#</Text>
 		</View>
 	);
@@ -96,10 +109,7 @@ function CommandIcon() {
 	const { colors } = useTheme();
 	return (
 		<View
-			style={[
-				styles.triggerIcon,
-				{ backgroundColor: `${colors.warning}20` },
-			]}
+			style={[styles.triggerIcon, { backgroundColor: `${colors.warning}15` }]}
 		>
 			<Text style={[styles.triggerIconText, { color: colors.warning }]}>/</Text>
 		</View>
@@ -108,7 +118,7 @@ function CommandIcon() {
 
 function FileIcon({ extension }: { extension?: string }) {
 	const { colors } = useTheme();
-	
+
 	const getColor = () => {
 		switch (extension?.toLowerCase()) {
 			case "ts":
@@ -136,7 +146,7 @@ function FileIcon({ extension }: { extension?: string }) {
 		<View
 			style={[
 				styles.triggerIcon,
-				{ backgroundColor: `${colors.mutedForeground}20` },
+				{ backgroundColor: `${colors.mutedForeground}15` },
 			]}
 		>
 			<Text style={[styles.triggerIconText, { color: getColor() }]}>@</Text>
@@ -155,15 +165,23 @@ function AutocompleteOverlay({
 	onClose: () => void;
 }) {
 	const fadeAnim = useRef(new Animated.Value(0)).current;
+	const slideAnim = useRef(new Animated.Value(8)).current;
 	const { colors } = useTheme();
 
 	useEffect(() => {
-		Animated.timing(fadeAnim, {
-			toValue: 1,
-			duration: 150,
-			useNativeDriver: true,
-		}).start();
-	}, [fadeAnim]);
+		Animated.parallel([
+			Animated.timing(fadeAnim, {
+				toValue: 1,
+				duration: 150,
+				useNativeDriver: true,
+			}),
+			Animated.timing(slideAnim, {
+				toValue: 0,
+				duration: 150,
+				useNativeDriver: true,
+			}),
+		]).start();
+	}, [fadeAnim, slideAnim]);
 
 	const renderItem = useCallback(
 		({ item }: { item: AutocompleteItem }) => (
@@ -172,7 +190,10 @@ function AutocompleteOverlay({
 					Haptics.selectionAsync();
 					onSelect(item);
 				}}
-				style={styles.autocompleteItem}
+				style={({ pressed }) => [
+					styles.autocompleteItem,
+					pressed && { backgroundColor: `${colors.foreground}08` },
+				]}
 			>
 				{item.type === "agent" && <AgentIcon />}
 				{item.type === "command" && <CommandIcon />}
@@ -228,13 +249,25 @@ function AutocompleteOverlay({
 				styles.autocompleteOverlay,
 				{
 					opacity: fadeAnim,
+					transform: [{ translateY: slideAnim }],
 					borderColor: colors.border,
 					backgroundColor: colors.background,
+					shadowColor: colors.foreground,
 				},
 			]}
 		>
-			<View style={[styles.autocompleteHeader, { borderBottomColor: colors.border }]}>
-				<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+			<View
+				style={[
+					styles.autocompleteHeader,
+					{ borderBottomColor: colors.border },
+				]}
+			>
+				<Text
+					style={[
+						typography.micro,
+						{ color: colors.mutedForeground, fontWeight: "600" },
+					]}
+				>
 					{getTitle()}
 				</Text>
 			</View>
@@ -245,16 +278,20 @@ function AutocompleteOverlay({
 					item.type === "file" ? item.path : `${item.type}-${item.name}`
 				}
 				keyboardShouldPersistTaps="handled"
+				ListFooterComponent={() => <View style={{ height: 56 }} />}
 			/>
 		</Animated.View>
 	);
 }
 
-function getPermissionModeColors(mode: EditPermissionMode | undefined, colors: ReturnType<typeof useTheme>['colors']) {
-	if (mode === 'full') {
+function getPermissionModeColors(
+	mode: EditPermissionMode | undefined,
+	colors: ReturnType<typeof useTheme>["colors"],
+) {
+	if (mode === "full") {
 		return { border: colors.infoBorder, text: colors.info };
 	}
-	if (mode === 'allow') {
+	if (mode === "allow") {
 		return { border: colors.successBorder, text: colors.success };
 	}
 	return null;
@@ -321,35 +358,41 @@ export function ChatInput({
 		[],
 	);
 
-	const getFilteredAgents = useCallback((query: string): AutocompleteItem[] => {
-		const lowerQuery = query.toLowerCase();
-		return agents
-			.filter((agent) => agent.name.toLowerCase().includes(lowerQuery))
-			.slice(0, 10)
-			.map((agent) => ({
-				type: "agent" as const,
-				name: agent.name,
-				description: agent.description,
-			}));
-	}, [agents]);
+	const getFilteredAgents = useCallback(
+		(query: string): AutocompleteItem[] => {
+			const lowerQuery = query.toLowerCase();
+			return agents
+				.filter((agent) => agent.name.toLowerCase().includes(lowerQuery))
+				.slice(0, 10)
+				.map((agent) => ({
+					type: "agent" as const,
+					name: agent.name,
+					description: agent.description,
+				}));
+		},
+		[agents],
+	);
 
-	const getFilteredCommands = useCallback((query: string): AutocompleteItem[] => {
-		const lowerQuery = query.toLowerCase();
-		const builtInCommands = [
-			{ name: "init", description: "Create/update AGENTS.md file" },
-			{ name: "summarize", description: "Generate a summary of the session" },
-		];
+	const getFilteredCommands = useCallback(
+		(query: string): AutocompleteItem[] => {
+			const lowerQuery = query.toLowerCase();
+			const builtInCommands = [
+				{ name: "init", description: "Create/update AGENTS.md file" },
+				{ name: "summarize", description: "Generate a summary of the session" },
+			];
 
-		const allCommands = [...builtInCommands, ...commands];
-		return allCommands
-			.filter((cmd) => cmd.name.toLowerCase().includes(lowerQuery))
-			.slice(0, 10)
-			.map((cmd) => ({
-				type: "command" as const,
-				name: cmd.name,
-				description: cmd.description,
-			}));
-	}, [commands]);
+			const allCommands = [...builtInCommands, ...commands];
+			return allCommands
+				.filter((cmd) => cmd.name.toLowerCase().includes(lowerQuery))
+				.slice(0, 10)
+				.map((cmd) => ({
+					type: "command" as const,
+					name: cmd.name,
+					description: cmd.description,
+				}));
+		},
+		[commands],
+	);
 
 	const handleTextChange = useCallback(
 		(newText: string) => {
@@ -360,7 +403,7 @@ export function ChatInput({
 			if (trigger) {
 				setAutocompleteType(trigger.type);
 				setAutocompleteQuery(trigger.query);
-				
+
 				if (trigger.type === "agent") {
 					setAutocompleteItems(getFilteredAgents(trigger.query));
 				} else if (trigger.type === "command") {
@@ -460,6 +503,11 @@ export function ChatInput({
 
 	const canSend = text.trim().length > 0 && !isLoading;
 
+	// Background colors matching desktop: bg-input/10 light, bg-input/30 dark
+	const inputBackground = isDark
+		? `${colors.input}4D` // ~30% opacity
+		: `${colors.input}1A`; // ~10% opacity
+
 	return (
 		<View style={styles.container}>
 			{autocompleteType && (
@@ -476,7 +524,7 @@ export function ChatInput({
 					styles.inputContainer,
 					{
 						borderColor: permissionColors?.border ?? colors.border,
-						backgroundColor: `${colors.input}19`,  // 10% opacity using theme color
+						backgroundColor: inputBackground,
 					},
 				]}
 			>
@@ -498,36 +546,61 @@ export function ChatInput({
 						{ color: colors.foreground },
 					]}
 				/>
-				
-				<View
-					style={[
-						styles.toolbar,
-						{
-							borderTopColor: `${colors.border}80`,  // 50% opacity using theme border color
-							borderTopWidth: 1,
-						},
-					]}
-				>
-					<Pressable style={styles.toolbarButton} hitSlop={8}>
-						<AddIcon color={colors.mutedForeground} size={18} />
+
+				<View style={styles.toolbar}>
+					{/* Left: Attachment button */}
+					<Pressable
+						style={({ pressed }) => [
+							styles.toolbarButton,
+							pressed && { backgroundColor: `${colors.foreground}10` },
+						]}
+						hitSlop={8}
+					>
+						<AddIcon color={colors.mutedForeground} size={20} />
 					</Pressable>
 
+					{/* Center: Model info */}
 					<View style={styles.modelInfo}>
-						<Text style={[typography.micro, { color: colors.foreground }]}>
-							Model
+						<Text
+							style={[typography.micro, { color: colors.mutedForeground }]}
+							numberOfLines={1}
+						>
+							Sonnet
 						</Text>
-						<Text style={[typography.micro, { color: colors.info }]}>
-							Provider
+						<View
+							style={[
+								styles.modelDot,
+								{ backgroundColor: colors.mutedForeground },
+							]}
+						/>
+						<Text
+							style={[typography.micro, { color: colors.mutedForeground }]}
+							numberOfLines={1}
+						>
+							Anthropic
 						</Text>
 					</View>
 
+					{/* Right: Send/Stop button */}
 					<Pressable
 						onPress={handleSend}
-						disabled={!canSend}
-						style={[styles.toolbarButton, { opacity: canSend ? 1 : 0.3 }]}
+						disabled={!canSend && !isLoading}
+						style={({ pressed }) => [
+							styles.toolbarButton,
+							styles.sendButton,
+							canSend && { backgroundColor: `${colors.primary}15` },
+							pressed && canSend && { backgroundColor: `${colors.primary}25` },
+						]}
 						hitSlop={8}
 					>
-						<SendIcon color={canSend ? colors.primary : colors.mutedForeground} size={18} />
+						{isLoading ? (
+							<StopIcon color={colors.destructive} size={20} />
+						) : (
+							<SendIcon
+								color={canSend ? colors.primary : colors.mutedForeground}
+								size={20}
+							/>
+						)}
 					</Pressable>
 				</View>
 			</View>
@@ -537,72 +610,87 @@ export function ChatInput({
 
 const styles = StyleSheet.create({
 	container: {
-		position: 'relative',
+		position: "relative",
 	},
 	inputContainer: {
-		borderRadius: 12,     // Match desktop rounded-xl
-		borderWidth: 2,       // Thicker border like desktop
-		overflow: 'hidden',
+		borderRadius: 16,
+		borderWidth: 1,
+		overflow: "hidden",
 	},
 	textInput: {
-		minHeight: 48,
-		maxHeight: 128,
+		minHeight: 52,
+		maxHeight: 140,
 		paddingHorizontal: 16,
 		paddingTop: 14,
 		paddingBottom: 14,
-		textAlignVertical: 'center',
+		textAlignVertical: "top",
 	},
 	toolbar: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
-		paddingHorizontal: 10,   // Match desktop padding
-		paddingVertical: 6,      // Match desktop padding
-		gap: 6,                  // Match desktop gap
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 8,
+		paddingVertical: 8,
+		gap: 4,
 	},
 	toolbarButton: {
-		padding: 8,              // Better touch target
-		borderRadius: 8,
+		width: 40,
+		height: 40,
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 10,
+	},
+	sendButton: {
+		// Additional styling for send button
 	},
 	modelInfo: {
 		flex: 1,
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 8,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
+	},
+	modelDot: {
+		width: 3,
+		height: 3,
+		borderRadius: 2,
 	},
 	triggerIcon: {
-		height: 24,              // Increased from 20 for better visibility
-		width: 24,
-		alignItems: 'center',
-		justifyContent: 'center',
-		borderRadius: 6,
+		height: 28,
+		width: 28,
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 8,
 	},
 	triggerIconText: {
-		fontFamily: 'IBMPlexMono-Medium',
-		fontSize: 14,            // Increased from 12
+		fontFamily: "IBMPlexMono-Medium",
+		fontSize: 15,
 	},
 	autocompleteOverlay: {
-		position: 'absolute',
-		bottom: '100%',
+		position: "absolute",
+		bottom: "100%",
 		left: 0,
 		right: 0,
 		marginBottom: 8,
-		maxHeight: 256,
-		borderRadius: 12,
+		maxHeight: 280,
+		borderRadius: 14,
 		borderWidth: 1,
+		shadowOffset: { width: 0, height: -2 },
+		shadowOpacity: 0.08,
+		shadowRadius: 12,
+		elevation: 8,
 	},
 	autocompleteHeader: {
 		borderBottomWidth: 1,
-		paddingHorizontal: 16,
+		paddingHorizontal: 14,
 		paddingVertical: 10,
 	},
 	autocompleteItem: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 14,     // Better touch targets
+		paddingHorizontal: 14,
+		paddingVertical: 12,
 	},
 	autocompleteItemContent: {
 		flex: 1,

@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -11,11 +12,10 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-import { gitApi, type GitStatus, type GitStatusFile } from "../../src/api";
+import { type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { useTheme, typography } from "../../src/theme";
+import { typography, useTheme } from "../../src/theme";
 
 function FolderIcon({ size = 16, color }: { size?: number; color: string }) {
 	return (
@@ -79,7 +79,12 @@ function FileItem({
 			]}
 		>
 			<View style={styles.statusIcon}>
-				<Text style={[typography.uiLabel, { color: statusColors[status], fontWeight: "700" }]}>
+				<Text
+					style={[
+						typography.uiLabel,
+						{ color: statusColors[status], fontWeight: "700" },
+					]}
+				>
 					{statusIcons[status]}
 				</Text>
 			</View>
@@ -108,11 +113,18 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
 
 	return (
 		<View style={[styles.sectionHeader, { backgroundColor: colors.muted }]}>
-			<Text style={[typography.meta, { color: colors.mutedForeground, fontWeight: "500" }]}>
+			<Text
+				style={[
+					typography.meta,
+					{ color: colors.mutedForeground, fontWeight: "500" },
+				]}
+			>
 				{title}
 			</Text>
 			<View style={[styles.countBadge, { backgroundColor: colors.card }]}>
-				<Text style={[typography.micro, { color: colors.mutedForeground }]}>{count}</Text>
+				<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+					{count}
+				</Text>
 			</View>
 		</View>
 	);
@@ -123,7 +135,12 @@ function EmptyState({ message }: { message: string }) {
 
 	return (
 		<View style={styles.emptyState}>
-			<Text style={[typography.body, { color: colors.mutedForeground, textAlign: "center" }]}>
+			<Text
+				style={[
+					typography.body,
+					{ color: colors.mutedForeground, textAlign: "center" },
+				]}
+			>
 				{message}
 			</Text>
 		</View>
@@ -159,7 +176,10 @@ function CommitSheet({
 				setMessage(result.message.subject);
 			}
 		} catch (err) {
-			const errorMsg = err instanceof Error ? err.message : "Failed to generate commit message";
+			const errorMsg =
+				err instanceof Error
+					? err.message
+					: "Failed to generate commit message";
 			Alert.alert("Error", errorMsg);
 		} finally {
 			setIsGenerating(false);
@@ -180,13 +200,19 @@ function CommitSheet({
 	return (
 		<View style={styles.sheetOverlay}>
 			<Pressable style={styles.sheetBackdrop} onPress={onClose} />
-			<View style={[styles.sheetContent, { backgroundColor: colors.background }]}>
+			<View
+				style={[styles.sheetContent, { backgroundColor: colors.background }]}
+			>
 				<View style={styles.sheetHeader}>
 					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 						Commit Changes
 					</Text>
 					<Pressable onPress={onClose}>
-						<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>Cancel</Text>
+						<Text
+							style={[typography.uiLabel, { color: colors.mutedForeground }]}
+						>
+							Cancel
+						</Text>
 					</Pressable>
 				</View>
 
@@ -225,7 +251,12 @@ function CommitSheet({
 						{isGenerating ? (
 							<ActivityIndicator size="small" color={colors.foreground} />
 						) : (
-							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.foreground, fontWeight: "500" },
+								]}
+							>
 								Generate
 							</Text>
 						)}
@@ -243,9 +274,17 @@ function CommitSheet({
 						]}
 					>
 						{isCommitting ? (
-							<ActivityIndicator size="small" color={colors.primaryForeground} />
+							<ActivityIndicator
+								size="small"
+								color={colors.primaryForeground}
+							/>
 						) : (
-							<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.primaryForeground, fontWeight: "500" },
+								]}
+							>
 								Commit
 							</Text>
 						)}
@@ -289,7 +328,9 @@ export default function GitScreen() {
 			const gitStatus = await gitApi.getStatus();
 			setStatus(gitStatus);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to load git status");
+			setError(
+				err instanceof Error ? err.message : "Failed to load git status",
+			);
 			setStatus(null);
 		} finally {
 			setIsLoading(false);
@@ -469,15 +510,24 @@ export default function GitScreen() {
 				)}
 
 				{(modifiedFiles.length > 0 || untrackedFiles.length > 0) && (
-					<View style={[styles.changesHeader, { backgroundColor: colors.muted }]}>
-						<Text style={[typography.meta, { color: colors.mutedForeground, fontWeight: "500" }]}>
+					<View
+						style={[styles.changesHeader, { backgroundColor: colors.muted }]}
+					>
+						<Text
+							style={[
+								typography.meta,
+								{ color: colors.mutedForeground, fontWeight: "500" },
+							]}
+						>
 							Changes ({modifiedFiles.length + untrackedFiles.length})
 						</Text>
 						<Pressable
 							onPress={handleStageAll}
 							style={[styles.stageAllButton, { backgroundColor: colors.card }]}
 						>
-							<Text style={[typography.micro, { color: colors.primary }]}>Stage All</Text>
+							<Text style={[typography.micro, { color: colors.primary }]}>
+								Stage All
+							</Text>
 						</Pressable>
 					</View>
 				)}
@@ -516,19 +566,31 @@ export default function GitScreen() {
 	const directoryName = directory?.split("/").pop() || "Select Directory";
 
 	return (
-		<View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+		<View
+			style={[
+				styles.container,
+				{ backgroundColor: colors.background, paddingTop: insets.top },
+			]}
+		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Pressable
 					onPress={() => router.push("/onboarding/directory")}
 					style={[styles.directoryButton, { backgroundColor: colors.muted }]}
 				>
 					<FolderIcon color={colors.primary} />
-					<Text style={[typography.meta, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
+					<Text
+						style={[typography.meta, { color: colors.foreground, flex: 1 }]}
+						numberOfLines={1}
+					>
 						{directoryName}
 					</Text>
-					<Text style={[typography.micro, { color: colors.mutedForeground }]}>Change</Text>
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+						Change
+					</Text>
 				</Pressable>
-				<Text style={[typography.uiHeader, { color: colors.foreground }]}>Git</Text>
+				<Text style={[typography.uiHeader, { color: colors.foreground }]}>
+					Git
+				</Text>
 			</View>
 
 			{status && (
@@ -548,7 +610,12 @@ export default function GitScreen() {
 								strokeLinecap="round"
 							/>
 						</Svg>
-						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.foreground, fontWeight: "500" },
+							]}
+						>
 							{status.current}
 						</Text>
 					</View>
@@ -590,7 +657,14 @@ export default function GitScreen() {
 					{isPulling ? (
 						<ActivityIndicator size="small" color={colors.foreground} />
 					) : (
-						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>Pull</Text>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.foreground, fontWeight: "500" },
+							]}
+						>
+							Pull
+						</Text>
 					)}
 				</Pressable>
 				<Pressable
@@ -600,11 +674,19 @@ export default function GitScreen() {
 						styles.footerButton,
 						{
 							backgroundColor: colors.primary,
-							opacity: stagedFiles.length === 0 && modifiedFiles.length === 0 ? 0.5 : 1,
+							opacity:
+								stagedFiles.length === 0 && modifiedFiles.length === 0
+									? 0.5
+									: 1,
 						},
 					]}
 				>
-					<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.primaryForeground, fontWeight: "500" },
+						]}
+					>
 						Commit
 					</Text>
 				</Pressable>
@@ -623,7 +705,14 @@ export default function GitScreen() {
 					{isPushing ? (
 						<ActivityIndicator size="small" color={colors.foreground} />
 					) : (
-						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>Push</Text>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.foreground, fontWeight: "500" },
+							]}
+						>
+							Push
+						</Text>
 					)}
 				</Pressable>
 			</View>

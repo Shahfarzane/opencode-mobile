@@ -1,5 +1,5 @@
-import { StyleSheet, type TextStyle } from 'react-native';
-import { MOBILE_TYPOGRAPHY } from '@openchamber/shared/typography';
+import { MOBILE_TYPOGRAPHY } from "@openchamber/shared/typography";
+import { StyleSheet, type TextStyle } from "react-native";
 
 function remToPixels(rem: string): number {
 	const value = parseFloat(rem);
@@ -7,10 +7,10 @@ function remToPixels(rem: string): number {
 }
 
 export const FontFamily = {
-	regular: 'IBMPlexMono-Regular',
-	medium: 'IBMPlexMono-Medium',
-	semiBold: 'IBMPlexMono-SemiBold',
-	bold: 'IBMPlexMono-Bold',
+	regular: "IBMPlexMono-Regular",
+	medium: "IBMPlexMono-Medium",
+	semiBold: "IBMPlexMono-SemiBold",
+	bold: "IBMPlexMono-Bold",
 } as const;
 
 export const FontSizes = {

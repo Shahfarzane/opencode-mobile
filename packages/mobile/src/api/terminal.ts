@@ -1,4 +1,4 @@
-import { apiPost, apiDelete, apiRequest } from "../lib/httpClient";
+import { apiDelete, apiPost, apiRequest } from "../lib/httpClient";
 
 const API_BASE = "/api/terminal";
 
@@ -24,7 +24,9 @@ export interface CreateTerminalOptions {
 }
 
 export const terminalApi = {
-	async createSession(options: CreateTerminalOptions): Promise<TerminalSession> {
+	async createSession(
+		options: CreateTerminalOptions,
+	): Promise<TerminalSession> {
 		return apiPost<TerminalSession>(`${API_BASE}/create`, {
 			cwd: options.cwd,
 			cols: options.cols ?? 80,
@@ -40,11 +42,7 @@ export const terminalApi = {
 		});
 	},
 
-	async resize(
-		sessionId: string,
-		cols: number,
-		rows: number,
-	): Promise<void> {
+	async resize(sessionId: string, cols: number, rows: number): Promise<void> {
 		await apiPost<void>(`${API_BASE}/${sessionId}/resize`, { cols, rows });
 	},
 

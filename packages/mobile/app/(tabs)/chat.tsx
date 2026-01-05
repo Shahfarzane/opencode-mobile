@@ -1,25 +1,38 @@
+import type BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
+	StyleSheet,
 	Text,
 	View,
-	StyleSheet,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import BottomSheet from "@gorhom/bottom-sheet";
-import { sessionsApi, filesApi, type Session } from "../../src/api";
-import type { Message, MessagePart, Permission, PermissionResponse } from "../../src/components/chat";
-import { ChatInput, MessageList, PermissionCard, convertStreamingPart } from "../../src/components/chat";
+import Svg, { Path } from "react-native-svg";
+import { filesApi, type Session, sessionsApi } from "../../src/api";
+import type {
+	Message,
+	MessagePart,
+	Permission,
+	PermissionResponse,
+} from "../../src/components/chat";
+import {
+	ChatInput,
+	convertStreamingPart,
+	MessageList,
+	PermissionCard,
+} from "../../src/components/chat";
 import { SessionBottomSheet } from "../../src/components/session";
-import { type MessagePart as StreamingPart } from "../../src/lib/streaming";
-import { useEventStream, type StreamEvent } from "../../src/hooks/useEventStream";
-import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { useTheme, typography } from "../../src/theme";
-import { useContextUsageContext } from "./_layout";
 import { useEdgeSwipe } from "../../src/hooks/useEdgeSwipe";
+import {
+	type StreamEvent,
+	useEventStream,
+} from "../../src/hooks/useEventStream";
+import type { MessagePart as StreamingPart } from "../../src/lib/streaming";
+import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { typography, useTheme } from "../../src/theme";
+import { useContextUsageContext } from "./context";
 
 const DEFAULT_CONTEXT_LIMIT = 200000;
 const DEFAULT_OUTPUT_LIMIT = 8192;
@@ -68,138 +81,149 @@ export default function ChatScreen() {
 	const lastEventTimeRef = useRef<number>(0);
 	const bottomSheetRef = useRef<BottomSheet>(null);
 
-	const handleStreamEvent = useCallback((event: StreamEvent) => {
-		const props = event.properties;
-		if (!props) return;
+	const handleStreamEvent = useCallback(
+		(event: StreamEvent) => {
+			const props = event.properties;
+			if (!props) return;
 
-		const eventSessionId = props.sessionID || props.info?.sessionID;
-		if (eventSessionId && sessionId && eventSessionId !== sessionId) {
-			return;
-		}
-
-		lastEventTimeRef.current = Date.now();
-
-		if (__DEV__) {
-			console.log("[Chat] Event:", event.type, props.part?.type || props.info?.finish || "");
-		}
-
-		if (event.type === "session.error" || event.type === "message.error") {
-			console.error("[Chat] Stream error:", props);
-			setIsLoading(false);
-			currentAssistantMessageIdRef.current = null;
-			return;
-		}
-
-		if (event.type === "permission.updated") {
-			const permission: Permission = {
-				id: props.id || `perm-${Date.now()}`,
-				type: props.type || "unknown",
-				pattern: props.pattern,
-				sessionID: eventSessionId || sessionId || "",
-				messageID: props.messageID || "",
-				callID: props.callID,
-				title: props.title || "",
-				metadata: props.metadata || {},
-				time: { created: props.time?.created || Date.now() },
-			};
-			setPermissions((prev) => [...prev, permission]);
-			return;
-		}
-
-		if (event.type === "message.part.updated" && props.part) {
-			// Only process parts for assistant messages - ignore user message events
-			if (props.info?.role === "user") {
+			const eventSessionId = props.sessionID || props.info?.sessionID;
+			if (eventSessionId && sessionId && eventSessionId !== sessionId) {
 				return;
 			}
 
-			const streamPart = props.part as StreamingPart;
-			const partId = streamPart.id || `part-${Date.now()}-${Math.random()}`;
-			const converted = convertStreamingPart(streamPart);
-			converted.id = partId;
+			lastEventTimeRef.current = Date.now();
 
-			partsMapRef.current.set(partId, converted);
-
-			const partsArray = Array.from(partsMapRef.current.values());
-			let textContent = "";
-			for (const p of partsArray) {
-				if (p.type === "text") {
-					textContent += p.content || p.text || "";
-				}
-			}
-
-			const assistantId = currentAssistantMessageIdRef.current;
-			if (assistantId) {
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === assistantId
-							? { ...msg, parts: partsArray, content: textContent }
-							: msg,
-					),
+			if (__DEV__) {
+				console.log(
+					"[Chat] Event:",
+					event.type,
+					props.part?.type || props.info?.finish || "",
 				);
 			}
-		}
 
-		if (event.type === "message.updated") {
-			const info = props.info;
-			const serverParts = props.parts;
-
-			// Only process assistant messages - ignore user message events
-			// The server sends message.updated for both user and assistant messages
-			if (info?.role === "user") {
+			if (event.type === "session.error" || event.type === "message.error") {
+				console.error("[Chat] Stream error:", props);
+				setIsLoading(false);
+				currentAssistantMessageIdRef.current = null;
 				return;
 			}
 
-			if (serverParts && Array.isArray(serverParts)) {
-				for (const sp of serverParts) {
-					const streamPart = sp as StreamingPart;
-					const partId = streamPart.id || `part-${Date.now()}-${Math.random()}`;
-					const converted = convertStreamingPart(streamPart);
-					converted.id = partId;
-					partsMapRef.current.set(partId, converted);
+			if (event.type === "permission.updated") {
+				const permission: Permission = {
+					id: props.id || `perm-${Date.now()}`,
+					type: props.type || "unknown",
+					pattern: props.pattern,
+					sessionID: eventSessionId || sessionId || "",
+					messageID: props.messageID || "",
+					callID: props.callID,
+					title: props.title || "",
+					metadata: props.metadata || {},
+					time: { created: props.time?.created || Date.now() },
+				};
+				setPermissions((prev) => [...prev, permission]);
+				return;
+			}
+
+			if (event.type === "message.part.updated" && props.part) {
+				// Only process parts for assistant messages - ignore user message events
+				if (props.info?.role === "user") {
+					return;
+				}
+
+				const streamPart = props.part as StreamingPart;
+				const partId = streamPart.id || `part-${Date.now()}-${Math.random()}`;
+				const converted = convertStreamingPart(streamPart);
+				converted.id = partId;
+
+				partsMapRef.current.set(partId, converted);
+
+				const partsArray = Array.from(partsMapRef.current.values());
+				let textContent = "";
+				for (const p of partsArray) {
+					if (p.type === "text") {
+						textContent += p.content || p.text || "";
+					}
+				}
+
+				const assistantId = currentAssistantMessageIdRef.current;
+				if (assistantId) {
+					setMessages((prev) =>
+						prev.map((msg) =>
+							msg.id === assistantId
+								? { ...msg, parts: partsArray, content: textContent }
+								: msg,
+						),
+					);
 				}
 			}
 
-			const partsArray = Array.from(partsMapRef.current.values());
-			let textContent = "";
-			for (const p of partsArray) {
-				if (p.type === "text") {
-					textContent += p.content || p.text || "";
+			if (event.type === "message.updated") {
+				const info = props.info;
+				const serverParts = props.parts;
+
+				// Only process assistant messages - ignore user message events
+				// The server sends message.updated for both user and assistant messages
+				if (info?.role === "user") {
+					return;
+				}
+
+				if (serverParts && Array.isArray(serverParts)) {
+					for (const sp of serverParts) {
+						const streamPart = sp as StreamingPart;
+						const partId =
+							streamPart.id || `part-${Date.now()}-${Math.random()}`;
+						const converted = convertStreamingPart(streamPart);
+						converted.id = partId;
+						partsMapRef.current.set(partId, converted);
+					}
+				}
+
+				const partsArray = Array.from(partsMapRef.current.values());
+				let textContent = "";
+				for (const p of partsArray) {
+					if (p.type === "text") {
+						textContent += p.content || p.text || "";
+					}
+				}
+
+				const isComplete =
+					info?.finish === "stop" ||
+					info?.finish === "cancelled" ||
+					info?.finish === "error" ||
+					(info?.time?.completed && typeof info.time.completed === "number");
+
+				if (__DEV__ && isComplete) {
+					console.log("[Chat] Message complete:", {
+						finish: info?.finish,
+						partsCount: partsArray.length,
+					});
+				}
+
+				const assistantId = currentAssistantMessageIdRef.current;
+				if (assistantId) {
+					setMessages((prev) =>
+						prev.map((msg) =>
+							msg.id === assistantId
+								? {
+										...msg,
+										parts: partsArray,
+										content: textContent,
+										isStreaming: !isComplete,
+									}
+								: msg,
+						),
+					);
+
+					if (isComplete) {
+						setIsLoading(false);
+						currentAssistantMessageIdRef.current = null;
+						partsMapRef.current.clear();
+					}
 				}
 			}
-
-			const isComplete =
-				info?.finish === "stop" ||
-				info?.finish === "cancelled" ||
-				info?.finish === "error" ||
-				(info?.time?.completed && typeof info.time.completed === "number");
-
-			if (__DEV__ && isComplete) {
-				console.log("[Chat] Message complete:", { finish: info?.finish, partsCount: partsArray.length });
-			}
-
-			const assistantId = currentAssistantMessageIdRef.current;
-			if (assistantId) {
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === assistantId
-							? {
-									...msg,
-									parts: partsArray,
-									content: textContent,
-									isStreaming: !isComplete,
-								}
-							: msg,
-					),
-				);
-
-				if (isComplete) {
-					setIsLoading(false);
-					currentAssistantMessageIdRef.current = null;
-					partsMapRef.current.clear();
-				}
-			}
-		}
-	}, [sessionId]);
+		},
+		[sessionId],
+	);
 
 	useEventStream(sessionId, handleStreamEvent);
 
@@ -230,19 +254,27 @@ export default function ChatScreen() {
 
 	useEffect(() => {
 		if (!isLoading) return;
-		
+
 		const STUCK_TIMEOUT_MS = 60000;
 		const checkInterval = setInterval(() => {
 			const timeSinceLastEvent = Date.now() - lastEventTimeRef.current;
-			if (lastEventTimeRef.current > 0 && timeSinceLastEvent > STUCK_TIMEOUT_MS) {
+			if (
+				lastEventTimeRef.current > 0 &&
+				timeSinceLastEvent > STUCK_TIMEOUT_MS
+			) {
 				console.warn("[Chat] Stream appears stuck, resetting loading state");
 				setIsLoading(false);
 				currentAssistantMessageIdRef.current = null;
-				
+
 				setMessages((prev) =>
 					prev.map((msg) =>
 						msg.isStreaming
-							? { ...msg, isStreaming: false, content: msg.content || "[Response incomplete - connection lost]" }
+							? {
+									...msg,
+									isStreaming: false,
+									content:
+										msg.content || "[Response incomplete - connection lost]",
+								}
 							: msg,
 					),
 				);
@@ -421,8 +453,10 @@ export default function ChatScreen() {
 	const HEADER_HEIGHT = 52;
 	const keyboardOffset = HEADER_HEIGHT + insets.top;
 
-	const currentSession = sessions.find(s => s.id === sessionId);
-	const sessionLabel = currentSession?.title || (sessionId ? `Session ${sessionId.slice(0, 8)}` : "New Session");
+	const currentSession = sessions.find((s) => s.id === sessionId);
+	const sessionLabel =
+		currentSession?.title ||
+		(sessionId ? `Session ${sessionId.slice(0, 8)}` : "New Session");
 
 	const handlePermissionResponse = useCallback(
 		async (permissionId: string, response: PermissionResponse) => {
@@ -434,7 +468,9 @@ export default function ChatScreen() {
 		[sessionId],
 	);
 
-	const activePermissions = permissions.filter((p) => p.sessionID === sessionId);
+	const activePermissions = permissions.filter(
+		(p) => p.sessionID === sessionId,
+	);
 
 	return (
 		<KeyboardAvoidingView
@@ -453,7 +489,10 @@ export default function ChatScreen() {
 						strokeWidth={2}
 					/>
 				</Svg>
-				<Text style={[typography.micro, { color: colors.mutedForeground, flex: 1 }]} numberOfLines={1}>
+				<Text
+					style={[typography.micro, { color: colors.mutedForeground, flex: 1 }]}
+					numberOfLines={1}
+				>
 					{sessionLabel}
 				</Text>
 				<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
@@ -471,12 +510,19 @@ export default function ChatScreen() {
 			</View>
 
 			{activePermissions.length > 0 && (
-				<View style={[styles.permissionsContainer, { backgroundColor: colors.background }]}>
+				<View
+					style={[
+						styles.permissionsContainer,
+						{ backgroundColor: colors.background },
+					]}
+				>
 					{activePermissions.map((permission) => (
 						<PermissionCard
 							key={permission.id}
 							permission={permission}
-							onResponse={(response) => handlePermissionResponse(permission.id, response)}
+							onResponse={(response) =>
+								handlePermissionResponse(permission.id, response)
+							}
 						/>
 					))}
 				</View>
@@ -496,7 +542,9 @@ export default function ChatScreen() {
 					onSend={handleSend}
 					isLoading={isLoading}
 					placeholder={
-						isConnected ? "# for agents; @ for files; / for commands" : "Connect to server first"
+						isConnected
+							? "# for agents; @ for files; / for commands"
+							: "Connect to server first"
 					}
 					onFileSearch={handleFileSearch}
 				/>
@@ -520,8 +568,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	sessionBar: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 		paddingHorizontal: 16,
 		paddingVertical: 10,

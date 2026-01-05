@@ -1,7 +1,7 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { useConnectionStore } from "../stores/useConnectionStore";
 import type { TerminalStreamEvent } from "../api/terminal";
+import { useConnectionStore } from "../stores/useConnectionStore";
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 8000;
@@ -18,20 +18,22 @@ export interface UseTerminalStreamOptions {
 }
 
 export function useTerminalStream(options: UseTerminalStreamOptions) {
-	const {
-		sessionId,
-		onData,
-		onConnected,
-		onExit,
-		onError,
-		onReconnecting,
-	} = options;
+	const { sessionId, onData, onConnected, onExit, onError, onReconnecting } =
+		options;
 
-	const { serverUrl, authToken, isConnected: isServerConnected } = useConnectionStore();
-	
+	const {
+		serverUrl,
+		authToken,
+		isConnected: isServerConnected,
+	} = useConnectionStore();
+
 	const xhrRef = useRef<XMLHttpRequest | null>(null);
-	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
+	const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 	const lastProcessedIndexRef = useRef(0);
 	const isConnectingRef = useRef(false);
 	const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY_MS);
@@ -39,7 +41,7 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 	const isActiveRef = useRef(true);
 	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 	const terminalExitedRef = useRef(false);
-	
+
 	const onDataRef = useRef(onData);
 	const onConnectedRef = useRef(onConnected);
 	const onExitRef = useRef(onExit);
@@ -75,39 +77,51 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 	}, []);
 
 	const scheduleReconnect = useCallback(() => {
-		if (!isActiveRef.current || !isServerConnected || terminalExitedRef.current) {
+		if (
+			!isActiveRef.current ||
+			!isServerConnected ||
+			terminalExitedRef.current
+		) {
 			return;
 		}
 
 		if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
 			console.log("[TerminalStream] Max retries reached");
-			onErrorRef.current(new Error("Terminal connection failed after max retries"));
+			onErrorRef.current(
+				new Error("Terminal connection failed after max retries"),
+			);
 			return;
 		}
 
 		clearTimers();
-		
+
 		retryCountRef.current += 1;
 		const delay = reconnectDelayRef.current;
-		
-		console.log(`[TerminalStream] Reconnecting in ${delay}ms (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`);
+
+		console.log(
+			`[TerminalStream] Reconnecting in ${delay}ms (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`,
+		);
 		onReconnectingRef.current?.(retryCountRef.current, MAX_RETRY_ATTEMPTS);
-		
+
 		reconnectTimeoutRef.current = setTimeout(() => {
-			if (isActiveRef.current && isServerConnected && !terminalExitedRef.current) {
+			if (
+				isActiveRef.current &&
+				isServerConnected &&
+				!terminalExitedRef.current
+			) {
 				connectRef.current();
 			}
 		}, delay);
 
 		reconnectDelayRef.current = Math.min(
-			reconnectDelayRef.current * 2, 
-			MAX_RECONNECT_DELAY_MS
+			reconnectDelayRef.current * 2,
+			MAX_RECONNECT_DELAY_MS,
 		);
 	}, [isServerConnected, clearTimers]);
 
 	const connect = useCallback(() => {
 		const currentSessionId = sessionIdRef.current;
-		
+
 		if (!serverUrl || !authToken || !isServerConnected || !currentSessionId) {
 			console.log("[TerminalStream] Missing required params, skipping");
 			return;
@@ -132,7 +146,10 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 		clearTimers();
 
 		let normalizedUrl = serverUrl.trim();
-		if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+		if (
+			!normalizedUrl.startsWith("http://") &&
+			!normalizedUrl.startsWith("https://")
+		) {
 			normalizedUrl = `http://${normalizedUrl}`;
 		}
 		if (normalizedUrl.endsWith("/")) {
@@ -179,7 +196,10 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 				}
 			}
 
-			if (xhr.readyState === XMLHttpRequest.LOADING || xhr.readyState === XMLHttpRequest.DONE) {
+			if (
+				xhr.readyState === XMLHttpRequest.LOADING ||
+				xhr.readyState === XMLHttpRequest.DONE
+			) {
 				const newData = xhr.responseText.slice(lastProcessedIndexRef.current);
 				lastProcessedIndexRef.current = xhr.responseText.length;
 
@@ -203,7 +223,10 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 										signal: parsed.signal,
 									});
 									terminalExitedRef.current = true;
-									onExitRef.current(parsed.exitCode ?? 0, parsed.signal ?? null);
+									onExitRef.current(
+										parsed.exitCode ?? 0,
+										parsed.signal ?? null,
+									);
 									abortConnection();
 									clearTimers();
 								}
@@ -217,11 +240,14 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 				}
 			}
 
-			if (xhr.readyState === XMLHttpRequest.DONE && !terminalExitedRef.current) {
+			if (
+				xhr.readyState === XMLHttpRequest.DONE &&
+				!terminalExitedRef.current
+			) {
 				console.log("[TerminalStream] Connection closed unexpectedly");
 				xhrRef.current = null;
 				isConnectingRef.current = false;
-				
+
 				if (isActiveRef.current && isServerConnected) {
 					scheduleReconnect();
 				}
@@ -234,7 +260,11 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 			xhrRef.current = null;
 			isConnectingRef.current = false;
 
-			if (isActiveRef.current && isServerConnected && !terminalExitedRef.current) {
+			if (
+				isActiveRef.current &&
+				isServerConnected &&
+				!terminalExitedRef.current
+			) {
 				scheduleReconnect();
 			}
 		};
@@ -244,13 +274,24 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 			xhrRef.current = null;
 			isConnectingRef.current = false;
 
-			if (isActiveRef.current && isServerConnected && !terminalExitedRef.current) {
+			if (
+				isActiveRef.current &&
+				isServerConnected &&
+				!terminalExitedRef.current
+			) {
 				scheduleReconnect();
 			}
 		};
 
 		xhr.send();
-	}, [serverUrl, authToken, isServerConnected, clearTimers, scheduleReconnect, abortConnection]);
+	}, [
+		serverUrl,
+		authToken,
+		isServerConnected,
+		clearTimers,
+		scheduleReconnect,
+		abortConnection,
+	]);
 
 	connectRef.current = connect;
 
@@ -259,14 +300,17 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 			const previousState = appStateRef.current;
 			appStateRef.current = nextAppState;
 
-			if (previousState.match(/inactive|background/) && nextAppState === "active") {
+			if (
+				previousState.match(/inactive|background/) &&
+				nextAppState === "active"
+			) {
 				console.log("[TerminalStream] App became active");
 				if (sessionIdRef.current && !terminalExitedRef.current) {
 					abortConnection();
 					clearTimers();
 					reconnectDelayRef.current = INITIAL_RECONNECT_DELAY_MS;
 					retryCountRef.current = 0;
-					
+
 					setTimeout(() => {
 						if (isServerConnected && !terminalExitedRef.current) {
 							connectRef.current();
@@ -280,7 +324,10 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 			}
 		};
 
-		const subscription = AppState.addEventListener("change", handleAppStateChange);
+		const subscription = AppState.addEventListener(
+			"change",
+			handleAppStateChange,
+		);
 
 		return () => {
 			subscription.remove();
@@ -320,7 +367,7 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 	const isConnected = xhrRef.current !== null && !isConnectingRef.current;
 	const isReconnecting = retryCountRef.current > 0 && isConnectingRef.current;
 
-	return { 
+	return {
 		disconnect,
 		isConnected,
 		isReconnecting,

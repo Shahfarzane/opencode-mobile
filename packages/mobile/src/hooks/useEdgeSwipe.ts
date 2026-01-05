@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Dimensions, type GestureResponderEvent } from "react-native";
+import type { GestureResponderEvent } from "react-native";
 
 interface EdgeSwipeOptions {
 	edgeThreshold?: number;
@@ -18,12 +18,12 @@ export function useEdgeSwipe(options: EdgeSwipeOptions = {}) {
 		onSwipe,
 	} = options;
 
-	const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+	const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
+		null,
+	);
 
 	useEffect(() => {
 		if (!enabled || !onSwipe) return;
-
-		const screenWidth = Dimensions.get("window").width;
 
 		const handleTouchStart = (event: TouchEvent) => {
 			const touch = event.touches[0];
@@ -65,7 +65,11 @@ export function useEdgeSwipe(options: EdgeSwipeOptions = {}) {
 			const isHorizontal = Math.abs(deltaY) < Math.abs(deltaX);
 			const isQuick = deltaTime <= maxSwipeTime;
 			const limitedVertical = Math.abs(deltaY) < minSwipeDistance;
-			const isValidSwipe = deltaX >= minSwipeDistance && isHorizontal && isQuick && limitedVertical;
+			const isValidSwipe =
+				deltaX >= minSwipeDistance &&
+				isHorizontal &&
+				isQuick &&
+				limitedVertical;
 
 			if (isValidSwipe) {
 				onSwipe();
@@ -79,9 +83,13 @@ export function useEdgeSwipe(options: EdgeSwipeOptions = {}) {
 		};
 
 		if (typeof document !== "undefined") {
-			document.addEventListener("touchstart", handleTouchStart, { passive: true });
+			document.addEventListener("touchstart", handleTouchStart, {
+				passive: true,
+			});
 			document.addEventListener("touchend", handleTouchEnd, { passive: true });
-			document.addEventListener("touchcancel", handleTouchCancel, { passive: true });
+			document.addEventListener("touchcancel", handleTouchCancel, {
+				passive: true,
+			});
 
 			return () => {
 				document.removeEventListener("touchstart", handleTouchStart);
@@ -122,7 +130,11 @@ export function createPanResponderHandlers(options: EdgeSwipeOptions) {
 			const isHorizontal = Math.abs(deltaY) < Math.abs(deltaX);
 			const isQuick = deltaTime <= maxSwipeTime;
 			const limitedVertical = Math.abs(deltaY) < minSwipeDistance;
-			const isValidSwipe = deltaX >= minSwipeDistance && isHorizontal && isQuick && limitedVertical;
+			const isValidSwipe =
+				deltaX >= minSwipeDistance &&
+				isHorizontal &&
+				isQuick &&
+				limitedVertical;
 
 			if (isValidSwipe) {
 				onSwipe();

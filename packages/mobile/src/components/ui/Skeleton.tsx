@@ -1,11 +1,17 @@
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View, type ViewStyle } from "react-native";
-import { useTheme } from "@/theme";
+import {
+	Animated,
+	type DimensionValue,
+	StyleSheet,
+	View,
+	type ViewStyle,
+} from "react-native";
 import { shimmer as shimmerAnimation } from "@/lib/animations";
+import { useTheme } from "@/theme";
 
 interface SkeletonProps {
-	width?: number | string;
-	height?: number | string;
+	width?: DimensionValue;
+	height?: DimensionValue;
 	borderRadius?: number;
 	variant?: "rectangle" | "circle" | "text";
 	style?: ViewStyle;
@@ -85,20 +91,18 @@ export function SkeletonText({
 	width = "100%",
 	lines = 1,
 }: {
-	width?: number | string;
+	width?: DimensionValue;
 	lines?: number;
 }) {
-	const { colors } = useTheme();
-
 	if (lines === 1) {
 		return <Skeleton variant="text" width={width} />;
 	}
 
 	return (
 		<View style={styles.textContainer}>
-			{Array.from({ length: lines }).map((_, index) => (
+			{Array.from({ length: lines }).map((_, index, arr) => (
 				<Skeleton
-					key={index}
+					key={`skeleton-${arr.length}-${index}`}
 					variant="text"
 					width={index === lines - 1 ? "60%" : width}
 				/>

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from "../lib/httpClient";
+import { apiDelete, apiGet, apiPost } from "../lib/httpClient";
 
 export interface Agent {
 	name: string;
@@ -49,8 +49,7 @@ function unwrapAgents(response: unknown): Agent[] {
 export const isAgentBuiltIn = (agent: Agent): boolean =>
 	agent.builtIn === true || agent.native === true;
 
-export const isAgentHidden = (agent: Agent): boolean =>
-	agent.hidden === true;
+export const isAgentHidden = (agent: Agent): boolean => agent.hidden === true;
 
 export const agentsApi = {
 	async list(): Promise<Agent[]> {

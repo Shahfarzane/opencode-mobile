@@ -1,4 +1,4 @@
-import { MOBILE_TYPOGRAPHY } from '@openchamber/shared/typography';
+import { MOBILE_TYPOGRAPHY } from "@openchamber/shared/typography";
 
 function remToPixels(rem: string): number {
 	const value = parseFloat(rem);

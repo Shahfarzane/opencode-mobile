@@ -6,7 +6,9 @@
 [![Created with OpenCode](docs/references/badges/created-with-opencode.svg)](https://opencode.ai)
 [![Ask Zread](https://img.shields.io/badge/Ask_Zread-_.svg?style=flat&labelColor=100F0F&color=3AA99F&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQuOTYxNTYgMS42MDAxSDIuMjQxNTZDMS44ODgxIDEuNjAwMSAxLjYwMTU2IDEuODg2NjQgMS42MDE1NiAyLjI0MDFWNC45NjAxQzEuNjAxNTYgNS4zMTM1NiAxLjg4ODEgNS42MDAxIDIuMjQxNTYgNS42MDAxSDQuOTYxNTZDNS4zMTUwMiA1LjYwMDEgNS42MDE1NiA1LjMxMzU2IDUuNjAxNTYgNC45NjAxVjIuMjQwMUM1LjYwMTU2IDEuODg2NjQgNS4zMTUwMiAxLjYwMDEgNC45NjE1NiAxLjYwMDFaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00Ljk2MTU2IDEwLjM5OTlIMi4yNDE1NkMxLjg4ODEgMTAuMzk5OSAxLjYwMTU2IDEwLjY4NjQgMS42MDE1NiAxMS4wMzk5VjEzLjc1OTlDMS42MDE1NiAxNC4xMTM0IDEuODg4MSAxNC4zOTk5IDIuMjQxNTYgMTQuMzk5OUg0Ljk2MTU2QzUuMzE1MDIgMTQuMzk5OSA1LjYwMTU2IDE0LjExMzQgNS42MDE1NiAxMy43NTk5VjExLjAzOTlDNS42MDE1NiAxMC42ODY0IDUuMzE1MDIgMTAuMzk5OSA0Ljk2MTU2IDEwLjM5OTlaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik0xMy43NTg0IDEuNjAwMUgxMS4wMzg0QzEwLjY4NSAxLjYwMDEgMTAuMzk4NCAxLjg4NjY0IDEwLjM5ODQgMi4yNDAxVjQuOTYwMUMxMC4zOTg0IDUuMzEzNTYgMTAuNjg1IDUuNjAwMSAxMS4wMzg0IDUuNjAwMUgxMy43NTg0QzE0LjExMTkgNS42MDAxIDE0LjM5ODQgNS4zMTM1NiAxNC4zOTg0IDQuOTYwMVYyLjI0MDFDMTQuMzk4NCAxLjg4NjY0IDE0LjExMTkgMS42MDAxIDEzLjc1ODQgMS42MDAxWiIgZmlsbD0iI2ZmZiIvPgo8cGF0aCBkPSJNNCAxMkwxMiA0TDQgMTJaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00IDEyTDEyIDQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K&logoColor=FFFCF0)](https://zread.ai/btriapitsyn/openchamber)
 
-Web and desktop interface for the [OpenCode](https://opencode.ai) AI coding agent. Works alongside the OpenCode TUI.
+Web, desktop, and mobile interface for the [OpenCode](https://opencode.ai) AI coding agent. Works alongside the OpenCode TUI.
+
+> **Fork Note**: This project is based on [btriapitsyn/openchamber](https://github.com/btriapitsyn/openchamber) with the addition of a native mobile app for iOS built with Expo/React Native.
 
 The OpenCode team is actively working on their own desktop app. I still decided to release this project as a fan-made alternative.
 
@@ -35,12 +37,13 @@ The whole project was built entirely with AI coding agents under my supervision.
 ## Why use OpenChamber?
 
 - **Cross-device continuity**: Start in TUI, continue on tablet/phone, return to terminal - same session
-- **Remote access**: Use OpenCode from anywhere via browser
+- **Remote access**: Use OpenCode from anywhere via browser or mobile app
+- **Native mobile experience**: Dedicated iOS app with haptic feedback and native gestures
 - **Familiarity**: A visual alternative for developers who prefer GUI workflows
 
 ## Features
 
-### Core (all apps versions)
+### Core (all app versions)
 
 - Integrated terminal
 - Git operations with identity management and AI commit message generation
@@ -54,6 +57,20 @@ The whole project was built entirely with AI coding agents under my supervision.
 - UI scaling controls (font size and spacing)
 - Session auto-cleanup with configurable retention
 - Memory optimizations with LRU eviction
+
+### Mobile App (iOS)
+
+- **Native iOS app** built with Expo and React Native
+- Real-time streaming responses with live message updates
+- QR code scanner for quick server pairing
+- Face ID / Touch ID for secure authentication token storage
+- Haptic feedback throughout the UI
+- Edge swipe gesture to access session history
+- Autocomplete for agents (`#`), files (`@`), and commands (`/`)
+- Markdown rendering with syntax highlighting
+- Tool call visualization (reasoning, tool execution, results)
+- Light and dark theme support (follows system preference)
+- iPad support with adaptive layouts
 
 ### Web / PWA
 
@@ -73,6 +90,43 @@ The whole project was built entirely with AI coding agents under my supervision.
 - In-extension Settings access and theme mapping
 
 ## Installation
+
+### Mobile App (iOS)
+
+The mobile app requires a running OpenChamber web server to connect to.
+
+**Development Build:**
+
+```bash
+cd packages/mobile
+
+# Install dependencies
+bun install
+
+# Start Expo development server
+bun run start
+
+# Run on iOS Simulator
+bun run ios:simulator
+
+# Run on physical device (requires Expo Go or dev build)
+bun run ios
+```
+
+**Production Build with EAS:**
+
+```bash
+# Build for iOS (requires EAS CLI and Apple Developer account)
+bun run build:ios
+
+# Local build (requires Xcode)
+bun run build:ios:local
+```
+
+**Connecting to a Server:**
+1. Start the OpenChamber web server on your computer
+2. Open the mobile app and go to Settings
+3. Scan the QR code displayed in the web UI, or manually enter the server URL
 
 ### VS Code Extension
 
@@ -107,12 +161,33 @@ Download from [Releases](https://github.com/btriapitsyn/openchamber/releases).
 - [OpenCode CLI](https://opencode.ai) installed
 - Node.js 20+ (for web version)
 - [cloudflared](https://github.com/cloudflare/cloudflared/releases) (required for `--try-cf-tunnel`)
+- Xcode 15+ (for iOS development)
+- [EAS CLI](https://docs.expo.dev/eas/) (for production iOS builds)
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## Tech Stack
 
-React 19, TypeScript, Vite 7, Tailwind CSS v4, Zustand, Radix UI, @opencode-ai/sdk, Express, Tauri (desktop)
+| Package | Technologies |
+|---------|--------------|
+| **Shared** | TypeScript, Zustand |
+| **UI** | React 19, Tailwind CSS v4, Radix UI |
+| **Web** | Vite 7, Express, @opencode-ai/sdk |
+| **Desktop** | Tauri, Rust |
+| **Mobile** | Expo 54, React Native 0.81, Expo Router, Reanimated |
+| **VS Code** | VS Code Extension API |
+
+## Monorepo Structure
+
+```
+packages/
+├── shared/     # Shared types, themes, and utilities
+├── ui/         # React component library (web/desktop)
+├── web/        # Web server and PWA
+├── desktop/    # Tauri desktop app (macOS)
+├── mobile/     # Expo/React Native iOS app
+└── vscode/     # VS Code extension
+```
 
 ## Acknowledgments
 
@@ -121,9 +196,11 @@ Independent project, not affiliated with OpenCode team.
 **Special thanks to:**
 
 - [OpenCode](https://opencode.ai) - For the excellent API and extensible architecture
+- [btriapitsyn/openchamber](https://github.com/btriapitsyn/openchamber) - Original project this fork is based on
 - [Flexoki](https://github.com/kepano/flexoki) - Beautiful color scheme by [Steph Ango](https://stephango.com/flexoki)
 - [Pierre](https://pierrejs-docs.vercel.app/) - Fast, beautiful diff viewer with syntax highlighting
 - [Tauri](https://github.com/tauri-apps/tauri) - Desktop application framework
+- [Expo](https://expo.dev) - React Native development platform
 - [David Hill](https://x.com/iamdavidhill) - who inspired me to release this without [overthinking](https://x.com/iamdavidhill/status/1993648326450020746?s=20)
 - My wife, who created a beautiful firework animation for the app while testing it for the first time
 

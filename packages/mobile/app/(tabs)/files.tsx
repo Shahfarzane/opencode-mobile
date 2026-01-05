@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -9,11 +10,10 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-import { filesApi, type FileListEntry } from "../../src/api";
+import { type FileListEntry, filesApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { useTheme, typography } from "../../src/theme";
+import { typography, useTheme } from "../../src/theme";
 
 function FolderIcon({ size = 20, color }: { size?: number; color: string }) {
 	return (
@@ -29,12 +29,41 @@ function FolderIcon({ size = 20, color }: { size?: number; color: string }) {
 	);
 }
 
-function FileIcon({ size = 20, extension, colors }: { size?: number; extension?: string; colors: { code: string; config: string; doc: string; default: string } }) {
-	const isCode = ["ts", "tsx", "js", "jsx", "py", "go", "rs", "rb", "java", "c", "cpp", "h"].includes(extension || "");
-	const isConfig = ["json", "yaml", "yml", "toml", "xml", "env"].includes(extension || "");
+function FileIcon({
+	size = 20,
+	extension,
+	colors,
+}: {
+	size?: number;
+	extension?: string;
+	colors: { code: string; config: string; doc: string; default: string };
+}) {
+	const isCode = [
+		"ts",
+		"tsx",
+		"js",
+		"jsx",
+		"py",
+		"go",
+		"rs",
+		"rb",
+		"java",
+		"c",
+		"cpp",
+		"h",
+	].includes(extension || "");
+	const isConfig = ["json", "yaml", "yml", "toml", "xml", "env"].includes(
+		extension || "",
+	);
 	const isDoc = ["md", "txt", "doc", "pdf"].includes(extension || "");
 
-	const color = isCode ? colors.code : isConfig ? colors.config : isDoc ? colors.doc : colors.default;
+	const color = isCode
+		? colors.code
+		: isConfig
+			? colors.config
+			: isDoc
+				? colors.doc
+				: colors.default;
 
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -134,9 +163,13 @@ function PathBreadcrumb({
 
 				return (
 					<View key={fullPath} style={styles.breadcrumbPart}>
-						<Text style={[typography.meta, { color: colors.mutedForeground }]}>/</Text>
+						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+							/
+						</Text>
 						<Pressable onPress={() => onNavigate(fullPath)}>
-							<Text style={[typography.meta, { color: colors.primary }]}>{part}</Text>
+							<Text style={[typography.meta, { color: colors.primary }]}>
+								{part}
+							</Text>
 						</Pressable>
 					</View>
 				);
@@ -156,34 +189,39 @@ export default function FilesScreen() {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const loadDirectory = useCallback(async (path: string) => {
-		if (!isConnected) {
-			setError("Not connected");
-			setIsLoading(false);
-			return;
-		}
+	const loadDirectory = useCallback(
+		async (path: string) => {
+			if (!isConnected) {
+				setError("Not connected");
+				setIsLoading(false);
+				return;
+			}
 
-		try {
-			setError(null);
-			const result = await filesApi.listDirectory(path);
+			try {
+				setError(null);
+				const result = await filesApi.listDirectory(path);
 
-			const sorted = result.entries.sort((a, b) => {
-				if (a.isDirectory && !b.isDirectory) return -1;
-				if (!a.isDirectory && b.isDirectory) return 1;
-				if (a.name.startsWith(".") && !b.name.startsWith(".")) return 1;
-				if (!a.name.startsWith(".") && b.name.startsWith(".")) return -1;
-				return a.name.localeCompare(b.name);
-			});
+				const sorted = result.entries.sort((a, b) => {
+					if (a.isDirectory && !b.isDirectory) return -1;
+					if (!a.isDirectory && b.isDirectory) return 1;
+					if (a.name.startsWith(".") && !b.name.startsWith(".")) return 1;
+					if (!a.name.startsWith(".") && b.name.startsWith(".")) return -1;
+					return a.name.localeCompare(b.name);
+				});
 
-			setEntries(sorted);
-			setCurrentPath(result.path);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to load directory");
-		} finally {
-			setIsLoading(false);
-			setIsRefreshing(false);
-		}
-	}, [isConnected]);
+				setEntries(sorted);
+				setCurrentPath(result.path);
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : "Failed to load directory",
+				);
+			} finally {
+				setIsLoading(false);
+				setIsRefreshing(false);
+			}
+		},
+		[isConnected],
+	);
 
 	useEffect(() => {
 		if (directory) {
@@ -191,10 +229,13 @@ export default function FilesScreen() {
 		}
 	}, [directory, loadDirectory]);
 
-	const handleNavigate = useCallback((path: string) => {
-		setIsLoading(true);
-		loadDirectory(path);
-	}, [loadDirectory]);
+	const handleNavigate = useCallback(
+		(path: string) => {
+			setIsLoading(true);
+			loadDirectory(path);
+		},
+		[loadDirectory],
+	);
 
 	const handleRefresh = useCallback(() => {
 		setIsRefreshing(true);
@@ -207,11 +248,14 @@ export default function FilesScreen() {
 		handleNavigate(parentPath);
 	}, [currentPath, directory, handleNavigate]);
 
-	const handleItemPress = useCallback((item: FileListEntry) => {
-		if (item.isDirectory) {
-			handleNavigate(item.path);
-		}
-	}, [handleNavigate]);
+	const handleItemPress = useCallback(
+		(item: FileListEntry) => {
+			if (item.isDirectory) {
+				handleNavigate(item.path);
+			}
+		},
+		[handleNavigate],
+	);
 
 	const canGoUp = directory && currentPath !== directory;
 
@@ -219,20 +263,44 @@ export default function FilesScreen() {
 
 	if (!directory) {
 		return (
-			<View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+			<View
+				style={[
+					styles.container,
+					{ backgroundColor: colors.background, paddingTop: insets.top },
+				]}
+			>
 				<View style={styles.emptyStateContainer}>
 					<FolderIcon size={48} color={colors.primary} />
-					<Text style={[typography.uiHeader, { color: colors.foreground, marginTop: 16 }]}>
+					<Text
+						style={[
+							typography.uiHeader,
+							{ color: colors.foreground, marginTop: 16 },
+						]}
+					>
 						No Directory Selected
 					</Text>
-					<Text style={[typography.body, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>
+					<Text
+						style={[
+							typography.body,
+							{
+								color: colors.mutedForeground,
+								textAlign: "center",
+								marginTop: 8,
+							},
+						]}
+					>
 						Select a project directory to browse files
 					</Text>
 					<Pressable
 						onPress={() => router.push("/onboarding/directory")}
 						style={[styles.selectButton, { backgroundColor: colors.primary }]}
 					>
-						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.primaryForeground, fontWeight: "500" },
+							]}
+						>
 							Select Directory
 						</Text>
 					</Pressable>
@@ -242,19 +310,31 @@ export default function FilesScreen() {
 	}
 
 	return (
-		<View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+		<View
+			style={[
+				styles.container,
+				{ backgroundColor: colors.background, paddingTop: insets.top },
+			]}
+		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Pressable
 					onPress={() => router.push("/onboarding/directory")}
 					style={[styles.directoryButton, { backgroundColor: colors.muted }]}
 				>
 					<FolderIcon color={colors.primary} />
-					<Text style={[typography.meta, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
+					<Text
+						style={[typography.meta, { color: colors.foreground, flex: 1 }]}
+						numberOfLines={1}
+					>
 						{directoryName}
 					</Text>
-					<Text style={[typography.micro, { color: colors.mutedForeground }]}>Change</Text>
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+						Change
+					</Text>
 				</Pressable>
-				<Text style={[typography.uiHeader, { color: colors.foreground }]}>Files</Text>
+				<Text style={[typography.uiHeader, { color: colors.foreground }]}>
+					Files
+				</Text>
 			</View>
 
 			<PathBreadcrumb
@@ -269,12 +349,21 @@ export default function FilesScreen() {
 				</View>
 			) : error ? (
 				<View style={styles.errorContainer}>
-					<Text style={[typography.body, { color: colors.destructive, textAlign: "center" }]}>{error}</Text>
+					<Text
+						style={[
+							typography.body,
+							{ color: colors.destructive, textAlign: "center" },
+						]}
+					>
+						{error}
+					</Text>
 					<Pressable
 						onPress={() => loadDirectory(currentPath)}
 						style={[styles.retryButton, { backgroundColor: colors.muted }]}
 					>
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Retry</Text>
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+							Retry
+						</Text>
 					</Pressable>
 				</View>
 			) : (
@@ -282,7 +371,10 @@ export default function FilesScreen() {
 					data={entries}
 					keyExtractor={(item) => item.path}
 					refreshControl={
-						<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+						<RefreshControl
+							refreshing={isRefreshing}
+							onRefresh={handleRefresh}
+						/>
 					}
 					ListHeaderComponent={
 						canGoUp ? (
@@ -303,7 +395,14 @@ export default function FilesScreen() {
 										strokeLinejoin="round"
 									/>
 								</Svg>
-								<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>..</Text>
+								<Text
+									style={[
+										typography.uiLabel,
+										{ color: colors.mutedForeground },
+									]}
+								>
+									..
+								</Text>
 							</Pressable>
 						) : null
 					}
@@ -312,7 +411,9 @@ export default function FilesScreen() {
 					)}
 					ListEmptyComponent={
 						<View style={styles.emptyList}>
-							<Text style={[typography.body, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.body, { color: colors.mutedForeground }]}
+							>
 								Empty directory
 							</Text>
 						</View>

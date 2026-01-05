@@ -1,5 +1,5 @@
-import { router } from "expo-router";
 import * as Linking from "expo-linking";
+import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -13,21 +13,21 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { settingsApi, type SettingsPayload } from "../../src/api";
-import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { useTheme, typography } from "../../src/theme";
+import { type SettingsPayload, settingsApi } from "../../src/api";
+import {
+	CommandIcon,
+	KeyIcon,
+	RobotIcon,
+	UsersIcon,
+} from "../../src/components/icons";
 import {
 	AgentsList,
 	CommandsList,
-	ProvidersList,
 	GitIdentitiesList,
+	ProvidersList,
 } from "../../src/components/settings";
-import {
-	RobotIcon,
-	CommandIcon,
-	KeyIcon,
-	UsersIcon,
-} from "../../src/components/icons";
+import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { typography, useTheme } from "../../src/theme";
 
 type SettingsTab = "general" | "agents" | "commands" | "providers" | "git";
 
@@ -221,7 +221,13 @@ function GeneralSettings() {
 			<SettingsItem
 				icon={
 					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-						<Circle cx="12" cy="12" r="10" stroke={colors.primary} strokeWidth={2} />
+						<Circle
+							cx="12"
+							cy="12"
+							r="10"
+							stroke={colors.primary}
+							strokeWidth={2}
+						/>
 						<Path
 							d="M12 6v6l4 2"
 							stroke={colors.primary}
@@ -369,7 +375,13 @@ function GeneralSettings() {
 			<SettingsItem
 				icon={
 					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-						<Circle cx="12" cy="12" r="10" stroke={colors.primary} strokeWidth={2} />
+						<Circle
+							cx="12"
+							cy="12"
+							r="10"
+							stroke={colors.primary}
+							strokeWidth={2}
+						/>
 						<Path
 							d="M12 16v-4M12 8h.01"
 							stroke={colors.primary}
@@ -438,12 +450,20 @@ export default function SettingsScreen() {
 				<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 					<Path
 						d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-						stroke={activeTab === "general" ? colors.foreground : colors.mutedForeground}
+						stroke={
+							activeTab === "general"
+								? colors.foreground
+								: colors.mutedForeground
+						}
 						strokeWidth={2}
 					/>
 					<Path
 						d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
-						stroke={activeTab === "general" ? colors.foreground : colors.mutedForeground}
+						stroke={
+							activeTab === "general"
+								? colors.foreground
+								: colors.mutedForeground
+						}
 						strokeWidth={2}
 					/>
 				</Svg>
@@ -452,22 +472,54 @@ export default function SettingsScreen() {
 		{
 			id: "agents",
 			label: "Agents",
-			icon: <RobotIcon size={18} color={activeTab === "agents" ? colors.foreground : colors.mutedForeground} />,
+			icon: (
+				<RobotIcon
+					size={18}
+					color={
+						activeTab === "agents" ? colors.foreground : colors.mutedForeground
+					}
+				/>
+			),
 		},
 		{
 			id: "commands",
 			label: "Commands",
-			icon: <CommandIcon size={18} color={activeTab === "commands" ? colors.foreground : colors.mutedForeground} />,
+			icon: (
+				<CommandIcon
+					size={18}
+					color={
+						activeTab === "commands"
+							? colors.foreground
+							: colors.mutedForeground
+					}
+				/>
+			),
 		},
 		{
 			id: "providers",
 			label: "Providers",
-			icon: <KeyIcon size={18} color={activeTab === "providers" ? colors.foreground : colors.mutedForeground} />,
+			icon: (
+				<KeyIcon
+					size={18}
+					color={
+						activeTab === "providers"
+							? colors.foreground
+							: colors.mutedForeground
+					}
+				/>
+			),
 		},
 		{
 			id: "git",
 			label: "Git",
-			icon: <UsersIcon size={18} color={activeTab === "git" ? colors.foreground : colors.mutedForeground} />,
+			icon: (
+				<UsersIcon
+					size={18}
+					color={
+						activeTab === "git" ? colors.foreground : colors.mutedForeground
+					}
+				/>
+			),
 		},
 	];
 
@@ -533,8 +585,12 @@ export default function SettingsScreen() {
 
 	const renderDetailView = () => {
 		return (
-			<View style={[styles.detailContainer, { backgroundColor: colors.background }]}>
-				<View style={[styles.detailHeader, { borderBottomColor: colors.border }]}>
+			<View
+				style={[styles.detailContainer, { backgroundColor: colors.background }]}
+			>
+				<View
+					style={[styles.detailHeader, { borderBottomColor: colors.border }]}
+				>
 					<Pressable onPress={handleBack} style={styles.backButton}>
 						<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
 							<Path
@@ -551,7 +607,16 @@ export default function SettingsScreen() {
 					</Text>
 				</View>
 				<View style={styles.detailContent}>
-					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", padding: 32 }]}>
+					<Text
+						style={[
+							typography.meta,
+							{
+								color: colors.mutedForeground,
+								textAlign: "center",
+								padding: 32,
+							},
+						]}
+					>
 						Detail editing coming soon.{"\n"}View-only mode for now.
 					</Text>
 				</View>
@@ -561,7 +626,10 @@ export default function SettingsScreen() {
 
 	return (
 		<View
-			style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}
+			style={[
+				styles.container,
+				{ backgroundColor: colors.background, paddingTop: insets.top },
+			]}
 		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				{showDetail ? (
@@ -585,14 +653,20 @@ export default function SettingsScreen() {
 
 			{!showDetail && (
 				<View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
-					<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarContent}>
+					<ScrollView
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						contentContainerStyle={styles.tabBarContent}
+					>
 						{tabs.map((tab) => (
 							<Pressable
 								key={tab.id}
 								onPress={() => handleTabChange(tab.id)}
 								style={[
 									styles.tab,
-									activeTab === tab.id && { borderBottomColor: colors.foreground },
+									activeTab === tab.id && {
+										borderBottomColor: colors.foreground,
+									},
 								]}
 							>
 								{tab.icon}
@@ -600,7 +674,10 @@ export default function SettingsScreen() {
 									style={[
 										typography.micro,
 										{
-											color: activeTab === tab.id ? colors.foreground : colors.mutedForeground,
+											color:
+												activeTab === tab.id
+													? colors.foreground
+													: colors.mutedForeground,
 										},
 									]}
 								>

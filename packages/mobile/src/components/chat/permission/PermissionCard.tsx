@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "@/theme";
-import { PermissionHeader } from "./PermissionHeader";
-import { PermissionDetails } from "./PermissionDetails";
 import { PermissionActions } from "./PermissionActions";
+import { PermissionDetails } from "./PermissionDetails";
+import { PermissionHeader } from "./PermissionHeader";
 import type { Permission, PermissionResponse } from "./types";
 
 interface PermissionCardProps {
@@ -11,7 +11,10 @@ interface PermissionCardProps {
 	onResponse?: (response: PermissionResponse) => Promise<void>;
 }
 
-export function PermissionCard({ permission, onResponse }: PermissionCardProps) {
+export function PermissionCard({
+	permission,
+	onResponse,
+}: PermissionCardProps) {
 	const { colors } = useTheme();
 	const [isResponding, setIsResponding] = useState(false);
 	const [hasResponded, setHasResponded] = useState(false);

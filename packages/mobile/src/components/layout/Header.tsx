@@ -1,6 +1,6 @@
-import { View, Pressable, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '@/theme';
+import { Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { type ContextUsage, ContextUsageDisplay } from "@/components/chat";
 import {
 	ChatIcon,
 	CodeIcon,
@@ -8,10 +8,10 @@ import {
 	MenuIcon,
 	SettingsIcon,
 	TerminalIcon,
-} from '@/components/icons';
-import { ContextUsageDisplay, type ContextUsage } from '@/components/chat';
+} from "@/components/icons";
+import { useTheme } from "@/theme";
 
-type MainTab = 'chat' | 'diff' | 'terminal' | 'git';
+type MainTab = "chat" | "diff" | "terminal" | "git";
 
 interface TabConfig {
 	id: MainTab;
@@ -19,10 +19,10 @@ interface TabConfig {
 }
 
 const tabs: TabConfig[] = [
-	{ id: 'chat', label: 'Chat' },
-	{ id: 'diff', label: 'Diff' },
-	{ id: 'terminal', label: 'Terminal' },
-	{ id: 'git', label: 'Git' },
+	{ id: "chat", label: "Chat" },
+	{ id: "diff", label: "Diff" },
+	{ id: "terminal", label: "Terminal" },
+	{ id: "git", label: "Git" },
 ];
 
 interface HeaderProps {
@@ -36,13 +36,13 @@ interface HeaderProps {
 
 function getTabIcon(tabId: MainTab, color: string, size: number) {
 	switch (tabId) {
-		case 'chat':
+		case "chat":
 			return <ChatIcon color={color} size={size} />;
-		case 'diff':
+		case "diff":
 			return <CodeIcon color={color} size={size} />;
-		case 'terminal':
+		case "terminal":
 			return <TerminalIcon color={color} size={size} />;
-		case 'git':
+		case "git":
 			return <GitBranchIcon color={color} size={size} />;
 	}
 }
@@ -58,7 +58,8 @@ export function Header({
 	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
 
-	const showContextUsage = activeTab === 'chat' && contextUsage && contextUsage.totalTokens > 0;
+	const showContextUsage =
+		activeTab === "chat" && contextUsage && contextUsage.totalTokens > 0;
 
 	return (
 		<View
@@ -99,7 +100,7 @@ export function Header({
 									{getTabIcon(
 										tab.id,
 										isActive ? colors.foreground : colors.mutedForeground,
-										20
+										20,
 									)}
 									{isActive && (
 										<View
@@ -122,10 +123,7 @@ export function Header({
 						<SettingsIcon color={colors.mutedForeground} size={20} />
 						{hasUpdate && (
 							<View
-								style={[
-									styles.updateDot,
-									{ backgroundColor: colors.primary },
-								]}
+								style={[styles.updateDot, { backgroundColor: colors.primary }]}
 							/>
 						)}
 					</Pressable>
@@ -140,15 +138,15 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	content: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		paddingHorizontal: 12,
 		height: 52,
 	},
 	leftSection: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 	},
 	menuButton: {
@@ -156,18 +154,18 @@ const styles = StyleSheet.create({
 		marginLeft: -8,
 	},
 	tabsSection: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 4,
 	},
 	tabButton: {
 		padding: 10,
 	},
 	tabContent: {
-		position: 'relative',
+		position: "relative",
 	},
 	activeIndicator: {
-		position: 'absolute',
+		position: "absolute",
 		bottom: -10,
 		left: 0,
 		right: 0,
@@ -176,10 +174,10 @@ const styles = StyleSheet.create({
 	},
 	settingsButton: {
 		padding: 10,
-		position: 'relative',
+		position: "relative",
 	},
 	updateDot: {
-		position: 'absolute',
+		position: "absolute",
 		top: 6,
 		right: 6,
 		width: 8,

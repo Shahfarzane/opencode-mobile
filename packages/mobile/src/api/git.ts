@@ -100,7 +100,9 @@ export const gitApi = {
 		return apiGet<GitBranch>(`${API_BASE}/branches`, {}, true);
 	},
 
-	async checkout(branch: string): Promise<{ success: boolean; branch: string }> {
+	async checkout(
+		branch: string,
+	): Promise<{ success: boolean; branch: string }> {
 		return apiPost<{ success: boolean; branch: string }>(
 			`${API_BASE}/checkout`,
 			{ branch },
@@ -203,7 +205,9 @@ export const gitApi = {
 		);
 	},
 
-	async createIdentity(profile: GitIdentityProfile): Promise<GitIdentityProfile> {
+	async createIdentity(
+		profile: GitIdentityProfile,
+	): Promise<GitIdentityProfile> {
 		return apiPost<GitIdentityProfile>(`${API_BASE}/identities`, profile);
 	},
 
@@ -219,29 +223,18 @@ export const gitApi = {
 	},
 
 	async stageFile(path: string): Promise<{ success: boolean }> {
-		return apiPost<{ success: boolean }>(
-			`${API_BASE}/stage`,
-			{ path },
-			true,
-		);
+		return apiPost<{ success: boolean }>(`${API_BASE}/stage`, { path }, true);
 	},
 
 	async unstageFile(path: string): Promise<{ success: boolean }> {
-		return apiPost<{ success: boolean }>(
-			`${API_BASE}/unstage`,
-			{ path },
-			true,
-		);
+		return apiPost<{ success: boolean }>(`${API_BASE}/unstage`, { path }, true);
 	},
 
 	async revertFile(path: string): Promise<void> {
 		await apiPost(`${API_BASE}/revert`, { path }, true);
 	},
 
-	async getDiff(
-		path: string,
-		staged = false,
-	): Promise<{ diff: string }> {
+	async getDiff(path: string, staged = false): Promise<{ diff: string }> {
 		return apiGet<{ diff: string }>(
 			`${API_BASE}/diff`,
 			{ path, staged: staged ? "true" : undefined },

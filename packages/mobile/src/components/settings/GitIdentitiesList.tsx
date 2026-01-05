@@ -6,10 +6,10 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { gitApi, type GitIdentityProfile } from "@/api";
-import { useTheme, typography } from "@/theme";
-import { SettingsListItem } from "./SettingsListItem";
+import { type GitIdentityProfile, gitApi } from "@/api";
 import { UsersIcon } from "@/components/icons";
+import { typography, useTheme } from "@/theme";
+import { SettingsListItem } from "./SettingsListItem";
 
 interface GitIdentitiesListProps {
 	selectedProfile?: string | null;

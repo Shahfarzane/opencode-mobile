@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 interface SettingsSectionProps {
 	title?: string;
@@ -24,7 +24,13 @@ export function SettingsSection({
 			{(title || description) && (
 				<View style={styles.header}>
 					{title && (
-						<Text style={[typography.uiLabel, styles.title, { color: colors.foreground }]}>
+						<Text
+							style={[
+								typography.uiLabel,
+								styles.title,
+								{ color: colors.foreground },
+							]}
+						>
 							{title}
 						</Text>
 					)}

@@ -38,20 +38,24 @@ function parsePairingUrl(url: string): PairingData {
 async function getDeviceName(): Promise<string> {
 	const deviceName = Device.deviceName;
 	const modelName = Device.modelName;
-	return deviceName || modelName || `${Platform.OS === "ios" ? "iOS" : "Android"} Device`;
+	return (
+		deviceName ||
+		modelName ||
+		`${Platform.OS === "ios" ? "iOS" : "Android"} Device`
+	);
 }
 
 function normalizeServerUrl(url: string): string {
 	let normalized = url.trim();
-	
+
 	if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
 		normalized = `http://${normalized}`;
 	}
-	
+
 	if (normalized.endsWith("/")) {
 		normalized = normalized.slice(0, -1);
 	}
-	
+
 	return normalized;
 }
 
@@ -70,7 +74,11 @@ function xhrRequest(
 			if (!settled) {
 				settled = true;
 				xhr.abort();
-				reject(new Error("Connection timed out. Check the server URL and try again."));
+				reject(
+					new Error(
+						"Connection timed out. Check the server URL and try again.",
+					),
+				);
 			}
 		}, timeoutMs);
 
@@ -80,12 +88,14 @@ function xhrRequest(
 				clearTimeout(timeoutId);
 
 				if (xhr.status === 0) {
-					reject(new Error(
-						"Cannot reach server. Make sure:\n" +
-						"• The server is running\n" +
-						"• Your device is on the same network\n" +
-						"• The URL is correct"
-					));
+					reject(
+						new Error(
+							"Cannot reach server. Make sure:\n" +
+								"• The server is running\n" +
+								"• Your device is on the same network\n" +
+								"• The URL is correct",
+						),
+					);
 					return;
 				}
 
@@ -100,12 +110,14 @@ function xhrRequest(
 			if (!settled) {
 				settled = true;
 				clearTimeout(timeoutId);
-				reject(new Error(
-					"Cannot reach server. Make sure:\n" +
-					"• The server is running\n" +
-					"• Your device is on the same network\n" +
-					"• The URL is correct"
-				));
+				reject(
+					new Error(
+						"Cannot reach server. Make sure:\n" +
+							"• The server is running\n" +
+							"• Your device is on the same network\n" +
+							"• The URL is correct",
+					),
+				);
 			}
 		};
 
@@ -113,7 +125,11 @@ function xhrRequest(
 			if (!settled) {
 				settled = true;
 				clearTimeout(timeoutId);
-				reject(new Error("Connection timed out. Check the server URL and try again."));
+				reject(
+					new Error(
+						"Connection timed out. Check the server URL and try again.",
+					),
+				);
 			}
 		};
 
@@ -156,7 +172,7 @@ export function useServerConnection() {
 						pairSecret: pairingData.pairSecret,
 						deviceName,
 					}),
-					AUTH_TIMEOUT_MS
+					AUTH_TIMEOUT_MS,
 				);
 
 				if (response.status < 200 || response.status >= 300) {
@@ -167,6 +183,7 @@ export function useServerConnection() {
 							errorMessage = errorData.message;
 						}
 					} catch {
+						// Ignore JSON parse errors, use default message
 					}
 					throw new Error(errorMessage);
 				}
@@ -202,24 +219,28 @@ export function useServerConnection() {
 						`${normalizedUrl}/health`,
 						{},
 						null,
-						CONNECTION_TIMEOUT_MS
+						CONNECTION_TIMEOUT_MS,
 					);
 				} catch (error) {
 					console.error(`[Connection] Health check failed:`, error);
 					throw new Error(
 						"Cannot reach server. Check the URL and ensure:\n" +
-						"• The server is running (openchamber command)\n" +
-						"• Your device is on the same network\n" +
-						"• For physical devices, use your computer's IP address"
+							"• The server is running (openchamber command)\n" +
+							"• Your device is on the same network\n" +
+							"• For physical devices, use your computer's IP address",
 					);
 				}
 
-				if (!healthResponse || healthResponse.status < 200 || healthResponse.status >= 300) {
+				if (
+					!healthResponse ||
+					healthResponse.status < 200 ||
+					healthResponse.status >= 300
+				) {
 					throw new Error(
 						"Cannot reach server. Check the URL and ensure:\n" +
-						"• The server is running (openchamber command)\n" +
-						"• Your device is on the same network\n" +
-						"• For physical devices, use your computer's IP address"
+							"• The server is running (openchamber command)\n" +
+							"• Your device is on the same network\n" +
+							"• For physical devices, use your computer's IP address",
 					);
 				}
 
@@ -230,7 +251,7 @@ export function useServerConnection() {
 					`${normalizedUrl}/api/auth/login`,
 					{ "Content-Type": "application/json" },
 					JSON.stringify({ password }),
-					AUTH_TIMEOUT_MS
+					AUTH_TIMEOUT_MS,
 				);
 
 				if (loginResponse.status === 401) {

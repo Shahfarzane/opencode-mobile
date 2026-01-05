@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { useConnectionStore } from "../stores/useConnectionStore";
 
@@ -50,11 +50,18 @@ export interface StreamEvent {
 
 type EventHandler = (event: StreamEvent) => void;
 
-export function useEventStream(sessionId: string | null, onEvent: EventHandler) {
+export function useEventStream(
+	sessionId: string | null,
+	onEvent: EventHandler,
+) {
 	const { serverUrl, authToken, directory, isConnected } = useConnectionStore();
 	const xhrRef = useRef<XMLHttpRequest | null>(null);
-	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
+	const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 	const lastProcessedIndexRef = useRef(0);
 	const isConnectingRef = useRef(false);
 	const onEventRef = useRef(onEvent);
@@ -93,10 +100,10 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 		}
 
 		clearTimers();
-		
+
 		const delay = reconnectDelayRef.current;
 		console.log(`[EventStream] Scheduling reconnect in ${delay}ms`);
-		
+
 		reconnectTimeoutRef.current = setTimeout(() => {
 			if (isActiveRef.current && isConnected) {
 				connectRef.current();
@@ -104,8 +111,8 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 		}, delay);
 
 		reconnectDelayRef.current = Math.min(
-			reconnectDelayRef.current * 2, 
-			MAX_RECONNECT_DELAY_MS
+			reconnectDelayRef.current * 2,
+			MAX_RECONNECT_DELAY_MS,
 		);
 	}, [isConnected, clearTimers]);
 
@@ -129,7 +136,10 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 		clearTimers();
 
 		let normalizedUrl = serverUrl.trim();
-		if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+		if (
+			!normalizedUrl.startsWith("http://") &&
+			!normalizedUrl.startsWith("https://")
+		) {
 			normalizedUrl = `http://${normalizedUrl}`;
 		}
 		if (normalizedUrl.endsWith("/")) {
@@ -177,20 +187,23 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 				}
 			}
 
-			if (xhr.readyState === XMLHttpRequest.LOADING || xhr.readyState === XMLHttpRequest.DONE) {
+			if (
+				xhr.readyState === XMLHttpRequest.LOADING ||
+				xhr.readyState === XMLHttpRequest.DONE
+			) {
 				const newData = xhr.responseText.slice(lastProcessedIndexRef.current);
 				lastProcessedIndexRef.current = xhr.responseText.length;
 
 				if (newData) {
 					const textToParse = incompleteLineRef.current + newData;
 					const lines = textToParse.split("\n");
-					
+
 					incompleteLineRef.current = lines.pop() || "";
 
 					for (const line of lines) {
 						const trimmedLine = line.trim();
 						if (!trimmedLine) continue;
-						
+
 						if (trimmedLine.startsWith("data: ")) {
 							const data = trimmedLine.slice(6);
 							if (!data || data === "[DONE]") continue;
@@ -218,7 +231,12 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 								onEventRef.current(event);
 							} catch (parseError) {
 								if (DEBUG_STREAM) {
-									console.warn("[EventStream] JSON parse error:", parseError, "Data:", data.slice(0, 200));
+									console.warn(
+										"[EventStream] JSON parse error:",
+										parseError,
+										"Data:",
+										data.slice(0, 200),
+									);
 								}
 							}
 						}
@@ -230,7 +248,7 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 				console.log("[EventStream] Connection closed");
 				xhrRef.current = null;
 				isConnectingRef.current = false;
-				
+
 				if (isActiveRef.current && isConnected) {
 					doScheduleReconnect();
 				}
@@ -262,7 +280,14 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 		};
 
 		xhr.send();
-	}, [serverUrl, authToken, directory, isConnected, clearTimers, doScheduleReconnect]);
+	}, [
+		serverUrl,
+		authToken,
+		directory,
+		isConnected,
+		clearTimers,
+		doScheduleReconnect,
+	]);
 
 	connectRef.current = connect;
 
@@ -271,12 +296,15 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 			const previousState = appStateRef.current;
 			appStateRef.current = nextAppState;
 
-			if (previousState.match(/inactive|background/) && nextAppState === "active") {
+			if (
+				previousState.match(/inactive|background/) &&
+				nextAppState === "active"
+			) {
 				console.log("[EventStream] App became active, reconnecting");
 				abortConnection();
 				clearTimers();
 				reconnectDelayRef.current = INITIAL_RECONNECT_DELAY_MS;
-				
+
 				setTimeout(() => {
 					if (isConnected) {
 						connectRef.current();
@@ -289,7 +317,10 @@ export function useEventStream(sessionId: string | null, onEvent: EventHandler) 
 			}
 		};
 
-		const subscription = AppState.addEventListener("change", handleAppStateChange);
+		const subscription = AppState.addEventListener(
+			"change",
+			handleAppStateChange,
+		);
 
 		return () => {
 			subscription.remove();

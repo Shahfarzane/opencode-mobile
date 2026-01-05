@@ -1,4 +1,7 @@
-import { flexokiDarkTheme, flexokiLightTheme } from '@openchamber/shared/themes';
+import {
+	flexokiDarkTheme,
+	flexokiLightTheme,
+} from "@openchamber/shared/themes";
 
 const dark = flexokiDarkTheme.colors;
 const light = flexokiLightTheme.colors;

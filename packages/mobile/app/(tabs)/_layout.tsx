@@ -1,23 +1,16 @@
-import { useState, useCallback, createContext, useContext, useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { Header } from "../../src/components/layout/Header";
-import { useTheme, typography } from "../../src/theme";
+import { useCallback, useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import type { ContextUsage } from "../../src/components/chat";
+import { Header } from "../../src/components/layout/Header";
+import { typography, useTheme } from "../../src/theme";
+import ChatScreen from "./chat";
+import { ContextUsageContext } from "./context";
+import GitScreen from "./git";
+import SettingsScreen from "./settings";
+import TerminalScreen from "./terminal";
 
-type MainTab = 'chat' | 'diff' | 'terminal' | 'git';
-
-interface ContextUsageContextType {
-	contextUsage: ContextUsage | null;
-	setContextUsage: (usage: ContextUsage | null) => void;
-}
-
-const ContextUsageContext = createContext<ContextUsageContextType>({
-	contextUsage: null,
-	setContextUsage: () => {},
-});
-
-export const useContextUsageContext = () => useContext(ContextUsageContext);
+type MainTab = "chat" | "diff" | "terminal" | "git";
 
 function PlaceholderScreen({ title }: { title: string }) {
 	const { colors } = useTheme();
@@ -36,7 +29,7 @@ function PlaceholderScreen({ title }: { title: string }) {
 
 export default function TabsLayout() {
 	const { colors } = useTheme();
-	const [activeTab, setActiveTab] = useState<MainTab>('chat');
+	const [activeTab, setActiveTab] = useState<MainTab>("chat");
 	const [showSettings, setShowSettings] = useState(false);
 	const [contextUsage, setContextUsage] = useState<ContextUsage | null>(null);
 
@@ -53,15 +46,13 @@ export default function TabsLayout() {
 		setShowSettings(false);
 	}, []);
 
-	const ChatScreen = require("./chat").default;
-	const SettingsScreen = require("./settings").default;
-	const GitScreen = require("./git").default;
-	const TerminalScreen = require("./terminal").default;
-
-	const contextUsageValue = useMemo(() => ({
-		contextUsage,
-		setContextUsage,
-	}), [contextUsage]);
+	const contextUsageValue = useMemo(
+		() => ({
+			contextUsage,
+			setContextUsage,
+		}),
+		[contextUsage],
+	);
 
 	const renderContent = () => {
 		if (showSettings) {
@@ -69,13 +60,13 @@ export default function TabsLayout() {
 		}
 
 		switch (activeTab) {
-			case 'chat':
+			case "chat":
 				return <ChatScreen />;
-			case 'git':
+			case "git":
 				return <GitScreen />;
-			case 'diff':
+			case "diff":
 				return <PlaceholderScreen title="Diff View" />;
-			case 'terminal':
+			case "terminal":
 				return <TerminalScreen />;
 			default:
 				return <ChatScreen />;
@@ -92,9 +83,7 @@ export default function TabsLayout() {
 					onSettingsPress={handleSettingsPress}
 					contextUsage={contextUsage}
 				/>
-				<View style={styles.content}>
-					{renderContent()}
-				</View>
+				<View style={styles.content}>{renderContent()}</View>
 			</View>
 		</ContextUsageContext.Provider>
 	);
@@ -109,8 +98,8 @@ const styles = StyleSheet.create({
 	},
 	placeholder: {
 		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
+		alignItems: "center",
+		justifyContent: "center",
 		gap: 8,
 	},
 });

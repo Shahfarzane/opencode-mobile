@@ -1,13 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
-import {
-	Modal,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 export interface ContextUsage {
 	totalTokens: number;
@@ -91,7 +85,8 @@ export function ContextUsageDisplay({
 	}, []);
 
 	const percentageColor = getPercentageColor(usage.percentage);
-	const safeOutputLimit = typeof usage.outputLimit === "number" ? Math.max(usage.outputLimit, 0) : 0;
+	const safeOutputLimit =
+		typeof usage.outputLimit === "number" ? Math.max(usage.outputLimit, 0) : 0;
 
 	return (
 		<>
@@ -148,28 +143,49 @@ export function ContextUsageDisplay({
 							]}
 						>
 							<View style={styles.statRow}>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+								<Text
+									style={[typography.meta, { color: colors.mutedForeground }]}
+								>
 									Used tokens
 								</Text>
-								<Text style={[typography.meta, { color: colors.foreground, fontWeight: "500" }]}>
+								<Text
+									style={[
+										typography.meta,
+										{ color: colors.foreground, fontWeight: "500" },
+									]}
+								>
 									{formatTokens(usage.totalTokens)}
 								</Text>
 							</View>
 
 							<View style={styles.statRow}>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+								<Text
+									style={[typography.meta, { color: colors.mutedForeground }]}
+								>
 									Context limit
 								</Text>
-								<Text style={[typography.meta, { color: colors.foreground, fontWeight: "500" }]}>
+								<Text
+									style={[
+										typography.meta,
+										{ color: colors.foreground, fontWeight: "500" },
+									]}
+								>
 									{formatTokens(usage.contextLimit)}
 								</Text>
 							</View>
 
 							<View style={styles.statRow}>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+								<Text
+									style={[typography.meta, { color: colors.mutedForeground }]}
+								>
 									Output limit
 								</Text>
-								<Text style={[typography.meta, { color: colors.foreground, fontWeight: "500" }]}>
+								<Text
+									style={[
+										typography.meta,
+										{ color: colors.foreground, fontWeight: "500" },
+									]}
+								>
 									{formatTokens(safeOutputLimit)}
 								</Text>
 							</View>
@@ -181,7 +197,9 @@ export function ContextUsageDisplay({
 									{ borderTopColor: colors.border },
 								]}
 							>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+								<Text
+									style={[typography.meta, { color: colors.mutedForeground }]}
+								>
 									Usage
 								</Text>
 								<Text
