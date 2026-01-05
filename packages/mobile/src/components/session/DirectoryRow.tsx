@@ -8,7 +8,7 @@ import {
 } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 
-interface DirectoryHeaderProps {
+interface DirectoryRowProps {
 	directory: string | null;
 	isGitRepo?: boolean;
 	onChangeDirectory?: () => void;
@@ -18,18 +18,17 @@ interface DirectoryHeaderProps {
 
 function formatDirectoryName(directory: string | null): string {
 	if (!directory) return "/";
-	// Get the last part of the path
 	const parts = directory.replace(/\/$/, "").split("/");
 	return parts[parts.length - 1] || "/";
 }
 
-export function DirectoryHeader({
+export function DirectoryRow({
 	directory,
 	isGitRepo = false,
 	onChangeDirectory,
 	onOpenWorktreeManager,
 	onOpenMultiRunLauncher,
-}: DirectoryHeaderProps) {
+}: DirectoryRowProps) {
 	const { colors, isDark } = useTheme();
 
 	const handleChangeDirectory = useCallback(async () => {
@@ -80,7 +79,7 @@ export function DirectoryHeader({
 					style={[
 						typography.uiLabel,
 						styles.directoryText,
-						{ color: colors.mutedForeground, fontWeight: "600" },
+						{ color: colors.foreground, fontWeight: "600" },
 					]}
 					numberOfLines={1}
 				>
@@ -89,7 +88,7 @@ export function DirectoryHeader({
 			</Pressable>
 
 			{isGitRepo && (
-				<View style={styles.gitButtons}>
+				<View style={styles.actionButtons}>
 					<Pressable
 						onPress={handleOpenWorktreeManager}
 						style={({ pressed }) => [
@@ -134,7 +133,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		height: 56,
-		paddingHorizontal: 8,
+		paddingHorizontal: 16,
 		gap: 4,
 	},
 	directoryButton: {
@@ -156,7 +155,7 @@ const styles = StyleSheet.create({
 	directoryText: {
 		flex: 1,
 	},
-	gitButtons: {
+	actionButtons: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 2,

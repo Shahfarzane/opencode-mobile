@@ -7,6 +7,7 @@ import {
 	GitBranchIcon,
 	MenuIcon,
 	SettingsIcon,
+	SidebarIcon,
 	TerminalIcon,
 } from "@/components/icons";
 import { useTheme } from "@/theme";
@@ -30,6 +31,7 @@ interface HeaderProps {
 	onTabChange: (tab: MainTab) => void;
 	onMenuPress: () => void;
 	onSettingsPress: () => void;
+	onSessionsPress?: () => void;
 	hasUpdate?: boolean;
 	contextUsage?: ContextUsage | null;
 }
@@ -52,6 +54,7 @@ export function Header({
 	onTabChange,
 	onMenuPress,
 	onSettingsPress,
+	onSessionsPress,
 	hasUpdate = false,
 	contextUsage,
 }: HeaderProps) {
@@ -74,13 +77,15 @@ export function Header({
 		>
 			<View style={styles.content}>
 				<View style={styles.leftSection}>
-					<Pressable
-						onPress={onMenuPress}
-						style={styles.menuButton}
-						hitSlop={8}
-					>
-						<MenuIcon color={colors.mutedForeground} size={20} />
-					</Pressable>
+					{onSessionsPress && (
+						<Pressable
+							onPress={onSessionsPress}
+							style={styles.menuButton}
+							hitSlop={8}
+						>
+							<SidebarIcon color={colors.mutedForeground} size={20} />
+						</Pressable>
+					)}
 					{showContextUsage && (
 						<ContextUsageDisplay usage={contextUsage} size="compact" />
 					)}

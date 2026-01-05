@@ -1,13 +1,19 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { typography, useTheme } from "@/theme";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
-import type { Message, MessagePart } from "./types";
-import { ReasoningPart, ToolPart } from "./parts";
-import { useTheme, typography } from "@/theme";
 import { MessageActionsMenu, useMessageActions } from "./MessageActionsMenu";
+import { ReasoningPart, ToolPart } from "./parts";
+import type { Message, MessagePart } from "./types";
 
-function FadeInView({ children, isNew }: { children: React.ReactNode; isNew: boolean }) {
+function FadeInView({
+	children,
+	isNew,
+}: {
+	children: React.ReactNode;
+	isNew: boolean;
+}) {
 	const fadeAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
 	const translateAnim = useRef(new Animated.Value(isNew ? 8 : 0)).current;
 
@@ -29,10 +35,12 @@ function FadeInView({ children, isNew }: { children: React.ReactNode; isNew: boo
 	}, [fadeAnim, translateAnim, isNew]);
 
 	return (
-		<Animated.View style={{
-			opacity: fadeAnim,
-			transform: [{ translateY: translateAnim }],
-		}}>
+		<Animated.View
+			style={{
+				opacity: fadeAnim,
+				transform: [{ translateY: translateAnim }],
+			}}
+		>
 			{children}
 		</Animated.View>
 	);
@@ -78,7 +86,8 @@ type ChatMessageProps = {
 
 function UserMessage({ content }: { content: string }) {
 	const { colors, isDark } = useTheme();
-	const { showMenu, openMenu, closeMenu, copyMessageContent } = useMessageActions();
+	const { showMenu, openMenu, closeMenu, copyMessageContent } =
+		useMessageActions();
 
 	// Desktop uses bg-primary/10 for light mode, bg-primary/8 for dark
 	const bubbleBackground = isDark
@@ -89,15 +98,19 @@ function UserMessage({ content }: { content: string }) {
 		<View style={styles.userMessageContainer}>
 			<Pressable onLongPress={openMenu} style={styles.userMessageWrapper}>
 				{/* User avatar */}
-				<View style={[styles.userAvatar, { backgroundColor: `${colors.primary}1A` }]}>
+				<View
+					style={[
+						styles.userAvatar,
+						{ backgroundColor: `${colors.primary}1A` },
+					]}
+				>
 					<UserIcon color={colors.primary} />
 				</View>
 
 				{/* Message bubble - right aligned with sharp bottom-right corner */}
-				<View style={[
-					styles.userBubble,
-					{ backgroundColor: bubbleBackground }
-				]}>
+				<View
+					style={[styles.userBubble, { backgroundColor: bubbleBackground }]}
+				>
 					<Text style={[typography.body, { color: colors.foreground }]}>
 						{content}
 					</Text>
@@ -113,9 +126,17 @@ function UserMessage({ content }: { content: string }) {
 	);
 }
 
-function getToolState(part: MessagePart): "pending" | "running" | "completed" | "error" | "aborted" | undefined {
+function getToolState(
+	part: MessagePart,
+): "pending" | "running" | "completed" | "error" | "aborted" | undefined {
 	if (!part.state) return undefined;
-	if (typeof part.state === "string") return part.state as "pending" | "running" | "completed" | "error" | "aborted";
+	if (typeof part.state === "string")
+		return part.state as
+			| "pending"
+			| "running"
+			| "completed"
+			| "error"
+			| "aborted";
 	return part.state.status;
 }
 
@@ -142,7 +163,7 @@ function RenderPart({
 	index,
 	messageId,
 	isLastPart,
-	isStreaming
+	isStreaming,
 }: {
 	part: MessagePart;
 	index: number;
@@ -153,7 +174,11 @@ function RenderPart({
 	const { colors } = useTheme();
 	const partKey = `${messageId}-part-${index}-${part.type}-${part.id || ""}`;
 
-	if (part.type === "tool" || part.type === "tool-call" || part.type === "tool-result") {
+	if (
+		part.type === "tool" ||
+		part.type === "tool-call" ||
+		part.type === "tool-result"
+	) {
 		return (
 			<FadeInView key={partKey} isNew={isStreaming}>
 				<ToolPart
@@ -218,13 +243,14 @@ function AssistantMessage({
 	const { colors, isDark } = useTheme();
 	const hasParts = message.parts && message.parts.length > 0;
 	const isStreaming = message.isStreaming ?? false;
-	const { showMenu, openMenu, closeMenu, copyMessageContent } = useMessageActions();
+	const { showMenu, openMenu, closeMenu, copyMessageContent } =
+		useMessageActions();
 
 	const getTextContent = (): string => {
 		if (hasParts) {
-			return message.parts!
-				.filter(part => part.type === "text")
-				.map(part => part.content || part.text || "")
+			return message
+				.parts!.filter((part) => part.type === "text")
+				.map((part) => part.content || part.text || "")
 				.join("\n");
 		}
 		return message.content;
@@ -235,17 +261,34 @@ function AssistantMessage({
 			{/* Message header with avatar and model info */}
 			{showHeader && (
 				<View style={styles.assistantHeader}>
-					<View style={[
-						styles.assistantAvatar,
-						{ backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }
-					]}>
+					<View
+						style={[
+							styles.assistantAvatar,
+							{
+								backgroundColor: isDark
+									? "rgba(255,255,255,0.08)"
+									: "rgba(0,0,0,0.05)",
+							},
+						]}
+					>
 						<AssistantIcon color={colors.mutedForeground} />
 					</View>
-					<Text style={[typography.uiLabel, styles.assistantName, { color: colors.foreground }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							styles.assistantName,
+							{ color: colors.foreground },
+						]}
+					>
 						Assistant
 					</Text>
 					{isStreaming && (
-						<View style={[styles.streamingBadge, { backgroundColor: `${colors.primary}20` }]}>
+						<View
+							style={[
+								styles.streamingBadge,
+								{ backgroundColor: `${colors.primary}20` },
+							]}
+						>
 							<Text style={[typography.micro, { color: colors.primary }]}>
 								typing...
 							</Text>
@@ -279,19 +322,31 @@ function AssistantMessage({
 				visible={showMenu}
 				onClose={closeMenu}
 				onCopy={() => copyMessageContent(getTextContent())}
-				onBranchSession={onBranchSession ? () => onBranchSession(message.id) : undefined}
+				onBranchSession={
+					onBranchSession ? () => onBranchSession(message.id) : undefined
+				}
 				isAssistantMessage={true}
 			/>
 		</View>
 	);
 }
 
-export function ChatMessage({ message, onBranchSession, showHeader = true }: ChatMessageProps) {
+export function ChatMessage({
+	message,
+	onBranchSession,
+	showHeader = true,
+}: ChatMessageProps) {
 	if (message.role === "user") {
 		return <UserMessage content={message.content} />;
 	}
 
-	return <AssistantMessage message={message} onBranchSession={onBranchSession} showHeader={showHeader} />;
+	return (
+		<AssistantMessage
+			message={message}
+			onBranchSession={onBranchSession}
+			showHeader={showHeader}
+		/>
+	);
 }
 
 const styles = StyleSheet.create({
@@ -301,20 +356,20 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	userMessageWrapper: {
-		flexDirection: 'row',
-		justifyContent: 'flex-end',
-		alignItems: 'flex-start',
+		flexDirection: "row",
+		justifyContent: "flex-end",
+		alignItems: "flex-start",
 		gap: 8,
 	},
 	userAvatar: {
 		width: 32,
 		height: 32,
 		borderRadius: 10,
-		alignItems: 'center',
-		justifyContent: 'center',
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	userBubble: {
-		maxWidth: '80%',
+		maxWidth: "80%",
 		borderRadius: 16,
 		borderBottomRightRadius: 4, // Sharp corner on bottom-right like desktop
 		paddingHorizontal: 14,
@@ -327,8 +382,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	assistantHeader: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 		gap: 8,
 		marginBottom: 8,
 		paddingLeft: 4,
@@ -337,11 +392,11 @@ const styles = StyleSheet.create({
 		width: 28,
 		height: 28,
 		borderRadius: 8,
-		alignItems: 'center',
-		justifyContent: 'center',
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	assistantName: {
-		fontWeight: '600',
+		fontWeight: "600",
 	},
 	streamingBadge: {
 		paddingHorizontal: 8,
@@ -349,7 +404,7 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 	},
 	assistantContent: {
-		width: '100%',
+		width: "100%",
 		paddingLeft: 4,
 	},
 	textContainer: {

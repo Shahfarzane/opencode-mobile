@@ -1,11 +1,11 @@
 import { router } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { ContextUsage } from "../../src/components/chat";
 import { Header } from "../../src/components/layout/Header";
 import { typography, useTheme } from "../../src/theme";
 import ChatScreen from "./chat";
-import { ContextUsageContext } from "./context";
+import { ContextUsageContext, SessionSheetContext } from "./context";
 import DiffScreen from "./diff";
 import GitScreen from "./git";
 import SettingsScreen from "./settings";
@@ -33,6 +33,7 @@ export default function TabsLayout() {
 	const [activeTab, setActiveTab] = useState<MainTab>("chat");
 	const [showSettings, setShowSettings] = useState(false);
 	const [contextUsage, setContextUsage] = useState<ContextUsage | null>(null);
+	const openSessionSheetRef = useRef<() => void>(() => {});
 
 	const handleMenuPress = useCallback(() => {
 		router.push("/onboarding/directory");
@@ -40,6 +41,10 @@ export default function TabsLayout() {
 
 	const handleSettingsPress = useCallback(() => {
 		setShowSettings(true);
+	}, []);
+
+	const handleSessionsPress = useCallback(() => {
+		openSessionSheetRef.current();
 	}, []);
 
 	const handleTabChange = useCallback((tab: MainTab) => {
@@ -53,6 +58,16 @@ export default function TabsLayout() {
 			setContextUsage,
 		}),
 		[contextUsage],
+	);
+
+	const sessionSheetValue = useMemo(
+		() => ({
+			openSessionSheet: () => openSessionSheetRef.current(),
+			setOpenSessionSheet: (fn: () => void) => {
+				openSessionSheetRef.current = fn;
+			},
+		}),
+		[],
 	);
 
 	const renderContent = () => {
@@ -75,18 +90,21 @@ export default function TabsLayout() {
 	};
 
 	return (
-		<ContextUsageContext.Provider value={contextUsageValue}>
-			<View style={[styles.container, { backgroundColor: colors.background }]}>
-				<Header
-					activeTab={activeTab}
-					onTabChange={handleTabChange}
-					onMenuPress={handleMenuPress}
-					onSettingsPress={handleSettingsPress}
-					contextUsage={contextUsage}
-				/>
-				<View style={styles.content}>{renderContent()}</View>
-			</View>
-		</ContextUsageContext.Provider>
+		<SessionSheetContext.Provider value={sessionSheetValue}>
+			<ContextUsageContext.Provider value={contextUsageValue}>
+				<View style={[styles.container, { backgroundColor: colors.background }]}>
+					<Header
+						activeTab={activeTab}
+						onTabChange={handleTabChange}
+						onMenuPress={handleMenuPress}
+						onSettingsPress={handleSettingsPress}
+						onSessionsPress={activeTab === "chat" ? handleSessionsPress : undefined}
+						contextUsage={contextUsage}
+					/>
+					<View style={styles.content}>{renderContent()}</View>
+				</View>
+			</ContextUsageContext.Provider>
+		</SessionSheetContext.Provider>
 	);
 }
 

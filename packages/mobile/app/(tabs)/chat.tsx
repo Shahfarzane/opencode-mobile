@@ -25,7 +25,7 @@ import {
 	MessageList,
 	PermissionCard,
 } from "../../src/components/chat";
-import { SessionBottomSheet } from "../../src/components/session";
+import { SessionSheet } from "../../src/components/session";
 import { useEdgeSwipe } from "../../src/hooks/useEdgeSwipe";
 import {
 	type StreamEvent,
@@ -34,7 +34,7 @@ import {
 import type { MessagePart as StreamingPart } from "../../src/lib/streaming";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
-import { useContextUsageContext } from "./context";
+import { useContextUsageContext, useSessionSheetContext } from "./context";
 
 const DEFAULT_CONTEXT_LIMIT = 200000;
 const DEFAULT_OUTPUT_LIMIT = 8192;
@@ -70,6 +70,7 @@ export default function ChatScreen() {
 	const { colors } = useTheme();
 	const { directory, isConnected } = useConnectionStore();
 	const { setContextUsage } = useContextUsageContext();
+	const { setOpenSessionSheet } = useSessionSheetContext();
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -91,7 +92,7 @@ export default function ChatScreen() {
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
 	const lastEventTimeRef = useRef<number>(0);
-	const bottomSheetRef = useRef<BottomSheet>(null);
+	const sheetRef = useRef<BottomSheet>(null);
 
 	const handleStreamEvent = useCallback(
 		(event: StreamEvent) => {
@@ -383,7 +384,7 @@ export default function ChatScreen() {
 	const selectSession = useCallback(
 		async (session: Session) => {
 			setSessionId(session.id);
-			bottomSheetRef.current?.close();
+			sheetRef.current?.close();
 			await loadSessionMessages(session.id);
 		},
 		[loadSessionMessages],
@@ -391,8 +392,13 @@ export default function ChatScreen() {
 
 	const openSessionPicker = useCallback(() => {
 		fetchSessions();
-		bottomSheetRef.current?.expand();
+		sheetRef.current?.expand();
 	}, [fetchSessions]);
+
+	// Register the session picker opener with the layout context
+	useEffect(() => {
+		setOpenSessionSheet(openSessionPicker);
+	}, [openSessionPicker, setOpenSessionSheet]);
 
 	useEdgeSwipe({
 		enabled: true,
@@ -417,7 +423,7 @@ export default function ChatScreen() {
 			// Directory-specific session creation could be added later
 			setSessionId(null);
 			setMessages([]);
-			bottomSheetRef.current?.close();
+			sheetRef.current?.close();
 		},
 		[],
 	);
@@ -682,8 +688,8 @@ export default function ChatScreen() {
 				/>
 			</View>
 
-			<SessionBottomSheet
-				ref={bottomSheetRef}
+			<SessionSheet
+				ref={sheetRef}
 				sessions={sessions}
 				currentSessionId={sessionId}
 				currentDirectory={directory}
@@ -699,7 +705,6 @@ export default function ChatScreen() {
 				onChangeDirectory={handleChangeDirectory}
 				onOpenWorktreeManager={handleOpenWorktreeManager}
 				onOpenMultiRunLauncher={handleOpenMultiRunLauncher}
-				onClose={() => {}}
 			/>
 		</KeyboardAvoidingView>
 	);

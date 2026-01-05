@@ -1,12 +1,12 @@
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useCallback, useRef } from "react";
-import { Text, View, StyleSheet } from "react-native";
-import { ChatMessage } from "./ChatMessage";
-import type { Message } from "./types";
+import type { TextStyle } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { typography, useTheme } from "@/theme";
 import { OpenChamberLogo } from "../ui/OpenChamberLogo";
 import { TextLoop } from "../ui/TextLoop";
-import { useTheme, typography } from "@/theme";
-import type { TextStyle } from "react-native";
+import { ChatMessage } from "./ChatMessage";
+import type { Message } from "./types";
 
 type MessageListProps = {
 	messages: Message[];
@@ -34,7 +34,7 @@ const phrases = [
 
 function EmptyState() {
 	const { isDark } = useTheme();
-	const textColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+	const textColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
 
 	return (
 		<View style={styles.emptyContainer}>
@@ -42,7 +42,13 @@ function EmptyState() {
 			<TextLoop
 				interval={4}
 				style={styles.textLoopContainer}
-				textStyle={{ ...typography.uiLabel, ...styles.phraseText, color: textColor } as TextStyle}
+				textStyle={
+					{
+						...typography.uiLabel,
+						...styles.phraseText,
+						color: textColor,
+					} as TextStyle
+				}
 			>
 				{phrases.map((phrase) => (
 					<Text key={phrase} style={[typography.uiLabel, { color: textColor }]}>
@@ -57,13 +63,16 @@ function EmptyState() {
 export function MessageList({ messages, isLoading }: MessageListProps) {
 	const listRef = useRef<FlashListRef<Message>>(null);
 
-	const renderItem = useCallback(({ item, index }: { item: Message; index: number }) => {
-		// Determine if we should show header based on previous message
-		const previousMessage = index > 0 ? messages[index - 1] : null;
-		const showHeader = !previousMessage || previousMessage.role === "user";
+	const renderItem = useCallback(
+		({ item, index }: { item: Message; index: number }) => {
+			// Determine if we should show header based on previous message
+			const previousMessage = index > 0 ? messages[index - 1] : null;
+			const showHeader = !previousMessage || previousMessage.role === "user";
 
-		return <ChatMessage message={item} showHeader={showHeader} />;
-	}, [messages]);
+			return <ChatMessage message={item} showHeader={showHeader} />;
+		},
+		[messages],
+	);
 
 	const keyExtractor = useCallback((item: Message) => item.id, []);
 
@@ -95,8 +104,8 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 const styles = StyleSheet.create({
 	emptyContainer: {
 		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
+		alignItems: "center",
+		justifyContent: "center",
 		paddingHorizontal: 32,
 		gap: 20,
 	},
@@ -104,7 +113,7 @@ const styles = StyleSheet.create({
 		minHeight: 24,
 	},
 	phraseText: {
-		textAlign: 'center',
+		textAlign: "center",
 	},
 	listContent: {
 		paddingTop: 12,
