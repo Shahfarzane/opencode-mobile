@@ -14,6 +14,9 @@ export interface SettingsPayload {
 	autoDeleteEnabled?: boolean;
 	autoDeleteAfterDays?: number;
 	queueModeEnabled?: boolean;
+	// OpenChamber defaults - used for default agent/model selection
+	defaultAgent?: string;
+	defaultModel?: string;
 	[key: string]: unknown;
 }
 
