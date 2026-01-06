@@ -64,9 +64,18 @@ export default defineConfig({
           if (packageName === 'zustand' || packageName === 'zustand/middleware') return 'vendor-zustand';
 
           if (packageName === '@opencode-ai/sdk') return 'vendor-opencode-sdk';
-          if (packageName.includes('remark') || packageName.includes('rehype') || packageName === 'react-markdown') return 'vendor-markdown';
           if (packageName.startsWith('@radix-ui')) return 'vendor-radix';
-          if (packageName.includes('react-syntax-highlighter') || packageName.includes('highlight.js')) return 'vendor-syntax';
+
+          // Don't split markdown/syntax packages - let them go to default vendor chunk
+          // to avoid circular dependency initialization issues
+          if (
+            packageName.includes('remark') ||
+            packageName.includes('rehype') ||
+            packageName.includes('unified') ||
+            packageName.includes('markdown') ||
+            packageName.includes('syntax-highlighter') ||
+            packageName.includes('highlight')
+          ) return undefined; // Falls into default vendor chunk
           if (packageName.startsWith('@tauri-apps')) return 'vendor-tauri';
 
           const sanitized = packageName.replace(/^@/, '').replace(/\//g, '-');
