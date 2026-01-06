@@ -1123,7 +1123,6 @@ export default function ChatScreen() {
 				style={[
 					styles.inputContainer,
 					{
-						borderTopColor: colors.border,
 						backgroundColor: colors.background,
 						paddingBottom: Math.max(insets.bottom, 12),
 					},
@@ -1200,7 +1199,6 @@ const styles = StyleSheet.create({
 		paddingTop: 8,
 	},
 	inputContainer: {
-		borderTopWidth: 1,
 		paddingHorizontal: 6, // px-1.5 - matches PWA mobile
 		paddingTop: 0,
 		paddingBottom: 8, // pb-2 - matches PWA mobile
