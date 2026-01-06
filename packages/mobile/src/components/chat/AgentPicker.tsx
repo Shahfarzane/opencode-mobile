@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { fontStyle, typography, useTheme } from "@/theme";
 
 export interface Agent {
 	name: string;
@@ -172,8 +172,8 @@ export function AgentPicker({
 													color: isSelected
 														? agentColor
 														: colors.foreground,
-													fontWeight: "600",
 												},
+												fontStyle("600"),
 											]}
 										>
 											{agent.name.charAt(0).toUpperCase() + agent.name.slice(1)}

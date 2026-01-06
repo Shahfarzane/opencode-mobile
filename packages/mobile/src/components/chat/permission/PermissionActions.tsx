@@ -7,7 +7,7 @@ import {
 	View,
 } from "react-native";
 import { CheckIcon, ClockIcon, XIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { fontStyle, typography, useTheme } from "@/theme";
 
 export type PermissionResponse = "once" | "always" | "reject";
 
@@ -44,7 +44,8 @@ export function PermissionActions({
 				<Text
 					style={[
 						typography.meta,
-						{ color: colors.primaryForeground, fontWeight: "600" },
+						fontStyle("600"),
+						{ color: colors.primaryForeground },
 					]}
 				>
 					Allow Once
@@ -65,7 +66,8 @@ export function PermissionActions({
 				<Text
 					style={[
 						typography.meta,
-						{ color: colors.mutedForeground, fontWeight: "500" },
+						fontStyle("500"),
+						{ color: colors.mutedForeground },
 					]}
 				>
 					Always
@@ -84,7 +86,7 @@ export function PermissionActions({
 			>
 				<XIcon size={14} color={colors.error} />
 				<Text
-					style={[typography.meta, { color: colors.error, fontWeight: "500" }]}
+					style={[typography.meta, fontStyle("500"), { color: colors.error }]}
 				>
 					Deny
 				</Text>

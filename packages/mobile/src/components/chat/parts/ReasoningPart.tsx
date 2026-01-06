@@ -3,7 +3,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { Fonts, FontSizes, LineHeights, typography, useTheme } from "@/theme";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
 	style?: Record<string, unknown>;
@@ -24,8 +24,8 @@ function ReasoningMarkdown({
 		body: {
 			color,
 			fontFamily: "IBMPlexMono-Regular",
-			fontSize: 13,
-			lineHeight: 20,
+			fontSize: FontSizes.code,
+			lineHeight: FontSizes.code * LineHeights.normal,
 			fontStyle: "italic" as const,
 		},
 		paragraph: {
@@ -41,7 +41,7 @@ function ReasoningMarkdown({
 		},
 		code_inline: {
 			fontFamily: "IBMPlexMono-Regular",
-			fontSize: 12,
+			fontSize: FontSizes.micro,
 			backgroundColor: colors.muted,
 			color: colors.foreground,
 			paddingHorizontal: 4,
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	label: {
-		fontWeight: "500",
+		fontFamily: Fonts.medium,
 	},
 	summaryContainer: {
 		flex: 1,

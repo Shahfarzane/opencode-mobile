@@ -6,7 +6,7 @@ import {
 	FolderIcon,
 	GitBranchIcon,
 } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { fontStyle, typography, useTheme } from "@/theme";
 
 interface DirectoryRowProps {
 	directory: string | null;
@@ -84,9 +84,9 @@ export function DirectoryRow({
 						style={[
 							typography.uiHeader,
 							styles.directoryText,
+							fontStyle("600"),
 							{
 								color: pressed ? colors.foreground : colors.mutedForeground,
-								fontWeight: "600"
 							},
 						]}
 						numberOfLines={1}

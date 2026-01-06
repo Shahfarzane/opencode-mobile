@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft } from "@/components/icons";
-import { Spacing, typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, Spacing, typography, useTheme } from "@/theme";
 
 interface ProviderDetailViewProps {
 	providerId: string;
@@ -114,7 +114,8 @@ export function ProviderDetailView({
 				<Text
 					style={[
 						typography.uiLabel,
-						{ color: colors.foreground, fontWeight: "600" },
+						fontStyle("600"),
+						{ color: colors.foreground },
 					]}
 				>
 					{provider.name || provider.id}
@@ -183,8 +184,8 @@ export function ProviderDetailView({
 											color: apiKey.trim()
 												? colors.primaryForeground
 												: colors.mutedForeground,
-											fontWeight: "500",
 										},
+										fontStyle("500"),
 									]}
 								>
 									Save
@@ -241,7 +242,8 @@ export function ProviderDetailView({
 									<Text
 										style={[
 											typography.meta,
-											{ color: colors.foreground, fontWeight: "500" },
+											fontStyle("500"),
+											{ color: colors.foreground },
 										]}
 										numberOfLines={1}
 									>
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
 		borderTopWidth: 1,
 	},
 	sectionTitle: {
-		fontWeight: "600",
+		fontFamily: Fonts.semiBold,
 		marginBottom: 8,
 	},
 	inputRow: {

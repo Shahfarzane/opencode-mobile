@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, typography, useTheme } from "@/theme";
 import { ToolOutputDialog } from "./ToolOutputDialog";
 
 // Chevron down icon (matches ReasoningPart)
@@ -236,18 +236,18 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 							)
 						)}
 					</View>
-					<Text
-						style={[
-							typography.meta,
-							{
-								color:
-									part.state === "error"
-										? colors.destructive
-										: colors.foreground,
-								fontWeight: "500",
-							},
-						]}
-					>
+						<Text
+							style={[
+								typography.meta,
+								fontStyle("500"),
+								{
+									color:
+										part.state === "error"
+											? colors.destructive
+											: colors.foreground,
+								},
+							]}
+						>
 						{toolName}
 					</Text>
 					{description && (
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	sectionLabel: {
+		fontFamily: Fonts.medium,
 		marginBottom: 4,
-		fontWeight: "500",
 	},
 });

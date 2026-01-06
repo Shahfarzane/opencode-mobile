@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { AiAgentIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
 import {
 	type AttachedFile,
 	AttachedFilesList,
@@ -268,7 +268,8 @@ function AutocompleteOverlay({
 				<Text
 					style={[
 						typography.micro,
-						{ color: colors.mutedForeground, fontWeight: "600" },
+						fontStyle("600"),
+						{ color: colors.mutedForeground },
 					]}
 				>
 					{getTitle()}
@@ -320,13 +321,14 @@ function ProviderLogo({ providerId }: { providerId: string }) {
 	};
 
 	return (
-		<Text
-			style={[
-				typography.micro,
-				{ color: colors.mutedForeground, fontWeight: "600" },
-			]}
-		>
-			{getProviderSymbol(providerId)}
+			<Text
+				style={[
+					typography.micro,
+					fontStyle("600"),
+					{ color: colors.mutedForeground },
+				]}
+			>
+				{getProviderSymbol(providerId)}
 		</Text>
 	);
 }
@@ -363,7 +365,7 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 		<View style={styles.agentBadgeContainer}>
 			<AiAgentIcon size={14} color={badgeColor} />
 			<Text
-				style={[typography.micro, { color: badgeColor, fontWeight: "500" }]}
+				style={[typography.micro, fontStyle("500"), { color: badgeColor }]}
 			>
 				{capitalizedName}
 			</Text>
@@ -822,8 +824,8 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 	},
 	triggerIconText: {
-		fontFamily: "IBMPlexMono-Medium",
-		fontSize: 14,
+		fontFamily: Fonts.medium,
+		fontSize: FontSizes.uiLabel,
 	},
 	autocompleteOverlay: {
 		position: "absolute",

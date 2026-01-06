@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { FontSizes, fontStyle, typography, useTheme } from "@/theme";
 
 interface Model {
 	id: string;
@@ -109,7 +109,7 @@ function ProviderLogo({ providerId }: { providerId: string }) {
 
 	return (
 		<View style={[styles.providerLogo, { backgroundColor: colors.muted }]}>
-			<Text style={[typography.micro, { color: colors.foreground, fontWeight: "600" }]}>
+			<Text style={[typography.micro, fontStyle("600"), { color: colors.foreground }]}>
 				{getProviderSymbol(providerId)}
 			</Text>
 		</View>
@@ -342,7 +342,8 @@ export function ModelPicker({
 											<Text
 												style={[
 													typography.uiLabel,
-													{ color: colors.foreground, fontWeight: "600" },
+													fontStyle("600"),
+													{ color: colors.foreground },
 												]}
 											>
 												{provider.name}
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
 	},
 	searchInput: {
 		flex: 1,
-		fontSize: 14,
+		fontSize: FontSizes.uiLabel,
 		padding: 0,
 	},
 	emptyState: {

@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { PlusIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { Fonts, FontSizes, typography, useTheme } from "@/theme";
 
 interface WorkspaceGroupProps {
 	groupId: string;
@@ -103,10 +103,10 @@ export function WorkspaceGroup({
 							onPress={handleToggleShowMore}
 							style={styles.showMoreButton}
 						>
-							<Text
+								<Text
 								style={[
 									typography.micro,
-									{ color: `${colors.mutedForeground}B3`, fontSize: 12 }, // 70% opacity, text-xs
+									{ color: `${colors.mutedForeground}B3`, fontSize: FontSizes.xs }, // 70% opacity, text-xs
 								]}
 							>
 								{showMoreButton.isExpanded
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	headerLabel: {
-		fontWeight: "500",
+		fontFamily: Fonts.medium,
 		flex: 1,
 	},
 	addButton: {

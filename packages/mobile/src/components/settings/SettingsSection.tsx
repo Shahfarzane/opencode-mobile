@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { typography, useTheme } from "@/theme";
+import { Fonts, typography, useTheme } from "@/theme";
 
 interface SettingsSectionProps {
 	title?: string;
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
 		marginBottom: 12,
 	},
 	title: {
-		fontWeight: "600",
+		fontFamily: Fonts.semiBold,
 		marginBottom: 4,
 	},
 });

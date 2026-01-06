@@ -1,7 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
 import { Text, type TextStyle, type ViewStyle } from "react-native";
-import { useTheme } from "@/theme";
+import { FontSizes, LineHeights, useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -62,7 +62,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 				key={node.key}
 				style={{
 					fontFamily: "IBMPlexMono-Regular",
-					fontSize: 13,
+					fontSize: FontSizes.code,
 					backgroundColor: colors.muted,
 					color: colors.foreground,
 				}}
@@ -76,27 +76,27 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		body: {
 			color: colors.foreground,
 			fontFamily: "IBMPlexMono-Regular",
-			fontSize: 15,
-			lineHeight: 22,
+			fontSize: FontSizes.markdown,
+			lineHeight: FontSizes.markdown * LineHeights.normal,
 		},
 		heading1: {
 			color: colors.foreground,
 			fontFamily: "IBMPlexMono-Bold",
-			fontSize: 20,
+			fontSize: FontSizes.h1,
 			marginTop: 16,
 			marginBottom: 8,
 		},
 		heading2: {
 			color: colors.foreground,
 			fontFamily: "IBMPlexMono-SemiBold",
-			fontSize: 18,
+			fontSize: FontSizes.h2,
 			marginTop: 14,
 			marginBottom: 6,
 		},
 		heading3: {
 			color: colors.foreground,
 			fontFamily: "IBMPlexMono-SemiBold",
-			fontSize: 16,
+			fontSize: FontSizes.h3,
 			marginTop: 12,
 			marginBottom: 4,
 		},
@@ -138,7 +138,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			borderRadius: 8,
 			padding: 12,
 			fontFamily: "IBMPlexMono-Regular",
-			fontSize: 13,
+			fontSize: FontSizes.code,
 		},
 		hr: {
 			backgroundColor: colors.border,

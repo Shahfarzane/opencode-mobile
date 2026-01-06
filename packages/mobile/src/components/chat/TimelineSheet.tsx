@@ -8,7 +8,7 @@ import { forwardRef, useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { Fonts, FontSizes, fontStyle, typography, useTheme } from "@/theme";
 import type { Message } from "./types";
 
 interface TimelineTurn {
@@ -161,7 +161,8 @@ function TimelineTurnItem({
 						<Text
 							style={[
 								typography.uiLabel,
-								{ color: colors.foreground, fontWeight: "600" },
+								fontStyle("600"),
+								{ color: colors.foreground },
 							]}
 						>
 							You
@@ -386,8 +387,8 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 	},
 	turnNumber: {
-		fontSize: 10,
-		fontWeight: "700",
+		fontFamily: Fonts.bold,
+		fontSize: FontSizes.xxs,
 	},
 	turnLine: {
 		width: 2,

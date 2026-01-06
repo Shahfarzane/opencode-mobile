@@ -23,6 +23,41 @@ export const FontFamily = {
 	bold: "IBMPlexMono-Bold",
 } as const;
 
+/**
+ * Get the correct font family for a given weight.
+ * In React Native, fontWeight style doesn't work with custom fonts -
+ * you must use the specific fontFamily name for each weight variant.
+ */
+export function getFontFamily(
+	weight: "400" | "500" | "600" | "700" | "regular" | "medium" | "semibold" | "bold" = "regular",
+): string {
+	switch (weight) {
+		case "700":
+		case "bold":
+			return FontFamily.bold;
+		case "600":
+		case "semibold":
+			return FontFamily.semiBold;
+		case "500":
+		case "medium":
+			return FontFamily.medium;
+		case "400":
+		case "regular":
+		default:
+			return FontFamily.regular;
+	}
+}
+
+/**
+ * Helper to create a text style with the correct font family for the weight.
+ * Use this instead of { fontWeight: "600" } which doesn't work in React Native.
+ */
+export function fontStyle(
+	weight: "400" | "500" | "600" | "700" | "regular" | "medium" | "semibold" | "bold" = "regular",
+) {
+	return { fontFamily: getFontFamily(weight) };
+}
+
 export const FontSizes = {
 	markdown: remToPixels(PWA_MOBILE_TYPOGRAPHY.markdown), // 16px
 	code: remToPixels(PWA_MOBILE_TYPOGRAPHY.code), // 14px
@@ -30,6 +65,9 @@ export const FontSizes = {
 	uiLabel: remToPixels(PWA_MOBILE_TYPOGRAPHY.uiLabel), // 14px
 	meta: remToPixels(PWA_MOBILE_TYPOGRAPHY.meta), // 14px
 	micro: remToPixels(PWA_MOBILE_TYPOGRAPHY.micro), // 13px
+	xs: 12, // 0.75rem - matches desktop text-xs
+	microSmall: 11, // 0.7rem - matches desktop git stats text-[0.7rem]
+	xxs: 10, // Very small text for UI elements like turn numbers
 	h1: 24,
 	h2: 20,
 	h3: 18,

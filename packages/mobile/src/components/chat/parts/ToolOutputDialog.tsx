@@ -9,7 +9,7 @@ import {
 	View,
 } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, typography, useTheme } from "@/theme";
 import type { ToolPartData } from "./ToolPart";
 
 interface ToolOutputDialogProps {
@@ -194,7 +194,8 @@ export function ToolOutputDialog({
 						<Text
 							style={[
 								typography.uiHeader,
-								{ color: colors.foreground, fontWeight: "600" },
+								fontStyle("600"),
+								{ color: colors.foreground },
 							]}
 						>
 							{toolName}
@@ -226,7 +227,8 @@ export function ToolOutputDialog({
 									<Text
 										style={[
 											typography.meta,
-											{ color: colors.mutedForeground, fontWeight: "500" },
+											fontStyle("500"),
+											{ color: colors.mutedForeground },
 										]}
 									>
 										Input
@@ -257,7 +259,8 @@ export function ToolOutputDialog({
 									<Text
 										style={[
 											typography.meta,
-											{ color: colors.mutedForeground, fontWeight: "500" },
+											fontStyle("500"),
+											{ color: colors.mutedForeground },
 										]}
 									>
 										Output
@@ -291,7 +294,8 @@ export function ToolOutputDialog({
 									<Text
 										style={[
 											typography.meta,
-											{ color: colors.destructive, fontWeight: "500" },
+											fontStyle("500"),
+											{ color: colors.destructive },
 										]}
 									>
 										Error

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { CheckIcon, ChevronLeft } from "@/components/icons";
-import { Spacing, typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, Spacing, typography, useTheme } from "@/theme";
 
 interface GitIdentityDetailViewProps {
 	profileId: string;
@@ -169,7 +169,8 @@ export function GitIdentityDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						{isNewProfile ? "New Identity" : name || "Git Identity"}
@@ -189,7 +190,8 @@ export function GitIdentityDetailView({
 						<Text
 							style={[
 								typography.meta,
-								{ color: colors.primaryForeground, fontWeight: "500" },
+								fontStyle("500"),
+								{ color: colors.primaryForeground },
 							]}
 						>
 							Save
@@ -209,7 +211,8 @@ export function GitIdentityDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						Profile name
@@ -232,7 +235,8 @@ export function GitIdentityDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+							fontStyle("600"),
+							{ color: colors.foreground, marginBottom: 8 },
 						]}
 					>
 						Color
@@ -257,7 +261,8 @@ export function GitIdentityDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600", marginBottom: 12 },
+							fontStyle("600"),
+							{ color: colors.foreground, marginBottom: 12 },
 						]}
 					>
 						Git configuration
@@ -309,7 +314,8 @@ export function GitIdentityDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600", marginBottom: 4 },
+							fontStyle("600"),
+							{ color: colors.foreground, marginBottom: 4 },
 						]}
 					>
 						SSH key path

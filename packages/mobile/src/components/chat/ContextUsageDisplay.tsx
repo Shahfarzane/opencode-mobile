@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, typography, useTheme } from "@/theme";
 
 export interface ContextUsage {
 	totalTokens: number;
@@ -103,7 +103,8 @@ export function ContextUsageDisplay({
 				<Text
 					style={[
 						size === "compact" ? typography.micro : typography.meta,
-						{ color: percentageColor, fontWeight: "500" },
+						fontStyle("500"),
+						{ color: percentageColor },
 					]}
 				>
 					{Math.min(usage.percentage, 999).toFixed(1)}%
@@ -151,7 +152,8 @@ export function ContextUsageDisplay({
 								<Text
 									style={[
 										typography.meta,
-										{ color: colors.foreground, fontWeight: "500" },
+										fontStyle("500"),
+										{ color: colors.foreground },
 									]}
 								>
 									{formatTokens(usage.totalTokens)}
@@ -167,7 +169,8 @@ export function ContextUsageDisplay({
 								<Text
 									style={[
 										typography.meta,
-										{ color: colors.foreground, fontWeight: "500" },
+										fontStyle("500"),
+										{ color: colors.foreground },
 									]}
 								>
 									{formatTokens(usage.contextLimit)}
@@ -183,7 +186,8 @@ export function ContextUsageDisplay({
 								<Text
 									style={[
 										typography.meta,
-										{ color: colors.foreground, fontWeight: "500" },
+										fontStyle("500"),
+										{ color: colors.foreground },
 									]}
 								>
 									{formatTokens(safeOutputLimit)}
@@ -205,7 +209,8 @@ export function ContextUsageDisplay({
 								<Text
 									style={[
 										typography.meta,
-										{ color: percentageColor, fontWeight: "600" },
+										fontStyle("600"),
+										{ color: percentageColor },
 									]}
 								>
 									{Math.min(usage.percentage, 999).toFixed(1)}%
@@ -240,7 +245,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 	},
 	modalTitle: {
-		fontWeight: "600",
+		fontFamily: Fonts.semiBold,
 		marginBottom: 12,
 	},
 	statsContainer: {

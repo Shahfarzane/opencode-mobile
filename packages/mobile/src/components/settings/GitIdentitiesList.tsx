@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { PlusIcon, UsersIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, typography, useTheme } from "@/theme";
 import { SettingsListItem } from "./SettingsListItem";
 
 export interface GitIdentitiesListRef {
@@ -94,7 +94,7 @@ export const GitIdentitiesList = forwardRef<GitIdentitiesListRef, GitIdentitiesL
 					style={[styles.addButton, { backgroundColor: colors.primary }]}
 				>
 					<PlusIcon size={14} color={colors.background} />
-					<Text style={[typography.micro, { color: colors.background, fontWeight: "600" }]}>
+					<Text style={[typography.micro, fontStyle("600"), { color: colors.background }]}>
 						Add
 					</Text>
 				</Pressable>
