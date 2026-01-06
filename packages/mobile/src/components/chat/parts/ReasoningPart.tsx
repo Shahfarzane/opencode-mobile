@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
+import { useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -14,7 +14,10 @@ const Markdown = MarkdownLib as unknown as ComponentType<{
 function ReasoningMarkdown({
 	content,
 	color,
-}: { content: string; color: string }) {
+}: {
+	content: string;
+	color: string;
+}) {
 	const { colors } = useTheme();
 
 	const markdownStyles = {
@@ -83,7 +86,13 @@ function BrainIcon({ size = 14, color }: { size?: number; color: string }) {
 }
 
 // Chevron down icon
-function ChevronDownIcon({ size = 14, color }: { size?: number; color: string }) {
+function ChevronDownIcon({
+	size = 14,
+	color,
+}: {
+	size?: number;
+	color: string;
+}) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
 			<Path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z" />
@@ -105,6 +114,21 @@ function cleanReasoningText(text: string): string {
 		.trim();
 }
 
+// Strip markdown formatting for plain text display
+function stripMarkdown(text: string): string {
+	return text
+		.replace(/\*\*(.+?)\*\*/g, "$1") // bold **text**
+		.replace(/\*(.+?)\*/g, "$1") // italic *text*
+		.replace(/__(.+?)__/g, "$1") // bold __text__
+		.replace(/_(.+?)_/g, "$1") // italic _text_
+		.replace(/~~(.+?)~~/g, "$1") // strikethrough
+		.replace(/`(.+?)`/g, "$1") // inline code
+		.replace(/\[(.+?)\]\(.+?\)/g, "$1") // links [text](url)
+		.replace(/^#{1,6}\s+/gm, "") // headings
+		.replace(/^[-*+]\s+/gm, "") // list items
+		.replace(/^\d+\.\s+/gm, ""); // numbered lists
+}
+
 // Get first sentence/line as summary
 function getReasoningSummary(text: string): string {
 	if (!text) return "";
@@ -119,11 +143,15 @@ function getReasoningSummary(text: string): string {
 	];
 	const cutoff = Math.min(...cutoffCandidates);
 
+	let summary: string;
 	if (!Number.isFinite(cutoff)) {
-		return trimmed;
+		summary = trimmed;
+	} else {
+		summary = trimmed.substring(0, cutoff).trim();
 	}
 
-	return trimmed.substring(0, cutoff).trim();
+	// Strip markdown formatting from summary
+	return stripMarkdown(summary);
 }
 
 export function ReasoningPart({ part }: ReasoningPartProps) {
@@ -131,8 +159,14 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 	const { colors } = useTheme();
 
 	const rawContent = part.content || "";
-	const textContent = useMemo(() => cleanReasoningText(rawContent), [rawContent]);
-	const summary = useMemo(() => getReasoningSummary(textContent), [textContent]);
+	const textContent = useMemo(
+		() => cleanReasoningText(rawContent),
+		[rawContent],
+	);
+	const summary = useMemo(
+		() => getReasoningSummary(textContent),
+		[textContent],
+	);
 
 	if (!textContent || textContent.trim().length === 0) {
 		return null;
@@ -154,7 +188,13 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 							<BrainIcon size={14} color={colors.mutedForeground} />
 						)}
 					</View>
-					<Text style={[typography.meta, styles.label, { color: colors.foreground }]}>
+					<Text
+						style={[
+							typography.meta,
+							styles.label,
+							{ color: colors.foreground },
+						]}
+					>
 						Thinking
 					</Text>
 					{part.isStreaming && (
@@ -168,7 +208,10 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 				{summary && !isExpanded && (
 					<View style={styles.summaryContainer}>
 						<Text
-							style={[typography.meta, { color: `${colors.mutedForeground}B0` }]}
+							style={[
+								typography.meta,
+								{ color: `${colors.mutedForeground}B0` },
+							]}
 							numberOfLines={1}
 						>
 							{summary}
@@ -179,7 +222,12 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 
 			{/* Expanded content */}
 			{isExpanded && (
-				<View style={[styles.expandedContent, { borderLeftColor: `${colors.border}CC` }]}>
+				<View
+					style={[
+						styles.expandedContent,
+						{ borderLeftColor: `${colors.border}CC` },
+					]}
+				>
 					<ReasoningMarkdown
 						content={textContent + (part.isStreaming ? " ▊" : "")}
 						color={`${colors.mutedForeground}B0`}

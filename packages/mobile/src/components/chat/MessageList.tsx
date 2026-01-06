@@ -1,7 +1,11 @@
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { useCallback, useRef, useState } from "react";
-import type { NativeScrollEvent, NativeSyntheticEvent, TextStyle } from "react-native";
+import type {
+	NativeScrollEvent,
+	NativeSyntheticEvent,
+	TextStyle,
+} from "react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
@@ -80,7 +84,13 @@ function EmptyState() {
 	);
 }
 
-export function MessageList({ messages, isLoading, onRevert, onFork, onSelectSession }: MessageListProps) {
+export function MessageList({
+	messages,
+	isLoading,
+	onRevert,
+	onFork,
+	onSelectSession,
+}: MessageListProps) {
 	const { colors } = useTheme();
 	const listRef = useRef<FlashListRef<Message>>(null);
 	const [showScrollButton, setShowScrollButton] = useState(false);
@@ -114,7 +124,8 @@ export function MessageList({ messages, isLoading, onRevert, onFork, onSelectSes
 
 	const handleScroll = useCallback(
 		(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-			const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+			const { contentOffset, contentSize, layoutMeasurement } =
+				event.nativeEvent;
 			const distanceFromBottom =
 				contentSize.height - layoutMeasurement.height - contentOffset.y;
 			// Show button when scrolled more than 100px from bottom

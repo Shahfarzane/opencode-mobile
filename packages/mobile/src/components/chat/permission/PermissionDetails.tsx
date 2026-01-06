@@ -300,7 +300,11 @@ function PatternDisplay({ pattern }: { pattern: string | string[] }) {
 			{patterns.map((p, i) => (
 				<Text
 					key={i}
-					style={[typography.code, styles.patternText, { color: colors.foreground }]}
+					style={[
+						typography.code,
+						styles.patternText,
+						{ color: colors.foreground },
+					]}
 					numberOfLines={1}
 				>
 					{p}

@@ -6,12 +6,12 @@ import {
 	Alert,
 	Dimensions,
 	Image,
+	type LayoutRectangle,
 	Modal,
 	Pressable,
 	StyleSheet,
 	Text,
 	View,
-	type LayoutRectangle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
@@ -55,7 +55,9 @@ export function FileAttachmentButton({
 	const { colors } = useTheme();
 	const insets = useSafeAreaInsets();
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
-	const [buttonLayout, setButtonLayout] = useState<LayoutRectangle | null>(null);
+	const [buttonLayout, setButtonLayout] = useState<LayoutRectangle | null>(
+		null,
+	);
 	const buttonRef = useRef<View>(null);
 
 	const handleImagePick = useCallback(async () => {
