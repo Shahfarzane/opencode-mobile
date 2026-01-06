@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -22,10 +22,13 @@ import {
 import {
 	AgentDetailView,
 	AgentsList,
+	type AgentsListRef,
 	CommandDetailView,
 	CommandsList,
+	type CommandsListRef,
 	GitIdentityDetailView,
 	GitIdentitiesList,
+	type GitIdentitiesListRef,
 	ProviderDetailView,
 	ProvidersList,
 } from "../../src/components/settings";
@@ -535,6 +538,10 @@ export default function SettingsScreen() {
 	const [selectedItem, setSelectedItem] = useState<string | null>(null);
 	const [showDetail, setShowDetail] = useState(false);
 
+	const agentsListRef = useRef<AgentsListRef>(null);
+	const commandsListRef = useRef<CommandsListRef>(null);
+	const gitIdentitiesListRef = useRef<GitIdentitiesListRef>(null);
+
 	const tabs: TabConfig[] = [
 		{
 			id: "general",
@@ -627,10 +634,18 @@ export default function SettingsScreen() {
 		setShowDetail(true);
 	};
 
-	const handleBack = () => {
+	const handleBack = useCallback(() => {
 		setShowDetail(false);
 		setSelectedItem(null);
-	};
+
+		if (activeTab === "agents") {
+			agentsListRef.current?.refresh();
+		} else if (activeTab === "commands") {
+			commandsListRef.current?.refresh();
+		} else if (activeTab === "git") {
+			gitIdentitiesListRef.current?.refresh();
+		}
+	}, [activeTab]);
 
 	const renderContent = () => {
 		if (activeTab === "general") {
@@ -640,6 +655,7 @@ export default function SettingsScreen() {
 		if (activeTab === "agents") {
 			return (
 				<AgentsList
+					ref={agentsListRef}
 					selectedAgent={selectedItem}
 					onSelectAgent={handleSelectItem}
 				/>
@@ -649,6 +665,7 @@ export default function SettingsScreen() {
 		if (activeTab === "commands") {
 			return (
 				<CommandsList
+					ref={commandsListRef}
 					selectedCommand={selectedItem}
 					onSelectCommand={handleSelectItem}
 				/>
@@ -667,6 +684,7 @@ export default function SettingsScreen() {
 		if (activeTab === "git") {
 			return (
 				<GitIdentitiesList
+					ref={gitIdentitiesListRef}
 					selectedProfile={selectedItem}
 					onSelectProfile={handleSelectItem}
 				/>
