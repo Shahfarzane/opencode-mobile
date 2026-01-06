@@ -241,8 +241,7 @@ export default function TabsLayout() {
 			currentSessionId,
 			isLoadingSessions,
 			isGitRepo,
-			// Note: streamingSessionIds excluded from deps to prevent circular updates
-			// Chat screen updates this via ref, SessionSheet gets it via props
+			streamingSessionIds,
 			openSessionSheet,
 			selectSession,
 			createNewSession,
@@ -263,7 +262,7 @@ export default function TabsLayout() {
 			currentSessionId,
 			isLoadingSessions,
 			isGitRepo,
-			// streamingSessionIds removed - causes circular context updates
+			streamingSessionIds,
 			openSessionSheet,
 			selectSession,
 			createNewSession,

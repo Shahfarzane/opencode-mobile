@@ -80,6 +80,28 @@ export const sessionsApi = {
 		return unwrapArray<Session>(response);
 	},
 
+	async get(sessionId: string): Promise<Session | null> {
+		try {
+			const response = await apiGet<Session | { data?: Session }>(
+				`/api/session/${sessionId}`,
+				{},
+				true,
+			);
+			if (response && typeof response === "object") {
+				const obj = response as Record<string, unknown>;
+				if (typeof obj.id === "string") {
+					return response as Session;
+				}
+				if (obj.data && typeof obj.data === "object") {
+					return obj.data as Session;
+				}
+			}
+			return null;
+		} catch {
+			return null;
+		}
+	},
+
 	async create(): Promise<{ id: string }> {
 		const response = await apiPost<CreateResponse>("/api/session", {}, true);
 		if (response && typeof response === "object") {

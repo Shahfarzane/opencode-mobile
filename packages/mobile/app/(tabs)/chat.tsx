@@ -37,10 +37,15 @@ import {
 	PermissionCard,
 	TimelineSheet,
 } from "../../src/components/chat";
+import { WorkingPlaceholder } from "../../src/components/chat/WorkingPlaceholder";
 import {
 	type StreamEvent,
 	useEventStream,
 } from "../../src/hooks/useEventStream";
+import {
+	useAssistantStatus,
+	type MessagePart as StatusMessagePart,
+} from "../../src/hooks/useAssistantStatus";
 import type { MessagePart as StreamingPart } from "../../src/lib/streaming";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
@@ -166,6 +171,22 @@ export default function ChatScreen() {
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
 	const lastEventTimeRef = useRef<number>(0);
 
+	// Get the current streaming message's parts for status display
+	const streamingMessageParts = useMemo(() => {
+		const streamingMsg = messages.find((m) => m.isStreaming);
+		if (!streamingMsg?.parts) return [];
+		// Convert MessagePart[] to StatusMessagePart[]
+		return streamingMsg.parts.map((p) => ({
+			type: p.type,
+			state: p.state,
+			toolName: p.toolName,
+			text: p.text || p.content,
+		})) as StatusMessagePart[];
+	}, [messages]);
+
+	// Get assistant status for streaming indicator
+	const assistantStatus = useAssistantStatus(streamingMessageParts, isLoading);
+
 	const handleStreamEvent = useCallback(
 		(event: StreamEvent) => {
 			const props = event.properties;
@@ -209,11 +230,66 @@ export default function ChatScreen() {
 				return;
 			}
 
+			// Handle session.updated events to refresh session title
+			if (event.type === "session.updated") {
+				const sessionInfo = (props.info || props) as { id?: string; title?: string };
+				const updatedSessionId = sessionInfo?.id || props.sessionID;
+				if (__DEV__) {
+					console.log("[Chat] session.updated:", {
+						sessionId: updatedSessionId,
+						title: sessionInfo?.title,
+					});
+				}
+				// Refresh sessions list to get updated title
+				if (_refreshSessions && updatedSessionId === sessionId) {
+					_refreshSessions();
+				}
+				return;
+			}
+
 			if (event.type === "message.part.updated" && props.part) {
+				// Extract server's message ID from event
+				const serverMessageId = props.info?.id || props.messageID;
+
+				// Debug: Log all part events to understand message flow
+				if (__DEV__) {
+					console.log("[Chat] message.part.updated:", {
+						role: props.info?.role,
+						partType: props.part?.type,
+						partText: props.part?.text?.slice(0, 50),
+						partContent: props.part?.content?.slice(0, 50),
+						hasActiveAssistant: !!currentAssistantMessageIdRef.current,
+						serverMessageId,
+						trackedAssistantId: currentAssistantMessageIdRef.current,
+					});
+				}
+
 				// Only process parts for assistant messages - ignore user message events
-				// Check both explicit role AND ensure we have an active assistant message being tracked
-				if (props.info?.role === "user" || !currentAssistantMessageIdRef.current) {
+				// Check explicit role if available
+				if (props.info?.role === "user") {
+					if (__DEV__) console.log("[Chat] Skipping user role event");
 					return;
+				}
+
+				// Ensure we have an active assistant message being tracked
+				if (!currentAssistantMessageIdRef.current) {
+					if (__DEV__) console.log("[Chat] Skipping - no active assistant message");
+					return;
+				}
+
+				// Skip events for non-assistant messages based on server message ID pattern
+				// Server uses IDs like "msg_01JX..." for messages, while we use "assistant-" prefix
+				// If server sends role info, that takes precedence (handled above)
+				// This catches events where role info is missing but we can infer from ID pattern
+				if (serverMessageId && typeof serverMessageId === "string") {
+					// If it looks like a server-generated ID (starts with msg_ or is a ULID)
+					// and we have no role info, this might be a user message event - skip it
+					const looksLikeServerMessageId = serverMessageId.startsWith("msg_") ||
+						(serverMessageId.length > 20 && /^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
+					if (looksLikeServerMessageId && props.info?.role === undefined) {
+						if (__DEV__) console.log("[Chat] Skipping - server message ID with unknown role:", serverMessageId);
+						return;
+					}
 				}
 
 				const streamPart = props.part as StreamingPart;
@@ -246,12 +322,42 @@ export default function ChatScreen() {
 			if (event.type === "message.updated") {
 				const info = props.info;
 				const serverParts = props.parts;
+				const serverMessageId = info?.id || props.messageID;
+
+				// Debug: Log all message.updated events
+				if (__DEV__) {
+					console.log("[Chat] message.updated:", {
+						role: info?.role,
+						finish: info?.finish,
+						partsCount: serverParts?.length,
+						hasActiveAssistant: !!currentAssistantMessageIdRef.current,
+						serverMessageId,
+						trackedAssistantId: currentAssistantMessageIdRef.current,
+					});
+				}
 
 				// Only process assistant messages - ignore user message events
 				// The server sends message.updated for both user and assistant messages
-				// Also ensure we have an active assistant message being tracked
-				if (info?.role === "user" || !currentAssistantMessageIdRef.current) {
+				if (info?.role === "user") {
+					if (__DEV__) console.log("[Chat] Skipping user message.updated");
 					return;
+				}
+
+				// Ensure we have an active assistant message being tracked
+				if (!currentAssistantMessageIdRef.current) {
+					if (__DEV__) console.log("[Chat] Skipping message.updated - no active assistant");
+					return;
+				}
+
+				// Skip events for non-assistant messages based on server message ID pattern
+				// (same logic as message.part.updated)
+				if (serverMessageId && typeof serverMessageId === "string") {
+					const looksLikeServerMessageId = serverMessageId.startsWith("msg_") ||
+						(serverMessageId.length > 20 && /^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
+					if (looksLikeServerMessageId && info?.role === undefined) {
+						if (__DEV__) console.log("[Chat] Skipping message.updated - server ID with unknown role:", serverMessageId);
+						return;
+					}
 				}
 
 				if (serverParts && Array.isArray(serverParts)) {
@@ -305,11 +411,16 @@ export default function ChatScreen() {
 						setIsLoading(false);
 						currentAssistantMessageIdRef.current = null;
 						partsMapRef.current.clear();
+						// Refresh sessions to get updated title after message completion
+						if (_refreshSessions) {
+							// Debounce the refresh slightly to avoid rapid calls
+							setTimeout(() => _refreshSessions(), 500);
+						}
 					}
 				}
 			}
 		},
-		[sessionId],
+		[sessionId, _refreshSessions],
 	);
 
 	useEventStream(sessionId, handleStreamEvent);
@@ -1113,6 +1224,15 @@ export default function ChatScreen() {
 					onSelectSession={handleSelectSession}
 				/>
 			</View>
+
+			{/* Streaming status indicator */}
+			{(assistantStatus.isActive || isLoading) && (
+				<WorkingPlaceholder
+					isStreaming={isLoading}
+					statusText={assistantStatus.statusText || "Working..."}
+					activityType={assistantStatus.activityType}
+				/>
+			)}
 
 			{activePermissions.length > 0 && (
 				<View
