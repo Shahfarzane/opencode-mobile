@@ -4,6 +4,15 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 import { ToolOutputDialog } from "./ToolOutputDialog";
 
+// Chevron down icon (matches ReasoningPart)
+function ChevronDownIcon({ size = 14, color }: { size?: number; color: string }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+			<Path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z" />
+		</Svg>
+	);
+}
+
 export interface ToolPartData {
 	type: "tool" | "tool-call" | "tool-result";
 	toolName?: string;
@@ -205,7 +214,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 				<View style={styles.headerLeft}>
 					<View style={{ width: 14, height: 14, justifyContent: "center", alignItems: "center" }}>
 						{isExpanded ? (
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>▼</Text>
+							<ChevronDownIcon size={14} color={colors.mutedForeground} />
 						) : (
 							getToolIcon(toolName, part.state === "error" ? colors.destructive : colors.mutedForeground)
 						)}
