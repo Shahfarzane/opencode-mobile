@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useState,
+} from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -12,12 +18,17 @@ import { PlusIcon, RobotIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import { SettingsListItem } from "./SettingsListItem";
 
+export interface AgentsListRef {
+	refresh: () => Promise<void>;
+}
+
 interface AgentsListProps {
 	selectedAgent?: string | null;
 	onSelectAgent: (agentName: string) => void;
 }
 
-export function AgentsList({ selectedAgent, onSelectAgent }: AgentsListProps) {
+export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
+	function AgentsList({ selectedAgent, onSelectAgent }, ref) {
 	const { colors } = useTheme();
 	const [agents, setAgents] = useState<Agent[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +44,10 @@ export function AgentsList({ selectedAgent, onSelectAgent }: AgentsListProps) {
 			setIsLoading(false);
 		}
 	}, []);
+
+	useImperativeHandle(ref, () => ({
+		refresh: loadAgents,
+	}), [loadAgents]);
 
 	useEffect(() => {
 		loadAgents();
@@ -126,7 +141,8 @@ export function AgentsList({ selectedAgent, onSelectAgent }: AgentsListProps) {
 			)}
 		</ScrollView>
 	);
-}
+},
+);
 
 const styles = StyleSheet.create({
 	container: {

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useState,
+} from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -12,34 +18,40 @@ import { PlusIcon, UsersIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import { SettingsListItem } from "./SettingsListItem";
 
+export interface GitIdentitiesListRef {
+	refresh: () => Promise<void>;
+}
+
 interface GitIdentitiesListProps {
 	selectedProfile?: string | null;
 	onSelectProfile: (profileId: string) => void;
 }
 
-export function GitIdentitiesList({
-	selectedProfile,
-	onSelectProfile,
-}: GitIdentitiesListProps) {
-	const { colors } = useTheme();
-	const [profiles, setProfiles] = useState<GitIdentityProfile[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+export const GitIdentitiesList = forwardRef<GitIdentitiesListRef, GitIdentitiesListProps>(
+	function GitIdentitiesList({ selectedProfile, onSelectProfile }, ref) {
+		const { colors } = useTheme();
+		const [profiles, setProfiles] = useState<GitIdentityProfile[]>([]);
+		const [isLoading, setIsLoading] = useState(true);
 
-	const loadProfiles = useCallback(async () => {
-		setIsLoading(true);
-		try {
-			const data = await gitApi.getIdentities();
-			setProfiles(data);
-		} catch (error) {
-			console.error("Failed to load git identities:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
+		const loadProfiles = useCallback(async () => {
+			setIsLoading(true);
+			try {
+				const data = await gitApi.getIdentities();
+				setProfiles(data);
+			} catch (error) {
+				console.error("Failed to load git identities:", error);
+			} finally {
+				setIsLoading(false);
+			}
+		}, []);
 
-	useEffect(() => {
-		loadProfiles();
-	}, [loadProfiles]);
+		useImperativeHandle(ref, () => ({
+			refresh: loadProfiles,
+		}), [loadProfiles]);
+
+		useEffect(() => {
+			loadProfiles();
+		}, [loadProfiles]);
 
 	if (isLoading) {
 		return (
@@ -88,8 +100,9 @@ export function GitIdentitiesList({
 				</View>
 			)}
 		</ScrollView>
-	);
-}
+		);
+	},
+);
 
 const styles = StyleSheet.create({
 	container: {

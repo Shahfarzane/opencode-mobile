@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useState,
+} from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -12,34 +18,40 @@ import { CommandIcon, PlusIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import { SettingsListItem } from "./SettingsListItem";
 
+export interface CommandsListRef {
+	refresh: () => Promise<void>;
+}
+
 interface CommandsListProps {
 	selectedCommand?: string | null;
 	onSelectCommand: (commandName: string) => void;
 }
 
-export function CommandsList({
-	selectedCommand,
-	onSelectCommand,
-}: CommandsListProps) {
-	const { colors } = useTheme();
-	const [commands, setCommands] = useState<Command[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
+	function CommandsList({ selectedCommand, onSelectCommand }, ref) {
+		const { colors } = useTheme();
+		const [commands, setCommands] = useState<Command[]>([]);
+		const [isLoading, setIsLoading] = useState(true);
 
-	const loadCommands = useCallback(async () => {
-		setIsLoading(true);
-		try {
-			const data = await commandsApi.list();
-			setCommands(data.filter((c) => !c.hidden));
-		} catch (error) {
-			console.error("Failed to load commands:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
+		const loadCommands = useCallback(async () => {
+			setIsLoading(true);
+			try {
+				const data = await commandsApi.list();
+				setCommands(data.filter((c) => !c.hidden));
+			} catch (error) {
+				console.error("Failed to load commands:", error);
+			} finally {
+				setIsLoading(false);
+			}
+		}, []);
 
-	useEffect(() => {
-		loadCommands();
-	}, [loadCommands]);
+		useImperativeHandle(ref, () => ({
+			refresh: loadCommands,
+		}), [loadCommands]);
+
+		useEffect(() => {
+			loadCommands();
+		}, [loadCommands]);
 
 	const builtInCommands = commands.filter(isCommandBuiltIn);
 	const customCommands = commands.filter((c) => !isCommandBuiltIn(c));
@@ -126,8 +138,9 @@ export function CommandsList({
 				</View>
 			)}
 		</ScrollView>
-	);
-}
+		);
+	},
+);
 
 const styles = StyleSheet.create({
 	container: {
