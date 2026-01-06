@@ -1,12 +1,18 @@
 import {
-	flexokiDarkTheme,
-	flexokiLightTheme,
+	warmSandDarkTheme,
+	warmSandLightTheme,
 } from "@openchamber/shared/themes";
 
-const dark = flexokiDarkTheme.colors;
-const light = flexokiLightTheme.colors;
+const dark = warmSandDarkTheme.colors;
+const light = warmSandLightTheme.colors;
 
-export const FlexokiDark = {
+/**
+ * Warm Sand Dark Theme Colors
+ * Matches the desktop app's default dark theme
+ * Primary: #edb449 (golden sand)
+ * Background: #151313
+ */
+export const WarmSandDark = {
 	background: dark.surface.background,
 	foreground: dark.surface.foreground,
 	card: dark.surface.elevated,
@@ -18,7 +24,7 @@ export const FlexokiDark = {
 	primaryForeground: dark.primary.foreground ?? dark.surface.background,
 	muted: dark.surface.muted,
 	mutedForeground: dark.surface.mutedForeground,
-	secondary: dark.surface.muted,
+	secondary: dark.surface.subtle,
 	secondaryForeground: dark.surface.foreground,
 	accent: dark.surface.subtle,
 	accentForeground: dark.surface.foreground,
@@ -35,7 +41,11 @@ export const FlexokiDark = {
 	ring: dark.primary.base,
 } as const;
 
-export const FlexokiLight = {
+/**
+ * Warm Sand Light Theme Colors
+ * Matches the desktop app's default light theme
+ */
+export const WarmSandLight = {
 	background: light.surface.background,
 	foreground: light.surface.foreground,
 	card: light.surface.elevated,
@@ -47,7 +57,7 @@ export const FlexokiLight = {
 	primaryForeground: light.primary.foreground ?? light.surface.background,
 	muted: light.surface.muted,
 	mutedForeground: light.surface.mutedForeground,
-	secondary: light.surface.muted,
+	secondary: light.surface.subtle,
 	secondaryForeground: light.surface.foreground,
 	accent: light.surface.subtle,
 	accentForeground: light.surface.foreground,
@@ -64,8 +74,8 @@ export const FlexokiLight = {
 	ring: light.primary.base,
 } as const;
 
-export type ThemeColors = typeof FlexokiDark | typeof FlexokiLight;
+export type ThemeColors = typeof WarmSandDark | typeof WarmSandLight;
 
 export function getThemeColors(isDark: boolean): ThemeColors {
-	return isDark ? FlexokiDark : FlexokiLight;
+	return isDark ? WarmSandDark : WarmSandLight;
 }

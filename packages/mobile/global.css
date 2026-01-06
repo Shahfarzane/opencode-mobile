@@ -1,34 +1,53 @@
 @import 'tailwindcss';
 @import 'uniwind';
 
+/*
+ * Warm Sand Dark Theme - Matches Desktop App
+ * Primary: #edb449 (golden sand)
+ * Background: #151313
+ */
 @theme {
-  --color-background: #100F0F;
-  --color-foreground: #CECDC3;
-  --color-card: #282726;
-  --color-card-foreground: #CECDC3;
+  /* Surface colors */
+  --color-background: #151313;
+  --color-foreground: #cdccc3;
+  --color-card: #1C1B1A;
+  --color-card-foreground: #cdccc3;
   --color-popover: #282726;
-  --color-popover-foreground: #CECDC3;
-  --color-primary: #EC8B49;
-  --color-primary-hover: #F9AE77;
-  --color-primary-foreground: #FFFCF0;
-  --color-muted: #1C1B1A;
-  --color-muted-foreground: #878580;
-  --color-secondary: #1C1B1A;
-  --color-secondary-foreground: #CECDC3;
+  --color-popover-foreground: #cdccc3;
+
+  /* Primary - Golden Sand */
+  --color-primary: #edb449;
+  --color-primary-hover: #f5c55a;
+  --color-primary-foreground: #151313;
+
+  /* Muted surfaces */
+  --color-muted: #403E3C;
+  --color-muted-foreground: #b6b4ab;
+
+  /* Secondary */
+  --color-secondary: #343331;
+  --color-secondary-foreground: #cdccc3;
+
+  /* Accent */
   --color-accent: #343331;
-  --color-accent-foreground: #CECDC3;
-  --color-destructive: #D14D41;
-  --color-destructive-foreground: #FFFCF0;
-  --color-success: #A0AF54;
-  --color-success-foreground: #FFFCF0;
-  --color-info: #4385BE;
-  --color-info-foreground: #FFFCF0;
-  --color-warning: #D0A215;
-  --color-warning-foreground: #100F0F;
-  --color-border: #343331;
-  --color-input: #1C1B1A;
-  --color-ring: #EC8B49;
-  
+  --color-accent-foreground: #cdccc3;
+
+  /* Status colors */
+  --color-destructive: #d98678;
+  --color-destructive-foreground: #151313;
+  --color-success: #81af6c;
+  --color-success-foreground: #151313;
+  --color-info: #5aa9d9;
+  --color-info-foreground: #151313;
+  --color-warning: #d9a33e;
+  --color-warning-foreground: #151313;
+
+  /* Borders and inputs */
+  --color-border: #393836;
+  --color-input: #403E3C;
+  --color-ring: #edb449;
+
+  /* Typography */
   --font-mono: 'IBMPlexMono-Regular';
   --font-mono-medium: 'IBMPlexMono-Medium';
   --font-mono-semibold: 'IBMPlexMono-SemiBold';
