@@ -4,7 +4,7 @@
  * Run with: node scripts/generate-icons.mjs
  */
 
-import { writeFileSync, mkdirSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
@@ -75,12 +75,12 @@ function generateSplashSVG(size = 1024, backgroundColor = "#100F0F") {
 
   const leftFaceCells = LEFT_FACE_CELLS.map(
     (cell) =>
-      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`
+      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`,
   ).join("\n      ");
 
   const rightFaceCells = RIGHT_FACE_CELLS.map(
     (cell) =>
-      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`
+      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`,
   ).join("\n      ");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -156,12 +156,12 @@ function generateIconSVG(size = 1024, backgroundColor = "#100F0F") {
 
   const leftFaceCells = LEFT_FACE_CELLS.map(
     (cell) =>
-      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`
+      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`,
   ).join("\n      ");
 
   const rightFaceCells = RIGHT_FACE_CELLS.map(
     (cell) =>
-      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`
+      `<path d="${cell.path}" fill="${cellHighlightColor}" opacity="${cell.opacity}"/>`,
   ).join("\n      ");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
