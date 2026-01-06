@@ -74,10 +74,22 @@ function ProviderLogo({ modelName, color }: { modelName?: string; color: string 
 type ChatMessageProps = {
 	message: Message;
 	onBranchSession?: (messageId: string) => void;
+	onRevert?: (messageId: string) => void;
+	onSelectSession?: (sessionId: string) => void;
 	showHeader?: boolean;
 };
 
-function UserMessage({ content }: { content: string }) {
+function UserMessage({
+	content,
+	messageId,
+	onRevert,
+	onFork,
+}: {
+	content: string;
+	messageId: string;
+	onRevert?: (messageId: string) => void;
+	onFork?: (messageId: string) => void;
+}) {
 	const { colors, isDark } = useTheme();
 	const { showMenu, openMenu, closeMenu, copyMessageContent } =
 		useMessageActions();
@@ -108,6 +120,8 @@ function UserMessage({ content }: { content: string }) {
 				visible={showMenu}
 				onClose={closeMenu}
 				onCopy={() => copyMessageContent(content)}
+				onRevert={onRevert ? () => onRevert(messageId) : undefined}
+				onBranchSession={onFork ? () => onFork(messageId) : undefined}
 				isAssistantMessage={false}
 			/>
 		</View>
@@ -152,12 +166,14 @@ function RenderPart({
 	messageId,
 	isLastPart,
 	isStreaming,
+	onSelectSession,
 }: {
 	part: MessagePart;
 	index: number;
 	messageId: string;
 	isLastPart: boolean;
 	isStreaming: boolean;
+	onSelectSession?: (sessionId: string) => void;
 }) {
 	const { colors } = useTheme();
 	const partKey = `${messageId}-part-${index}-${part.type}-${part.id || ""}`;
@@ -179,7 +195,9 @@ function RenderPart({
 						input: getToolInput(part),
 						output: getToolOutput(part),
 						error: getToolError(part),
+						sessionId: part.sessionId,
 					}}
+					onSelectSession={onSelectSession}
 				/>
 			</FadeInView>
 		);
@@ -222,10 +240,14 @@ function RenderPart({
 function AssistantMessage({
 	message,
 	onBranchSession,
+	onRevert,
+	onSelectSession,
 	showHeader = true,
 }: {
 	message: Message;
 	onBranchSession?: (messageId: string) => void;
+	onRevert?: (messageId: string) => void;
+	onSelectSession?: (sessionId: string) => void;
 	showHeader?: boolean;
 }) {
 	const { colors } = useTheme();
@@ -318,6 +340,7 @@ function AssistantMessage({
 							messageId={message.id}
 							isLastPart={idx === message.parts!.length - 1}
 							isStreaming={isStreaming}
+							onSelectSession={onSelectSession}
 						/>
 					))
 				) : (
@@ -333,6 +356,7 @@ function AssistantMessage({
 				visible={showMenu}
 				onClose={closeMenu}
 				onCopy={() => copyMessageContent(getTextContent())}
+				onRevert={onRevert ? () => onRevert(message.id) : undefined}
 				onBranchSession={
 					onBranchSession ? () => onBranchSession(message.id) : undefined
 				}
@@ -345,16 +369,27 @@ function AssistantMessage({
 export function ChatMessage({
 	message,
 	onBranchSession,
+	onRevert,
+	onSelectSession,
 	showHeader = true,
 }: ChatMessageProps) {
 	if (message.role === "user") {
-		return <UserMessage content={message.content} />;
+		return (
+			<UserMessage
+				content={message.content}
+				messageId={message.id}
+				onRevert={onRevert}
+				onFork={onBranchSession}
+			/>
+		);
 	}
 
 	return (
 		<AssistantMessage
 			message={message}
 			onBranchSession={onBranchSession}
+			onRevert={onRevert}
+			onSelectSession={onSelectSession}
 			showHeader={showHeader}
 		/>
 	);

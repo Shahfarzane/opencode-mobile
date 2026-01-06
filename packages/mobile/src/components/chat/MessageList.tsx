@@ -28,6 +28,9 @@ function ArrowDownIcon({ color, size = 16 }: { color: string; size?: number }) {
 type MessageListProps = {
 	messages: Message[];
 	isLoading?: boolean;
+	onRevert?: (messageId: string) => void;
+	onFork?: (messageId: string) => void;
+	onSelectSession?: (sessionId: string) => void;
 };
 
 const phrases = [
@@ -77,7 +80,7 @@ function EmptyState() {
 	);
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading, onRevert, onFork, onSelectSession }: MessageListProps) {
 	const { colors } = useTheme();
 	const listRef = useRef<FlashListRef<Message>>(null);
 	const [showScrollButton, setShowScrollButton] = useState(false);
@@ -88,9 +91,17 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 			const previousMessage = index > 0 ? messages[index - 1] : null;
 			const showHeader = !previousMessage || previousMessage.role === "user";
 
-			return <ChatMessage message={item} showHeader={showHeader} />;
+			return (
+				<ChatMessage
+					message={item}
+					showHeader={showHeader}
+					onRevert={onRevert}
+					onBranchSession={onFork}
+					onSelectSession={onSelectSession}
+				/>
+			);
 		},
-		[messages],
+		[messages, onRevert, onFork, onSelectSession],
 	);
 
 	const keyExtractor = useCallback((item: Message) => item.id, []);

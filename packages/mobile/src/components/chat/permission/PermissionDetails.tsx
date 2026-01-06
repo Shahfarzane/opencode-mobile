@@ -282,36 +282,77 @@ function GenericDetails({ permission }: { permission: Permission }) {
 	);
 }
 
+function PatternDisplay({ pattern }: { pattern: string | string[] }) {
+	const { colors } = useTheme();
+	const patterns = Array.isArray(pattern) ? pattern : [pattern];
+
+	return (
+		<View style={[styles.patternContainer, { backgroundColor: colors.muted }]}>
+			<Text
+				style={[
+					typography.micro,
+					styles.patternLabel,
+					{ color: colors.mutedForeground },
+				]}
+			>
+				Pattern:
+			</Text>
+			{patterns.map((p, i) => (
+				<Text
+					key={i}
+					style={[typography.code, styles.patternText, { color: colors.foreground }]}
+					numberOfLines={1}
+				>
+					{p}
+				</Text>
+			))}
+		</View>
+	);
+}
+
 export function PermissionDetails({ permission }: PermissionDetailsProps) {
 	const tool = permission.type.toLowerCase();
 
-	if (tool === "bash" || tool === "shell" || tool === "shell_command") {
-		return <BashDetails permission={permission} />;
-	}
+	const renderToolDetails = () => {
+		if (tool === "bash" || tool === "shell" || tool === "shell_command") {
+			return <BashDetails permission={permission} />;
+		}
 
-	if (
-		tool === "edit" ||
-		tool === "multiedit" ||
-		tool === "str_replace" ||
-		tool === "str_replace_based_edit_tool"
-	) {
-		return <EditDetails permission={permission} />;
-	}
+		if (
+			tool === "edit" ||
+			tool === "multiedit" ||
+			tool === "str_replace" ||
+			tool === "str_replace_based_edit_tool"
+		) {
+			return <EditDetails permission={permission} />;
+		}
 
-	if (tool === "write" || tool === "create" || tool === "file_write") {
-		return <WriteDetails permission={permission} />;
-	}
+		if (tool === "write" || tool === "create" || tool === "file_write") {
+			return <WriteDetails permission={permission} />;
+		}
 
-	if (
-		tool === "webfetch" ||
-		tool === "fetch" ||
-		tool === "curl" ||
-		tool === "wget"
-	) {
-		return <WebFetchDetails permission={permission} />;
-	}
+		if (
+			tool === "webfetch" ||
+			tool === "fetch" ||
+			tool === "curl" ||
+			tool === "wget"
+		) {
+			return <WebFetchDetails permission={permission} />;
+		}
 
-	return <GenericDetails permission={permission} />;
+		return <GenericDetails permission={permission} />;
+	};
+
+	return (
+		<View>
+			{renderToolDetails()}
+			{permission.pattern && (
+				<View style={styles.patternWrapper}>
+					<PatternDisplay pattern={permission.pattern} />
+				</View>
+			)}
+		</View>
+	);
 }
 
 const styles = StyleSheet.create({
@@ -356,5 +397,21 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 6,
 		borderRadius: 6,
+	},
+	patternWrapper: {
+		paddingHorizontal: 16,
+		paddingBottom: 16,
+	},
+	patternContainer: {
+		padding: 10,
+		borderRadius: 8,
+		gap: 4,
+	},
+	patternLabel: {
+		fontWeight: "600",
+		marginBottom: 2,
+	},
+	patternText: {
+		fontSize: 12,
 	},
 });

@@ -1,3 +1,4 @@
+import type BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
@@ -34,6 +35,7 @@ import {
 	convertStreamingPart,
 	MessageList,
 	PermissionCard,
+	TimelineSheet,
 } from "../../src/components/chat";
 import {
 	type StreamEvent,
@@ -103,6 +105,8 @@ export default function ChatScreen() {
 	const [currentAgentName, setCurrentAgentName] = useState<string | undefined>();
 	const [showAgentPicker, setShowAgentPicker] = useState(false);
 	const [openChamberSettings, setOpenChamberSettings] = useState<SettingsPayload | null>(null);
+
+	const timelineSheetRef = useRef<BottomSheet>(null);
 
 	const activeAgent: AgentInfo | undefined = useMemo(() => {
 		if (!currentAgentName) return undefined;
@@ -742,6 +746,7 @@ export default function ChatScreen() {
 	);
 
 	const handleSend = useCallback(
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		async (content: string, _attachedFiles?: AttachedFile[]) => {
 			console.log("[Chat] === SEND MESSAGE DEBUG ===");
 			console.log("[Chat] isConnected:", isConnected);
@@ -824,29 +829,9 @@ export default function ChatScreen() {
 			currentProviderId,
 			currentModelId,
 			currentAgentName,
+			activeAgent,
+			modelInfo,
 		],
-	);
-
-	// Model change handlers
-	const handleProviderChange = useCallback(
-		(providerId: string) => {
-			setCurrentProviderId(providerId);
-			// Reset model when provider changes
-			const provider = providers.find((p) => p.id === providerId);
-			const defaultModel = provider?.models?.[0];
-			if (defaultModel) {
-				setCurrentModelId(defaultModel.id);
-			}
-		},
-		[providers],
-	);
-
-	const handleModelChange = useCallback(
-		(providerId: string, modelId: string) => {
-			setCurrentProviderId(providerId);
-			setCurrentModelId(modelId);
-		},
-		[],
 	);
 
 	const handleAgentChange = useCallback((agentName: string) => {
@@ -875,41 +860,224 @@ export default function ChatScreen() {
 		(p) => p.sessionID === sessionId,
 	);
 
+	const handleRevert = useCallback(
+		async (messageId: string) => {
+			if (!sessionId) return;
+			try {
+				await sessionsApi.revert(sessionId, messageId);
+				// Reload messages after revert
+				await loadSessionMessages(sessionId);
+			} catch (error) {
+				console.error("Failed to revert:", error);
+			}
+		},
+		[sessionId, loadSessionMessages],
+	);
+
+	const handleFork = useCallback(
+		async (messageId: string) => {
+			if (!sessionId) return;
+			try {
+				const newSession = await sessionsApi.fork(sessionId, messageId);
+				// Refresh sessions list and switch to the new session
+				if (_refreshSessions) {
+					await _refreshSessions();
+				}
+				if (contextSelectSession) {
+					contextSelectSession(newSession);
+				}
+			} catch (error) {
+				console.error("Failed to fork session:", error);
+			}
+		},
+		[sessionId, _refreshSessions, contextSelectSession],
+	);
+
+	const handleSelectSession = useCallback(
+		(targetSessionId: string) => {
+			// Find the session in the list and select it
+			const session = sessions.find((s) => s.id === targetSessionId);
+			if (session && contextSelectSession) {
+				contextSelectSession(session);
+			} else if (_setCurrentSessionId) {
+				// Fallback to setting the ID directly
+				_setCurrentSessionId(targetSessionId);
+			}
+		},
+		[sessions, contextSelectSession, _setCurrentSessionId],
+	);
+
+	const openTimelineSheet = useCallback(() => {
+		timelineSheetRef.current?.expand();
+	}, []);
+
+	const closeTimelineSheet = useCallback(() => {
+		timelineSheetRef.current?.close();
+	}, []);
+
+	const handleTimelineNavigate = useCallback(
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		(_messageId: string) => {
+			closeTimelineSheet();
+			// Navigate to message - scroll to it
+			// For now, just close the sheet. Full scroll-to-message could be added later.
+		},
+		[closeTimelineSheet],
+	);
+
+	const handleTimelineFork = useCallback(
+		async (messageId: string) => {
+			closeTimelineSheet();
+			await handleFork(messageId);
+		},
+		[closeTimelineSheet, handleFork],
+	);
+
+	const handleUndo = useCallback(async () => {
+		if (!sessionId) return;
+		try {
+			await sessionsApi.revert(sessionId);
+			await loadSessionMessages(sessionId);
+		} catch (error) {
+			console.error("Failed to undo:", error);
+		}
+	}, [sessionId, loadSessionMessages]);
+
+	const handleRedo = useCallback(async () => {
+		if (!sessionId) return;
+		try {
+			await sessionsApi.unrevert(sessionId);
+			await loadSessionMessages(sessionId);
+		} catch (error) {
+			console.error("Failed to redo:", error);
+		}
+	}, [sessionId, loadSessionMessages]);
+
+	// Check if undo/redo is possible based on messages
+	const canUndo = messages.some((m) => m.role === "user");
+
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
 			style={[styles.container, { backgroundColor: colors.background }]}
 			keyboardVerticalOffset={keyboardOffset}
 		>
-			<Pressable
-				onPress={openSessionSheet}
-				style={[styles.sessionBar, { borderBottomColor: colors.border }]}
-			>
-				<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-					<Path
-						d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-						stroke={colors.mutedForeground}
-						strokeWidth={2}
-					/>
-				</Svg>
-				<Text
-					style={[typography.micro, { color: colors.mutedForeground, flex: 1 }]}
-					numberOfLines={1}
+			<View style={[styles.sessionBar, { borderBottomColor: colors.border }]}>
+				<Pressable
+					onPress={openSessionSheet}
+					style={styles.sessionBarLeft}
 				>
-					{sessionLabel}
-				</Text>
-				<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-					<Path
-						d="M6 9l6 6 6-6"
-						stroke={colors.mutedForeground}
-						strokeWidth={2}
-						strokeLinecap="round"
-					/>
-				</Svg>
-			</Pressable>
+					<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+						<Path
+							d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+							stroke={colors.mutedForeground}
+							strokeWidth={2}
+						/>
+					</Svg>
+					<Text
+						style={[typography.micro, { color: colors.mutedForeground, flex: 1 }]}
+						numberOfLines={1}
+					>
+						{sessionLabel}
+					</Text>
+					<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+						<Path
+							d="M6 9l6 6 6-6"
+							stroke={colors.mutedForeground}
+							strokeWidth={2}
+							strokeLinecap="round"
+						/>
+					</Svg>
+				</Pressable>
+				{messages.length > 0 && (
+					<View style={styles.sessionBarActions}>
+						{/* Undo button */}
+						<Pressable
+							onPress={handleUndo}
+							disabled={!canUndo}
+							style={({ pressed }) => [
+								styles.actionIconButton,
+								{ opacity: !canUndo ? 0.4 : pressed ? 0.7 : 1 },
+							]}
+						>
+							<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+								<Path
+									d="M3 7v6h6"
+									stroke={colors.mutedForeground}
+									strokeWidth={2}
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								/>
+								<Path
+									d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"
+									stroke={colors.mutedForeground}
+									strokeWidth={2}
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								/>
+							</Svg>
+						</Pressable>
+						{/* Redo button */}
+						<Pressable
+							onPress={handleRedo}
+							style={({ pressed }) => [
+								styles.actionIconButton,
+								{ opacity: pressed ? 0.7 : 1 },
+							]}
+						>
+							<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+								<Path
+									d="M21 7v6h-6"
+									stroke={colors.mutedForeground}
+									strokeWidth={2}
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								/>
+								<Path
+									d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"
+									stroke={colors.mutedForeground}
+									strokeWidth={2}
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								/>
+							</Svg>
+						</Pressable>
+						{/* Timeline button */}
+						<Pressable
+							onPress={openTimelineSheet}
+							style={({ pressed }) => [
+								styles.actionIconButton,
+								{ opacity: pressed ? 0.7 : 1 },
+							]}
+						>
+							<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+								<Path
+									d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"
+									stroke={colors.mutedForeground}
+									strokeWidth={2}
+									strokeLinecap="round"
+								/>
+								<Path
+									d="M12 6v6l4 2"
+									stroke={colors.mutedForeground}
+									strokeWidth={2}
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								/>
+							</Svg>
+						</Pressable>
+					</View>
+				)}
+			</View>
 
 			<View style={styles.messageContainer}>
-				<MessageList messages={messages} isLoading={isLoading} />
+				<MessageList
+					messages={messages}
+					isLoading={isLoading}
+					onRevert={handleRevert}
+					onFork={handleFork}
+					onSelectSession={handleSelectSession}
+				/>
 			</View>
 
 			{activePermissions.length > 0 && (
@@ -966,6 +1134,14 @@ export default function ChatScreen() {
 				visible={showAgentPicker}
 				onClose={() => setShowAgentPicker(false)}
 			/>
+
+			<TimelineSheet
+				ref={timelineSheetRef}
+				messages={messages}
+				onNavigate={handleTimelineNavigate}
+				onFork={handleTimelineFork}
+				onClose={closeTimelineSheet}
+			/>
 		</KeyboardAvoidingView>
 	);
 }
@@ -981,6 +1157,20 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 6,
 		borderBottomWidth: 1,
+	},
+	sessionBarLeft: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	sessionBarActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+	},
+	actionIconButton: {
+		padding: 6,
 	},
 	messageContainer: {
 		flex: 1,

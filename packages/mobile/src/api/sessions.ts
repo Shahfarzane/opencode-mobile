@@ -171,4 +171,28 @@ export const sessionsApi = {
 			true,
 		);
 	},
+
+	async fork(sessionId: string, messageId: string): Promise<Session> {
+		return apiPost<Session>(
+			`/api/session/${sessionId}/fork`,
+			{ messageId },
+			true,
+		);
+	},
+
+	async revert(sessionId: string, messageId?: string): Promise<void> {
+		await apiPost(
+			`/api/session/${sessionId}/revert`,
+			messageId ? { messageId } : {},
+			true,
+		);
+	},
+
+	async unrevert(sessionId: string): Promise<void> {
+		await apiPost(
+			`/api/session/${sessionId}/unrevert`,
+			{},
+			true,
+		);
+	},
 };
