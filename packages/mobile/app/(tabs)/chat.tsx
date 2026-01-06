@@ -211,7 +211,8 @@ export default function ChatScreen() {
 
 			if (event.type === "message.part.updated" && props.part) {
 				// Only process parts for assistant messages - ignore user message events
-				if (props.info?.role === "user") {
+				// Check both explicit role AND ensure we have an active assistant message being tracked
+				if (props.info?.role === "user" || !currentAssistantMessageIdRef.current) {
 					return;
 				}
 
@@ -248,7 +249,8 @@ export default function ChatScreen() {
 
 				// Only process assistant messages - ignore user message events
 				// The server sends message.updated for both user and assistant messages
-				if (info?.role === "user") {
+				// Also ensure we have an active assistant message being tracked
+				if (info?.role === "user" || !currentAssistantMessageIdRef.current) {
 					return;
 				}
 
@@ -731,9 +733,21 @@ export default function ChatScreen() {
 	}, [currentSessionId, loadSessionMessages, isLoading]);
 
 	// Update context when local sessionId changes (e.g., after creating a new session)
+	// Only sync TO context when we have a NEW session (not when syncing FROM context)
+	const prevLocalSessionIdRef = useRef<string | null>(null);
 	useEffect(() => {
-		if (_setCurrentSessionId && sessionId !== currentSessionId) {
-			_setCurrentSessionId(sessionId);
+		// Only push to context if:
+		// 1. We have a _setCurrentSessionId function
+		// 2. Local sessionId actually changed (not just re-render)
+		// 3. The change was NOT caused by context (context already matches)
+		if (_setCurrentSessionId && sessionId !== prevLocalSessionIdRef.current) {
+			prevLocalSessionIdRef.current = sessionId;
+			// Only sync if this is a local change (sessionId differs from what context has)
+			// AND we're setting a real session (not clearing - that's handled by context)
+			if (sessionId && sessionId !== currentSessionId) {
+				if (__DEV__) console.log("[Chat] Syncing local session to context:", sessionId);
+				_setCurrentSessionId(sessionId);
+			}
 		}
 	}, [sessionId, currentSessionId, _setCurrentSessionId]);
 
