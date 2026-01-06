@@ -1,3 +1,5 @@
+import * as Haptics from "expo-haptics";
+import { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
@@ -23,9 +25,16 @@ export function SettingsListItem({
 }: SettingsListItemProps) {
 	const { colors } = useTheme();
 
+	const handlePress = useCallback(() => {
+		if (onPress) {
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+			onPress();
+		}
+	}, [onPress]);
+
 	return (
 		<Pressable
-			onPress={onPress}
+			onPress={handlePress}
 			disabled={!onPress}
 			style={({ pressed }) => [
 				styles.container,

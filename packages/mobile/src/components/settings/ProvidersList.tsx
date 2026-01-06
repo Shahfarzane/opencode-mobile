@@ -1,6 +1,8 @@
+import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -23,9 +25,15 @@ export function ProvidersList({
 	const { colors } = useTheme();
 	const [providers, setProviders] = useState<Provider[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isRefreshing, setIsRefreshing] = useState(false);
 
-	const loadProviders = useCallback(async () => {
-		setIsLoading(true);
+	const loadProviders = useCallback(async (showRefresh = false) => {
+		if (showRefresh) {
+			setIsRefreshing(true);
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		} else {
+			setIsLoading(true);
+		}
 		try {
 			const data = await providersApi.list();
 			setProviders(data);
@@ -33,11 +41,16 @@ export function ProvidersList({
 			console.error("Failed to load providers:", error);
 		} finally {
 			setIsLoading(false);
+			setIsRefreshing(false);
 		}
 	}, []);
 
 	useEffect(() => {
-		loadProviders();
+		loadProviders(false);
+	}, [loadProviders]);
+
+	const handleRefresh = useCallback(() => {
+		loadProviders(true);
 	}, [loadProviders]);
 
 	if (isLoading) {
@@ -49,7 +62,16 @@ export function ProvidersList({
 	}
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView
+			style={styles.container}
+			refreshControl={
+				<RefreshControl
+					refreshing={isRefreshing}
+					onRefresh={handleRefresh}
+					tintColor={colors.primary}
+				/>
+			}
+		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 					Total {providers.length}
@@ -62,6 +84,7 @@ export function ProvidersList({
 						key={provider.id}
 						title={provider.name || provider.id}
 						subtitle={`${provider.models?.length || 0} models`}
+						badge={provider.enabled ? "Enabled" : undefined}
 						isSelected={selectedProvider === provider.id}
 						onPress={() => onSelectProvider(provider.id)}
 						icon={<KeyIcon color={colors.primary} size={18} />}
@@ -74,6 +97,9 @@ export function ProvidersList({
 					<KeyIcon color={colors.mutedForeground} size={40} />
 					<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
 						No providers available
+					</Text>
+					<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center" }]}>
+						Configure providers in your OpenCode settings
 					</Text>
 				</View>
 			)}
