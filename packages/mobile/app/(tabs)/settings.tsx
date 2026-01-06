@@ -188,6 +188,17 @@ const themeSelectorStyles = StyleSheet.create({
 	},
 });
 
+function getConnectionType(url: string | null): { type: string; label: string } {
+	if (!url) return { type: "unknown", label: "Not connected" };
+
+	const isTailscale = url.includes(".ts.net") || /100\.\d+\.\d+\.\d+/.test(url);
+	const isCloudflare = url.includes(".trycloudflare.com") || url.includes("cloudflare");
+
+	if (isTailscale) return { type: "tailscale", label: "via Tailscale" };
+	if (isCloudflare) return { type: "cloudflare", label: "via Cloudflare" };
+	return { type: "local", label: "Local Network" };
+}
+
 function GeneralSettings() {
 	const { colors } = useTheme();
 	const { serverUrl, disconnect, directory } = useConnectionStore();
@@ -278,6 +289,7 @@ function GeneralSettings() {
 	};
 
 	const serverHost = serverUrl ? new URL(serverUrl).host : "Not connected";
+	const connectionInfo = getConnectionType(serverUrl);
 
 	if (isLoading) {
 		return (
@@ -292,24 +304,40 @@ function GeneralSettings() {
 			<SectionDivider title="Connection" />
 			<SettingsItem
 				icon={
-					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-						<Circle
-							cx="12"
-							cy="12"
-							r="10"
-							stroke={colors.primary}
-							strokeWidth={2}
-						/>
-						<Path
-							d="M12 6v6l4 2"
-							stroke={colors.primary}
-							strokeWidth={2}
-							strokeLinecap="round"
-						/>
-					</Svg>
+					connectionInfo.type === "tailscale" ? (
+						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+							<Path
+								d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+								stroke={colors.primary}
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</Svg>
+					) : connectionInfo.type === "cloudflare" ? (
+						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+							<Path
+								d="M22 12h-4l-3 9L9 3l-3 9H2"
+								stroke={colors.primary}
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</Svg>
+					) : (
+						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+							<Path
+								d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"
+								stroke={colors.primary}
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</Svg>
+					)
 				}
 				title="Server"
-				subtitle={serverHost}
+				subtitle={`${serverHost} • ${connectionInfo.label}`}
 				rightElement={<View />}
 			/>
 			<SettingsItem
