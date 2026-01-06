@@ -6,14 +6,13 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import * as Haptics from "expo-haptics";
-import Svg, { Path } from "react-native-svg";
 import { type Provider, providersApi } from "@/api";
-import { typography, useTheme } from "@/theme";
-import { SettingsSection } from "./SettingsSection";
-import { SettingsTextField } from "./shared";
+import { Spacing, typography, useTheme } from "@/theme";
+import { ChevronLeft } from "@/components/icons";
 
 interface ProviderDetailViewProps {
 	providerId: string;
@@ -29,7 +28,6 @@ export function ProviderDetailView({
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 	const [apiKey, setApiKey] = useState("");
-	const [showApiKey, setShowApiKey] = useState(false);
 
 	const loadProvider = useCallback(async () => {
 		setIsLoading(true);
@@ -82,8 +80,8 @@ export function ProviderDetailView({
 
 	if (isLoading) {
 		return (
-			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" color={colors.primary} />
+			<View style={styles.centered}>
+				<ActivityIndicator size="small" color={colors.primary} />
 			</View>
 		);
 	}
@@ -91,24 +89,14 @@ export function ProviderDetailView({
 	if (!provider) {
 		return (
 			<View style={styles.container}>
-				<View style={[styles.header, { borderBottomColor: colors.border }]}>
-					<Pressable onPress={onBack} style={styles.backButton}>
-						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-							<Path
-								d="M15 18l-6-6 6-6"
-								stroke={colors.foreground}
-								strokeWidth={2}
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							/>
-						</Svg>
-					</Pressable>
-					<Text style={[typography.uiLabel, styles.headerTitle, { color: colors.foreground }]}>
+				<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
+					<ChevronLeft size={18} color={colors.foreground} />
+					<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 						Provider
 					</Text>
-				</View>
-				<View style={styles.emptyContainer}>
-					<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+				</Pressable>
+				<View style={styles.centered}>
+					<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 						Provider not found
 					</Text>
 				</View>
@@ -120,134 +108,114 @@ export function ProviderDetailView({
 
 	return (
 		<View style={styles.container}>
-			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<Pressable onPress={onBack} style={styles.backButton}>
-					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M15 18l-6-6 6-6"
-							stroke={colors.foreground}
-							strokeWidth={2}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
-				</Pressable>
-				<Text style={[typography.uiLabel, styles.headerTitle, { color: colors.foreground }]}>
+			{/* Header */}
+			<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
+				<ChevronLeft size={18} color={colors.foreground} />
+				<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
 					{provider.name || provider.id}
 				</Text>
-			</View>
+			</Pressable>
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-				<SettingsSection title="Provider Information" showDivider={false}>
-					<View style={[styles.infoCard, { backgroundColor: colors.muted }]}>
-						<View style={styles.infoRow}>
-							<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-								ID
-							</Text>
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-								{provider.id}
-							</Text>
-						</View>
-						<View style={[styles.infoRow, styles.infoDivider, { borderTopColor: colors.border }]}>
-							<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-								Name
-							</Text>
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-								{provider.name || provider.id}
-							</Text>
-						</View>
-						<View style={[styles.infoRow, styles.infoDivider, { borderTopColor: colors.border }]}>
-							<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-								Status
-							</Text>
-							<View style={[styles.statusBadge, { backgroundColor: provider.enabled ? colors.primary + "20" : colors.muted }]}>
-								<Text style={[typography.micro, { color: provider.enabled ? colors.primary : colors.mutedForeground }]}>
-									{provider.enabled ? "Enabled" : "Disabled"}
-								</Text>
-							</View>
-						</View>
-						<View style={[styles.infoRow, styles.infoDivider, { borderTopColor: colors.border }]}>
-							<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-								Available Models
-							</Text>
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-								{modelCount}
-							</Text>
-						</View>
-					</View>
-				</SettingsSection>
+			<ScrollView
+				style={styles.scroll}
+				contentContainerStyle={styles.content}
+				showsVerticalScrollIndicator={false}
+			>
+				{/* Provider ID */}
+				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+					Provider ID: {provider.id}
+				</Text>
 
-				<SettingsSection title="API Key">
-					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
-						API keys are stored securely on the server, not on this device.
+				{/* API Key Section */}
+				<View style={styles.section}>
+					<Text style={[typography.uiLabel, styles.sectionTitle, { color: colors.foreground }]}>
+						API key
 					</Text>
-					<View style={styles.formGroup}>
-						<SettingsTextField
-							label="New API Key"
+					<View style={styles.inputRow}>
+						<TextInput
+							style={[
+								typography.uiLabel,
+								styles.input,
+								{
+									color: colors.foreground,
+									borderColor: colors.border,
+								},
+							]}
 							value={apiKey}
 							onChangeText={setApiKey}
-							placeholder="Enter API key..."
-							secureTextEntry={!showApiKey}
+							placeholder="sk-..."
+							placeholderTextColor={colors.mutedForeground}
+							secureTextEntry
 							autoCapitalize="none"
 							autoCorrect={false}
 						/>
+						<Pressable
+							onPress={handleSaveApiKey}
+							disabled={isSaving || !apiKey.trim()}
+							style={[
+								styles.button,
+								{
+									backgroundColor: apiKey.trim() ? colors.primary : colors.muted,
+									opacity: isSaving ? 0.6 : 1,
+								},
+							]}
+						>
+							{isSaving ? (
+								<ActivityIndicator size="small" color={colors.background} />
+							) : (
+								<Text
+									style={[
+										typography.meta,
+										{
+											color: apiKey.trim() ? colors.primaryForeground : colors.mutedForeground,
+											fontWeight: "500",
+										},
+									]}
+								>
+									Save
+								</Text>
+							)}
+						</Pressable>
 					</View>
-					<Pressable
-						onPress={() => setShowApiKey(!showApiKey)}
-						style={styles.toggleButton}
-					>
-						<Text style={[typography.meta, { color: colors.primary }]}>
-							{showApiKey ? "Hide" : "Show"} API Key
-						</Text>
-					</Pressable>
-					<Pressable
-						onPress={handleSaveApiKey}
-						disabled={isSaving || !apiKey.trim()}
-						style={[
-							styles.saveButton,
-							{
-								backgroundColor: apiKey.trim() ? colors.primary : colors.muted,
-								opacity: isSaving ? 0.6 : 1,
-							},
-						]}
-					>
-						{isSaving ? (
-							<ActivityIndicator size="small" color={colors.background} />
-						) : (
-							<Text style={[typography.uiLabel, { color: apiKey.trim() ? colors.background : colors.mutedForeground }]}>
-								Save API Key
-							</Text>
-						)}
-					</Pressable>
-				</SettingsSection>
+					<Text style={[typography.micro, { color: colors.mutedForeground, marginTop: 6 }]}>
+						Keys are sent directly to the server and never stored locally.
+					</Text>
+				</View>
 
+				{/* Models Section */}
 				{modelCount > 0 && (
-					<SettingsSection title="Available Models">
-						<View style={[styles.modelsList, { backgroundColor: colors.muted }]}>
+					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+						<Text style={[typography.uiLabel, styles.sectionTitle, { color: colors.foreground }]}>
+							Models
+						</Text>
+						<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
+							{modelCount} model{modelCount !== 1 ? "s" : ""} available
+						</Text>
+						<View style={[styles.modelList, { borderColor: colors.border + "66" }]}>
 							{provider.models?.map((model, index) => (
 								<View
 									key={model.id}
 									style={[
 										styles.modelItem,
-										index > 0 && styles.modelDivider,
-										index > 0 && { borderTopColor: colors.border },
+										index > 0 && { borderTopColor: colors.border + "66", borderTopWidth: 1 },
 									]}
 								>
-									<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+									<Text
+										style={[typography.meta, { color: colors.foreground, fontWeight: "500" }]}
+										numberOfLines={1}
+									>
 										{model.name || model.id}
 									</Text>
 									{model.contextLength && (
 										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-											Context: {model.contextLength.toLocaleString()} tokens
+											{(model.contextLength / 1000).toFixed(0)}k ctx
 										</Text>
 									)}
 								</View>
 							))}
 						</View>
-					</SettingsSection>
+					</View>
 				)}
-
-				<View style={styles.bottomSpacer} />
 			</ScrollView>
 		</View>
 	);
@@ -257,81 +225,63 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 	},
-	loadingContainer: {
+	centered: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
-	},
-	emptyContainer: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
 	},
 	backButton: {
-		padding: 4,
-		marginRight: 12,
-		marginLeft: -4,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: Spacing.md,
+		paddingVertical: Spacing.sm,
 	},
-	headerTitle: {
-		flex: 1,
-		fontWeight: "600",
-	},
-	scrollView: {
+	scroll: {
 		flex: 1,
 	},
 	content: {
-		padding: 16,
+		paddingHorizontal: Spacing.md,
+		paddingBottom: Spacing.xl,
+		gap: Spacing.lg,
 	},
-	infoCard: {
-		borderRadius: 8,
+	section: {
+		paddingTop: Spacing.md,
+		borderTopWidth: 1,
+	},
+	sectionTitle: {
+		fontWeight: "600",
+		marginBottom: 8,
+	},
+	inputRow: {
+		flexDirection: "row",
+		gap: 8,
+	},
+	input: {
+		flex: 1,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderWidth: 1,
+		borderRadius: 6,
+	},
+	button: {
+		paddingHorizontal: 14,
+		paddingVertical: 8,
+		borderRadius: 6,
+		alignItems: "center",
+		justifyContent: "center",
+		minWidth: 60,
+	},
+	modelList: {
+		borderWidth: 1,
+		borderRadius: 6,
 		overflow: "hidden",
 	},
-	infoRow: {
+	modelItem: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
 		paddingHorizontal: 12,
 		paddingVertical: 10,
-	},
-	infoDivider: {
-		borderTopWidth: 1,
-	},
-	statusBadge: {
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 4,
-	},
-	formGroup: {
-		marginBottom: 12,
-	},
-	toggleButton: {
-		marginBottom: 16,
-	},
-	saveButton: {
-		paddingVertical: 12,
-		borderRadius: 8,
-		alignItems: "center",
-	},
-	modelsList: {
-		borderRadius: 8,
-		overflow: "hidden",
-	},
-	modelItem: {
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		gap: 2,
-	},
-	modelDivider: {
-		borderTopWidth: 1,
-	},
-	bottomSpacer: {
-		height: 40,
 	},
 });

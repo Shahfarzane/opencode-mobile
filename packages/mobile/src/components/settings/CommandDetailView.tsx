@@ -5,11 +5,12 @@ import {
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import * as Haptics from "expo-haptics";
-import Svg, { Path } from "react-native-svg";
 import {
 	type Agent,
 	agentsApi,
@@ -18,15 +19,8 @@ import {
 	commandsApi,
 	isCommandBuiltIn,
 } from "@/api";
-import { typography, useTheme } from "@/theme";
-import { SettingsSection } from "./SettingsSection";
-import {
-	SettingsSelect,
-	type SelectOption,
-	SettingsSwitch,
-	SettingsTextArea,
-	SettingsTextField,
-} from "./shared";
+import { ChevronLeft } from "@/components/icons";
+import { Spacing, typography, useTheme } from "@/theme";
 
 interface CommandDetailViewProps {
 	commandName: string;
@@ -87,15 +81,6 @@ export function CommandDetailView({
 		loadData();
 	}, [loadData]);
 
-	const agentOptions: SelectOption[] = [
-		{ value: "", label: "None", description: "No specific agent" },
-		...agents.map((a) => ({
-			value: a.name,
-			label: a.name,
-			description: a.description,
-		})),
-	];
-
 	const handleSave = async () => {
 		if (!name.trim()) {
 			Alert.alert("Error", "Command name is required");
@@ -122,7 +107,6 @@ export function CommandDetailView({
 
 			if (success) {
 				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-				Alert.alert("Success", isNewCommand ? "Command created" : "Command updated");
 				onBack();
 			} else {
 				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -178,39 +162,32 @@ export function CommandDetailView({
 
 	if (isLoading) {
 		return (
-			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" color={colors.primary} />
+			<View style={styles.centered}>
+				<ActivityIndicator size="small" color={colors.primary} />
 			</View>
 		);
 	}
 
 	return (
 		<View style={styles.container}>
-			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<Pressable onPress={onBack} style={styles.backButton}>
-					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M15 18l-6-6 6-6"
-							stroke={colors.foreground}
-							strokeWidth={2}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
+			{/* Header */}
+			<View style={styles.header}>
+				<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
+					<ChevronLeft size={18} color={colors.foreground} />
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						{isNewCommand ? "New Command" : `/${commandName}`}
+					</Text>
 				</Pressable>
-				<Text style={[typography.uiLabel, styles.headerTitle, { color: colors.foreground }]}>
-					{isNewCommand ? "New Command" : `/${commandName}`}
-				</Text>
 				{!isBuiltIn && (
 					<Pressable
 						onPress={handleSave}
 						disabled={isSaving}
-						style={[styles.saveButton, { backgroundColor: colors.primary }]}
+						style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 }]}
 					>
 						{isSaving ? (
-							<ActivityIndicator size="small" color={colors.background} />
+							<ActivityIndicator size="small" color={colors.primaryForeground} />
 						) : (
-							<Text style={[typography.uiLabel, { color: colors.background }]}>
+							<Text style={[typography.meta, { color: colors.primaryForeground, fontWeight: "500" }]}>
 								Save
 							</Text>
 						)}
@@ -218,85 +195,147 @@ export function CommandDetailView({
 				)}
 			</View>
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+			<ScrollView
+				style={styles.scroll}
+				contentContainerStyle={styles.content}
+				showsVerticalScrollIndicator={false}
+				keyboardShouldPersistTaps="handled"
+			>
 				{isBuiltIn && (
-					<View style={[styles.builtInBanner, { backgroundColor: colors.muted }]}>
-						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-							This is a built-in command and cannot be edited.
-						</Text>
-					</View>
+					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: Spacing.md }]}>
+						Built-in command (read-only)
+					</Text>
 				)}
 
-				<SettingsSection title="Basic Information" showDivider={false}>
-					<View style={styles.formGroup}>
-						<SettingsTextField
-							label="Name"
-							value={name}
-							onChangeText={setName}
-							placeholder="my-command"
-							editable={!isBuiltIn && isNewCommand}
-							required
-						/>
-					</View>
-					<View style={styles.formGroup}>
-						<SettingsTextArea
-							label="Description"
-							value={description}
-							onChangeText={setDescription}
-							placeholder="Describe what this command does..."
-							editable={!isBuiltIn}
-							rows={2}
-						/>
-					</View>
-				</SettingsSection>
+				{/* Name */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Name
+					</Text>
+					<TextInput
+						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						value={name}
+						onChangeText={setName}
+						placeholder="my-command"
+						placeholderTextColor={colors.mutedForeground}
+						editable={!isBuiltIn && isNewCommand}
+					/>
+				</View>
 
-				<SettingsSection title="Configuration">
-					<View style={styles.formGroup}>
-						<SettingsTextArea
-							label="Template"
-							description="The prompt template. Use {{input}} for user input."
-							value={template}
-							onChangeText={setTemplate}
-							placeholder="Do something with {{input}}..."
-							editable={!isBuiltIn}
-							rows={4}
-						/>
-					</View>
-					<View style={styles.formGroup}>
-						<SettingsSelect
-							label="Agent"
-							description="Which agent should execute this command"
-							options={agentOptions}
-							value={agentName}
-							onChange={setAgentName}
-							placeholder="Select agent..."
-						/>
-					</View>
-					<View style={styles.formGroup}>
-						<SettingsSwitch
-							label="Run as Subtask"
-							description="Execute in a separate context"
-							value={subtask}
-							onChange={setSubtask}
-							disabled={isBuiltIn}
-						/>
-					</View>
-				</SettingsSection>
+				{/* Description */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Description
+					</Text>
+					<TextInput
+						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						value={description}
+						onChangeText={setDescription}
+						placeholder="What this command does..."
+						placeholderTextColor={colors.mutedForeground}
+						editable={!isBuiltIn}
+					/>
+				</View>
 
-				{!isBuiltIn && !isNewCommand && (
-					<SettingsSection title="Danger Zone">
+				{/* Template */}
+				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 4 }]}>
+						Template
+					</Text>
+					<Text style={[typography.micro, { color: colors.mutedForeground, marginBottom: 8 }]}>
+						Use {"{{input}}"} for user input
+					</Text>
+					<TextInput
+						style={[typography.meta, styles.textarea, { color: colors.foreground, borderColor: colors.border }]}
+						value={template}
+						onChangeText={setTemplate}
+						placeholder="Do something with {{input}}..."
+						placeholderTextColor={colors.mutedForeground}
+						editable={!isBuiltIn}
+						multiline
+						textAlignVertical="top"
+					/>
+				</View>
+
+				{/* Agent */}
+				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+						Agent
+					</Text>
+					<View style={[styles.selectList, { borderColor: colors.border + "66" }]}>
 						<Pressable
-							onPress={handleDelete}
-							style={[styles.deleteButton, { borderColor: colors.destructive }]}
+							onPress={() => !isBuiltIn && setAgentName("")}
+							style={[
+								styles.selectItem,
+								!agentName && { backgroundColor: colors.primary + "15" },
+							]}
 						>
-							<Text style={[typography.uiLabel, { color: colors.destructive }]}>
-								Delete Command
+							<Text
+								style={[
+									typography.meta,
+									{ color: !agentName ? colors.primary : colors.mutedForeground },
+								]}
+							>
+								None
 							</Text>
 						</Pressable>
-					</SettingsSection>
-				)}
+						{agents.map((agent, index) => (
+							<Pressable
+								key={agent.name}
+								onPress={() => !isBuiltIn && setAgentName(agent.name)}
+								style={[
+									styles.selectItem,
+									{ borderTopWidth: 1, borderTopColor: colors.border + "66" },
+									agentName === agent.name && { backgroundColor: colors.primary + "15" },
+								]}
+							>
+								<Text
+									style={[
+										typography.meta,
+										{
+											color: agentName === agent.name ? colors.primary : colors.foreground,
+											fontWeight: agentName === agent.name ? "600" : "400",
+										},
+									]}
+								>
+									{agent.name}
+								</Text>
+							</Pressable>
+						))}
+					</View>
+				</View>
 
-				<View style={styles.bottomSpacer} />
+				{/* Subtask toggle */}
+				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<View style={styles.switchRow}>
+						<View style={{ flex: 1 }}>
+							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+								Run as subtask
+							</Text>
+							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+								Execute in a separate context
+							</Text>
+						</View>
+						<Switch
+							value={subtask}
+							onValueChange={setSubtask}
+							disabled={isBuiltIn}
+							trackColor={{ false: colors.muted, true: colors.primary }}
+							thumbColor={colors.background}
+						/>
+					</View>
+				</View>
+
+				{/* Delete */}
+				{!isBuiltIn && !isNewCommand && (
+					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+						<Pressable onPress={handleDelete}>
+							<Text style={[typography.meta, { color: colors.destructive }]}>
+								Delete command
+							</Text>
+						</Pressable>
+					</View>
+				)}
 			</ScrollView>
 		</View>
 	);
@@ -306,7 +345,7 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 	},
-	loadingContainer: {
+	centered: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
@@ -314,47 +353,62 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		justifyContent: "space-between",
+		paddingHorizontal: Spacing.md,
+		paddingVertical: Spacing.sm,
 	},
 	backButton: {
-		padding: 4,
-		marginRight: 12,
-		marginLeft: -4,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
 	},
-	headerTitle: {
-		flex: 1,
-		fontWeight: "600",
-	},
-	saveButton: {
-		paddingHorizontal: 16,
-		paddingVertical: 8,
+	saveBtn: {
+		paddingHorizontal: 14,
+		paddingVertical: 6,
 		borderRadius: 6,
-		minWidth: 60,
+		minWidth: 50,
 		alignItems: "center",
 	},
-	scrollView: {
+	scroll: {
 		flex: 1,
 	},
 	content: {
-		padding: 16,
+		paddingHorizontal: Spacing.md,
+		paddingBottom: Spacing.xl,
+		gap: Spacing.md,
 	},
-	builtInBanner: {
-		padding: 12,
-		borderRadius: 8,
-		marginBottom: 16,
+	field: {
+		gap: 6,
 	},
-	formGroup: {
-		marginBottom: 16,
-	},
-	deleteButton: {
+	input: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
 		borderWidth: 1,
-		borderRadius: 8,
-		paddingVertical: 12,
-		alignItems: "center",
+		borderRadius: 6,
 	},
-	bottomSpacer: {
-		height: 40,
+	textarea: {
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderWidth: 1,
+		borderRadius: 6,
+		minHeight: 100,
+	},
+	section: {
+		paddingTop: Spacing.md,
+		borderTopWidth: 1,
+	},
+	selectList: {
+		borderWidth: 1,
+		borderRadius: 6,
+		overflow: "hidden",
+	},
+	selectItem: {
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+	},
+	switchRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
 	},
 });

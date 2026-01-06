@@ -7,9 +7,9 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
 import {
 	type Agent,
 	type AgentConfig,
@@ -18,26 +18,14 @@ import {
 	type Provider,
 	providersApi,
 } from "@/api";
-import { typography, useTheme } from "@/theme";
-import { SettingsSection } from "./SettingsSection";
-import {
-	SettingsSelect,
-	type SelectOption,
-	SettingsTextArea,
-	SettingsTextField,
-} from "./shared";
+import { ChevronLeft } from "@/components/icons";
+import { Spacing, typography, useTheme } from "@/theme";
 
 interface AgentDetailViewProps {
 	agentName: string;
 	onBack: () => void;
 	onDeleted?: () => void;
 }
-
-const MODE_OPTIONS: SelectOption[] = [
-	{ value: "primary", label: "Primary", description: "Main agent for user tasks" },
-	{ value: "subagent", label: "Subagent", description: "Called by other agents" },
-	{ value: "all", label: "All", description: "Both primary and subagent" },
-];
 
 export function AgentDetailView({
 	agentName,
@@ -53,11 +41,8 @@ export function AgentDetailView({
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [prompt, setPrompt] = useState("");
-	const [mode, setMode] = useState<string>("primary");
 	const [providerId, setProviderId] = useState<string>("");
 	const [modelId, setModelId] = useState<string>("");
-	const [temperature, setTemperature] = useState("");
-	const [topP, setTopP] = useState("");
 
 	const isBuiltIn = agent ? isAgentBuiltIn(agent) : false;
 	const isNewAgent = agentName === "__new__";
@@ -79,11 +64,8 @@ export function AgentDetailView({
 					setName(foundAgent.name);
 					setDescription(foundAgent.description ?? "");
 					setPrompt(foundAgent.prompt ?? "");
-					setMode(foundAgent.mode ?? "primary");
 					setProviderId(foundAgent.model?.providerID ?? "");
 					setModelId(foundAgent.model?.modelID ?? "");
-					setTemperature(foundAgent.temperature?.toString() ?? "");
-					setTopP(foundAgent.topP?.toString() ?? "");
 				}
 			}
 		} catch (error) {
@@ -98,18 +80,6 @@ export function AgentDetailView({
 		loadData();
 	}, [loadData]);
 
-	const providerOptions: SelectOption[] = providers.map((p) => ({
-		value: p.id,
-		label: p.name,
-	}));
-
-	const modelOptions: SelectOption[] = providerId
-		? (providers.find((p) => p.id === providerId)?.models ?? []).map((m) => ({
-				value: m.id,
-				label: m.name || m.id,
-			}))
-		: [];
-
 	const handleSave = async () => {
 		if (!name.trim()) {
 			Alert.alert("Error", "Agent name is required");
@@ -123,10 +93,7 @@ export function AgentDetailView({
 				name: name.trim(),
 				description: description.trim() || undefined,
 				prompt: prompt.trim() || undefined,
-				mode: mode as AgentConfig["mode"],
 				model: providerId && modelId ? `${providerId}/${modelId}` : undefined,
-				temperature: temperature ? Number.parseFloat(temperature) : undefined,
-				top_p: topP ? Number.parseFloat(topP) : undefined,
 			};
 
 			let success: boolean;
@@ -138,7 +105,6 @@ export function AgentDetailView({
 
 			if (success) {
 				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-				Alert.alert("Success", isNewAgent ? "Agent created" : "Agent updated");
 				onBack();
 			} else {
 				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -194,39 +160,34 @@ export function AgentDetailView({
 
 	if (isLoading) {
 		return (
-			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" color={colors.primary} />
+			<View style={styles.centered}>
+				<ActivityIndicator size="small" color={colors.primary} />
 			</View>
 		);
 	}
 
+	const selectedProvider = providers.find((p) => p.id === providerId);
+
 	return (
 		<View style={styles.container}>
-			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<Pressable onPress={onBack} style={styles.backButton}>
-					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M15 18l-6-6 6-6"
-							stroke={colors.foreground}
-							strokeWidth={2}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
+			{/* Header */}
+			<View style={styles.header}>
+				<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
+					<ChevronLeft size={18} color={colors.foreground} />
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						{isNewAgent ? "New Agent" : agentName}
+					</Text>
 				</Pressable>
-				<Text style={[typography.uiLabel, styles.headerTitle, { color: colors.foreground }]}>
-					{isNewAgent ? "New Agent" : agentName}
-				</Text>
 				{!isBuiltIn && (
 					<Pressable
 						onPress={handleSave}
 						disabled={isSaving}
-						style={[styles.saveButton, { backgroundColor: colors.primary }]}
+						style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 }]}
 					>
 						{isSaving ? (
-							<ActivityIndicator size="small" color={colors.background} />
+							<ActivityIndicator size="small" color={colors.primaryForeground} />
 						) : (
-							<Text style={[typography.uiLabel, { color: colors.background }]}>
+							<Text style={[typography.meta, { color: colors.primaryForeground, fontWeight: "500" }]}>
 								Save
 							</Text>
 						)}
@@ -234,121 +195,156 @@ export function AgentDetailView({
 				)}
 			</View>
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+			<ScrollView
+				style={styles.scroll}
+				contentContainerStyle={styles.content}
+				showsVerticalScrollIndicator={false}
+				keyboardShouldPersistTaps="handled"
+			>
 				{isBuiltIn && (
-					<View style={[styles.builtInBanner, { backgroundColor: colors.muted }]}>
-						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-							This is a built-in agent and cannot be edited.
-						</Text>
-					</View>
+					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: Spacing.md }]}>
+						Built-in agent (read-only)
+					</Text>
 				)}
 
-				<SettingsSection title="Basic Information" showDivider={false}>
-					<View style={styles.formGroup}>
-						<SettingsTextField
-							label="Name"
-							value={name}
-							onChangeText={setName}
-							placeholder="my-agent"
-							editable={!isBuiltIn && isNewAgent}
-							required
-						/>
-					</View>
-					<View style={styles.formGroup}>
-						<SettingsTextArea
-							label="Description"
-							value={description}
-							onChangeText={setDescription}
-							placeholder="Describe what this agent does..."
-							editable={!isBuiltIn}
-							rows={2}
-						/>
-					</View>
-					<View style={styles.formGroup}>
-						<SettingsSelect
-							label="Mode"
-							options={MODE_OPTIONS}
-							value={mode}
-							onChange={setMode}
-						/>
-					</View>
-				</SettingsSection>
+				{/* Name */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Name
+					</Text>
+					<TextInput
+						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						value={name}
+						onChangeText={setName}
+						placeholder="my-agent"
+						placeholderTextColor={colors.mutedForeground}
+						editable={!isBuiltIn && isNewAgent}
+					/>
+				</View>
 
-				<SettingsSection title="Model Configuration">
-					<View style={styles.formGroup}>
-						<SettingsSelect
-							label="Provider"
-							options={providerOptions}
-							value={providerId}
-							onChange={(value) => {
-								setProviderId(value);
-								setModelId("");
-							}}
-							placeholder="Select provider..."
-						/>
+				{/* Description */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Description
+					</Text>
+					<TextInput
+						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						value={description}
+						onChangeText={setDescription}
+						placeholder="What this agent does..."
+						placeholderTextColor={colors.mutedForeground}
+						editable={!isBuiltIn}
+					/>
+				</View>
+
+				{/* Model */}
+				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+						Model
+					</Text>
+					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
+						Select the provider and model for this agent.
+					</Text>
+
+					{/* Provider selector */}
+					<View style={[styles.selectList, { borderColor: colors.border + "66" }]}>
+						{providers.map((provider, index) => (
+							<Pressable
+								key={provider.id}
+								onPress={() => {
+									if (!isBuiltIn) {
+										setProviderId(provider.id);
+										setModelId("");
+									}
+								}}
+								style={[
+									styles.selectItem,
+									index > 0 && { borderTopWidth: 1, borderTopColor: colors.border + "66" },
+									providerId === provider.id && { backgroundColor: colors.primary + "15" },
+								]}
+							>
+								<Text
+									style={[
+										typography.meta,
+										{
+											color: providerId === provider.id ? colors.primary : colors.foreground,
+											fontWeight: providerId === provider.id ? "600" : "400",
+										},
+									]}
+								>
+									{provider.name}
+								</Text>
+							</Pressable>
+						))}
 					</View>
-					{providerId && (
-						<View style={styles.formGroup}>
-							<SettingsSelect
-								label="Model"
-								options={modelOptions}
-								value={modelId}
-								onChange={setModelId}
-								placeholder="Select model..."
-							/>
+
+					{/* Model selector */}
+					{selectedProvider && selectedProvider.models && selectedProvider.models.length > 0 && (
+						<View style={{ marginTop: 12 }}>
+							<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 8 }]}>
+								Model
+							</Text>
+							<View style={[styles.selectList, { borderColor: colors.border + "66" }]}>
+								{selectedProvider.models.slice(0, 10).map((model, index) => (
+									<Pressable
+										key={model.id}
+										onPress={() => !isBuiltIn && setModelId(model.id)}
+										style={[
+											styles.selectItem,
+											index > 0 && { borderTopWidth: 1, borderTopColor: colors.border + "66" },
+											modelId === model.id && { backgroundColor: colors.primary + "15" },
+										]}
+									>
+										<Text
+											style={[
+												typography.meta,
+												{
+													color: modelId === model.id ? colors.primary : colors.foreground,
+													fontWeight: modelId === model.id ? "600" : "400",
+												},
+											]}
+											numberOfLines={1}
+										>
+											{model.name || model.id}
+										</Text>
+									</Pressable>
+								))}
+							</View>
 						</View>
 					)}
-					<View style={styles.formRow}>
-						<View style={styles.formHalf}>
-							<SettingsTextField
-								label="Temperature"
-								value={temperature}
-								onChangeText={setTemperature}
-								placeholder="0.7"
-								keyboardType="decimal-pad"
-								editable={!isBuiltIn}
-							/>
-						</View>
-						<View style={styles.formHalf}>
-							<SettingsTextField
-								label="Top P"
-								value={topP}
-								onChangeText={setTopP}
-								placeholder="1.0"
-								keyboardType="decimal-pad"
-								editable={!isBuiltIn}
-							/>
-						</View>
-					</View>
-				</SettingsSection>
+				</View>
 
-				<SettingsSection title="System Prompt">
-					<View style={styles.formGroup}>
-						<SettingsTextArea
-							label="Prompt"
-							value={prompt}
-							onChangeText={setPrompt}
-							placeholder="Enter the system prompt for this agent..."
-							editable={!isBuiltIn}
-							rows={6}
-						/>
-					</View>
-				</SettingsSection>
+				{/* System Prompt */}
+				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+						System prompt
+					</Text>
+					<TextInput
+						style={[
+							typography.meta,
+							styles.textarea,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
+						value={prompt}
+						onChangeText={setPrompt}
+						placeholder="Enter the system prompt..."
+						placeholderTextColor={colors.mutedForeground}
+						editable={!isBuiltIn}
+						multiline
+						textAlignVertical="top"
+					/>
+				</View>
 
+				{/* Delete */}
 				{!isBuiltIn && !isNewAgent && (
-					<SettingsSection title="Danger Zone">
-						<Pressable
-							onPress={handleDelete}
-							style={[styles.deleteButton, { borderColor: colors.destructive }]}
-						>
-							<Text style={[typography.uiLabel, { color: colors.destructive }]}>
-								Delete Agent
+					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+						<Pressable onPress={handleDelete}>
+							<Text style={[typography.meta, { color: colors.destructive }]}>
+								Delete agent
 							</Text>
 						</Pressable>
-					</SettingsSection>
+					</View>
 				)}
-
-				<View style={styles.bottomSpacer} />
 			</ScrollView>
 		</View>
 	);
@@ -358,7 +354,7 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 	},
-	loadingContainer: {
+	centered: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
@@ -366,54 +362,57 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		justifyContent: "space-between",
+		paddingHorizontal: Spacing.md,
+		paddingVertical: Spacing.sm,
 	},
 	backButton: {
-		padding: 4,
-		marginRight: 12,
-		marginLeft: -4,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
 	},
-	headerTitle: {
-		flex: 1,
-		fontWeight: "600",
-	},
-	saveButton: {
-		paddingHorizontal: 16,
-		paddingVertical: 8,
+	saveBtn: {
+		paddingHorizontal: 14,
+		paddingVertical: 6,
 		borderRadius: 6,
-		minWidth: 60,
+		minWidth: 50,
 		alignItems: "center",
 	},
-	scrollView: {
+	scroll: {
 		flex: 1,
 	},
 	content: {
-		padding: 16,
+		paddingHorizontal: Spacing.md,
+		paddingBottom: Spacing.xl,
+		gap: Spacing.md,
 	},
-	builtInBanner: {
-		padding: 12,
-		borderRadius: 8,
-		marginBottom: 16,
+	field: {
+		gap: 6,
 	},
-	formGroup: {
-		marginBottom: 16,
-	},
-	formRow: {
-		flexDirection: "row",
-		gap: 12,
-	},
-	formHalf: {
-		flex: 1,
-	},
-	deleteButton: {
+	input: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
 		borderWidth: 1,
-		borderRadius: 8,
-		paddingVertical: 12,
-		alignItems: "center",
+		borderRadius: 6,
 	},
-	bottomSpacer: {
-		height: 40,
+	textarea: {
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderWidth: 1,
+		borderRadius: 6,
+		minHeight: 120,
+	},
+	section: {
+		paddingTop: Spacing.md,
+		borderTopWidth: 1,
+	},
+	selectList: {
+		borderWidth: 1,
+		borderRadius: 6,
+		overflow: "hidden",
+	},
+	selectItem: {
+		paddingHorizontal: 12,
+		paddingVertical: 10,
 	},
 });
