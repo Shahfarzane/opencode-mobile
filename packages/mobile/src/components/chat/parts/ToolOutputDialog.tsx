@@ -188,10 +188,10 @@ export function ToolOutputDialog({
 			onRequestClose={onClose}
 		>
 			<View style={[styles.container, { backgroundColor: colors.background }]}>
-				<View style={[styles.header, { borderBottomColor: colors.border }]}>
+				<View style={styles.header}>
 					<View style={styles.headerTitle}>
-						{getToolIcon(toolName, colors.info)}
-						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
+						{getToolIcon(toolName, colors.foreground)}
+						<Text style={[typography.uiHeader, { color: colors.foreground, fontWeight: "600" }]}>
 							{toolName}
 						</Text>
 					</View>
@@ -200,50 +200,59 @@ export function ToolOutputDialog({
 					</Pressable>
 				</View>
 
-				<ScrollView
-					style={styles.scrollView}
-					contentContainerStyle={styles.scrollContent}
+				<View
+					style={[
+						styles.contentWrapper,
+						{
+							backgroundColor: isDark
+								? "rgba(28, 27, 26, 0.3)"
+								: "rgba(242, 240, 229, 0.3)",
+							borderColor: `${colors.border}4D`,
+						},
+					]}
 				>
-					{part.input && Object.keys(part.input).length > 0 && (
-						<View style={styles.section}>
-							<View style={styles.sectionHeader}>
-								<Text
+					<ScrollView
+						style={styles.scrollView}
+						contentContainerStyle={styles.scrollContent}
+					>
+						{part.input && Object.keys(part.input).length > 0 && (
+							<View style={styles.section}>
+								<View style={styles.sectionHeader}>
+									<Text
+										style={[
+											typography.meta,
+											{ color: colors.mutedForeground, fontWeight: "500" },
+										]}
+									>
+										Input
+									</Text>
+									<Pressable onPress={handleCopyInput} hitSlop={8}>
+										<CopyIcon color={colors.mutedForeground} />
+									</Pressable>
+								</View>
+								<View
 									style={[
-										typography.uiLabel,
-										{ color: colors.mutedForeground },
+										styles.codeBlock,
+										{
+											backgroundColor: "transparent",
+											borderColor: `${colors.border}33`,
+										},
 									]}
 								>
-									Input
-								</Text>
-								<Pressable onPress={handleCopyInput} hitSlop={8}>
-									<CopyIcon color={colors.mutedForeground} />
-								</Pressable>
+									<Text style={[typography.code, { color: colors.foreground }]}>
+										{formatInputForDisplay(part.input)}
+									</Text>
+								</View>
 							</View>
-							<View
-								style={[
-									styles.codeBlock,
-									{
-										backgroundColor: isDark
-											? "rgba(28, 27, 26, 0.5)"
-											: "rgba(242, 240, 229, 0.5)",
-										borderColor: colors.border,
-									},
-								]}
-							>
-								<Text style={[typography.code, { color: colors.foreground }]}>
-									{formatInputForDisplay(part.input)}
-								</Text>
-							</View>
-						</View>
-					)}
+						)}
 
 					{part.output && part.output.trim().length > 0 && (
 						<View style={styles.section}>
 							<View style={styles.sectionHeader}>
 								<Text
 									style={[
-										typography.uiLabel,
-										{ color: colors.mutedForeground },
+										typography.meta,
+										{ color: colors.mutedForeground, fontWeight: "500" },
 									]}
 								>
 									Output
@@ -256,10 +265,8 @@ export function ToolOutputDialog({
 								style={[
 									styles.codeBlock,
 									{
-										backgroundColor: isDark
-											? "rgba(28, 27, 26, 0.5)"
-											: "rgba(242, 240, 229, 0.5)",
-										borderColor: colors.border,
+										backgroundColor: "transparent",
+										borderColor: `${colors.border}33`,
 									},
 								]}
 							>
@@ -277,7 +284,10 @@ export function ToolOutputDialog({
 						<View style={styles.section}>
 							<View style={styles.sectionHeader}>
 								<Text
-									style={[typography.uiLabel, { color: colors.destructive }]}
+									style={[
+										typography.meta,
+										{ color: colors.destructive, fontWeight: "500" },
+									]}
 								>
 									Error
 								</Text>
@@ -290,7 +300,7 @@ export function ToolOutputDialog({
 									styles.codeBlock,
 									{
 										backgroundColor: `${colors.destructive}10`,
-										borderColor: colors.destructive,
+										borderColor: `${colors.destructive}33`,
 									},
 								]}
 							>
@@ -318,7 +328,8 @@ export function ToolOutputDialog({
 							</Text>
 						</View>
 					)}
-				</ScrollView>
+					</ScrollView>
+				</View>
 			</View>
 		</Modal>
 	);
@@ -333,26 +344,34 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 16,
-		paddingVertical: 14,
-		borderBottomWidth: 1,
+		paddingVertical: 12,
+		borderBottomWidth: 0,
 	},
 	headerTitle: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
+		gap: 8,
 	},
 	closeButton: {
 		padding: 4,
+	},
+	contentWrapper: {
+		flex: 1,
+		marginHorizontal: 16,
+		marginBottom: 16,
+		borderRadius: 12,
+		borderWidth: 1,
+		overflow: "hidden",
 	},
 	scrollView: {
 		flex: 1,
 	},
 	scrollContent: {
-		padding: 16,
+		padding: 12,
 		paddingBottom: 40,
 	},
 	section: {
-		marginBottom: 20,
+		marginBottom: 16,
 	},
 	sectionHeader: {
 		flexDirection: "row",
@@ -361,7 +380,7 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 	},
 	codeBlock: {
-		borderRadius: 8,
+		borderRadius: 12,
 		borderWidth: 1,
 		padding: 12,
 	},

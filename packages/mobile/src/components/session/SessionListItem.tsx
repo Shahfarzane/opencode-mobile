@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
 		right: 0,
 		top: 4,
 		bottom: 4,
-		width: 4,
-		borderRadius: 2,
+		width: 2,
+		borderRadius: 1,
 	},
 });

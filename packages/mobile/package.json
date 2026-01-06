@@ -60,6 +60,7 @@
     "@babel/plugin-transform-react-jsx": "^7.27.1",
     "@types/react": "~19.0.14",
     "babel-preset-expo": "^54.0.9",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3"
   }

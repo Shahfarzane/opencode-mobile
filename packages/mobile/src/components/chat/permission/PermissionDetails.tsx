@@ -357,8 +357,8 @@ export function PermissionDetails({ permission }: PermissionDetailsProps) {
 
 const styles = StyleSheet.create({
 	content: {
-		padding: 16,
-		gap: 10,
+		padding: 12,
+		gap: 8,
 	},
 	description: {
 		lineHeight: 20,
@@ -370,17 +370,17 @@ const styles = StyleSheet.create({
 		flexWrap: "wrap",
 	},
 	metaLabel: {
-		fontWeight: "600",
+		fontWeight: "500",
 	},
 	codeInline: {
 		flex: 1,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 4,
 	},
 	codeBlock: {
-		padding: 12,
-		borderRadius: 8,
+		padding: 8,
+		borderRadius: 6,
 	},
 	requestRow: {
 		flexDirection: "row",
@@ -388,27 +388,27 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	methodBadge: {
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 6,
+		paddingHorizontal: 6,
+		paddingVertical: 3,
+		borderRadius: 4,
 	},
 	urlContainer: {
 		flex: 1,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 4,
 	},
 	patternWrapper: {
-		paddingHorizontal: 16,
-		paddingBottom: 16,
+		paddingHorizontal: 12,
+		paddingBottom: 12,
 	},
 	patternContainer: {
-		padding: 10,
-		borderRadius: 8,
+		padding: 8,
+		borderRadius: 6,
 		gap: 4,
 	},
 	patternLabel: {
-		fontWeight: "600",
+		fontWeight: "500",
 		marginBottom: 2,
 	},
 	patternText: {

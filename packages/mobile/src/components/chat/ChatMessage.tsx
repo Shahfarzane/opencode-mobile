@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
 	},
 
 	assistantMessageContainer: {
-		marginBottom: 16,
+		marginBottom: 8,
 		paddingHorizontal: DESKTOP_MESSAGE_SPACING.containerPaddingH,
 	},
 	assistantHeader: {

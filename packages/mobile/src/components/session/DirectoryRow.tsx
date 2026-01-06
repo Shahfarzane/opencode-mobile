@@ -80,19 +80,19 @@ export function DirectoryRow({
 								size={18}
 							/>
 						</View>
-						<Text
-							style={[
-								typography.uiLabel,
-								styles.directoryText,
-								{
-									color: pressed ? colors.foreground : colors.mutedForeground,
-									fontWeight: "600"
-								},
-							]}
-							numberOfLines={1}
-						>
-							{displayDirectory}
-						</Text>
+					<Text
+						style={[
+							typography.uiHeader,
+							styles.directoryText,
+							{
+								color: pressed ? colors.foreground : colors.mutedForeground,
+								fontWeight: "600"
+							},
+						]}
+						numberOfLines={1}
+					>
+						{displayDirectory}
+					</Text>
 					</>
 				)}
 			</Pressable>

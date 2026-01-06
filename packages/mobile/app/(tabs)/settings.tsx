@@ -26,6 +26,7 @@ import {
 	ProvidersList,
 } from "../../src/components/settings";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { type ThemeMode, useThemeMode } from "../../src/theme/ThemeProvider";
 import { typography, useTheme } from "../../src/theme";
 
 type SettingsTab = "general" | "agents" | "commands" | "providers" | "git";
@@ -112,6 +113,73 @@ function SectionDivider({ title }: { title: string }) {
 		</View>
 	);
 }
+
+interface ThemeModeOption {
+	value: ThemeMode;
+	label: string;
+}
+
+const THEME_MODE_OPTIONS: ThemeModeOption[] = [
+	{ value: "system", label: "System" },
+	{ value: "light", label: "Light" },
+	{ value: "dark", label: "Dark" },
+];
+
+function ThemeModeSelector() {
+	const { colors } = useTheme();
+	const { themeMode, setThemeMode } = useThemeMode();
+
+	return (
+		<View style={[themeSelectorStyles.container, { backgroundColor: colors.muted }]}>
+			{THEME_MODE_OPTIONS.map((option) => {
+				const isSelected = themeMode === option.value;
+				return (
+					<Pressable
+						key={option.value}
+						onPress={() => setThemeMode(option.value)}
+						style={[
+							themeSelectorStyles.option,
+							isSelected && {
+								backgroundColor: colors.background,
+								shadowColor: "#000",
+								shadowOffset: { width: 0, height: 1 },
+								shadowOpacity: 0.1,
+								shadowRadius: 2,
+								elevation: 2,
+							},
+						]}
+					>
+						<Text
+							style={[
+								typography.uiLabel,
+								{
+									color: isSelected ? colors.foreground : colors.mutedForeground,
+									fontWeight: isSelected ? "600" : "400",
+								},
+							]}
+						>
+							{option.label}
+						</Text>
+					</Pressable>
+				);
+			})}
+		</View>
+	);
+}
+
+const themeSelectorStyles = StyleSheet.create({
+	container: {
+		flexDirection: "row",
+		borderRadius: 8,
+		padding: 3,
+	},
+	option: {
+		flex: 1,
+		paddingVertical: 8,
+		alignItems: "center",
+		borderRadius: 6,
+	},
+});
 
 function GeneralSettings() {
 	const { colors } = useTheme();
@@ -278,6 +346,31 @@ function GeneralSettings() {
 				subtitle="Restart the backend server"
 				onPress={handleRestartOpenCode}
 			/>
+
+			<SectionDivider title="Appearance" />
+			<View style={styles.appearanceSection}>
+				<View style={styles.appearanceHeader}>
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+						<Circle
+							cx="12"
+							cy="12"
+							r="5"
+							stroke={colors.primary}
+							strokeWidth={2}
+						/>
+						<Path
+							d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+							stroke={colors.primary}
+							strokeWidth={2}
+							strokeLinecap="round"
+						/>
+					</Svg>
+					<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+						Theme
+					</Text>
+				</View>
+				<ThemeModeSelector />
+			</View>
 
 			<SectionDivider title="Preferences" />
 			<SettingsItem
@@ -710,6 +803,16 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		textTransform: "uppercase",
 		fontWeight: "500",
+	},
+	appearanceSection: {
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		gap: 12,
+	},
+	appearanceHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 16,
 	},
 	spacer: {
 		height: 16,

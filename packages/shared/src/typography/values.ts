@@ -38,11 +38,11 @@ export const VSCODE_TYPOGRAPHY = {
 
 export const MOBILE_TYPOGRAPHY = {
 	markdown: "1rem",
-	code: "0.9375rem",
-	uiHeader: "1rem",
-	uiLabel: "0.9375rem",
-	meta: "0.9375rem",
-	micro: "0.875rem",
+	code: "0.875rem",
+	uiHeader: "0.9375rem",
+	uiLabel: "0.875rem",
+	meta: "0.875rem",
+	micro: "0.8125rem",
 } as const;
 
 export type FontSizeOption = keyof typeof FONT_SIZE_SCALES;

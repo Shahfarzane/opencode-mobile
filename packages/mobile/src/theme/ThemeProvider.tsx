@@ -1,10 +1,18 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
 	type Theme,
-	warmSandDarkTheme,
-	warmSandLightTheme,
+	flexokiDarkTheme,
+	flexokiLightTheme,
 } from "@openchamber/shared/themes";
 import type React from "react";
-import { useMemo } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { useColorScheme } from "react-native";
 import {
 	type ThemeColors,
@@ -13,6 +21,24 @@ import {
 } from "./context";
 
 export type { ThemeColors, ThemeContextValue } from "./context";
+
+export type ThemeMode = "system" | "light" | "dark";
+
+const THEME_MODE_KEY = "@openchamber/theme-mode";
+
+interface ThemeModeContextValue {
+	themeMode: ThemeMode;
+	setThemeMode: (mode: ThemeMode) => void;
+}
+
+const ThemeModeContext = createContext<ThemeModeContextValue>({
+	themeMode: "system",
+	setThemeMode: () => {},
+});
+
+export function useThemeMode() {
+	return useContext(ThemeModeContext);
+}
 
 function createColors(theme: Theme): ThemeColors {
 	const { colors } = theme;
@@ -150,12 +176,42 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children, forcedTheme }: ThemeProviderProps) {
 	const systemColorScheme = useColorScheme();
+	const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+	const [isLoaded, setIsLoaded] = useState(false);
+
+	useEffect(() => {
+		AsyncStorage.getItem(THEME_MODE_KEY).then((savedMode) => {
+			if (savedMode === "system" || savedMode === "light" || savedMode === "dark") {
+				setThemeModeState(savedMode);
+			}
+			setIsLoaded(true);
+		});
+	}, []);
+
+	const setThemeMode = useCallback((mode: ThemeMode) => {
+		setThemeModeState(mode);
+		AsyncStorage.setItem(THEME_MODE_KEY, mode);
+	}, []);
+
+	const themeModeValue = useMemo<ThemeModeContextValue>(
+		() => ({
+			themeMode,
+			setThemeMode,
+		}),
+		[themeMode, setThemeMode],
+	);
 
 	const value = useMemo<ThemeContextValue>(() => {
-		const isDark = forcedTheme
-			? forcedTheme === "dark"
-			: systemColorScheme === "dark";
-		const theme = isDark ? warmSandDarkTheme : warmSandLightTheme;
+		let isDark: boolean;
+		if (forcedTheme) {
+			isDark = forcedTheme === "dark";
+		} else if (themeMode === "system") {
+			isDark = systemColorScheme === "dark";
+		} else {
+			isDark = themeMode === "dark";
+		}
+
+		const theme = isDark ? flexokiDarkTheme : flexokiLightTheme;
 		const colors = createColors(theme);
 
 		return {
@@ -164,10 +220,16 @@ export function ThemeProvider({ children, forcedTheme }: ThemeProviderProps) {
 			colors,
 			variant: isDark ? "dark" : "light",
 		};
-	}, [systemColorScheme, forcedTheme]);
+	}, [systemColorScheme, forcedTheme, themeMode]);
+
+	if (!isLoaded) {
+		return null;
+	}
 
 	return (
-		<ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+		<ThemeModeContext.Provider value={themeModeValue}>
+			<ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+		</ThemeModeContext.Provider>
 	);
 }
 

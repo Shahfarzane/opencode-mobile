@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
 		borderBottomWidth: 1,
 	},
 	headerLeft: {
@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	iconContainer: {
-		width: 28,
-		height: 28,
+		width: 24,
+		height: 24,
 		borderRadius: 6,
 		alignItems: "center",
 		justifyContent: "center",
