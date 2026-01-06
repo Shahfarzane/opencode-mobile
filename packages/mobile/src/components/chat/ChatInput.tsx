@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { AiAgentIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import {
 	AttachedFilesList,
@@ -324,10 +325,8 @@ function ProviderLogo({ providerId }: { providerId: string }) {
 	);
 }
 
-// Agent badge component with color support
+// Agent badge component with color support and icon
 function AgentBadge({ name, color }: { name: string; color?: string }) {
-	const { colors } = useTheme();
-
 	// Default agent colors based on name hash (matching desktop's getAgentColor)
 	const getAgentColor = (agentName: string) => {
 		if (color) return color;
@@ -352,11 +351,13 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 	};
 
 	const badgeColor = getAgentColor(name);
+	const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
 
 	return (
-		<View style={[styles.agentBadge, { backgroundColor: `${badgeColor}20` }]}>
+		<View style={styles.agentBadgeContainer}>
+			<AiAgentIcon size={14} color={badgeColor} />
 			<Text style={[typography.micro, { color: badgeColor, fontWeight: "500" }]}>
-				{name}
+				{capitalizedName}
 			</Text>
 		</View>
 	);
@@ -629,53 +630,55 @@ export function ChatInput({
 				/>
 
 				<View style={styles.toolbar}>
-					{/* Left: Attachment button */}
-					<View style={styles.toolbarButton}>
-						<FileAttachmentButton
-							onFileAttached={handleFileAttached}
-							disabled={isLoading}
-						/>
+					{/* Left: Attachment button (flex-shrink-0) */}
+					<View style={styles.toolbarLeftSection}>
+						<View style={styles.toolbarButton}>
+							<FileAttachmentButton
+								onFileAttached={handleFileAttached}
+								disabled={isLoading}
+							/>
+						</View>
 					</View>
 
-					{/* Center: Model info and Agent */}
-					<View style={styles.modelInfo}>
-						{/* Provider logo + Model name - clickable */}
-						<Pressable
-							onPress={() => {
-								if (onModelPress) {
-									Haptics.selectionAsync();
-									onModelPress();
-								}
-							}}
-							style={({ pressed }) => [
-								styles.modelSelector,
-								pressed && onModelPress && { opacity: 0.7 },
-							]}
-							disabled={!onModelPress}
-						>
-							{modelInfo ? (
-								<>
-									<ProviderLogo providerId={modelInfo.providerId} />
+					{/* Right section: Model + Agent + Send (flex-1) */}
+					<View style={styles.toolbarRightSection}>
+						{/* Model selector (flex-1 with overflow hidden) */}
+						<View style={styles.modelInfoContainer}>
+							<Pressable
+								onPress={() => {
+									if (onModelPress) {
+										Haptics.selectionAsync();
+										onModelPress();
+									}
+								}}
+								style={({ pressed }) => [
+									styles.modelSelector,
+									pressed && onModelPress && { opacity: 0.7 },
+								]}
+								disabled={!onModelPress}
+							>
+								{modelInfo ? (
+									<>
+										<ProviderLogo providerId={modelInfo.providerId} />
+										<Text
+											style={[typography.micro, { color: colors.mutedForeground }]}
+											numberOfLines={1}
+										>
+											{modelInfo.modelName}
+										</Text>
+									</>
+								) : (
 									<Text
 										style={[typography.micro, { color: colors.mutedForeground }]}
 										numberOfLines={1}
 									>
-										{modelInfo.modelName.length > 20
-											? `${modelInfo.modelName.slice(0, 18)}...`
-											: modelInfo.modelName}
+										Select model
 									</Text>
-								</>
-							) : (
-								<Text
-									style={[typography.micro, { color: colors.mutedForeground }]}
-									numberOfLines={1}
-								>
-									Select model
-								</Text>
-							)}
-						</Pressable>
+								)}
+							</Pressable>
+						</View>
 
-						{/* Agent badge (if active) - clickable */}
+						{/* Agent badge (if active) - flex-shrink-0 */}
 						{activeAgent && (
 							<Pressable
 								onPress={() => {
@@ -685,32 +688,32 @@ export function ChatInput({
 									}
 								}}
 								disabled={!onAgentPress}
+								style={styles.agentPressable}
 							>
 								<AgentBadge name={activeAgent.name} color={activeAgent.color} />
 							</Pressable>
 						)}
-					</View>
 
-					{/* Right: Send/Stop button */}
-					<Pressable
-						onPress={handleSend}
-						disabled={!canSend && !isLoading}
-						style={({ pressed }) => [
-							styles.toolbarButton,
-							styles.sendButton,
-							pressed && canSend && { opacity: 0.7 },
-						]}
-						hitSlop={8}
-					>
-						{isLoading ? (
-							<StopIcon color={colors.destructive} size={20} />
-						) : (
-							<SendIcon
-								color={canSend ? colors.primary : colors.mutedForeground}
-								size={20}
-							/>
-						)}
-					</Pressable>
+						{/* Send/Stop button (flex-shrink-0) */}
+						<Pressable
+							onPress={handleSend}
+							disabled={!canSend && !isLoading}
+							style={({ pressed }) => [
+								styles.toolbarButton,
+								pressed && canSend && { opacity: 0.7 },
+							]}
+							hitSlop={8}
+						>
+							{isLoading ? (
+								<StopIcon color={colors.destructive} size={20} />
+							) : (
+								<SendIcon
+									color={canSend ? colors.primary : colors.mutedForeground}
+									size={20}
+								/>
+							)}
+						</Pressable>
+					</View>
 				</View>
 			</View>
 		</View>
@@ -757,36 +760,44 @@ const styles = StyleSheet.create({
 		paddingVertical: MOBILE_SPACING.toolbarPaddingV,
 		gap: MOBILE_SPACING.toolbarGap,
 	},
+	toolbarLeftSection: {
+		flexShrink: 0,
+	},
+	toolbarRightSection: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "flex-end",
+		gap: MOBILE_SPACING.toolbarGap,
+		minWidth: 0,
+	},
 	toolbarButton: {
 		width: MOBILE_SPACING.toolbarButtonSize,
 		height: MOBILE_SPACING.toolbarButtonSize,
 		alignItems: "center",
 		justifyContent: "center",
 		borderRadius: MOBILE_SPACING.toolbarButtonRadius,
+		flexShrink: 0,
 	},
-	sendButton: {
-		// Additional styling for send button
-	},
-	modelInfo: {
+	modelInfoContainer: {
 		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 8,
 		minWidth: 0,
+		overflow: "hidden",
+		alignItems: "flex-end",
 	},
 	modelSelector: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
 		minWidth: 0,
-		flexShrink: 1,
 	},
-	agentBadge: {
-		paddingHorizontal: MOBILE_SPACING.agentBadgePaddingH,
-		paddingVertical: MOBILE_SPACING.agentBadgePaddingV,
-		borderRadius: MOBILE_SPACING.agentBadgeRadius,
+	agentPressable: {
 		flexShrink: 0,
+	},
+	agentBadgeContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
 	},
 	triggerIcon: {
 		height: 24,

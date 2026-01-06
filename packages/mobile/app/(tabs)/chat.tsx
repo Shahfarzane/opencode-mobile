@@ -857,20 +857,47 @@ export default function ChatScreen() {
 							}
 						}
 
+						// Extract model/agent info from assistant messages
+						let messageModelName: string | undefined;
+						let messageAgentName: string | undefined;
+
+						if (msg.info.role === "assistant") {
+							if (msg.info.providerID) lastProviderID = msg.info.providerID;
+							if (msg.info.modelID) lastModelID = msg.info.modelID;
+							if (msg.info.mode) lastAgentName = msg.info.mode;
+
+							// Derive model display name from provider/model IDs
+							if (msg.info.providerID && msg.info.modelID) {
+								const provider = providersRef.current.find(
+									(p) => p.id === msg.info.providerID,
+								);
+								const model = provider?.models?.find(
+									(m) => m.id === msg.info.modelID,
+								);
+								if (model) {
+									const displayName = model.name || model.id;
+									messageModelName =
+										displayName.length > 40
+											? `${displayName.substring(0, 37)}...`
+											: displayName;
+								}
+							}
+
+							// Set agent name from mode
+							if (msg.info.mode) {
+								messageAgentName = msg.info.mode;
+							}
+						}
+
 						loadedMessages.push({
 							id: msg.info.id || `msg-${Date.now()}`,
 							role: msg.info.role === "user" ? "user" : "assistant",
 							content,
 							parts: parts.length > 0 ? parts : undefined,
 							createdAt: msg.info.createdAt || Date.now(),
+							modelName: messageModelName,
+							agentName: messageAgentName,
 						});
-
-						// Extract model/agent info from assistant messages
-						if (msg.info.role === "assistant") {
-							if (msg.info.providerID) lastProviderID = msg.info.providerID;
-							if (msg.info.modelID) lastModelID = msg.info.modelID;
-							if (msg.info.mode) lastAgentName = msg.info.mode;
-						}
 					}
 				}
 
