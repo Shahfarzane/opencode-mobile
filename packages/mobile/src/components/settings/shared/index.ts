@@ -1,4 +1,4 @@
-export { SettingsTextField } from "./SettingsTextField";
-export { SettingsTextArea } from "./SettingsTextArea";
-export { SettingsSelect, type SelectOption } from "./SettingsSelect";
+export { type SelectOption, SettingsSelect } from "./SettingsSelect";
 export { SettingsSwitch } from "./SettingsSwitch";
+export { SettingsTextArea } from "./SettingsTextArea";
+export { SettingsTextField } from "./SettingsTextField";

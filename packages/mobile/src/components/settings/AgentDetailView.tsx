@@ -136,11 +136,15 @@ export function AgentDetailView({
 						try {
 							const success = await agentsApi.delete(agentName);
 							if (success) {
-								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+								Haptics.notificationAsync(
+									Haptics.NotificationFeedbackType.Success,
+								);
 								onDeleted?.();
 								onBack();
 							} else {
-								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+								Haptics.notificationAsync(
+									Haptics.NotificationFeedbackType.Error,
+								);
 								Alert.alert("Error", "Failed to delete agent");
 							}
 						} catch (error) {
@@ -174,7 +178,12 @@ export function AgentDetailView({
 			<View style={styles.header}>
 				<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
 					<ChevronLeft size={18} color={colors.foreground} />
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						{isNewAgent ? "New Agent" : agentName}
 					</Text>
 				</Pressable>
@@ -182,12 +191,23 @@ export function AgentDetailView({
 					<Pressable
 						onPress={handleSave}
 						disabled={isSaving}
-						style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 }]}
+						style={[
+							styles.saveBtn,
+							{ backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 },
+						]}
 					>
 						{isSaving ? (
-							<ActivityIndicator size="small" color={colors.primaryForeground} />
+							<ActivityIndicator
+								size="small"
+								color={colors.primaryForeground}
+							/>
 						) : (
-							<Text style={[typography.meta, { color: colors.primaryForeground, fontWeight: "500" }]}>
+							<Text
+								style={[
+									typography.meta,
+									{ color: colors.primaryForeground, fontWeight: "500" },
+								]}
+							>
 								Save
 							</Text>
 						)}
@@ -202,18 +222,32 @@ export function AgentDetailView({
 				keyboardShouldPersistTaps="handled"
 			>
 				{isBuiltIn && (
-					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: Spacing.md }]}>
+					<Text
+						style={[
+							typography.meta,
+							{ color: colors.mutedForeground, marginBottom: Spacing[4] },
+						]}
+					>
 						Built-in agent (read-only)
 					</Text>
 				)}
 
 				{/* Name */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Name
 					</Text>
 					<TextInput
-						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
 						value={name}
 						onChangeText={setName}
 						placeholder="my-agent"
@@ -224,11 +258,20 @@ export function AgentDetailView({
 
 				{/* Description */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Description
 					</Text>
 					<TextInput
-						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
 						value={description}
 						onChangeText={setDescription}
 						placeholder="What this agent does..."
@@ -238,16 +281,30 @@ export function AgentDetailView({
 				</View>
 
 				{/* Model */}
-				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+				<View
+					style={[styles.section, { borderTopColor: colors.border + "66" }]}
+				>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+						]}
+					>
 						Model
 					</Text>
-					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
+					<Text
+						style={[
+							typography.meta,
+							{ color: colors.mutedForeground, marginBottom: 12 },
+						]}
+					>
 						Select the provider and model for this agent.
 					</Text>
 
 					{/* Provider selector */}
-					<View style={[styles.selectList, { borderColor: colors.border + "66" }]}>
+					<View
+						style={[styles.selectList, { borderColor: colors.border + "66" }]}
+					>
 						{providers.map((provider, index) => (
 							<Pressable
 								key={provider.id}
@@ -259,15 +316,23 @@ export function AgentDetailView({
 								}}
 								style={[
 									styles.selectItem,
-									index > 0 && { borderTopWidth: 1, borderTopColor: colors.border + "66" },
-									providerId === provider.id && { backgroundColor: colors.primary + "15" },
+									index > 0 && {
+										borderTopWidth: 1,
+										borderTopColor: colors.border + "66",
+									},
+									providerId === provider.id && {
+										backgroundColor: colors.primary + "15",
+									},
 								]}
 							>
 								<Text
 									style={[
 										typography.meta,
 										{
-											color: providerId === provider.id ? colors.primary : colors.foreground,
+											color:
+												providerId === provider.id
+													? colors.primary
+													: colors.foreground,
 											fontWeight: providerId === provider.id ? "600" : "400",
 										},
 									]}
@@ -279,44 +344,71 @@ export function AgentDetailView({
 					</View>
 
 					{/* Model selector */}
-					{selectedProvider && selectedProvider.models && selectedProvider.models.length > 0 && (
-						<View style={{ marginTop: 12 }}>
-							<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 8 }]}>
-								Model
-							</Text>
-							<View style={[styles.selectList, { borderColor: colors.border + "66" }]}>
-								{selectedProvider.models.slice(0, 10).map((model, index) => (
-									<Pressable
-										key={model.id}
-										onPress={() => !isBuiltIn && setModelId(model.id)}
-										style={[
-											styles.selectItem,
-											index > 0 && { borderTopWidth: 1, borderTopColor: colors.border + "66" },
-											modelId === model.id && { backgroundColor: colors.primary + "15" },
-										]}
-									>
-										<Text
+					{selectedProvider &&
+						selectedProvider.models &&
+						selectedProvider.models.length > 0 && (
+							<View style={{ marginTop: 12 }}>
+								<Text
+									style={[
+										typography.meta,
+										{ color: colors.mutedForeground, marginBottom: 8 },
+									]}
+								>
+									Model
+								</Text>
+								<View
+									style={[
+										styles.selectList,
+										{ borderColor: colors.border + "66" },
+									]}
+								>
+									{selectedProvider.models.slice(0, 10).map((model, index) => (
+										<Pressable
+											key={model.id}
+											onPress={() => !isBuiltIn && setModelId(model.id)}
 											style={[
-												typography.meta,
-												{
-													color: modelId === model.id ? colors.primary : colors.foreground,
-													fontWeight: modelId === model.id ? "600" : "400",
+												styles.selectItem,
+												index > 0 && {
+													borderTopWidth: 1,
+													borderTopColor: colors.border + "66",
+												},
+												modelId === model.id && {
+													backgroundColor: colors.primary + "15",
 												},
 											]}
-											numberOfLines={1}
 										>
-											{model.name || model.id}
-										</Text>
-									</Pressable>
-								))}
+											<Text
+												style={[
+													typography.meta,
+													{
+														color:
+															modelId === model.id
+																? colors.primary
+																: colors.foreground,
+														fontWeight: modelId === model.id ? "600" : "400",
+													},
+												]}
+												numberOfLines={1}
+											>
+												{model.name || model.id}
+											</Text>
+										</Pressable>
+									))}
+								</View>
 							</View>
-						</View>
-					)}
+						)}
 				</View>
 
 				{/* System Prompt */}
-				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+				<View
+					style={[styles.section, { borderTopColor: colors.border + "66" }]}
+				>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+						]}
+					>
 						System prompt
 					</Text>
 					<TextInput
@@ -337,7 +429,9 @@ export function AgentDetailView({
 
 				{/* Delete */}
 				{!isBuiltIn && !isNewAgent && (
-					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<View
+						style={[styles.section, { borderTopColor: colors.border + "66" }]}
+					>
 						<Pressable onPress={handleDelete}>
 							<Text style={[typography.meta, { color: colors.destructive }]}>
 								Delete agent
@@ -363,8 +457,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: Spacing.md,
-		paddingVertical: Spacing.sm,
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[2],
 	},
 	backButton: {
 		flexDirection: "row",
@@ -382,9 +476,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	content: {
-		paddingHorizontal: Spacing.md,
-		paddingBottom: Spacing.xl,
-		gap: Spacing.md,
+		paddingHorizontal: Spacing[4],
+		paddingBottom: Spacing[8],
+		gap: Spacing[4],
 	},
 	field: {
 		gap: 6,
@@ -403,7 +497,7 @@ const styles = StyleSheet.create({
 		minHeight: 120,
 	},
 	section: {
-		paddingTop: Spacing.md,
+		paddingTop: Spacing[4],
 		borderTopWidth: 1,
 	},
 	selectList: {

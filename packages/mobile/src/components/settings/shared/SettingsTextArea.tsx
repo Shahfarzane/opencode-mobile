@@ -3,12 +3,13 @@ import {
 	StyleSheet,
 	Text,
 	TextInput,
-	View,
 	type TextInputProps,
+	View,
 } from "react-native";
 import { typography, useTheme } from "@/theme";
 
-interface SettingsTextAreaProps extends Omit<TextInputProps, "style" | "multiline"> {
+interface SettingsTextAreaProps
+	extends Omit<TextInputProps, "style" | "multiline"> {
 	label: string;
 	description?: string;
 	error?: string;
@@ -40,13 +41,17 @@ export function SettingsTextArea({
 			<View style={styles.labelRow}>
 				<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 					{label}
-					{required && (
-						<Text style={{ color: colors.destructive }}> *</Text>
-					)}
+					{required && <Text style={{ color: colors.destructive }}> *</Text>}
 				</Text>
 			</View>
 			{description && (
-				<Text style={[typography.meta, styles.description, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.meta,
+						styles.description,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					{description}
 				</Text>
 			)}

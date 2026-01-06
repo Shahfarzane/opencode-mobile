@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -10,7 +11,6 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import {
 	type Agent,
 	agentsApi,
@@ -138,11 +138,15 @@ export function CommandDetailView({
 						try {
 							const success = await commandsApi.delete(commandName);
 							if (success) {
-								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+								Haptics.notificationAsync(
+									Haptics.NotificationFeedbackType.Success,
+								);
 								onDeleted?.();
 								onBack();
 							} else {
-								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+								Haptics.notificationAsync(
+									Haptics.NotificationFeedbackType.Error,
+								);
 								Alert.alert("Error", "Failed to delete command");
 							}
 						} catch (error) {
@@ -174,7 +178,12 @@ export function CommandDetailView({
 			<View style={styles.header}>
 				<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
 					<ChevronLeft size={18} color={colors.foreground} />
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						{isNewCommand ? "New Command" : `/${commandName}`}
 					</Text>
 				</Pressable>
@@ -182,12 +191,23 @@ export function CommandDetailView({
 					<Pressable
 						onPress={handleSave}
 						disabled={isSaving}
-						style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 }]}
+						style={[
+							styles.saveBtn,
+							{ backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 },
+						]}
 					>
 						{isSaving ? (
-							<ActivityIndicator size="small" color={colors.primaryForeground} />
+							<ActivityIndicator
+								size="small"
+								color={colors.primaryForeground}
+							/>
 						) : (
-							<Text style={[typography.meta, { color: colors.primaryForeground, fontWeight: "500" }]}>
+							<Text
+								style={[
+									typography.meta,
+									{ color: colors.primaryForeground, fontWeight: "500" },
+								]}
+							>
 								Save
 							</Text>
 						)}
@@ -202,18 +222,32 @@ export function CommandDetailView({
 				keyboardShouldPersistTaps="handled"
 			>
 				{isBuiltIn && (
-					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: Spacing.md }]}>
+					<Text
+						style={[
+							typography.meta,
+							{ color: colors.mutedForeground, marginBottom: Spacing.md },
+						]}
+					>
 						Built-in command (read-only)
 					</Text>
 				)}
 
 				{/* Name */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Name
 					</Text>
 					<TextInput
-						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
 						value={name}
 						onChangeText={setName}
 						placeholder="my-command"
@@ -224,11 +258,20 @@ export function CommandDetailView({
 
 				{/* Description */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Description
 					</Text>
 					<TextInput
-						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
 						value={description}
 						onChangeText={setDescription}
 						placeholder="What this command does..."
@@ -238,15 +281,31 @@ export function CommandDetailView({
 				</View>
 
 				{/* Template */}
-				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 4 }]}>
+				<View
+					style={[styles.section, { borderTopColor: colors.border + "66" }]}
+				>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600", marginBottom: 4 },
+						]}
+					>
 						Template
 					</Text>
-					<Text style={[typography.micro, { color: colors.mutedForeground, marginBottom: 8 }]}>
+					<Text
+						style={[
+							typography.micro,
+							{ color: colors.mutedForeground, marginBottom: 8 },
+						]}
+					>
 						Use {"{{input}}"} for user input
 					</Text>
 					<TextInput
-						style={[typography.meta, styles.textarea, { color: colors.foreground, borderColor: colors.border }]}
+						style={[
+							typography.meta,
+							styles.textarea,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
 						value={template}
 						onChangeText={setTemplate}
 						placeholder="Do something with {{input}}..."
@@ -258,11 +317,20 @@ export function CommandDetailView({
 				</View>
 
 				{/* Agent */}
-				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+				<View
+					style={[styles.section, { borderTopColor: colors.border + "66" }]}
+				>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+						]}
+					>
 						Agent
 					</Text>
-					<View style={[styles.selectList, { borderColor: colors.border + "66" }]}>
+					<View
+						style={[styles.selectList, { borderColor: colors.border + "66" }]}
+					>
 						<Pressable
 							onPress={() => !isBuiltIn && setAgentName("")}
 							style={[
@@ -273,27 +341,34 @@ export function CommandDetailView({
 							<Text
 								style={[
 									typography.meta,
-									{ color: !agentName ? colors.primary : colors.mutedForeground },
+									{
+										color: !agentName ? colors.primary : colors.mutedForeground,
+									},
 								]}
 							>
 								None
 							</Text>
 						</Pressable>
-						{agents.map((agent, index) => (
+						{agents.map((agent) => (
 							<Pressable
 								key={agent.name}
 								onPress={() => !isBuiltIn && setAgentName(agent.name)}
 								style={[
 									styles.selectItem,
-									{ borderTopWidth: 1, borderTopColor: colors.border + "66" },
-									agentName === agent.name && { backgroundColor: colors.primary + "15" },
+									{ borderTopWidth: 1, borderTopColor: `${colors.border}66` },
+									agentName === agent.name && {
+										backgroundColor: `${colors.primary}15`,
+									},
 								]}
 							>
 								<Text
 									style={[
 										typography.meta,
 										{
-											color: agentName === agent.name ? colors.primary : colors.foreground,
+											color:
+												agentName === agent.name
+													? colors.primary
+													: colors.foreground,
 											fontWeight: agentName === agent.name ? "600" : "400",
 										},
 									]}
@@ -306,13 +381,22 @@ export function CommandDetailView({
 				</View>
 
 				{/* Subtask toggle */}
-				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+				<View
+					style={[styles.section, { borderTopColor: colors.border + "66" }]}
+				>
 					<View style={styles.switchRow}>
 						<View style={{ flex: 1 }}>
-							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.foreground, fontWeight: "600" },
+								]}
+							>
 								Run as subtask
 							</Text>
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.micro, { color: colors.mutedForeground }]}
+							>
 								Execute in a separate context
 							</Text>
 						</View>
@@ -328,7 +412,9 @@ export function CommandDetailView({
 
 				{/* Delete */}
 				{!isBuiltIn && !isNewCommand && (
-					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<View
+						style={[styles.section, { borderTopColor: colors.border + "66" }]}
+					>
 						<Pressable onPress={handleDelete}>
 							<Text style={[typography.meta, { color: colors.destructive }]}>
 								Delete command
