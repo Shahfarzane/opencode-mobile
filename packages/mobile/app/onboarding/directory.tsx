@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -5,6 +6,7 @@ import {
 	Alert,
 	FlatList,
 	Pressable,
+	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -13,103 +15,79 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { type FileListEntry, filesApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
+import { Spacing, typography, useTheme } from "../../src/theme";
 
-function FolderIcon({ size = 20 }: { size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-				stroke="#EC8B49"
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function ChevronRight({ size = 16 }: { size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M9 18l6-6-6-6"
-				stroke="#878580"
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function DirectoryItem({
-	item,
-	onPress,
-}: {
-	item: FileListEntry;
-	onPress: () => void;
-}) {
-	if (!item.isDirectory) return null;
+function BackButton() {
+	const { colors } = useTheme();
 
 	return (
 		<Pressable
-			onPress={onPress}
-			className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-muted"
+			onPress={() => {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+				router.back();
+			}}
+			style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+			hitSlop={8}
 		>
-			<FolderIcon />
-			<Text
-				className="flex-1 font-mono text-base text-foreground"
-				numberOfLines={1}
-			>
-				{item.name}
-			</Text>
-			<ChevronRight />
+			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+				<Path
+					d="M15 18l-6-6 6-6"
+					stroke={colors.foreground}
+					strokeWidth={2}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				/>
+			</Svg>
+			<Text style={[typography.uiLabel, { color: colors.foreground }]}>Back</Text>
 		</Pressable>
 	);
 }
 
-function PathBreadcrumb({
-	path,
-	homePath,
-	onNavigate,
-}: {
-	path: string;
-	homePath: string | null;
-	onNavigate: (path: string) => void;
-}) {
-	const displayPath =
-		homePath && path.startsWith(homePath)
-			? "~" + path.slice(homePath.length)
-			: path;
+function DirectoryRow({ item, onPress }: { item: FileListEntry; onPress: () => void }) {
+	const { colors } = useTheme();
 
-	const parts = displayPath.split("/").filter(Boolean);
+	if (!item.isDirectory) return null;
 
 	return (
-		<View className="flex-row flex-wrap items-center gap-1 px-4 py-2">
-			<Pressable onPress={() => onNavigate(homePath || "/")}>
-				<Text className="font-mono text-sm text-primary">~</Text>
-			</Pressable>
-			{parts.slice(displayPath.startsWith("~") ? 1 : 0).map((part, index) => {
-				const fullPath =
-					homePath && displayPath.startsWith("~")
-						? homePath + "/" + parts.slice(1, index + 2).join("/")
-						: "/" + parts.slice(0, index + 1).join("/");
-
-				return (
-					<View key={fullPath} className="flex-row items-center gap-1">
-						<Text className="font-mono text-sm text-muted-foreground">/</Text>
-						<Pressable onPress={() => onNavigate(fullPath)}>
-							<Text className="font-mono text-sm text-primary">{part}</Text>
-						</Pressable>
-					</View>
-				);
-			})}
-		</View>
+		<Pressable
+			onPress={() => {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+				onPress();
+			}}
+			style={({ pressed }) => [
+				styles.row,
+				{ borderColor: colors.border + "66" },
+				pressed && { opacity: 0.7 },
+			]}
+		>
+			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+				<Path
+					d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+					stroke={colors.primary}
+					strokeWidth={1.5}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				/>
+			</Svg>
+			<Text style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
+				{item.name}
+			</Text>
+			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+				<Path
+					d="M9 18l6-6-6-6"
+					stroke={colors.mutedForeground}
+					strokeWidth={2}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				/>
+			</Svg>
+		</Pressable>
 	);
 }
 
 export default function DirectoryScreen() {
 	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 	const { setDirectory, serverUrl } = useConnectionStore();
 
 	const [currentPath, setCurrentPath] = useState<string>("/");
@@ -154,7 +132,7 @@ export default function DirectoryScreen() {
 				}
 			}
 		} catch {
-			// Ignore - will return null to use fallback
+			// Ignore
 		}
 		return null;
 	}, [serverUrl]);
@@ -175,111 +153,126 @@ export default function DirectoryScreen() {
 	);
 
 	const handleGoUp = useCallback(() => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		const parentPath = currentPath.split("/").slice(0, -1).join("/") || "/";
 		loadDirectory(parentPath);
 	}, [currentPath, loadDirectory]);
 
-	const handleSelectDirectory = useCallback(async () => {
+	const handleSelect = useCallback(async () => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 		try {
 			await setDirectory(currentPath);
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 			if (router.canGoBack()) {
 				router.back();
 			} else {
 				router.replace("/(tabs)/chat");
 			}
 		} catch (err) {
-			Alert.alert(
-				"Error",
-				err instanceof Error ? err.message : "Failed to set directory",
-			);
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+			Alert.alert("Error", err instanceof Error ? err.message : "Failed to set directory");
 		}
 	}, [currentPath, setDirectory]);
 
 	const handlePathSubmit = useCallback(() => {
 		const path = pathInput.trim();
 		if (path) {
-			const expandedPath =
-				path.startsWith("~") && homePath ? homePath + path.slice(1) : path;
-			loadDirectory(expandedPath);
+			const expanded = path.startsWith("~") && homePath ? homePath + path.slice(1) : path;
+			loadDirectory(expanded);
 		}
 	}, [pathInput, homePath, loadDirectory]);
 
 	const canGoUp = currentPath !== "/" && currentPath !== homePath;
 
+	const displayPath =
+		homePath && currentPath.startsWith(homePath)
+			? "~" + currentPath.slice(homePath.length)
+			: currentPath;
+
 	return (
 		<View
-			className="flex-1 bg-background"
-			style={{
-				paddingTop: insets.top + 16,
-				paddingBottom: insets.bottom + 20,
-			}}
+			style={[
+				styles.container,
+				{
+					backgroundColor: colors.background,
+					paddingTop: insets.top + Spacing.md,
+				},
+			]}
 		>
-			<View className="px-6">
-				<Pressable onPress={() => router.back()} className="self-start py-2">
-					<Text className="font-mono text-primary">← Back</Text>
-				</Pressable>
-
-				<Text className="mt-4 font-mono text-2xl font-semibold text-foreground">
+			{/* Header */}
+			<View style={styles.header}>
+				<BackButton />
+				<Text style={[typography.h2, { color: colors.foreground, marginTop: Spacing.md }]}>
 					Select Directory
 				</Text>
-
-				<Text className="mt-2 font-mono text-muted-foreground">
-					Choose the project directory for OpenCode
+				<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 8 }]}>
+					Choose your project folder
 				</Text>
 			</View>
 
-			<View className="mt-4 border-b border-border px-4">
+			{/* Path input */}
+			<View style={styles.pathSection}>
 				<TextInput
 					value={pathInput}
 					onChangeText={setPathInput}
 					onSubmitEditing={handlePathSubmit}
 					placeholder="Enter path..."
-					placeholderTextColor="#878580"
+					placeholderTextColor={colors.mutedForeground}
 					autoCapitalize="none"
 					autoCorrect={false}
 					returnKeyType="go"
-					className="rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
+					style={[
+						typography.uiLabel,
+						styles.pathInput,
+						{ borderColor: colors.border, color: colors.foreground },
+					]}
 				/>
 			</View>
 
-			<PathBreadcrumb
-				path={currentPath}
-				homePath={homePath}
-				onNavigate={handleNavigate}
-			/>
-
+			{/* Go up button */}
 			{canGoUp && (
 				<Pressable
 					onPress={handleGoUp}
-					className="flex-row items-center gap-3 border-b border-border px-4 py-3 active:bg-muted"
+					style={({ pressed }) => [
+						styles.goUpRow,
+						{ borderColor: colors.border + "66" },
+						pressed && { opacity: 0.7 },
+					]}
 				>
-					<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
 						<Path
 							d="M17 11l-5-5-5 5M12 6v12"
-							stroke="#878580"
+							stroke={colors.mutedForeground}
 							strokeWidth={2}
 							strokeLinecap="round"
 							strokeLinejoin="round"
 						/>
 					</Svg>
-					<Text className="font-mono text-base text-muted-foreground">..</Text>
+					<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+						Parent directory
+					</Text>
 				</Pressable>
 			)}
 
+			{/* Content */}
 			{isLoading ? (
-				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" />
+				<View style={styles.centered}>
+					<ActivityIndicator size="small" color={colors.primary} />
 				</View>
 			) : error ? (
-				<View className="flex-1 items-center justify-center px-8">
-					<Text className="text-center font-mono text-destructive">
+				<View style={styles.centered}>
+					<Text style={[typography.meta, { color: colors.destructive, textAlign: "center" }]}>
 						{error}
 					</Text>
 					<Pressable
 						onPress={() => loadDirectory(currentPath)}
-						className="mt-4 rounded-lg bg-muted px-4 py-2"
+						style={({ pressed }) => [
+							styles.retryBtn,
+							{ borderColor: colors.border },
+							pressed && { opacity: 0.7 },
+						]}
 					>
-						<Text className="font-mono text-foreground">Retry</Text>
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Retry</Text>
 					</Pressable>
 				</View>
 			) : (
@@ -287,14 +280,12 @@ export default function DirectoryScreen() {
 					data={entries}
 					keyExtractor={(item) => item.path}
 					renderItem={({ item }) => (
-						<DirectoryItem
-							item={item}
-							onPress={() => handleNavigate(item.path)}
-						/>
+						<DirectoryRow item={item} onPress={() => handleNavigate(item.path)} />
 					)}
+					contentContainerStyle={{ paddingTop: 8, paddingBottom: 16 }}
 					ListEmptyComponent={
-						<View className="items-center py-8">
-							<Text className="font-mono text-muted-foreground">
+						<View style={styles.empty}>
+							<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 								No subdirectories
 							</Text>
 						</View>
@@ -302,21 +293,29 @@ export default function DirectoryScreen() {
 				/>
 			)}
 
-			<View className="border-t border-border px-6 pt-4">
-				<View className="mb-3 rounded-lg bg-muted p-3">
-					<Text className="font-mono text-xs text-muted-foreground">
-						Selected:
-					</Text>
-					<Text className="font-mono text-sm text-foreground" numberOfLines={2}>
-						{currentPath}
-					</Text>
-				</View>
-
+			{/* Bottom bar */}
+			<View
+				style={[
+					styles.bottomBar,
+					{
+						borderTopColor: colors.border + "66",
+						backgroundColor: colors.background,
+						paddingBottom: insets.bottom + Spacing.lg,
+					},
+				]}
+			>
+				<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+					Selected: {displayPath}
+				</Text>
 				<Pressable
-					onPress={handleSelectDirectory}
-					className="rounded-lg bg-primary px-6 py-4 active:opacity-80"
+					onPress={handleSelect}
+					style={({ pressed }) => [
+						styles.selectBtn,
+						{ backgroundColor: colors.primary },
+						pressed && { opacity: 0.9 },
+					]}
 				>
-					<Text className="text-center font-mono text-base font-semibold text-primary-foreground">
+					<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
 						Use This Directory
 					</Text>
 				</Pressable>
@@ -324,3 +323,78 @@ export default function DirectoryScreen() {
 		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	header: {
+		paddingHorizontal: Spacing.lg,
+	},
+	backBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		alignSelf: "flex-start",
+		paddingVertical: 8,
+		paddingRight: 12,
+	},
+	pathSection: {
+		paddingHorizontal: Spacing.lg,
+		marginTop: 24,
+	},
+	pathInput: {
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+	},
+	goUpRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		marginHorizontal: Spacing.md,
+		marginTop: 16,
+		padding: 14,
+		borderWidth: 1,
+		borderRadius: 8,
+	},
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		marginHorizontal: Spacing.md,
+		marginBottom: 8,
+		padding: 14,
+		borderWidth: 1,
+		borderRadius: 8,
+	},
+	centered: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: Spacing.lg,
+	},
+	retryBtn: {
+		marginTop: 16,
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 20,
+		paddingVertical: 10,
+	},
+	empty: {
+		alignItems: "center",
+		paddingVertical: 48,
+	},
+	bottomBar: {
+		borderTopWidth: 1,
+		paddingHorizontal: Spacing.lg,
+		paddingTop: Spacing.md,
+	},
+	selectBtn: {
+		marginTop: 12,
+		borderRadius: 8,
+		paddingVertical: 14,
+		alignItems: "center",
+	},
+});

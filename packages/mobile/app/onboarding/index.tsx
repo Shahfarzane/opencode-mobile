@@ -1,25 +1,30 @@
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
+import { Spacing, typography, useTheme } from "../../src/theme";
 
-function OpenChamberLogo({ size = 80 }: { size?: number }) {
+function Logo({ size = 64 }: { size?: number }) {
+	const { colors } = useTheme();
+
 	return (
 		<View
-			style={{ width: size, height: size }}
-			className="items-center justify-center rounded-2xl bg-primary"
+			style={{
+				width: size,
+				height: size,
+				alignItems: "center",
+				justifyContent: "center",
+				backgroundColor: colors.primary,
+				borderRadius: size / 4,
+			}}
 		>
-			<Svg
-				width={size * 0.6}
-				height={size * 0.6}
-				viewBox="0 0 24 24"
-				fill="none"
-			>
-				<Circle cx="12" cy="12" r="10" stroke="#FFFCF0" strokeWidth="2" />
+			<Svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none">
+				<Circle cx="12" cy="12" r="9" stroke={colors.primaryForeground} strokeWidth="1.5" />
 				<Path
-					d="M8 12h8M12 8v8"
-					stroke="#FFFCF0"
-					strokeWidth="2"
+					d="M8.5 12h7M12 8.5v7"
+					stroke={colors.primaryForeground}
+					strokeWidth="1.5"
 					strokeLinecap="round"
 				/>
 			</Svg>
@@ -27,130 +32,153 @@ function OpenChamberLogo({ size = 80 }: { size?: number }) {
 	);
 }
 
-function ConnectionMethodCard({
-	icon,
-	title,
-	description,
-}: {
-	icon: React.ReactNode;
-	title: string;
-	description: string;
-}) {
-	return (
-		<View className="flex-row items-start gap-3 rounded-lg border border-border bg-muted/50 p-3">
-			<View className="mt-0.5">{icon}</View>
-			<View className="flex-1">
-				<Text className="font-mono text-sm font-medium text-foreground">
-					{title}
-				</Text>
-				<Text className="mt-1 font-mono text-xs text-muted-foreground">
-					{description}
-				</Text>
-			</View>
-		</View>
-	);
-}
-
 export default function OnboardingIndex() {
 	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 
 	return (
-		<View
-			className="flex-1 bg-background"
-			style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }}
-		>
+		<View style={[styles.container, { backgroundColor: colors.background }]}>
 			<ScrollView
-				className="flex-1 px-6"
-				contentContainerStyle={{ flexGrow: 1 }}
+				style={styles.scrollView}
+				contentContainerStyle={{
+					flexGrow: 1,
+					paddingTop: insets.top + 48,
+					paddingBottom: insets.bottom + 32,
+					paddingHorizontal: Spacing.lg,
+				}}
 				showsVerticalScrollIndicator={false}
 			>
-				<View className="flex-1 items-center justify-center py-8">
-					<OpenChamberLogo size={80} />
-
-					<Text className="mt-6 font-mono text-2xl font-semibold text-foreground">
+				{/* Hero */}
+				<View style={styles.hero}>
+					<Logo size={64} />
+					<Text style={[typography.h1, { color: colors.foreground, marginTop: 24 }]}>
 						OpenChamber
 					</Text>
-
-					<Text className="mt-3 text-center font-mono text-sm text-muted-foreground">
+					<Text style={[typography.meta, styles.subtitle, { color: colors.mutedForeground }]}>
 						Connect to your OpenCode server to start coding with AI assistance
 					</Text>
 				</View>
 
-				<View className="mb-6 gap-2">
-					<Text className="mb-1 font-mono text-xs font-medium uppercase text-muted-foreground">
-						Supported Connection Methods
+				{/* Connection info */}
+				<View style={[styles.infoCard, { borderColor: colors.border + "66" }]}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Supported connections
 					</Text>
-					<ConnectionMethodCard
-						icon={
-							<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-								<Path
-									d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"
-									stroke="#878580"
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</Svg>
-						}
-						title="Local Network"
-						description="Same WiFi network as your computer"
-					/>
-					<ConnectionMethodCard
-						icon={
-							<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-								<Path
-									d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-									stroke="#878580"
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</Svg>
-						}
-						title="Tailscale"
-						description="Secure mesh VPN - connect from anywhere"
-					/>
-					<ConnectionMethodCard
-						icon={
-							<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-								<Path
-									d="M22 12h-4l-3 9L9 3l-3 9H2"
-									stroke="#878580"
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</Svg>
-						}
-						title="Cloudflare Tunnel"
-						description="Public tunnel for remote access"
-					/>
+					<View style={styles.infoList}>
+						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+							• Local network (same WiFi)
+						</Text>
+						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+							• Tailscale mesh VPN
+						</Text>
+						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+							• Cloudflare Tunnel
+						</Text>
+					</View>
 				</View>
 
-				<View className="gap-3">
+				{/* Actions */}
+				<View style={styles.actions}>
 					<Pressable
-						onPress={() => router.push("/onboarding/scan")}
-						className="flex-row items-center justify-center rounded-lg bg-primary px-6 py-4 active:opacity-80"
+						onPress={() => {
+							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+							router.push("/onboarding/scan");
+						}}
+						style={({ pressed }) => [
+							styles.primaryBtn,
+							{ backgroundColor: colors.primary },
+							pressed && { opacity: 0.9 },
+						]}
 					>
-						<Text className="font-mono text-base font-semibold text-primary-foreground">
-							Scan QR Code to Pair
+						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+							<Path
+								d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"
+								stroke={colors.primaryForeground}
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</Svg>
+						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
+							Scan QR Code
 						</Text>
 					</Pressable>
 
 					<Pressable
-						onPress={() => router.push("/onboarding/manual")}
-						className="flex-row items-center justify-center rounded-lg border border-border bg-muted px-6 py-4 active:opacity-80"
+						onPress={() => {
+							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+							router.push("/onboarding/manual");
+						}}
+						style={({ pressed }) => [
+							styles.secondaryBtn,
+							{ borderColor: colors.border },
+							pressed && { opacity: 0.7 },
+						]}
 					>
-						<Text className="font-mono text-base font-medium text-foreground">
-							Enter Server URL Manually
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+							Enter URL manually
 						</Text>
 					</Pressable>
-
-					<Text className="mt-2 text-center font-mono text-xs text-muted-foreground">
-						Make sure OpenCode is running on your computer
-					</Text>
 				</View>
+
+				{/* Footer */}
+				<Text style={[typography.micro, styles.footer, { color: colors.mutedForeground }]}>
+					Make sure OpenCode is running on your computer
+				</Text>
 			</ScrollView>
 		</View>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	scrollView: {
+		flex: 1,
+	},
+	hero: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingBottom: 48,
+	},
+	subtitle: {
+		marginTop: 12,
+		maxWidth: 280,
+		textAlign: "center",
+		lineHeight: 20,
+	},
+	infoCard: {
+		borderWidth: 1,
+		borderRadius: 8,
+		padding: Spacing.md,
+		marginBottom: 32,
+	},
+	infoList: {
+		marginTop: 12,
+		gap: 6,
+	},
+	actions: {
+		gap: 12,
+	},
+	primaryBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 8,
+		borderRadius: 8,
+		paddingVertical: 14,
+	},
+	secondaryBtn: {
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 8,
+		borderWidth: 1,
+		paddingVertical: 14,
+	},
+	footer: {
+		marginTop: 24,
+		textAlign: "center",
+	},
+});

@@ -7,6 +7,7 @@ import {
 	Platform,
 	Pressable,
 	ScrollView,
+	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -14,212 +15,63 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { useServerConnection } from "@/hooks/useServerConnection";
+import { Spacing, typography, useTheme } from "../../src/theme";
 
 type ConnectionType = "local" | "tailscale" | "cloudflare";
 
-interface ConnectionTypeConfig {
-	id: ConnectionType;
-	label: string;
-	placeholder: string;
-	hint: string;
-	icon: React.ReactNode;
-	helpSteps: string[];
-}
-
-const CONNECTION_CONFIGS: Record<ConnectionType, ConnectionTypeConfig> = {
+const CONFIGS: Record<ConnectionType, { label: string; placeholder: string; hint: string }> = {
 	local: {
-		id: "local",
-		label: "Local Network",
+		label: "Local",
 		placeholder: "192.168.1.100:3000",
-		hint: "Your computer's local IP address and port",
-		icon: (
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"
-					stroke="currentColor"
-					strokeWidth={2}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
-		),
-		helpSteps: [
-			"Make sure your phone is on the same WiFi as your computer",
-			"Find your computer's IP address (e.g., 192.168.1.x)",
-			"OpenChamber runs on port 3000 by default",
-		],
+		hint: "Your computer's local IP and port",
 	},
 	tailscale: {
-		id: "tailscale",
 		label: "Tailscale",
-		placeholder: "my-macbook.tailnet-name.ts.net:3000",
-		hint: "Your device's Tailscale hostname or 100.x.x.x IP",
-		icon: (
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-					stroke="currentColor"
-					strokeWidth={2}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
-		),
-		helpSteps: [
-			"Install the Tailscale app on your iPhone and computer",
-			"Sign in to both devices with the same Tailscale account",
-			"Make sure Tailscale VPN is active on your iPhone",
-			"Use the Tailscale IP (100.x.x.x) or MagicDNS hostname",
-		],
+		placeholder: "my-mac.tailnet.ts.net:3000",
+		hint: "Tailscale hostname or 100.x.x.x IP",
 	},
 	cloudflare: {
-		id: "cloudflare",
-		label: "Cloudflare Tunnel",
+		label: "Cloudflare",
 		placeholder: "your-tunnel.trycloudflare.com",
-		hint: "Your Cloudflare tunnel URL (no port needed)",
-		icon: (
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M22 12h-4l-3 9L9 3l-3 9H2"
-					stroke="currentColor"
-					strokeWidth={2}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
-		),
-		helpSteps: [
-			"Start OpenChamber with --try-cf-tunnel flag",
-			"Copy the generated tunnel URL from the terminal",
-			"No port number needed - HTTPS is handled automatically",
-		],
+		hint: "Tunnel URL (no port needed)",
 	},
 };
 
-const CONNECTION_TYPES = Object.values(CONNECTION_CONFIGS);
-
-function ConnectionTypeSelector({
-	selected,
-	onSelect,
-}: {
-	selected: ConnectionType;
-	onSelect: (type: ConnectionType) => void;
-}) {
-	return (
-		<View className="flex-row gap-2">
-			{CONNECTION_TYPES.map((type) => {
-				const isSelected = selected === type.id;
-				return (
-					<Pressable
-						key={type.id}
-						onPress={() => {
-							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-							onSelect(type.id);
-						}}
-						className={`flex-1 items-center rounded-lg border px-2 py-3 ${
-							isSelected
-								? "border-primary bg-primary/10"
-								: "border-border bg-muted/50"
-						}`}
-					>
-						<View className={isSelected ? "text-primary" : "text-muted-foreground"}>
-							<View style={{ opacity: isSelected ? 1 : 0.5 }}>
-								{type.icon}
-							</View>
-						</View>
-						<Text
-							className={`mt-1 text-center font-mono text-xs ${
-								isSelected
-									? "font-medium text-primary"
-									: "text-muted-foreground"
-							}`}
-						>
-							{type.label}
-						</Text>
-					</Pressable>
-				);
-			})}
-		</View>
-	);
-}
-
-function HelpSection({ config }: { config: ConnectionTypeConfig }) {
-	const [expanded, setExpanded] = useState(false);
+function BackButton() {
+	const { colors } = useTheme();
 
 	return (
-		<View className="mt-4 rounded-lg border border-border bg-muted/30 p-3">
-			<Pressable
-				onPress={() => {
-					Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-					setExpanded(!expanded);
-				}}
-				className="flex-row items-center justify-between"
-			>
-				<View className="flex-row items-center gap-2">
-					<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 16v-4M12 8h.01"
-							stroke="#878580"
-							strokeWidth={2}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
-					<Text className="font-mono text-sm font-medium text-foreground">
-						How to connect via {config.label}
-					</Text>
-				</View>
-				<Svg
-					width={16}
-					height={16}
-					viewBox="0 0 24 24"
-					fill="none"
-					style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
-				>
-					<Path
-						d="M6 9l6 6 6-6"
-						stroke="#878580"
-						strokeWidth={2}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</Svg>
-			</Pressable>
-
-			{expanded && (
-				<View className="mt-3 gap-2">
-					{config.helpSteps.map((step, stepIndex) => (
-						<View key={`${config.id}-step-${stepIndex}`} className="flex-row items-start gap-2">
-							<Text className="font-mono text-xs text-primary">
-								{stepIndex + 1}.
-							</Text>
-							<Text className="flex-1 font-mono text-xs text-muted-foreground">
-								{step}
-							</Text>
-						</View>
-					))}
-
-					{config.id === "tailscale" && (
-						<View className="mt-2 rounded-md bg-primary/10 p-2">
-							<Text className="font-mono text-xs text-primary">
-								Tip: Find your Tailscale IP in the Tailscale app under "This device"
-							</Text>
-						</View>
-					)}
-				</View>
-			)}
-		</View>
+		<Pressable
+			onPress={() => {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+				router.back();
+			}}
+			style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+			hitSlop={8}
+		>
+			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+				<Path
+					d="M15 18l-6-6 6-6"
+					stroke={colors.foreground}
+					strokeWidth={2}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				/>
+			</Svg>
+			<Text style={[typography.uiLabel, { color: colors.foreground }]}>Back</Text>
+		</Pressable>
 	);
 }
 
 export default function ManualScreen() {
 	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 	const [connectionType, setConnectionType] = useState<ConnectionType>("local");
 	const [serverUrl, setServerUrl] = useState("");
 	const [password, setPassword] = useState("");
 	const { connectWithPassword, isConnecting } = useServerConnection();
 
-	const selectedConfig = CONNECTION_CONFIGS[connectionType];
+	const config = CONFIGS[connectionType];
 
 	async function handleConnect() {
 		if (!serverUrl.trim()) {
@@ -230,17 +82,15 @@ export default function ManualScreen() {
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
 		try {
-			let normalizedUrl = serverUrl.trim();
-
-			const hasProtocol = normalizedUrl.startsWith("http://") || normalizedUrl.startsWith("https://");
-			const isCloudflareUrl = connectionType === "cloudflare" || normalizedUrl.includes(".trycloudflare.com");
+			let url = serverUrl.trim();
+			const hasProtocol = url.startsWith("http://") || url.startsWith("https://");
+			const isCloudflare = connectionType === "cloudflare" || url.includes(".trycloudflare.com");
 
 			if (!hasProtocol) {
-				const protocol = isCloudflareUrl ? "https" : "http";
-				normalizedUrl = `${protocol}://${normalizedUrl}`;
+				url = `${isCloudflare ? "https" : "http"}://${url}`;
 			}
 
-			await connectWithPassword(normalizedUrl, password);
+			await connectWithPassword(url, password);
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 			router.push("/onboarding/directory");
 		} catch (error) {
@@ -255,89 +105,118 @@ export default function ManualScreen() {
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			className="flex-1 bg-background"
+			style={[styles.container, { backgroundColor: colors.background }]}
 		>
 			<ScrollView
-				className="flex-1"
+				style={styles.scrollView}
 				contentContainerStyle={{
-					paddingTop: insets.top + 16,
-					paddingBottom: insets.bottom + 20,
-					paddingHorizontal: 24,
+					paddingTop: insets.top + Spacing.md,
+					paddingBottom: insets.bottom + Spacing.xl,
+					paddingHorizontal: Spacing.lg,
 					flexGrow: 1,
 				}}
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
 			>
-				<Pressable onPress={() => router.back()} className="self-start py-2">
-					<Text className="font-mono text-primary">← Back</Text>
-				</Pressable>
+				<BackButton />
 
-				<View className="mt-6">
-					<Text className="font-mono text-2xl font-semibold text-foreground">
-						Connect to Server
+				<Text style={[typography.h2, { color: colors.foreground, marginTop: Spacing.md }]}>
+					Connect to Server
+				</Text>
+				<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 8, lineHeight: 20 }]}>
+					Enter your server details below
+				</Text>
+
+				{/* Connection type tabs */}
+				<View style={[styles.tabs, { borderColor: colors.border + "66" }]}>
+					{(Object.keys(CONFIGS) as ConnectionType[]).map((type) => {
+						const isActive = connectionType === type;
+						return (
+							<Pressable
+								key={type}
+								onPress={() => {
+									Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+									setConnectionType(type);
+								}}
+								style={[
+									styles.tab,
+									isActive && { backgroundColor: colors.primary + "1A" },
+								]}
+							>
+								<Text
+									style={[
+										typography.meta,
+										{
+											color: isActive ? colors.primary : colors.mutedForeground,
+											fontWeight: isActive ? "600" : "400",
+										},
+									]}
+								>
+									{CONFIGS[type].label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+
+				{/* Server URL */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Server URL
 					</Text>
-
-					<Text className="mt-2 font-mono text-sm text-muted-foreground">
-						Choose your connection method and enter server details
+					<TextInput
+						value={serverUrl}
+						onChangeText={setServerUrl}
+						placeholder={config.placeholder}
+						placeholderTextColor={colors.mutedForeground}
+						autoCapitalize="none"
+						autoCorrect={false}
+						keyboardType="url"
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ borderColor: colors.border, color: colors.foreground },
+						]}
+					/>
+					<Text style={[typography.micro, { color: colors.mutedForeground, marginTop: 6 }]}>
+						{config.hint}
 					</Text>
 				</View>
 
-				<View className="mt-6">
-					<Text className="mb-3 font-mono text-xs font-medium uppercase text-muted-foreground">
-						Connection Type
+				{/* Password */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Password (optional)
 					</Text>
-					<ConnectionTypeSelector
-						selected={connectionType}
-						onSelect={setConnectionType}
+					<TextInput
+						value={password}
+						onChangeText={setPassword}
+						placeholder="Enter UI password"
+						placeholderTextColor={colors.mutedForeground}
+						autoCapitalize="none"
+						autoCorrect={false}
+						secureTextEntry
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ borderColor: colors.border, color: colors.foreground },
+						]}
 					/>
 				</View>
 
-				<View className="mt-6 gap-4">
-					<View>
-						<Text className="mb-2 font-mono text-sm text-muted-foreground">
-							Server URL
-						</Text>
-						<TextInput
-							value={serverUrl}
-							onChangeText={setServerUrl}
-							placeholder={selectedConfig.placeholder}
-							placeholderTextColor="#878580"
-							autoCapitalize="none"
-							autoCorrect={false}
-							keyboardType="url"
-							className="rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
-						/>
-						<Text className="mt-1.5 font-mono text-xs text-muted-foreground">
-							{selectedConfig.hint}
-						</Text>
-					</View>
-
-					<View>
-						<Text className="mb-2 font-mono text-sm text-muted-foreground">
-							Password (if required)
-						</Text>
-						<TextInput
-							value={password}
-							onChangeText={setPassword}
-							placeholder="Enter UI password"
-							placeholderTextColor="#878580"
-							secureTextEntry
-							autoCapitalize="none"
-							autoCorrect={false}
-							className="rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
-						/>
-					</View>
-				</View>
-
-				<HelpSection config={selectedConfig} />
-
-				<View className="mt-auto pt-6">
+				{/* Connect button */}
+				<View style={styles.actionArea}>
 					<Pressable
 						onPress={handleConnect}
 						disabled={isConnecting}
-						className="rounded-lg bg-primary px-6 py-4 active:opacity-80 disabled:opacity-50"
+						style={({ pressed }) => [
+							styles.connectBtn,
+							{ backgroundColor: colors.primary },
+							isConnecting && { opacity: 0.5 },
+							pressed && !isConnecting && { opacity: 0.9 },
+						]}
 					>
-						<Text className="text-center font-mono text-base font-semibold text-primary-foreground">
+						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
 							{isConnecting ? "Connecting..." : "Connect"}
 						</Text>
 					</Pressable>
@@ -346,3 +225,51 @@ export default function ManualScreen() {
 		</KeyboardAvoidingView>
 	);
 }
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
+	scrollView: {
+		flex: 1,
+	},
+	backBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		alignSelf: "flex-start",
+		paddingVertical: 8,
+		paddingRight: 12,
+	},
+	tabs: {
+		flexDirection: "row",
+		marginTop: 32,
+		borderWidth: 1,
+		borderRadius: 8,
+		overflow: "hidden",
+	},
+	tab: {
+		flex: 1,
+		alignItems: "center",
+		paddingVertical: 12,
+	},
+	field: {
+		marginTop: 24,
+	},
+	input: {
+		marginTop: 8,
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+	},
+	actionArea: {
+		marginTop: "auto",
+		paddingTop: 32,
+	},
+	connectBtn: {
+		borderRadius: 8,
+		paddingVertical: 14,
+		alignItems: "center",
+	},
+});
