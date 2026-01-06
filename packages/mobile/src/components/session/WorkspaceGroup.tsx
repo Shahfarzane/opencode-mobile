@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { PlusIcon } from "@/components/icons";
-import { Fonts, FontSizes, typography, useTheme } from "@/theme";
+import { FontSizes, Fonts, typography, useTheme } from "@/theme";
 
 interface WorkspaceGroupProps {
 	groupId: string;
@@ -98,23 +98,28 @@ export function WorkspaceGroup({
 					{children}
 
 					{/* Show more/fewer button - matches desktop text-muted-foreground/70 */}
-					{showMoreButton && (showMoreButton.remainingCount > 0 || showMoreButton.isExpanded) && (
-						<Pressable
-							onPress={handleToggleShowMore}
-							style={styles.showMoreButton}
-						>
-								<Text
-								style={[
-									typography.micro,
-									{ color: `${colors.mutedForeground}B3`, fontSize: FontSizes.xs }, // 70% opacity, text-xs
-								]}
+					{showMoreButton &&
+						(showMoreButton.remainingCount > 0 ||
+							showMoreButton.isExpanded) && (
+							<Pressable
+								onPress={handleToggleShowMore}
+								style={styles.showMoreButton}
 							>
-								{showMoreButton.isExpanded
-									? "Show fewer sessions"
-									: `Show ${showMoreButton.remainingCount} more ${showMoreButton.remainingCount === 1 ? "session" : "sessions"}`}
-							</Text>
-						</Pressable>
-					)}
+								<Text
+									style={[
+										typography.micro,
+										{
+											color: `${colors.mutedForeground}B3`,
+											fontSize: FontSizes.xs,
+										}, // 70% opacity, text-xs
+									]}
+								>
+									{showMoreButton.isExpanded
+										? "Show fewer sessions"
+										: `Show ${showMoreButton.remainingCount} more ${showMoreButton.remainingCount === 1 ? "session" : "sessions"}`}
+								</Text>
+							</Pressable>
+						)}
 
 					{/* Empty state */}
 					{sessionCount === 0 && (

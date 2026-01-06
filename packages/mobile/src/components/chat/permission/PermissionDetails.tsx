@@ -298,9 +298,9 @@ function PatternDisplay({ pattern }: { pattern: string | string[] }) {
 			>
 				Pattern:
 			</Text>
-			{patterns.map((p, i) => (
-				<Text
-					key={i}
+		{patterns.map((p) => (
+			<Text
+				key={p}
 					style={[
 						typography.code,
 						styles.patternText,
