@@ -20,7 +20,7 @@ import {
 	isCommandBuiltIn,
 } from "@/api";
 import { ChevronLeft } from "@/components/icons";
-import { Spacing, typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, Spacing, typography, useTheme } from "@/theme";
 
 interface CommandDetailViewProps {
 	commandName: string;
@@ -181,7 +181,8 @@ export function CommandDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						{isNewCommand ? "New Command" : `/${commandName}`}
@@ -205,7 +206,8 @@ export function CommandDetailView({
 							<Text
 								style={[
 									typography.meta,
-									{ color: colors.primaryForeground, fontWeight: "500" },
+									fontStyle("500"),
+									{ color: colors.primaryForeground },
 								]}
 							>
 								Save
@@ -237,7 +239,8 @@ export function CommandDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						Name
@@ -261,7 +264,8 @@ export function CommandDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						Description
@@ -287,7 +291,8 @@ export function CommandDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600", marginBottom: 4 },
+							fontStyle("600"),
+							{ color: colors.foreground, marginBottom: 4 },
 						]}
 					>
 						Template
@@ -323,7 +328,8 @@ export function CommandDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+							fontStyle("600"),
+							{ color: colors.foreground, marginBottom: 8 },
 						]}
 					>
 						Agent
@@ -369,8 +375,8 @@ export function CommandDetailView({
 												agentName === agent.name
 													? colors.primary
 													: colors.foreground,
-											fontWeight: agentName === agent.name ? "600" : "400",
 										},
+										fontStyle(agentName === agent.name ? "600" : "400"),
 									]}
 								>
 									{agent.name}
@@ -389,7 +395,8 @@ export function CommandDetailView({
 							<Text
 								style={[
 									typography.uiLabel,
-									{ color: colors.foreground, fontWeight: "600" },
+									fontStyle("600"),
+									{ color: colors.foreground },
 								]}
 							>
 								Run as subtask

@@ -15,7 +15,7 @@ import {
 	type NetworkStatus,
 	subscribeToNetworkStatus,
 } from "@/lib/sessionSync";
-import { typography, useTheme } from "@/theme";
+import { fontStyle, typography, useTheme } from "@/theme";
 import { DirectoryRow } from "./DirectoryRow";
 import { type SessionCacheInfo, SessionListItem } from "./SessionListItem";
 import { SheetHeader } from "./SheetHeader";
@@ -441,7 +441,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 						<Text
 							style={[
 								typography.micro,
-								{ color: colors.background, fontWeight: "600" },
+								fontStyle("600"),
+								{ color: colors.background },
 							]}
 						>
 							Offline Mode

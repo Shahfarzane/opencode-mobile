@@ -19,7 +19,7 @@ import {
 	providersApi,
 } from "@/api";
 import { ChevronLeft } from "@/components/icons";
-import { Spacing, typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, Spacing, typography, useTheme } from "@/theme";
 
 interface AgentDetailViewProps {
 	agentName: string;
@@ -181,7 +181,8 @@ export function AgentDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						{isNewAgent ? "New Agent" : agentName}
@@ -205,7 +206,8 @@ export function AgentDetailView({
 							<Text
 								style={[
 									typography.meta,
-									{ color: colors.primaryForeground, fontWeight: "500" },
+									fontStyle("500"),
+									{ color: colors.primaryForeground },
 								]}
 							>
 								Save
@@ -237,7 +239,8 @@ export function AgentDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						Name
@@ -261,7 +264,8 @@ export function AgentDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						Description
@@ -287,7 +291,8 @@ export function AgentDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+							fontStyle("600"),
+							{ color: colors.foreground, marginBottom: 8 },
 						]}
 					>
 						Model
@@ -333,8 +338,8 @@ export function AgentDetailView({
 												providerId === provider.id
 													? colors.primary
 													: colors.foreground,
-											fontWeight: providerId === provider.id ? "600" : "400",
 										},
+										fontStyle(providerId === provider.id ? "600" : "400"),
 									]}
 								>
 									{provider.name}
@@ -385,8 +390,8 @@ export function AgentDetailView({
 															modelId === model.id
 																? colors.primary
 																: colors.foreground,
-														fontWeight: modelId === model.id ? "600" : "400",
 													},
+													fontStyle(modelId === model.id ? "600" : "400"),
 												]}
 												numberOfLines={1}
 											>
@@ -406,7 +411,8 @@ export function AgentDetailView({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+							fontStyle("600"),
+							{ color: colors.foreground, marginBottom: 8 },
 						]}
 					>
 						System prompt

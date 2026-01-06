@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
-import { useTheme } from "../../theme";
+import { Fonts, FontSizes, useTheme } from "../../theme";
 
 // State machine timing constants
 const STATUS_DISPLAY_TIME = 1500; // Minimum time to show a status
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
 		borderRadius: 4,
 	},
 	text: {
-		fontSize: 14,
-		fontWeight: "500",
+		fontFamily: Fonts.medium,
+		fontSize: FontSizes.uiLabel,
 	},
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
-import { typography, useTheme } from "@/theme";
+import { FontSizes, fontStyle, typography, useTheme } from "@/theme";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu, useMessageActions } from "./MessageActionsMenu";
 import { ReasoningPart, ToolPart } from "./parts";
@@ -62,7 +62,7 @@ function ProviderLogo({ modelName, color }: { modelName?: string; color: string 
 		<Text
 			style={{
 				fontFamily: "IBMPlexMono-SemiBold",
-				fontSize: 12,
+				fontSize: FontSizes.micro,
 				color,
 			}}
 		>
@@ -290,7 +290,8 @@ function AssistantMessage({
 					</View>
 					<Text
 						style={[
-							typography.uiHeader, // Use header style for bold weight
+							typography.uiHeader,
+							fontStyle("700"),
 							styles.assistantName,
 							{ color: colors.foreground },
 						]}
@@ -308,7 +309,8 @@ function AssistantMessage({
 							<Text
 								style={[
 									typography.micro,
-									{ color: getAgentColor(agentName), fontWeight: "500" },
+									fontStyle("500"),
+									{ color: getAgentColor(agentName) },
 								]}
 							>
 								{agentName}
@@ -452,7 +454,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	assistantName: {
-		fontWeight: "700", // font-bold
+		// fontWeight handled via fontStyle("700") at usage site
 	},
 	agentBadge: {
 		paddingHorizontal: DESKTOP_MESSAGE_SPACING.agentBadgePaddingH,

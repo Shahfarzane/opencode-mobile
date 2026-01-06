@@ -1,7 +1,9 @@
 import "../global.css";
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider, useTheme } from "../src/theme";
@@ -34,6 +36,24 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
+	const [fontsLoaded, fontError] = useFonts({
+		"IBMPlexMono-Regular": require("../assets/fonts/IBMPlexMono-Regular.ttf"),
+		"IBMPlexMono-Medium": require("../assets/fonts/IBMPlexMono-Medium.ttf"),
+		"IBMPlexMono-SemiBold": require("../assets/fonts/IBMPlexMono-SemiBold.ttf"),
+		"IBMPlexMono-Bold": require("../assets/fonts/IBMPlexMono-Bold.ttf"),
+	});
+
+	useEffect(() => {
+		if (fontsLoaded || fontError) {
+			SplashScreen.hideAsync();
+		}
+	}, [fontsLoaded, fontError]);
+
+	// Don't render until fonts are loaded
+	if (!fontsLoaded && !fontError) {
+		return null;
+	}
+
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
 			<SafeAreaProvider>

@@ -8,7 +8,7 @@ import {
 	TerminalIcon,
 	ToolIcon,
 } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { fontStyle, typography, useTheme } from "@/theme";
 import { getToolDisplayName } from "./utils";
 
 interface PermissionHeaderProps {
@@ -86,7 +86,8 @@ export function PermissionHeader({
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
+							fontStyle("600"),
+							{ color: colors.foreground },
 						]}
 					>
 						{displayName}

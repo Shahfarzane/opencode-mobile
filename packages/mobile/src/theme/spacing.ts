@@ -31,6 +31,14 @@ export const Spacing = {
 	24: 96,
 	28: 112,
 	32: 128,
+	// Semantic aliases for convenience
+	xs: 4, // 1
+	sm: 8, // 2
+	md: 16, // 4
+	lg: 24, // 6
+	xl: 32, // 8
+	"2xl": 48, // 12
+	"3xl": 64, // 16
 } as const;
 
 export const Radius = {

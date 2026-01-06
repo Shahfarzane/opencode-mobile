@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { typography, useTheme } from "@/theme";
+import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
 import type { Permission } from "./types";
 
 interface PermissionDetailsProps {
@@ -233,7 +233,8 @@ function WebFetchDetails({ permission }: { permission: Permission }) {
 						<Text
 							style={[
 								typography.micro,
-								{ color: getMethodColor(), fontWeight: "600" },
+								fontStyle("600"),
+								{ color: getMethodColor() },
 							]}
 						>
 							{method}
@@ -374,7 +375,7 @@ const styles = StyleSheet.create({
 		flexWrap: "wrap",
 	},
 	metaLabel: {
-		fontWeight: "500",
+		fontFamily: Fonts.medium,
 	},
 	codeInline: {
 		flex: 1,
@@ -412,10 +413,10 @@ const styles = StyleSheet.create({
 		gap: 4,
 	},
 	patternLabel: {
-		fontWeight: "500",
+		fontFamily: Fonts.medium,
 		marginBottom: 2,
 	},
 	patternText: {
-		fontSize: 12,
+		fontSize: FontSizes.xs,
 	},
 });

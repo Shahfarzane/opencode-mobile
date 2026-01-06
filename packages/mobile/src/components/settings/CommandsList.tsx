@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { type Command, commandsApi, isCommandBuiltIn } from "@/api";
 import { CommandIcon, PlusIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { Fonts, fontStyle, typography, useTheme } from "@/theme";
 import { SettingsListItem } from "./SettingsListItem";
 
 export interface CommandsListRef {
@@ -97,7 +97,7 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
 					style={[styles.addButton, { backgroundColor: colors.primary }]}
 				>
 					<PlusIcon size={14} color={colors.background} />
-					<Text style={[typography.micro, { color: colors.background, fontWeight: "600" }]}>
+					<Text style={[typography.micro, fontStyle("600"), { color: colors.background }]}>
 						Add
 					</Text>
 				</Pressable>
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		paddingHorizontal: 16,
 		paddingBottom: 8,
-		fontWeight: "600",
+		fontFamily: Fonts.semiBold,
 		letterSpacing: 0.5,
 	},
 	emptyContainer: {

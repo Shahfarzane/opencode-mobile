@@ -20,7 +20,7 @@ import {
 	WarningIcon,
 	XIcon,
 } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { Fonts, FontSizes, getFontFamily, typography, useTheme } from "@/theme";
 import { SessionActionsMenu } from "./SessionActionsMenu";
 
 export interface SessionCacheInfo {
@@ -237,7 +237,7 @@ export function SessionListItem({
 							styles.title,
 							{
 								color: colors.foreground,
-								fontWeight: isSelected ? "600" : "400",
+								fontFamily: getFontFamily(isSelected ? "600" : "400"),
 								opacity: isStreaming ? animatedOpacity : 1,
 							},
 						]}
@@ -412,12 +412,12 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	gitStatText: {
-		fontSize: 11, // matches desktop text-[0.7rem]
-		fontWeight: "500",
-		lineHeight: 11, // matches desktop leading-none
+		fontFamily: Fonts.medium,
+		fontSize: FontSizes.microSmall, // matches desktop text-[0.7rem]
+		lineHeight: FontSizes.microSmall, // matches desktop leading-none
 	},
 	gitStatDivider: {
-		fontSize: 11,
+		fontSize: FontSizes.microSmall,
 		opacity: 0.5,
 		marginHorizontal: 1,
 	},

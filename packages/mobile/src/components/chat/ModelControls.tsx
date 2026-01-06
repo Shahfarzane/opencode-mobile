@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckIcon, ChevronDownIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { fontStyle, typography, useTheme } from "@/theme";
 
 interface Provider {
 	id: string;
@@ -187,7 +187,8 @@ export function ModelControls({
 											<Text
 												style={[
 													typography.uiLabel,
-													{ color: colors.foreground, fontWeight: "600" },
+													fontStyle("600"),
+													{ color: colors.foreground },
 												]}
 											>
 												{provider.name}

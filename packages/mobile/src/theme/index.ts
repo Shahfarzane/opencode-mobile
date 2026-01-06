@@ -7,6 +7,8 @@ export { FontFamily, FontSize, FontWeight, LineHeight } from "./typography";
 export {
 	FontFamily as Fonts,
 	FontSizes,
+	fontStyle,
+	getFontFamily,
 	LineHeights,
 	typography,
 } from "./typography.styles";
