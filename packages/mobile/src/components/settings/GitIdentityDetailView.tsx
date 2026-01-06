@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -9,7 +10,6 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { CheckIcon, ChevronLeft } from "@/components/icons";
 import { Spacing, typography, useTheme } from "@/theme";
@@ -132,7 +132,9 @@ export function GitIdentityDetailView({
 						setIsSaving(true);
 						try {
 							await gitApi.deleteIdentity(profileId);
-							Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+							Haptics.notificationAsync(
+								Haptics.NotificationFeedbackType.Success,
+							);
 							onDeleted?.();
 							onBack();
 						} catch (error) {
@@ -164,19 +166,32 @@ export function GitIdentityDetailView({
 			<View style={styles.header}>
 				<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
 					<ChevronLeft size={18} color={colors.foreground} />
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						{isNewProfile ? "New Identity" : name || "Git Identity"}
 					</Text>
 				</Pressable>
 				<Pressable
 					onPress={handleSave}
 					disabled={isSaving}
-					style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 }]}
+					style={[
+						styles.saveBtn,
+						{ backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 },
+					]}
 				>
 					{isSaving ? (
 						<ActivityIndicator size="small" color={colors.primaryForeground} />
 					) : (
-						<Text style={[typography.meta, { color: colors.primaryForeground, fontWeight: "500" }]}>
+						<Text
+							style={[
+								typography.meta,
+								{ color: colors.primaryForeground, fontWeight: "500" },
+							]}
+						>
 							Save
 						</Text>
 					)}
@@ -191,11 +206,20 @@ export function GitIdentityDetailView({
 			>
 				{/* Profile Name */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Profile name
 					</Text>
 					<TextInput
-						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
 						value={name}
 						onChangeText={setName}
 						placeholder="Work, Personal, etc."
@@ -205,7 +229,12 @@ export function GitIdentityDetailView({
 
 				{/* Color */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600", marginBottom: 8 },
+						]}
+					>
 						Color
 					</Text>
 					<View style={styles.colorRow}>
@@ -222,8 +251,15 @@ export function GitIdentityDetailView({
 				</View>
 
 				{/* Git Config */}
-				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 12 }]}>
+				<View
+					style={[styles.section, { borderTopColor: colors.border + "66" }]}
+				>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600", marginBottom: 12 },
+						]}
+					>
 						Git configuration
 					</Text>
 
@@ -232,7 +268,11 @@ export function GitIdentityDetailView({
 							User name
 						</Text>
 						<TextInput
-							style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+							style={[
+								typography.uiLabel,
+								styles.input,
+								{ color: colors.foreground, borderColor: colors.border },
+							]}
 							value={userName}
 							onChangeText={setUserName}
 							placeholder="John Doe"
@@ -246,7 +286,11 @@ export function GitIdentityDetailView({
 							Email
 						</Text>
 						<TextInput
-							style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+							style={[
+								typography.uiLabel,
+								styles.input,
+								{ color: colors.foreground, borderColor: colors.border },
+							]}
 							value={userEmail}
 							onChangeText={setUserEmail}
 							placeholder="john@example.com"
@@ -259,15 +303,31 @@ export function GitIdentityDetailView({
 				</View>
 
 				{/* SSH Key */}
-				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 4 }]}>
+				<View
+					style={[styles.section, { borderTopColor: colors.border + "66" }]}
+				>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600", marginBottom: 4 },
+						]}
+					>
 						SSH key path
 					</Text>
-					<Text style={[typography.micro, { color: colors.mutedForeground, marginBottom: 8 }]}>
+					<Text
+						style={[
+							typography.micro,
+							{ color: colors.mutedForeground, marginBottom: 8 },
+						]}
+					>
 						Optional path to SSH key for this identity
 					</Text>
 					<TextInput
-						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						style={[
+							typography.uiLabel,
+							styles.input,
+							{ color: colors.foreground, borderColor: colors.border },
+						]}
 						value={sshKey}
 						onChangeText={setSshKey}
 						placeholder="~/.ssh/id_ed25519"
@@ -279,7 +339,9 @@ export function GitIdentityDetailView({
 
 				{/* Delete */}
 				{!isNewProfile && (
-					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<View
+						style={[styles.section, { borderTopColor: colors.border + "66" }]}
+					>
 						<Pressable onPress={handleDelete}>
 							<Text style={[typography.meta, { color: colors.destructive }]}>
 								Delete identity
@@ -305,8 +367,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: Spacing.md,
-		paddingVertical: Spacing.sm,
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[2],
 	},
 	backButton: {
 		flexDirection: "row",
@@ -324,9 +386,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	content: {
-		paddingHorizontal: Spacing.md,
-		paddingBottom: Spacing.xl,
-		gap: Spacing.md,
+		paddingHorizontal: Spacing[4],
+		paddingBottom: Spacing[8],
+		gap: Spacing[4],
 	},
 	field: {
 		gap: 6,
@@ -338,7 +400,7 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 	},
 	section: {
-		paddingTop: Spacing.md,
+		paddingTop: Spacing[4],
 		borderTopWidth: 1,
 	},
 	colorRow: {

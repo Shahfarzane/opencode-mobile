@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -9,10 +10,9 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import { type Provider, providersApi } from "@/api";
-import { Spacing, typography, useTheme } from "@/theme";
 import { ChevronLeft } from "@/components/icons";
+import { Spacing, typography, useTheme } from "@/theme";
 
 interface ProviderDetailViewProps {
 	providerId: string;
@@ -111,7 +111,12 @@ export function ProviderDetailView({
 			{/* Header */}
 			<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
 				<ChevronLeft size={18} color={colors.foreground} />
-				<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+				<Text
+					style={[
+						typography.uiLabel,
+						{ color: colors.foreground, fontWeight: "600" },
+					]}
+				>
 					{provider.name || provider.id}
 				</Text>
 			</Pressable>
@@ -128,7 +133,13 @@ export function ProviderDetailView({
 
 				{/* API Key Section */}
 				<View style={styles.section}>
-					<Text style={[typography.uiLabel, styles.sectionTitle, { color: colors.foreground }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							styles.sectionTitle,
+							{ color: colors.foreground },
+						]}
+					>
 						API key
 					</Text>
 					<View style={styles.inputRow}>
@@ -155,7 +166,9 @@ export function ProviderDetailView({
 							style={[
 								styles.button,
 								{
-									backgroundColor: apiKey.trim() ? colors.primary : colors.muted,
+									backgroundColor: apiKey.trim()
+										? colors.primary
+										: colors.muted,
 									opacity: isSaving ? 0.6 : 1,
 								},
 							]}
@@ -167,7 +180,9 @@ export function ProviderDetailView({
 									style={[
 										typography.meta,
 										{
-											color: apiKey.trim() ? colors.primaryForeground : colors.mutedForeground,
+											color: apiKey.trim()
+												? colors.primaryForeground
+												: colors.mutedForeground,
 											fontWeight: "500",
 										},
 									]}
@@ -177,37 +192,68 @@ export function ProviderDetailView({
 							)}
 						</Pressable>
 					</View>
-					<Text style={[typography.micro, { color: colors.mutedForeground, marginTop: 6 }]}>
+					<Text
+						style={[
+							typography.micro,
+							{ color: colors.mutedForeground, marginTop: 6 },
+						]}
+					>
 						Keys are sent directly to the server and never stored locally.
 					</Text>
 				</View>
 
 				{/* Models Section */}
 				{modelCount > 0 && (
-					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
-						<Text style={[typography.uiLabel, styles.sectionTitle, { color: colors.foreground }]}>
+					<View
+						style={[styles.section, { borderTopColor: colors.border + "66" }]}
+					>
+						<Text
+							style={[
+								typography.uiLabel,
+								styles.sectionTitle,
+								{ color: colors.foreground },
+							]}
+						>
 							Models
 						</Text>
-						<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
+						<Text
+							style={[
+								typography.meta,
+								{ color: colors.mutedForeground, marginBottom: 12 },
+							]}
+						>
 							{modelCount} model{modelCount !== 1 ? "s" : ""} available
 						</Text>
-						<View style={[styles.modelList, { borderColor: colors.border + "66" }]}>
+						<View
+							style={[styles.modelList, { borderColor: colors.border + "66" }]}
+						>
 							{provider.models?.map((model, index) => (
 								<View
 									key={model.id}
 									style={[
 										styles.modelItem,
-										index > 0 && { borderTopColor: colors.border + "66", borderTopWidth: 1 },
+										index > 0 && {
+											borderTopColor: colors.border + "66",
+											borderTopWidth: 1,
+										},
 									]}
 								>
 									<Text
-										style={[typography.meta, { color: colors.foreground, fontWeight: "500" }]}
+										style={[
+											typography.meta,
+											{ color: colors.foreground, fontWeight: "500" },
+										]}
 										numberOfLines={1}
 									>
 										{model.name || model.id}
 									</Text>
 									{model.contextLength && (
-										<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+										<Text
+											style={[
+												typography.micro,
+												{ color: colors.mutedForeground },
+											]}
+										>
 											{(model.contextLength / 1000).toFixed(0)}k ctx
 										</Text>
 									)}
@@ -234,19 +280,19 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-		paddingHorizontal: Spacing.md,
-		paddingVertical: Spacing.sm,
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[2],
 	},
 	scroll: {
 		flex: 1,
 	},
 	content: {
-		paddingHorizontal: Spacing.md,
-		paddingBottom: Spacing.xl,
-		gap: Spacing.lg,
+		paddingHorizontal: Spacing[4],
+		paddingBottom: Spacing[8],
+		gap: Spacing[6],
 	},
 	section: {
-		paddingTop: Spacing.md,
+		paddingTop: Spacing[4],
 		borderTopWidth: 1,
 	},
 	sectionTitle: {

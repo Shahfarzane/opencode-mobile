@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { View, Animated, StyleSheet, Easing, Text } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../theme";
 
 // State machine timing constants
@@ -178,13 +178,17 @@ export function WorkingPlaceholder({
 					/>
 				)}
 			</View>
-			<Animated.View style={{ opacity: displayState === "showing" ? opacity : 1 }}>
+			<Animated.View
+				style={{ opacity: displayState === "showing" ? opacity : 1 }}
+			>
 				<Text
 					style={[
 						styles.text,
 						{
 							color:
-								displayState === "done" ? colors.mutedForeground : colors.foreground,
+								displayState === "done"
+									? colors.mutedForeground
+									: colors.foreground,
 						},
 					]}
 				>

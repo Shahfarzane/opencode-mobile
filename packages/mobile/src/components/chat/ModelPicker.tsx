@@ -253,8 +253,7 @@ export function ModelPicker({
 				>
 					{/* Search Results */}
 					{isSearching ? (
-						<>
-							{filteredModels.length === 0 ? (
+						filteredModels.length === 0 ? (
 								<View style={styles.emptyState}>
 									<Text style={[typography.body, { color: colors.mutedForeground }]}>
 										No models found for "{searchQuery}"
@@ -313,9 +312,8 @@ export function ModelPicker({
 											</Pressable>
 										);
 									})}
-								</View>
-							)}
-						</>
+							</View>
+						)
 					) : (
 						/* Provider List */
 						availableProviders.map((provider) => {

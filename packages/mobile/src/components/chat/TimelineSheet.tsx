@@ -1,13 +1,13 @@
 import BottomSheet, {
 	BottomSheetBackdrop,
-	BottomSheetScrollView,
 	type BottomSheetBackdropProps,
+	BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 import type { Message } from "./types";
 
@@ -64,7 +64,13 @@ function GitBranchIcon({ color, size = 14 }: { color: string; size?: number }) {
 	);
 }
 
-function ArrowRightIcon({ color, size = 14 }: { color: string; size?: number }) {
+function ArrowRightIcon({
+	color,
+	size = 14,
+}: {
+	color: string;
+	size?: number;
+}) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
 			<Path
@@ -108,7 +114,8 @@ function TimelineTurnItem({
 
 	const assistantPreview = useMemo(() => {
 		if (turn.assistantMessages.length === 0) return null;
-		const lastAssistant = turn.assistantMessages[turn.assistantMessages.length - 1];
+		const lastAssistant =
+			turn.assistantMessages[turn.assistantMessages.length - 1];
 		const content = lastAssistant.content || "";
 		return content.length > 50 ? `${content.slice(0, 47)}...` : content;
 	}, [turn.assistantMessages]);
@@ -137,9 +144,7 @@ function TimelineTurnItem({
 					</Text>
 				</View>
 				{!isLast && (
-					<View
-						style={[styles.turnLine, { backgroundColor: colors.border }]}
-					/>
+					<View style={[styles.turnLine, { backgroundColor: colors.border }]} />
 				)}
 			</View>
 
@@ -162,7 +167,9 @@ function TimelineTurnItem({
 							You
 						</Text>
 						{turn.timestamp && (
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.micro, { color: colors.mutedForeground }]}
+							>
 								{formatTime(turn.timestamp)}
 							</Text>
 						)}
@@ -201,7 +208,10 @@ function TimelineTurnItem({
 							onPress={handleNavigate}
 							style={({ pressed }) => [
 								styles.actionButton,
-								{ backgroundColor: `${colors.primary}15`, opacity: pressed ? 0.7 : 1 },
+								{
+									backgroundColor: `${colors.primary}15`,
+									opacity: pressed ? 0.7 : 1,
+								},
 							]}
 						>
 							<ArrowRightIcon color={colors.primary} size={12} />
@@ -213,7 +223,10 @@ function TimelineTurnItem({
 							onPress={handleFork}
 							style={({ pressed }) => [
 								styles.actionButton,
-								{ backgroundColor: `${colors.info}15`, opacity: pressed ? 0.7 : 1 },
+								{
+									backgroundColor: `${colors.info}15`,
+									opacity: pressed ? 0.7 : 1,
+								},
 							]}
 						>
 							<GitBranchIcon color={colors.info} size={12} />

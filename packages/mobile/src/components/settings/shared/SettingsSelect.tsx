@@ -55,13 +55,17 @@ export function SettingsSelect({
 			<View style={styles.labelRow}>
 				<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 					{label}
-					{required && (
-						<Text style={{ color: colors.destructive }}> *</Text>
-					)}
+					{required && <Text style={{ color: colors.destructive }}> *</Text>}
 				</Text>
 			</View>
 			{description && (
-				<Text style={[typography.meta, styles.description, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.meta,
+						styles.description,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					{description}
 				</Text>
 			)}
@@ -79,7 +83,9 @@ export function SettingsSelect({
 					style={[
 						typography.uiLabel,
 						{
-							color: selectedOption ? colors.foreground : colors.mutedForeground,
+							color: selectedOption
+								? colors.foreground
+								: colors.mutedForeground,
 							flex: 1,
 						},
 					]}
@@ -109,10 +115,7 @@ export function SettingsSelect({
 				animationType="fade"
 				onRequestClose={() => setIsOpen(false)}
 			>
-				<Pressable
-					style={styles.overlay}
-					onPress={() => setIsOpen(false)}
-				>
+				<Pressable style={styles.overlay} onPress={() => setIsOpen(false)}>
 					<View
 						style={[
 							styles.dropdown,
@@ -122,7 +125,12 @@ export function SettingsSelect({
 							},
 						]}
 					>
-						<View style={[styles.dropdownHeader, { borderBottomColor: colors.border }]}>
+						<View
+							style={[
+								styles.dropdownHeader,
+								{ borderBottomColor: colors.border },
+							]}
+						>
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 								{label}
 							</Text>
@@ -166,7 +174,12 @@ export function SettingsSelect({
 											)}
 										</View>
 										{isSelected && (
-											<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+											<Svg
+												width={16}
+												height={16}
+												viewBox="0 0 24 24"
+												fill="none"
+											>
 												<Path
 													d="M20 6L9 17l-5-5"
 													stroke={colors.primary}
