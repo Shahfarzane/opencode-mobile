@@ -13,5 +13,6 @@ export type { Permission, PermissionResponse } from "./PermissionCard";
 export type { AttachedFile } from "./FileAttachment";
 export { PermissionCard } from "./PermissionCard";
 export { StatusRow } from "./StatusRow";
+export { TimelineSheet } from "./TimelineSheet";
 export type { Message, MessagePart, ToolPartState } from "./types";
 export { convertStreamingPart } from "./types";

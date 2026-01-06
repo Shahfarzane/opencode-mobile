@@ -10,6 +10,7 @@ interface MessageActionsMenuProps {
 	onClose: () => void;
 	onCopy: () => void;
 	onBranchSession?: () => void;
+	onRevert?: () => void;
 	isAssistantMessage: boolean;
 }
 
@@ -51,11 +52,33 @@ function BranchIcon({ color }: { color: string }) {
 	);
 }
 
+function RevertIcon({ color }: { color: string }) {
+	return (
+		<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<Path
+				d="M3 3v5h5"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
 export function MessageActionsMenu({
 	visible,
 	onClose,
 	onCopy,
 	onBranchSession,
+	onRevert,
 	isAssistantMessage,
 }: MessageActionsMenuProps) {
 	const { colors, isDark } = useTheme();
@@ -69,6 +92,12 @@ export function MessageActionsMenu({
 	const handleBranch = async () => {
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		onBranchSession?.();
+		onClose();
+	};
+
+	const handleRevert = async () => {
+		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		onRevert?.();
 		onClose();
 	};
 
@@ -103,7 +132,29 @@ export function MessageActionsMenu({
 						</Text>
 					</Pressable>
 
-					{isAssistantMessage && onBranchSession && (
+					{onRevert && (
+						<>
+							<View
+								style={[styles.divider, { backgroundColor: colors.border }]}
+							/>
+							<Pressable
+								onPress={handleRevert}
+								style={({ pressed }) => [
+									styles.menuItem,
+									{ backgroundColor: pressed ? colors.muted : "transparent" },
+								]}
+							>
+								<RevertIcon color={colors.foreground} />
+								<Text
+									style={[typography.uiLabel, { color: colors.foreground }]}
+								>
+									Revert to Here
+								</Text>
+							</Pressable>
+						</>
+					)}
+
+					{onBranchSession && (
 						<>
 							<View
 								style={[styles.divider, { backgroundColor: colors.border }]}
@@ -119,7 +170,7 @@ export function MessageActionsMenu({
 								<Text
 									style={[typography.uiLabel, { color: colors.foreground }]}
 								>
-									Branch Session
+									Fork from Here
 								</Text>
 							</Pressable>
 						</>

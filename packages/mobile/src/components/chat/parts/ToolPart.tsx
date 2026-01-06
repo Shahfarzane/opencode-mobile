@@ -13,10 +13,12 @@ export interface ToolPartData {
 	input?: Record<string, unknown>;
 	output?: string;
 	error?: string;
+	sessionId?: string;
 }
 
 interface ToolPartProps {
 	part: ToolPartData;
+	onSelectSession?: (sessionId: string) => void;
 }
 
 function getToolIcon(toolName: string, color: string) {
@@ -108,6 +110,20 @@ function getToolIcon(toolName: string, color: string) {
 		);
 	}
 
+	if (name === "external_link") {
+		return (
+			<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+				<Path
+					d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"
+					stroke={color}
+					strokeWidth={2}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				/>
+			</Svg>
+		);
+	}
+
 	return (
 		<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
 			<Path
@@ -133,6 +149,19 @@ function getStatusIndicator(state?: string) {
 		default:
 			return "○";
 	}
+}
+
+function tryParseSessionId(output: string): string | undefined {
+	// Try to extract session ID from output - common patterns
+	const patterns = [
+		/session[_\s]?id[:\s]*["']?([a-zA-Z0-9_-]+)["']?/i,
+		/["']sessionId["']\s*:\s*["']([a-zA-Z0-9_-]+)["']/,
+	];
+	for (const pattern of patterns) {
+		const match = output.match(pattern);
+		if (match?.[1]) return match[1];
+	}
+	return undefined;
 }
 
 function formatToolDescription(part: ToolPartData): string {
@@ -164,7 +193,7 @@ function formatToolDescription(part: ToolPartData): string {
 	return "";
 }
 
-export function ToolPart({ part }: ToolPartProps) {
+export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [showDialog, setShowDialog] = useState(false);
 	const { colors } = useTheme();
@@ -173,6 +202,12 @@ export function ToolPart({ part }: ToolPartProps) {
 	const description = formatToolDescription(part);
 	const hasOutput = part.output && part.output.trim().length > 0;
 	const hasError = part.error && part.error.trim().length > 0;
+
+	// Check if this is a Task tool with a subagent session
+	const isTaskTool = toolName.toLowerCase() === "task";
+	const subAgentSessionId = part.sessionId ||
+		(part.input?.sessionId as string) ||
+		(part.output && tryParseSessionId(part.output));
 
 	const getStatusColor = (state?: string) => {
 		switch (state) {
@@ -316,6 +351,22 @@ export function ToolPart({ part }: ToolPartProps) {
 							</Text>
 						</Pressable>
 					)}
+
+					{/* SubAgent Session Navigation */}
+					{isTaskTool && subAgentSessionId && onSelectSession && (
+						<Pressable
+							onPress={() => onSelectSession(subAgentSessionId)}
+							style={[
+								styles.subAgentButton,
+								{ backgroundColor: `${colors.info}15` },
+							]}
+						>
+							{getToolIcon("external_link", colors.info)}
+							<Text style={[typography.micro, { color: colors.info }]}>
+								Open SubAgent Session
+							</Text>
+						</Pressable>
+					)}
 				</View>
 			)}
 
@@ -368,6 +419,16 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		borderRadius: 6,
 		alignItems: "center",
+	},
+	subAgentButton: {
+		marginTop: 8,
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+		borderRadius: 6,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
 	},
 	sectionLabel: {
 		marginBottom: 4,

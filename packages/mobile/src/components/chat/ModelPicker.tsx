@@ -1,11 +1,12 @@
 import * as Haptics from "expo-haptics";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
 	Modal,
 	Pressable,
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -61,8 +62,36 @@ function CheckIcon({ color, size = 16 }: { color: string; size?: number }) {
 	);
 }
 
+function SearchIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+function ClearIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M18 6L6 18M6 6l12 12"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
 // Provider logo component matching desktop UI
-function ProviderLogo({ providerId, size = 20 }: { providerId: string; size?: number }) {
+function ProviderLogo({ providerId }: { providerId: string }) {
 	const { colors } = useTheme();
 
 	const getProviderSymbol = (id: string) => {
@@ -87,6 +116,13 @@ function ProviderLogo({ providerId, size = 20 }: { providerId: string; size?: nu
 	);
 }
 
+interface FlattenedModel {
+	providerId: string;
+	providerName: string;
+	modelId: string;
+	modelName: string;
+}
+
 export function ModelPicker({
 	providers,
 	currentProviderId,
@@ -100,11 +136,44 @@ export function ModelPicker({
 	const [expandedProvider, setExpandedProvider] = useState<string | null>(
 		currentProviderId || null,
 	);
+	const [searchQuery, setSearchQuery] = useState("");
 
 	// Filter to only show providers that are enabled and have models
 	const availableProviders = providers.filter(
 		(provider) => provider.enabled && provider.models && provider.models.length > 0,
 	);
+
+	// Flatten all models for search
+	const allModels = useMemo<FlattenedModel[]>(() => {
+		const models: FlattenedModel[] = [];
+		for (const provider of availableProviders) {
+			if (provider.models) {
+				for (const model of provider.models) {
+					models.push({
+						providerId: provider.id,
+						providerName: provider.name,
+						modelId: model.id,
+						modelName: model.name || model.id,
+					});
+				}
+			}
+		}
+		return models;
+	}, [availableProviders]);
+
+	// Filter models based on search query
+	const filteredModels = useMemo(() => {
+		if (!searchQuery.trim()) return [];
+		const query = searchQuery.toLowerCase();
+		return allModels.filter(
+			(model) =>
+				model.modelName.toLowerCase().includes(query) ||
+				model.modelId.toLowerCase().includes(query) ||
+				model.providerName.toLowerCase().includes(query),
+		);
+	}, [allModels, searchQuery]);
+
+	const isSearching = searchQuery.trim().length > 0;
 
 	const handleModelSelect = useCallback(
 		(providerId: string, modelId: string) => {
@@ -156,11 +225,100 @@ export function ModelPicker({
 					</Pressable>
 				</View>
 
+				{/* Search Input */}
+				<View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
+					<View style={[styles.searchInputWrapper, { backgroundColor: colors.muted }]}>
+						<SearchIcon color={colors.mutedForeground} size={16} />
+						<TextInput
+							style={[styles.searchInput, { color: colors.foreground }]}
+							placeholder="Search models..."
+							placeholderTextColor={colors.mutedForeground}
+							value={searchQuery}
+							onChangeText={setSearchQuery}
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{searchQuery.length > 0 && (
+							<Pressable onPress={() => setSearchQuery("")}>
+								<ClearIcon color={colors.mutedForeground} size={16} />
+							</Pressable>
+						)}
+					</View>
+				</View>
+
 				<ScrollView
 					style={styles.scrollView}
 					contentContainerStyle={styles.scrollContent}
+					keyboardShouldPersistTaps="handled"
 				>
-					{availableProviders.map((provider) => {
+					{/* Search Results */}
+					{isSearching ? (
+						<>
+							{filteredModels.length === 0 ? (
+								<View style={styles.emptyState}>
+									<Text style={[typography.body, { color: colors.mutedForeground }]}>
+										No models found for "{searchQuery}"
+									</Text>
+								</View>
+							) : (
+								<View style={[styles.searchResults, { borderColor: colors.border }]}>
+									{filteredModels.map((model) => {
+										const isSelected =
+											model.providerId === currentProviderId &&
+											model.modelId === currentModelId;
+
+										return (
+											<Pressable
+												key={`${model.providerId}-${model.modelId}`}
+												onPress={() =>
+													handleModelSelect(model.providerId, model.modelId)
+												}
+												style={[
+													styles.searchResultItem,
+													{
+														backgroundColor: isSelected
+															? `${colors.primary}15`
+															: "transparent",
+													},
+												]}
+											>
+												<View style={styles.searchResultInfo}>
+													<Text
+														style={[
+															typography.body,
+															{
+																color: isSelected
+																	? colors.primary
+																	: colors.foreground,
+															},
+														]}
+														numberOfLines={1}
+													>
+														{model.modelName.length > 40
+															? `${model.modelName.substring(0, 37)}...`
+															: model.modelName}
+													</Text>
+													<Text
+														style={[
+															typography.micro,
+															{ color: colors.mutedForeground },
+														]}
+													>
+														{model.providerName}
+													</Text>
+												</View>
+												{isSelected && (
+													<CheckIcon size={16} color={colors.primary} />
+												)}
+											</Pressable>
+										);
+									})}
+								</View>
+							)}
+						</>
+					) : (
+						/* Provider List */
+						availableProviders.map((provider) => {
 						const isExpanded = expandedProvider === provider.id;
 						const isCurrentProvider = provider.id === currentProviderId;
 
@@ -257,7 +415,8 @@ export function ModelPicker({
 								)}
 							</View>
 						);
-					})}
+					})
+					)}
 				</ScrollView>
 			</View>
 		</Modal>
@@ -326,5 +485,43 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		paddingHorizontal: 12,
 		paddingVertical: 12,
+	},
+	searchContainer: {
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+	},
+	searchInputWrapper: {
+		flexDirection: "row",
+		alignItems: "center",
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		gap: 8,
+	},
+	searchInput: {
+		flex: 1,
+		fontSize: 15,
+		padding: 0,
+	},
+	emptyState: {
+		paddingVertical: 32,
+		alignItems: "center",
+	},
+	searchResults: {
+		borderRadius: 8,
+		borderWidth: 1,
+		overflow: "hidden",
+	},
+	searchResultItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 12,
+		paddingVertical: 12,
+	},
+	searchResultInfo: {
+		flex: 1,
+		marginRight: 8,
 	},
 });

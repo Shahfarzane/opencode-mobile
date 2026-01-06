@@ -37,6 +37,7 @@ export type MessagePart = {
 	error?: string;
 	isCollapsed?: boolean;
 	time?: { start?: number; end?: number };
+	sessionId?: string;
 };
 
 export type Message = {
