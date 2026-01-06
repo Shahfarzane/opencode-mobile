@@ -10,7 +10,7 @@ import { useEdgeSwipe } from "../../src/hooks/useEdgeSwipe";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 import ChatScreen from "./chat";
-import { ContextUsageContext, SessionSheetContext } from "./_context";
+import { ContextUsageContext, SessionSheetContext } from "../../src/contexts/tabs-context";
 import DiffScreen from "./diff";
 import GitScreen from "./git";
 import SettingsScreen from "./settings";

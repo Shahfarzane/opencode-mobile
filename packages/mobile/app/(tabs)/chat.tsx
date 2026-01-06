@@ -44,7 +44,7 @@ import {
 import type { MessagePart as StreamingPart } from "../../src/lib/streaming";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
-import { useContextUsageContext, useSessionSheetContext } from "./_context";
+import { useContextUsageContext, useSessionSheetContext } from "../../src/contexts/tabs-context";
 
 const DEFAULT_CONTEXT_LIMIT = 200000;
 const DEFAULT_OUTPUT_LIMIT = 8192;
