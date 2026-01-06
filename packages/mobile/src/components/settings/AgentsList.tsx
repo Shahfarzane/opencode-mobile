@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import {
 	forwardRef,
 	useCallback,
@@ -8,6 +9,7 @@ import {
 import {
 	ActivityIndicator,
 	Pressable,
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -29,29 +31,40 @@ interface AgentsListProps {
 
 export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
 	function AgentsList({ selectedAgent, onSelectAgent }, ref) {
-	const { colors } = useTheme();
-	const [agents, setAgents] = useState<Agent[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+		const { colors } = useTheme();
+		const [agents, setAgents] = useState<Agent[]>([]);
+		const [isLoading, setIsLoading] = useState(true);
+		const [isRefreshing, setIsRefreshing] = useState(false);
 
-	const loadAgents = useCallback(async () => {
-		setIsLoading(true);
-		try {
-			const data = await agentsApi.list();
-			setAgents(data.filter((a) => !isAgentHidden(a)));
-		} catch (error) {
-			console.error("Failed to load agents:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
+		const loadAgents = useCallback(async (showRefresh = false) => {
+			if (showRefresh) {
+				setIsRefreshing(true);
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+			} else {
+				setIsLoading(true);
+			}
+			try {
+				const data = await agentsApi.list();
+				setAgents(data.filter((a) => !isAgentHidden(a)));
+			} catch (error) {
+				console.error("Failed to load agents:", error);
+			} finally {
+				setIsLoading(false);
+				setIsRefreshing(false);
+			}
+		}, []);
 
-	useImperativeHandle(ref, () => ({
-		refresh: loadAgents,
-	}), [loadAgents]);
+		useImperativeHandle(ref, () => ({
+			refresh: () => loadAgents(false),
+		}), [loadAgents]);
 
-	useEffect(() => {
-		loadAgents();
-	}, [loadAgents]);
+		useEffect(() => {
+			loadAgents(false);
+		}, [loadAgents]);
+
+		const handleRefresh = useCallback(() => {
+			loadAgents(true);
+		}, [loadAgents]);
 
 	const builtInAgents = agents.filter(isAgentBuiltIn);
 	const customAgents = agents.filter((a) => !isAgentBuiltIn(a));
@@ -65,7 +78,16 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
 	}
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView
+			style={styles.container}
+			refreshControl={
+				<RefreshControl
+					refreshing={isRefreshing}
+					onRefresh={handleRefresh}
+					tintColor={colors.primary}
+				/>
+			}
+		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 					Total {agents.length}
@@ -135,8 +157,20 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
 				<View style={styles.emptyContainer}>
 					<RobotIcon color={colors.mutedForeground} size={40} />
 					<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
-						No agents configured
+						No custom agents yet
 					</Text>
+					<Pressable
+						onPress={() => {
+							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+							onSelectAgent("__new__");
+						}}
+						style={[styles.createButton, { backgroundColor: colors.primary }]}
+					>
+						<PlusIcon size={16} color={colors.background} />
+						<Text style={[typography.uiLabel, { color: colors.background }]}>
+							Create your first agent
+						</Text>
+					</Pressable>
 				</View>
 			)}
 		</ScrollView>
@@ -184,5 +218,14 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingVertical: 48,
 		gap: 12,
+	},
+	createButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderRadius: 8,
+		marginTop: 8,
 	},
 });
