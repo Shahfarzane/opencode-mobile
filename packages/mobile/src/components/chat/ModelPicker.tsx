@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		padding: 12,
-		borderRadius: 8,
+		borderRadius: 12,
 		borderWidth: 1,
 	},
 	providerInfo: {
@@ -467,15 +467,15 @@ const styles = StyleSheet.create({
 		marginBottom: 2,
 	},
 	providerLogo: {
-		width: 24,
-		height: 24,
+		width: 22,
+		height: 22,
 		borderRadius: 4,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	modelList: {
 		marginTop: 4,
-		borderRadius: 8,
+		borderRadius: 12,
 		borderWidth: 1,
 		overflow: "hidden",
 	},
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 12,
-		paddingVertical: 12,
+		paddingVertical: 10,
 	},
 	searchContainer: {
 		paddingHorizontal: 16,
@@ -494,14 +494,14 @@ const styles = StyleSheet.create({
 	searchInputWrapper: {
 		flexDirection: "row",
 		alignItems: "center",
-		borderRadius: 8,
+		borderRadius: 12,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 		gap: 8,
 	},
 	searchInput: {
 		flex: 1,
-		fontSize: 15,
+		fontSize: 14,
 		padding: 0,
 	},
 	emptyState: {
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	searchResults: {
-		borderRadius: 8,
+		borderRadius: 12,
 		borderWidth: 1,
 		overflow: "hidden",
 	},
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 12,
-		paddingVertical: 12,
+		paddingVertical: 10,
 	},
 	searchResultInfo: {
 		flex: 1,

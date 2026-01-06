@@ -1,9 +1,14 @@
 import "../global.css";
+import * as SplashScreen from "expo-splash-screen";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider, useTheme } from "../src/theme";
+
+// Keep the splash screen visible until we explicitly hide it
+// This MUST be called at module level (not inside components) to work reliably in preview builds
+SplashScreen.preventAutoHideAsync();
 
 function RootLayoutContent() {
 	const { colors, isDark } = useTheme();

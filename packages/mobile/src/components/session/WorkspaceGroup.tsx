@@ -20,7 +20,7 @@ interface WorkspaceGroupProps {
 }
 
 export function WorkspaceGroup({
-	groupId,
+	groupId: _groupId,
 	label,
 	sessionCount,
 	isCollapsed,
@@ -142,9 +142,9 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingTop: 6, // matches desktop pt-1.5
-		paddingBottom: 4, // matches desktop pb-1
-		paddingHorizontal: 4, // matches desktop px-1
+		paddingTop: 6,
+		paddingBottom: 4,
+		paddingHorizontal: 4,
 		borderBottomWidth: 1,
 	},
 	headerLabel: {
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
 	},
 	sessionsContainer: {
 		paddingTop: 4,
-		gap: 2, // matches desktop space-y-[0.6rem] approximately
+		gap: 10,
 	},
 	showMoreButton: {
 		paddingVertical: 2,

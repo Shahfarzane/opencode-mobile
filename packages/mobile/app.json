@@ -1,14 +1,16 @@
 {
   "expo": {
-    "name": "OpenChamber",
-    "slug": "openchamber",
+    "name": "OpenCode",
+    "slug": "opencode",
     "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "openchamber",
+    "scheme": "opencode",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "platforms": ["ios"],
+    "platforms": [
+      "ios"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,14 +18,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.openchamber.mobile",
+      "bundleIdentifier": "ceo.nerd.opencode",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "OpenChamber needs camera access to scan QR codes for server pairing",
-        "NSFaceIDUsageDescription": "OpenChamber uses Face ID to secure your authentication tokens",
-        "NSLocalNetworkUsageDescription": "OpenChamber discovers local OpenCode servers on your network",
+        "NSCameraUsageDescription": "OpenCode needs camera access to scan QR codes for server pairing",
+        "NSFaceIDUsageDescription": "OpenCode uses Face ID to secure your authentication tokens",
+        "NSLocalNetworkUsageDescription": "OpenCode discovers local servers on your network",
         "NSBonjourServices": [
-          "_openchamber._tcp",
+          "_opencode._tcp",
           "_http._tcp"
         ],
         "LSSupportsOpeningDocumentsInPlace": true,
@@ -40,6 +42,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#100F0F",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      [
         "expo-font",
         {
           "fonts": [
@@ -54,13 +64,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow OpenChamber to access your camera to scan QR codes"
+          "cameraPermission": "Allow OpenCode to access your camera to scan QR codes"
         }
       ],
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow OpenChamber to use Face ID for secure authentication"
+          "faceIDPermission": "Allow OpenCode to use Face ID for secure authentication"
         }
       ],
       [
@@ -79,9 +89,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "07df2a39-5d04-4265-a2b3-543f7224df34"
+        "projectId": "1b0f5ae3-558d-4e04-ac54-b18a264d2222"
       }
     },
-    "owner": "heynerdceo"
+    "owner": "heynerd"
   }
 }

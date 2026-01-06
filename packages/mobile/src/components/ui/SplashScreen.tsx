@@ -12,7 +12,8 @@ import Animated, {
 import Svg, { G, Path } from "react-native-svg";
 import { useTheme } from "../../theme";
 
-ExpoSplashScreen.preventAutoHideAsync();
+// Note: preventAutoHideAsync() is called in app/_layout.tsx at module level
+// to ensure it runs early enough in the app lifecycle for preview builds
 
 interface SplashScreenProps {
 	isReady: boolean;

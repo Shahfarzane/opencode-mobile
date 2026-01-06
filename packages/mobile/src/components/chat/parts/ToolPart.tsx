@@ -136,20 +136,7 @@ function getToolIcon(toolName: string, color: string) {
 	);
 }
 
-function getStatusIndicator(state?: string) {
-	switch (state) {
-		case "completed":
-			return "✓";
-		case "error":
-			return "✗";
-		case "aborted":
-			return "⊘";
-		case "running":
-			return "●";
-		default:
-			return "○";
-	}
-}
+
 
 function tryParseSessionId(output: string): string | undefined {
 	// Try to extract session ID from output - common patterns
@@ -177,7 +164,7 @@ function formatToolDescription(part: ToolPartData): string {
 
 	if (part.toolName === "bash" && typeof input.command === "string") {
 		const firstLine = input.command.split("\n")[0];
-		return firstLine.length > 40 ? firstLine.slice(0, 40) + "..." : firstLine;
+		return firstLine.length > 40 ? `${firstLine.slice(0, 40)}...` : firstLine;
 	}
 
 	if (part.toolName === "read" && typeof input.filePath === "string") {
@@ -186,7 +173,7 @@ function formatToolDescription(part: ToolPartData): string {
 
 	if (part.toolName === "task" && typeof input.description === "string") {
 		return input.description.length > 40
-			? input.description.slice(0, 40) + "..."
+			? `${input.description.slice(0, 40)}...`
 			: input.description;
 	}
 
@@ -209,43 +196,36 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 		(part.input?.sessionId as string) ||
 		(part.output && tryParseSessionId(part.output));
 
-	const getStatusColor = (state?: string) => {
-		switch (state) {
-			case "completed":
-				return colors.success;
-			case "error":
-				return colors.destructive;
-			case "aborted":
-				return colors.warning;
-			case "running":
-				return colors.info;
-			default:
-				return colors.mutedForeground;
-		}
-	};
-
 	return (
 		<View style={styles.container}>
 			<Pressable
 				onPress={() => setIsExpanded(!isExpanded)}
-				style={[
-					styles.header,
-					{
-						borderColor: colors.border,
-						backgroundColor: `${colors.muted}80`,
-					},
-				]}
+				style={styles.header}
 			>
 				<View style={styles.headerLeft}>
-					{getToolIcon(toolName, colors.info)}
-					<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+					<View style={{ width: 14, height: 14, justifyContent: "center", alignItems: "center" }}>
+						{isExpanded ? (
+							<Text style={[typography.micro, { color: colors.mutedForeground }]}>▼</Text>
+						) : (
+							getToolIcon(toolName, part.state === "error" ? colors.destructive : colors.mutedForeground)
+						)}
+					</View>
+					<Text 
+						style={[
+							typography.meta, 
+							{ 
+								color: part.state === "error" ? colors.destructive : colors.foreground,
+								fontWeight: "500",
+							}
+						]}
+					>
 						{toolName}
 					</Text>
 					{description && (
 						<Text
 							style={[
 								typography.micro,
-								{ color: colors.mutedForeground, flex: 1 },
+								{ color: `${colors.mutedForeground}B3`, flex: 1 },
 							]}
 							numberOfLines={1}
 						>
@@ -254,12 +234,9 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					)}
 				</View>
 				<View style={styles.headerRight}>
-					<Text style={{ color: getStatusColor(part.state) }}>
-						{getStatusIndicator(part.state)}
-					</Text>
-					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-						{isExpanded ? "▼" : "▶"}
-					</Text>
+					{part.state === "running" && (
+						<Text style={[typography.micro, { color: colors.info }]}>●</Text>
+					)}
 				</View>
 			</Pressable>
 
@@ -308,8 +285,8 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 								Output:
 							</Text>
 							<Text style={[typography.code, { color: colors.foreground }]}>
-								{part.output!.slice(0, 1000)}
-								{part.output!.length > 1000 && "..."}
+								{part.output?.slice(0, 1000)}
+								{(part.output?.length ?? 0) > 1000 && "..."}
 							</Text>
 						</View>
 					)}
@@ -381,50 +358,52 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 
 const styles = StyleSheet.create({
 	container: {
-		marginBottom: 8,
+		marginVertical: 4,
 	},
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-		borderRadius: 8,
-		borderWidth: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
+		borderRadius: 12,
+		paddingHorizontal: 8,
+		paddingVertical: 6,
 	},
 	headerLeft: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
 		flex: 1,
+		minWidth: 0,
 	},
 	headerRight: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
+		gap: 4,
+		flexShrink: 0,
 	},
 	expandedContent: {
-		marginTop: 4,
-		borderRadius: 8,
-		borderWidth: 1,
-		padding: 12,
+		marginTop: 8,
+		marginLeft: 20,
+		paddingLeft: 12,
+		borderLeftWidth: 1,
+		gap: 8,
 	},
 	section: {},
 	sectionMargin: {
 		marginTop: 8,
 	},
 	viewFullButton: {
-		marginTop: 12,
+		marginTop: 8,
 		paddingVertical: 8,
 		paddingHorizontal: 12,
-		borderRadius: 6,
+		borderRadius: 8,
 		alignItems: "center",
 	},
 	subAgentButton: {
 		marginTop: 8,
 		paddingVertical: 8,
 		paddingHorizontal: 12,
-		borderRadius: 6,
+		borderRadius: 8,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
@@ -432,5 +411,6 @@ const styles = StyleSheet.create({
 	},
 	sectionLabel: {
 		marginBottom: 4,
+		fontWeight: "500",
 	},
 });

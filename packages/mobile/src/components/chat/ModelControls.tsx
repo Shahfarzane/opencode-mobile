@@ -269,14 +269,14 @@ const styles = StyleSheet.create({
 	button: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
+		gap: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
 		borderRadius: 6,
-		borderWidth: 1,
+		borderWidth: 0,
 	},
 	buttonText: {
-		maxWidth: 120,
+		maxWidth: 140,
 	},
 	modalContainer: {
 		flex: 1,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		padding: 12,
-		borderRadius: 8,
+		borderRadius: 12,
 		borderWidth: 1,
 	},
 	providerInfo: {
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
 	},
 	modelList: {
 		marginTop: 4,
-		borderRadius: 8,
+		borderRadius: 12,
 		borderWidth: 1,
 		overflow: "hidden",
 	},
@@ -325,6 +325,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 12,
-		paddingVertical: 12,
+		paddingVertical: 10,
 	},
 });
