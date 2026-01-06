@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
 	type Theme,
-	flexokiDarkTheme,
-	flexokiLightTheme,
+	warmSandDarkTheme,
+	warmSandLightTheme,
 } from "@openchamber/shared/themes";
 import type React from "react";
 import {
@@ -211,7 +211,7 @@ export function ThemeProvider({ children, forcedTheme }: ThemeProviderProps) {
 			isDark = themeMode === "dark";
 		}
 
-		const theme = isDark ? flexokiDarkTheme : flexokiLightTheme;
+		const theme = isDark ? warmSandDarkTheme : warmSandLightTheme;
 		const colors = createColors(theme);
 
 		return {
