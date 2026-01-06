@@ -20,9 +20,13 @@ import {
 	UsersIcon,
 } from "../../src/components/icons";
 import {
+	AgentDetailView,
 	AgentsList,
+	CommandDetailView,
 	CommandsList,
+	GitIdentityDetailView,
 	GitIdentitiesList,
+	ProviderDetailView,
 	ProvidersList,
 } from "../../src/components/settings";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
@@ -673,6 +677,45 @@ export default function SettingsScreen() {
 	};
 
 	const renderDetailView = () => {
+		if (activeTab === "agents" && selectedItem) {
+			return (
+				<AgentDetailView
+					agentName={selectedItem}
+					onBack={handleBack}
+					onDeleted={handleBack}
+				/>
+			);
+		}
+
+		if (activeTab === "commands" && selectedItem) {
+			return (
+				<CommandDetailView
+					commandName={selectedItem}
+					onBack={handleBack}
+					onDeleted={handleBack}
+				/>
+			);
+		}
+
+		if (activeTab === "providers" && selectedItem) {
+			return (
+				<ProviderDetailView
+					providerId={selectedItem}
+					onBack={handleBack}
+				/>
+			);
+		}
+
+		if (activeTab === "git" && selectedItem) {
+			return (
+				<GitIdentityDetailView
+					profileId={selectedItem}
+					onBack={handleBack}
+					onDeleted={handleBack}
+				/>
+			);
+		}
+
 		return (
 			<View style={styles.detailContent}>
 				<Text
@@ -685,7 +728,7 @@ export default function SettingsScreen() {
 						},
 					]}
 				>
-					Detail editing coming soon.{"\n"}View-only mode for now.
+					Select an item to view details.
 				</Text>
 			</View>
 		);
@@ -698,7 +741,7 @@ export default function SettingsScreen() {
 				{ backgroundColor: colors.background },
 			]}
 		>
-			{showDetail && (
+			{showDetail && activeTab === "general" && (
 				<View style={[styles.header, { borderBottomColor: colors.border }]}>
 					<Pressable onPress={handleBack} style={styles.backButton}>
 						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">

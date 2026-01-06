@@ -6,7 +6,14 @@ import { gitApi, type Session, sessionsApi } from "../../src/api";
 import type { ContextUsage } from "../../src/components/chat";
 import { Header } from "../../src/components/layout/Header";
 import { SessionSheet } from "../../src/components/session";
+import type { SessionCacheInfo } from "../../src/components/session/SessionListItem";
 import { useEdgeSwipe } from "../../src/hooks/useEdgeSwipe";
+import type { CachedSession } from "../../src/lib/offlineCache";
+import {
+	fetchSessionsWithCache,
+	getSessionCacheInfo,
+	initializeSessionSync,
+} from "../../src/lib/sessionSync";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 import ChatScreen from "./chat";
@@ -47,8 +54,13 @@ export default function TabsLayout() {
 	const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 	const [isGitRepo, setIsGitRepo] = useState(false);
 	const [streamingSessionIds, setStreamingSessionIds] = useState<Set<string>>(new Set());
+	const [sessionCacheInfo, setSessionCacheInfo] = useState<Map<string, SessionCacheInfo>>(new Map());
 
 	const sheetRef = useRef<BottomSheet>(null);
+
+	useEffect(() => {
+		initializeSessionSync().catch(console.error);
+	}, []);
 
 	// Callbacks for chat screen to sync streaming state
 	const updateStreamingSessionsRef = useRef<(ids: Set<string>) => void>((ids) => {
@@ -84,20 +96,30 @@ export default function TabsLayout() {
 		return () => clearInterval(interval);
 	}, [isConnected, directory]);
 
-	// Fetch sessions
 	const fetchSessions = useCallback(async () => {
-		if (!isConnected) return;
-
 		setIsLoadingSessions(true);
 		try {
-			const data = await sessionsApi.list();
+			const { sessions: data, fromCache } = await fetchSessionsWithCache();
 			setSessions(data);
+
+			const cacheInfoMap = new Map<string, SessionCacheInfo>();
+			for (const session of data) {
+				const cachedSession = session as CachedSession;
+				if (cachedSession.isFullCache !== undefined) {
+					cacheInfoMap.set(session.id, getSessionCacheInfo(cachedSession));
+				}
+			}
+			setSessionCacheInfo(cacheInfoMap);
+
+			if (__DEV__ && fromCache) {
+				console.log("[Layout] Sessions loaded from cache");
+			}
 		} catch (error) {
 			console.error("Failed to fetch sessions:", error);
 		} finally {
 			setIsLoadingSessions(false);
 		}
-	}, [isConnected]);
+	}, []);
 
 	// Load sessions on connect
 	useEffect(() => {
@@ -290,7 +312,6 @@ export default function TabsLayout() {
 					/>
 					<View style={styles.content}>{renderContent()}</View>
 
-					{/* Session Sheet - available for all tabs */}
 					<SessionSheet
 						ref={sheetRef}
 						sessions={sessions}
@@ -299,6 +320,7 @@ export default function TabsLayout() {
 						isLoading={isLoadingSessions}
 						isGitRepo={isGitRepo}
 						streamingSessionIds={streamingSessionIds}
+						sessionCacheInfo={sessionCacheInfo}
 						onSelectSession={selectSession}
 						onNewSession={createNewSession}
 						onRenameSession={renameSession}

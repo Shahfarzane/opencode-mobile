@@ -6,12 +6,18 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Session } from "@/api/sessions";
+import { WifiOffIcon } from "@/components/icons";
+import {
+	getNetworkStatus,
+	subscribeToNetworkStatus,
+	type NetworkStatus,
+} from "@/lib/sessionSync";
 import { typography, useTheme } from "@/theme";
 import { DirectoryRow } from "./DirectoryRow";
-import { SessionListItem } from "./SessionListItem";
+import { SessionListItem, type SessionCacheInfo } from "./SessionListItem";
 import { SheetHeader } from "./SheetHeader";
 import { WorkspaceGroup } from "./WorkspaceGroup";
 
@@ -40,6 +46,7 @@ interface SessionSheetProps {
 	isLoading?: boolean;
 	isGitRepo?: boolean;
 	streamingSessionIds?: Set<string>;
+	sessionCacheInfo?: Map<string, SessionCacheInfo>;
 	onSelectSession: (session: Session) => void;
 	onNewSession: (directory?: string | null) => void;
 	onRenameSession?: (sessionId: string, title: string) => Promise<void>;
@@ -74,6 +81,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			isLoading,
 			isGitRepo = false,
 			streamingSessionIds,
+			sessionCacheInfo,
 			onSelectSession,
 			onNewSession,
 			onRenameSession,
@@ -88,7 +96,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 	) {
 		const { colors } = useTheme();
 		const insets = useSafeAreaInsets();
-		const { height: windowHeight } = useWindowDimensions();
 		const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
 			new Set(),
 		);
@@ -98,6 +105,9 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		const [expandedSessionGroups, setExpandedSessionGroups] = useState<
 			Set<string>
 		>(new Set());
+		const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(
+			getNetworkStatus,
+		);
 
 		// Calculate snap points based on available height (accounting for status bar)
 		const snapPoints = useMemo(() => {
@@ -120,28 +130,30 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			const childrenMap = new Map<string, Session[]>();
 			const parentMap = new Map<string, string>(); // session ID → parent session ID
 
-			sortedSessions.forEach((session) => {
+			for (const session of sortedSessions) {
 				if (session.parentID && sessionMap.has(session.parentID)) {
 					const existing = childrenMap.get(session.parentID) || [];
 					existing.push(session);
 					childrenMap.set(session.parentID, existing);
 					parentMap.set(session.id, session.parentID);
 				}
-			});
+			}
 
-			// Sort children by creation time
-			childrenMap.forEach((list) =>
+			for (const list of childrenMap.values()) {
 				list.sort((a, b) => {
 					const timeA = a.time?.created || a.createdAt || 0;
 					const timeB = b.time?.created || b.createdAt || 0;
 					return timeB - timeA;
-				}),
-			);
+				});
+			}
 
 			return { childrenMap, sessionMap, parentMap };
 		}, [sortedSessions]);
 
-		// Load persisted expanded parents on mount
+		useEffect(() => {
+			return subscribeToNetworkStatus(setNetworkStatus);
+		}, []);
+
 		useEffect(() => {
 			const loadExpandedParents = async () => {
 				try {
@@ -327,6 +339,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			[],
 		);
 
+		const isOffline = networkStatus === "offline";
+
 		const renderSessionNode = useCallback(
 			(node: SessionNode, depth = 0): React.ReactNode => {
 				const session = node.session;
@@ -335,6 +349,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				const hasChildren = node.children.length > 0;
 				const isExpanded = expandedParents.has(session.id);
 				const childCount = countChildren(node);
+				const cacheInfo = sessionCacheInfo?.get(session.id);
 
 				const handleRename = async (title: string) => {
 					await onRenameSession?.(session.id, title);
@@ -365,6 +380,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 							depth={depth}
 							childCount={childCount}
 							isExpanded={isExpanded}
+							cacheInfo={cacheInfo}
+							isOffline={isOffline}
 							onSelect={() => handleSelectSession(session)}
 							onToggleExpand={
 								hasChildren ? () => toggleParent(session.id) : undefined
@@ -394,6 +411,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				onShareSession,
 				onUnshareSession,
 				onDeleteSession,
+				sessionCacheInfo,
+				isOffline,
 			],
 		);
 
@@ -410,6 +429,15 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				style={styles.bottomSheet}
 			>
 				<SheetHeader title="Sessions" onClose={handleDismiss} />
+
+				{isOffline && (
+					<View style={[styles.offlineBanner, { backgroundColor: colors.warning }]}>
+						<WifiOffIcon color={colors.background} size={14} />
+						<Text style={[typography.micro, { color: colors.background, fontWeight: "600" }]}>
+							Offline Mode
+						</Text>
+					</View>
+				)}
 
 				<DirectoryRow
 					directory={currentDirectory}
@@ -484,7 +512,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 
 const styles = StyleSheet.create({
 	bottomSheet: {
-		// Ensure the sheet is above other content
 		zIndex: 1000,
 		elevation: 1000,
 	},
@@ -492,14 +519,24 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	scrollContent: {
-		paddingLeft: 10, // matches desktop pl-2.5
-		paddingRight: 4, // matches desktop pr-1
+		paddingLeft: 10,
+		paddingRight: 4,
 		paddingBottom: 40,
 	},
 	emptyState: {
 		alignItems: "center",
 		paddingVertical: 24,
 		gap: 4,
+	},
+	offlineBanner: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
+		paddingVertical: 6,
+		marginHorizontal: 12,
+		marginBottom: 8,
+		borderRadius: 6,
 	},
 });
 

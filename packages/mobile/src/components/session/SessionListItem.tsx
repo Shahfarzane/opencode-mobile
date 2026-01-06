@@ -13,6 +13,8 @@ import {
 	CheckIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
+	CloudIcon,
+	CloudOffIcon,
 	MoreVerticalIcon,
 	ShareIcon,
 	WarningIcon,
@@ -20,6 +22,12 @@ import {
 } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import { SessionActionsMenu } from "./SessionActionsMenu";
+
+export interface SessionCacheInfo {
+	isCached: boolean;
+	messageCount: number;
+	lastSynced: Date | null;
+}
 
 interface SessionListItemProps {
 	session: Session;
@@ -29,6 +37,8 @@ interface SessionListItemProps {
 	childCount?: number;
 	isExpanded?: boolean;
 	isMissingDirectory?: boolean;
+	cacheInfo?: SessionCacheInfo;
+	isOffline?: boolean;
 	onSelect: () => void;
 	onToggleExpand?: () => void;
 	onRename: (title: string) => Promise<void>;
@@ -68,6 +78,8 @@ export function SessionListItem({
 	childCount = 0,
 	isExpanded = false,
 	isMissingDirectory = false,
+	cacheInfo,
+	isOffline = false,
 	onSelect,
 	onToggleExpand,
 	onRename,
@@ -306,6 +318,16 @@ export function SessionListItem({
 							</Text>
 						)}
 
+						{(isOffline || cacheInfo?.isCached) && (
+							<View style={styles.cacheIndicator}>
+								{isOffline ? (
+									<CloudOffIcon color={colors.warning} size={11} />
+								) : (
+									<CloudIcon color={colors.success} size={11} />
+								)}
+							</View>
+						)}
+
 						{/* Missing directory warning */}
 						{isMissingDirectory && (
 							<View style={styles.warningBadge}>
@@ -403,6 +425,10 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 2,
+	},
+	cacheIndicator: {
+		flexDirection: "row",
+		alignItems: "center",
 	},
 	menuButton: {
 		padding: 6,

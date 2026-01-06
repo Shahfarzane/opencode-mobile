@@ -1127,3 +1127,64 @@ export function PlusCircleIcon({
 		</Svg>
 	);
 }
+
+export function CloudIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Path
+				d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+export function CloudOffIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Path
+				d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<Path
+				d="M1 1l22 22"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+export function WifiOffIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+			<Path
+				d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
