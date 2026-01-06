@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import {
 	forwardRef,
 	useCallback,
@@ -8,6 +9,7 @@ import {
 import {
 	ActivityIndicator,
 	Pressable,
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -32,9 +34,15 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
 		const { colors } = useTheme();
 		const [commands, setCommands] = useState<Command[]>([]);
 		const [isLoading, setIsLoading] = useState(true);
+		const [isRefreshing, setIsRefreshing] = useState(false);
 
-		const loadCommands = useCallback(async () => {
-			setIsLoading(true);
+		const loadCommands = useCallback(async (showRefresh = false) => {
+			if (showRefresh) {
+				setIsRefreshing(true);
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+			} else {
+				setIsLoading(true);
+			}
 			try {
 				const data = await commandsApi.list();
 				setCommands(data.filter((c) => !c.hidden));
@@ -42,19 +50,24 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
 				console.error("Failed to load commands:", error);
 			} finally {
 				setIsLoading(false);
+				setIsRefreshing(false);
 			}
 		}, []);
 
 		useImperativeHandle(ref, () => ({
-			refresh: loadCommands,
+			refresh: () => loadCommands(false),
 		}), [loadCommands]);
 
 		useEffect(() => {
-			loadCommands();
+			loadCommands(false);
 		}, [loadCommands]);
 
-	const builtInCommands = commands.filter(isCommandBuiltIn);
-	const customCommands = commands.filter((c) => !isCommandBuiltIn(c));
+		const handleRefresh = useCallback(() => {
+			loadCommands(true);
+		}, [loadCommands]);
+
+		const builtInCommands = commands.filter(isCommandBuiltIn);
+		const customCommands = commands.filter((c) => !isCommandBuiltIn(c));
 
 	if (isLoading) {
 		return (
@@ -65,7 +78,16 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
 	}
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView
+			style={styles.container}
+			refreshControl={
+				<RefreshControl
+					refreshing={isRefreshing}
+					onRefresh={handleRefresh}
+					tintColor={colors.primary}
+				/>
+			}
+		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 					Total {commands.length}
@@ -133,8 +155,20 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
 				<View style={styles.emptyContainer}>
 					<CommandIcon color={colors.mutedForeground} size={40} />
 					<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
-						No commands configured
+						No custom commands yet
 					</Text>
+					<Pressable
+						onPress={() => {
+							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+							onSelectCommand("__new__");
+						}}
+						style={[styles.createButton, { backgroundColor: colors.primary }]}
+					>
+						<PlusIcon size={16} color={colors.background} />
+						<Text style={[typography.uiLabel, { color: colors.background }]}>
+							Create your first command
+						</Text>
+					</Pressable>
 				</View>
 			)}
 		</ScrollView>
@@ -182,5 +216,14 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingVertical: 48,
 		gap: 12,
+	},
+	createButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderRadius: 8,
+		marginTop: 8,
 	},
 });

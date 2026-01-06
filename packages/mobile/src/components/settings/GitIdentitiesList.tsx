@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import {
 	forwardRef,
 	useCallback,
@@ -8,6 +9,7 @@ import {
 import {
 	ActivityIndicator,
 	Pressable,
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -32,9 +34,15 @@ export const GitIdentitiesList = forwardRef<GitIdentitiesListRef, GitIdentitiesL
 		const { colors } = useTheme();
 		const [profiles, setProfiles] = useState<GitIdentityProfile[]>([]);
 		const [isLoading, setIsLoading] = useState(true);
+		const [isRefreshing, setIsRefreshing] = useState(false);
 
-		const loadProfiles = useCallback(async () => {
-			setIsLoading(true);
+		const loadProfiles = useCallback(async (showRefresh = false) => {
+			if (showRefresh) {
+				setIsRefreshing(true);
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+			} else {
+				setIsLoading(true);
+			}
 			try {
 				const data = await gitApi.getIdentities();
 				setProfiles(data);
@@ -42,18 +50,23 @@ export const GitIdentitiesList = forwardRef<GitIdentitiesListRef, GitIdentitiesL
 				console.error("Failed to load git identities:", error);
 			} finally {
 				setIsLoading(false);
+				setIsRefreshing(false);
 			}
 		}, []);
 
 		useImperativeHandle(ref, () => ({
-			refresh: loadProfiles,
+			refresh: () => loadProfiles(false),
 		}), [loadProfiles]);
 
 		useEffect(() => {
-			loadProfiles();
+			loadProfiles(false);
 		}, [loadProfiles]);
 
-	if (isLoading) {
+		const handleRefresh = useCallback(() => {
+			loadProfiles(true);
+		}, [loadProfiles]);
+
+		if (isLoading) {
 		return (
 			<View style={styles.loadingContainer}>
 				<ActivityIndicator size="large" color={colors.primary} />
@@ -62,7 +75,16 @@ export const GitIdentitiesList = forwardRef<GitIdentitiesListRef, GitIdentitiesL
 	}
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView
+			style={styles.container}
+			refreshControl={
+				<RefreshControl
+					refreshing={isRefreshing}
+					onRefresh={handleRefresh}
+					tintColor={colors.primary}
+				/>
+			}
+		>
 			<View style={[styles.header, { borderBottomColor: colors.border }]}>
 				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 					Total {profiles.length}
@@ -86,7 +108,9 @@ export const GitIdentitiesList = forwardRef<GitIdentitiesListRef, GitIdentitiesL
 						subtitle={profile.userEmail}
 						isSelected={selectedProfile === profile.id}
 						onPress={() => onSelectProfile(profile.id)}
-						icon={<UsersIcon color={colors.primary} size={18} />}
+						icon={
+							<View style={[styles.colorDot, { backgroundColor: profile.color || colors.primary }]} />
+						}
 					/>
 				))}
 			</View>
@@ -95,8 +119,20 @@ export const GitIdentitiesList = forwardRef<GitIdentitiesListRef, GitIdentitiesL
 				<View style={styles.emptyContainer}>
 					<UsersIcon color={colors.mutedForeground} size={40} />
 					<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
-						No git identities configured
+						No git identities yet
 					</Text>
+					<Pressable
+						onPress={() => {
+							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+							onSelectProfile("__new__");
+						}}
+						style={[styles.createButton, { backgroundColor: colors.primary }]}
+					>
+						<PlusIcon size={16} color={colors.background} />
+						<Text style={[typography.uiLabel, { color: colors.background }]}>
+							Create your first identity
+						</Text>
+					</Pressable>
 				</View>
 			)}
 		</ScrollView>
@@ -138,5 +174,19 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingVertical: 48,
 		gap: 12,
+	},
+	colorDot: {
+		width: 18,
+		height: 18,
+		borderRadius: 9,
+	},
+	createButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderRadius: 8,
+		marginTop: 8,
 	},
 });
