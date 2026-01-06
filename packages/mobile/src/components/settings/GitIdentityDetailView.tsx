@@ -6,14 +6,13 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import * as Haptics from "expo-haptics";
-import Svg, { Path } from "react-native-svg";
 import { type GitIdentityProfile, gitApi } from "@/api";
-import { typography, useTheme } from "@/theme";
-import { SettingsSection } from "./SettingsSection";
-import { SettingsTextArea, SettingsTextField } from "./shared";
+import { CheckIcon, ChevronLeft } from "@/components/icons";
+import { Spacing, typography, useTheme } from "@/theme";
 
 interface GitIdentityDetailViewProps {
 	profileId: string;
@@ -21,7 +20,7 @@ interface GitIdentityDetailViewProps {
 	onDeleted?: () => void;
 }
 
-const COLOR_OPTIONS = [
+const COLORS = [
 	"#ef4444",
 	"#f97316",
 	"#eab308",
@@ -103,13 +102,10 @@ export function GitIdentityDetailView({
 
 			if (isNewProfile) {
 				await gitApi.createIdentity(profileData);
-				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-				Alert.alert("Success", "Git identity created");
 			} else {
 				await gitApi.updateIdentity(profileId, profileData);
-				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-				Alert.alert("Success", "Git identity updated");
 			}
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 			onBack();
 		} catch (error) {
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -156,149 +152,141 @@ export function GitIdentityDetailView({
 
 	if (isLoading) {
 		return (
-			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" color={colors.primary} />
+			<View style={styles.centered}>
+				<ActivityIndicator size="small" color={colors.primary} />
 			</View>
 		);
 	}
 
 	return (
 		<View style={styles.container}>
-			<View style={[styles.header, { borderBottomColor: colors.border }]}>
-				<Pressable onPress={onBack} style={styles.backButton}>
-					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M15 18l-6-6 6-6"
-							stroke={colors.foreground}
-							strokeWidth={2}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
+			{/* Header */}
+			<View style={styles.header}>
+				<Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
+					<ChevronLeft size={18} color={colors.foreground} />
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						{isNewProfile ? "New Identity" : name || "Git Identity"}
+					</Text>
 				</Pressable>
-				<Text style={[typography.uiLabel, styles.headerTitle, { color: colors.foreground }]}>
-					{isNewProfile ? "New Git Identity" : name || "Git Identity"}
-				</Text>
 				<Pressable
 					onPress={handleSave}
 					disabled={isSaving}
-					style={[styles.saveButton, { backgroundColor: colors.primary }]}
+					style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 }]}
 				>
 					{isSaving ? (
-						<ActivityIndicator size="small" color={colors.background} />
+						<ActivityIndicator size="small" color={colors.primaryForeground} />
 					) : (
-						<Text style={[typography.uiLabel, { color: colors.background }]}>
+						<Text style={[typography.meta, { color: colors.primaryForeground, fontWeight: "500" }]}>
 							Save
 						</Text>
 					)}
 				</Pressable>
 			</View>
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-				<SettingsSection title="Profile" showDivider={false}>
-					<View style={styles.formGroup}>
-						<SettingsTextField
-							label="Profile Name"
-							description="A friendly name to identify this identity"
-							value={name}
-							onChangeText={setName}
-							placeholder="Work, Personal, etc."
-							required
-						/>
-					</View>
-					<View style={styles.formGroup}>
-						<Text style={[typography.uiLabel, { color: colors.foreground, marginBottom: 6 }]}>
-							Color
-						</Text>
-						<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
-							Choose a color to identify this profile
-						</Text>
-						<View style={styles.colorPicker}>
-							{COLOR_OPTIONS.map((c) => (
-								<Pressable
-									key={c}
-									onPress={() => setColor(c === color ? null : c)}
-									style={[
-										styles.colorOption,
-										{ backgroundColor: c },
-										color === c && styles.colorSelected,
-									]}
-								>
-									{color === c && (
-										<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-											<Path
-												d="M20 6L9 17l-5-5"
-												stroke="#fff"
-												strokeWidth={3}
-												strokeLinecap="round"
-												strokeLinejoin="round"
-											/>
-										</Svg>
-									)}
-								</Pressable>
-							))}
-						</View>
-					</View>
-				</SettingsSection>
+			<ScrollView
+				style={styles.scroll}
+				contentContainerStyle={styles.content}
+				showsVerticalScrollIndicator={false}
+				keyboardShouldPersistTaps="handled"
+			>
+				{/* Profile Name */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						Profile name
+					</Text>
+					<TextInput
+						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						value={name}
+						onChangeText={setName}
+						placeholder="Work, Personal, etc."
+						placeholderTextColor={colors.mutedForeground}
+					/>
+				</View>
 
-				<SettingsSection title="Git Configuration">
-					<View style={styles.formGroup}>
-						<SettingsTextField
-							label="User Name"
-							description="The name used in git commits"
+				{/* Color */}
+				<View style={styles.field}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 8 }]}>
+						Color
+					</Text>
+					<View style={styles.colorRow}>
+						{COLORS.map((c) => (
+							<Pressable
+								key={c}
+								onPress={() => setColor(c === color ? null : c)}
+								style={[styles.colorDot, { backgroundColor: c }]}
+							>
+								{color === c && <CheckIcon size={14} color="#fff" />}
+							</Pressable>
+						))}
+					</View>
+				</View>
+
+				{/* Git Config */}
+				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 12 }]}>
+						Git configuration
+					</Text>
+
+					<View style={styles.field}>
+						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+							User name
+						</Text>
+						<TextInput
+							style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
 							value={userName}
 							onChangeText={setUserName}
 							placeholder="John Doe"
+							placeholderTextColor={colors.mutedForeground}
 							autoCapitalize="words"
-							required
 						/>
 					</View>
-					<View style={styles.formGroup}>
-						<SettingsTextField
-							label="Email"
-							description="The email used in git commits"
+
+					<View style={styles.field}>
+						<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+							Email
+						</Text>
+						<TextInput
+							style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
 							value={userEmail}
 							onChangeText={setUserEmail}
 							placeholder="john@example.com"
+							placeholderTextColor={colors.mutedForeground}
 							keyboardType="email-address"
 							autoCapitalize="none"
 							autoCorrect={false}
-							required
 						/>
 					</View>
-				</SettingsSection>
+				</View>
 
-				<SettingsSection title="SSH Key (Optional)">
-					<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
-						Path to the SSH key file for this identity
+				{/* SSH Key */}
+				<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 4 }]}>
+						SSH key path
 					</Text>
-					<View style={styles.formGroup}>
-						<SettingsTextArea
-							label="SSH Key Path"
-							value={sshKey}
-							onChangeText={setSshKey}
-							placeholder="~/.ssh/id_ed25519"
-							autoCapitalize="none"
-							autoCorrect={false}
-							rows={2}
-						/>
-					</View>
-				</SettingsSection>
+					<Text style={[typography.micro, { color: colors.mutedForeground, marginBottom: 8 }]}>
+						Optional path to SSH key for this identity
+					</Text>
+					<TextInput
+						style={[typography.uiLabel, styles.input, { color: colors.foreground, borderColor: colors.border }]}
+						value={sshKey}
+						onChangeText={setSshKey}
+						placeholder="~/.ssh/id_ed25519"
+						placeholderTextColor={colors.mutedForeground}
+						autoCapitalize="none"
+						autoCorrect={false}
+					/>
+				</View>
 
+				{/* Delete */}
 				{!isNewProfile && (
-					<SettingsSection title="Danger Zone">
-						<Pressable
-							onPress={handleDelete}
-							style={[styles.deleteButton, { borderColor: colors.destructive }]}
-						>
-							<Text style={[typography.uiLabel, { color: colors.destructive }]}>
-								Delete Git Identity
+					<View style={[styles.section, { borderTopColor: colors.border + "66" }]}>
+						<Pressable onPress={handleDelete}>
+							<Text style={[typography.meta, { color: colors.destructive }]}>
+								Delete identity
 							</Text>
 						</Pressable>
-					</SettingsSection>
+					</View>
 				)}
-
-				<View style={styles.bottomSpacer} />
 			</ScrollView>
 		</View>
 	);
@@ -308,7 +296,7 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 	},
-	loadingContainer: {
+	centered: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
@@ -316,58 +304,52 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		justifyContent: "space-between",
+		paddingHorizontal: Spacing.md,
+		paddingVertical: Spacing.sm,
 	},
 	backButton: {
-		padding: 4,
-		marginRight: 12,
-		marginLeft: -4,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
 	},
-	headerTitle: {
-		flex: 1,
-		fontWeight: "600",
-	},
-	saveButton: {
-		paddingHorizontal: 16,
-		paddingVertical: 8,
+	saveBtn: {
+		paddingHorizontal: 14,
+		paddingVertical: 6,
 		borderRadius: 6,
-		minWidth: 60,
+		minWidth: 50,
 		alignItems: "center",
 	},
-	scrollView: {
+	scroll: {
 		flex: 1,
 	},
 	content: {
-		padding: 16,
+		paddingHorizontal: Spacing.md,
+		paddingBottom: Spacing.xl,
+		gap: Spacing.md,
 	},
-	formGroup: {
-		marginBottom: 16,
+	field: {
+		gap: 6,
 	},
-	colorPicker: {
+	input: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderWidth: 1,
+		borderRadius: 6,
+	},
+	section: {
+		paddingTop: Spacing.md,
+		borderTopWidth: 1,
+	},
+	colorRow: {
 		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: 12,
+		gap: 10,
 	},
-	colorOption: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
+	colorDot: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
 		alignItems: "center",
 		justifyContent: "center",
-	},
-	colorSelected: {
-		borderWidth: 3,
-		borderColor: "rgba(255,255,255,0.5)",
-	},
-	deleteButton: {
-		borderWidth: 1,
-		borderRadius: 8,
-		paddingVertical: 12,
-		alignItems: "center",
-	},
-	bottomSpacer: {
-		height: 40,
 	},
 });
