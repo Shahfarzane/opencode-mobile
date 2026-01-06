@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { type FileListEntry, filesApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { typography, useTheme } from "../../src/theme";
+import { Spacing, typography, useTheme } from "../../src/theme";
 
 function BackButton() {
 	const { colors } = useTheme();
