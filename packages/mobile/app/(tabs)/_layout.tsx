@@ -63,13 +63,12 @@ export default function TabsLayout() {
 	}, []);
 
 	// Callbacks for chat screen to sync streaming state
-	const updateStreamingSessionsRef = useRef<(ids: Set<string>) => void>((ids) => {
-		setStreamingSessionIds(ids);
-	});
+	// Use refs that get updated each render to avoid stale closures
+	const updateStreamingSessionsRef = useRef<(ids: Set<string>) => void>(() => {});
+	updateStreamingSessionsRef.current = (ids) => setStreamingSessionIds(ids);
 
-	const setCurrentSessionIdRef = useRef<(id: string | null) => void>((id) => {
-		setCurrentSessionId(id);
-	});
+	const setCurrentSessionIdRef = useRef<(id: string | null) => void>(() => {});
+	setCurrentSessionIdRef.current = (id) => setCurrentSessionId(id);
 
 	// Fetch git status to show file count indicator on git tab
 	useEffect(() => {
@@ -242,7 +241,8 @@ export default function TabsLayout() {
 			currentSessionId,
 			isLoadingSessions,
 			isGitRepo,
-			streamingSessionIds,
+			// Note: streamingSessionIds excluded from deps to prevent circular updates
+			// Chat screen updates this via ref, SessionSheet gets it via props
 			openSessionSheet,
 			selectSession,
 			createNewSession,
@@ -263,7 +263,7 @@ export default function TabsLayout() {
 			currentSessionId,
 			isLoadingSessions,
 			isGitRepo,
-			streamingSessionIds,
+			// streamingSessionIds removed - causes circular context updates
 			openSessionSheet,
 			selectSession,
 			createNewSession,

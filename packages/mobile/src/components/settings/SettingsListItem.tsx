@@ -104,11 +104,9 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingHorizontal: 12, // px-3 to match PWA
+		paddingVertical: 8, // py-2 to match PWA
 		borderRadius: 8,
-		marginHorizontal: 8,
-		marginVertical: 2,
 	},
 	iconContainer: {
 		width: 36,

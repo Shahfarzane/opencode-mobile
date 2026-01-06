@@ -1108,7 +1108,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 12,
 		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingVertical: 10, // Compact spacing like PWA
 	},
 	statusIcon: {
 		width: 24,
@@ -1139,9 +1139,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 	},
 	stageAllButton: {
-		borderRadius: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
+		borderRadius: 6,
+		paddingHorizontal: 10,
+		paddingVertical: 5,
 	},
 	emptyState: {
 		flex: 1,
@@ -1163,7 +1163,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		borderRadius: 8,
 		borderWidth: 1,
-		paddingVertical: 12,
+		paddingVertical: 8, // py-2 to match PWA button height
 	},
 	sheetOverlay: {
 		...StyleSheet.absoluteFillObject,
@@ -1204,7 +1204,7 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		borderWidth: 1,
 		borderColor: "transparent",
-		paddingVertical: 12,
+		paddingVertical: 8, // py-2 to match PWA
 	},
 	checkbox: {
 		width: 20,
@@ -1225,9 +1225,9 @@ const styles = StyleSheet.create({
 		gap: 6,
 	},
 	selectionButton: {
-		borderRadius: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
+		borderRadius: 6,
+		paddingHorizontal: 10, // More comfortable touch target
+		paddingVertical: 5,
 	},
 	historySection: {
 		borderTopWidth: 1,

@@ -313,15 +313,12 @@ export default function ChatScreen() {
 	useEventStream(sessionId, handleStreamEvent);
 
 	// Sync streaming state with layout context
+	// Note: _updateStreamingSessions excluded from deps - it's a stable ref
 	useEffect(() => {
 		if (_updateStreamingSessions) {
-			const ids = new Set<string>();
-			if (isLoading && sessionId) {
-				ids.add(sessionId);
-			}
-			_updateStreamingSessions(ids);
+			_updateStreamingSessions(isLoading && sessionId ? new Set([sessionId]) : new Set());
 		}
-	}, [isLoading, sessionId, _updateStreamingSessions]);
+	}, [isLoading, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Sync with context's currentSessionId - defined after loadSessionMessages
 	const prevContextSessionIdRef = useRef<string | null>(null);
