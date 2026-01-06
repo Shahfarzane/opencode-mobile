@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
+	Pressable,
 	ScrollView,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
 import { type Agent, agentsApi, isAgentBuiltIn, isAgentHidden } from "@/api";
-import { RobotIcon } from "@/components/icons";
+import { PlusIcon, RobotIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import { SettingsListItem } from "./SettingsListItem";
 
@@ -54,6 +55,15 @@ export function AgentsList({ selectedAgent, onSelectAgent }: AgentsListProps) {
 				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 					Total {agents.length}
 				</Text>
+				<Pressable
+					onPress={() => onSelectAgent("__new__")}
+					style={[styles.addButton, { backgroundColor: colors.primary }]}
+				>
+					<PlusIcon size={14} color={colors.background} />
+					<Text style={[typography.micro, { color: colors.background, fontWeight: "600" }]}>
+						Add
+					</Text>
+				</Pressable>
 			</View>
 
 			{builtInAgents.length > 0 && (
@@ -128,9 +138,20 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		borderBottomWidth: 1,
+	},
+	addButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		paddingHorizontal: 10,
+		paddingVertical: 6,
+		borderRadius: 6,
 	},
 	section: {
 		paddingTop: 12,
