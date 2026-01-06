@@ -1,32 +1,63 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
-import type { ComponentType } from "react";
-import { Text, View } from "react-native";
+import type { ComponentType, ReactNode } from "react";
+import { Text, type TextStyle, type ViewStyle } from "react-native";
 import { useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
-// React 19 compatibility: library types are incompatible with React 19's stricter render() return type
 const Markdown = MarkdownLib as unknown as ComponentType<{
 	style?: Record<string, unknown>;
 	rules?: Record<string, unknown>;
-	children?: React.ReactNode;
+	children?: ReactNode;
 }>;
 
 type MarkdownRendererProps = {
 	content: string;
 };
 
+interface RuleNode {
+	key: string;
+	content?: string;
+	sourceInfo?: string;
+}
+
+interface RuleStyles {
+	paragraph?: TextStyle;
+	textgroup?: TextStyle;
+	[key: string]: TextStyle | ViewStyle | undefined;
+}
+
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 	const { colors } = useTheme();
 
 	const rules = {
-		fence: (node: { key: string; content: string; sourceInfo: string }) => (
+		fence: (node: RuleNode) => (
 			<CodeBlock
 				key={node.key}
-				code={node.content}
+				code={node.content ?? ""}
 				language={node.sourceInfo || "text"}
 			/>
 		),
-		code_inline: (node: { key: string; content: string }) => (
+		paragraph: (
+			node: RuleNode,
+			children: ReactNode,
+			_parent: unknown,
+			styles: RuleStyles,
+		) => (
+			<Text key={node.key} style={styles.paragraph}>
+				{children}
+			</Text>
+		),
+		textgroup: (
+			node: RuleNode,
+			children: ReactNode,
+			_parent: unknown,
+			styles: RuleStyles,
+		) => (
+			<Text key={node.key} style={styles.textgroup}>
+				{children}
+			</Text>
+		),
+		code_inline: (node: RuleNode) => (
 			<Text
 				key={node.key}
 				style={{
@@ -34,13 +65,9 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 					fontSize: 13,
 					backgroundColor: colors.muted,
 					color: colors.foreground,
-					paddingHorizontal: 5,
-					paddingVertical: 2,
-					borderRadius: 4,
-					includeFontPadding: false,
 				}}
 			>
-				{node.content}
+				{` ${node.content} `}
 			</Text>
 		),
 	};
@@ -76,6 +103,12 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		paragraph: {
 			marginTop: 0,
 			marginBottom: 8,
+			flexDirection: "row" as const,
+			flexWrap: "wrap" as const,
+		},
+		textgroup: {
+			flexDirection: "row" as const,
+			flexWrap: "wrap" as const,
 		},
 		link: {
 			color: colors.primary,
@@ -91,6 +124,8 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		},
 		list_item: {
 			marginBottom: 4,
+			flexDirection: "row" as const,
+			flexWrap: "wrap" as const,
 		},
 		bullet_list: {
 			marginBottom: 8,

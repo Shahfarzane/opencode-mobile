@@ -1,6 +1,10 @@
+export { AgentDetailView } from "./AgentDetailView";
 export { AgentsList } from "./AgentsList";
+export { CommandDetailView } from "./CommandDetailView";
 export { CommandsList } from "./CommandsList";
+export { GitIdentityDetailView } from "./GitIdentityDetailView";
 export { GitIdentitiesList } from "./GitIdentitiesList";
+export { ProviderDetailView } from "./ProviderDetailView";
 export { ProvidersList } from "./ProvidersList";
 export { SettingsListItem } from "./SettingsListItem";
 export { SettingsSection } from "./SettingsSection";
