@@ -633,18 +633,6 @@ export default function GitScreen() {
 		}
 	};
 
-	const handleStageFile = async (path: string) => {
-		try {
-			await gitApi.stageFile(path);
-			await loadStatus();
-		} catch (err) {
-			Alert.alert(
-				"Error",
-				err instanceof Error ? err.message : "Failed to stage file",
-			);
-		}
-	};
-
 	const handleUnstageFile = async (path: string) => {
 		try {
 			await gitApi.unstageFile(path);
@@ -680,21 +668,6 @@ export default function GitScreen() {
 				},
 			],
 		);
-	};
-
-	const handleStageAll = async () => {
-		try {
-			const filesToStage = [...modifiedFiles, ...untrackedFiles];
-			for (const file of filesToStage) {
-				await gitApi.stageFile(file.path);
-			}
-			await loadStatus();
-		} catch (err) {
-			Alert.alert(
-				"Error",
-				err instanceof Error ? err.message : "Failed to stage files",
-			);
-		}
 	};
 
 	// Selection handlers
@@ -767,25 +740,6 @@ export default function GitScreen() {
 			);
 		} catch (err) {
 			console.error("Failed to copy:", err);
-		}
-	};
-
-	// Commit & Push handler
-	const handleCommitAndPush = async (message: string) => {
-		setIsCommitting(true);
-		try {
-			await gitApi.commit(message);
-			await gitApi.push();
-			setShowCommitSheet(false);
-			await loadStatus();
-			Alert.alert("Success", "Changes committed and pushed successfully");
-		} catch (err) {
-			Alert.alert(
-				"Error",
-				err instanceof Error ? err.message : "Failed to commit and push",
-			);
-		} finally {
-			setIsCommitting(false);
 		}
 	};
 
@@ -932,12 +886,7 @@ export default function GitScreen() {
 	};
 
 	return (
-		<View
-			style={[
-				styles.container,
-				{ backgroundColor: colors.background },
-			]}
-		>
+		<View style={[styles.container, { backgroundColor: colors.background }]}>
 			{status && (
 				<View style={[styles.branchBar, { borderBottomColor: colors.border }]}>
 					<View style={styles.branchInfo}>

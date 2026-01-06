@@ -6,7 +6,7 @@ import {
 	type TextInputProps,
 	View,
 } from "react-native";
-import { useTheme, typography } from "@/theme";
+import { typography, useTheme } from "@/theme";
 
 interface InputProps extends TextInputProps {
 	label?: string;
@@ -45,7 +45,13 @@ export const Input = forwardRef<TextInput, InputProps>(
 		return (
 			<View style={styles.container}>
 				{label && (
-					<Text style={[typography.uiLabel, styles.label, { color: colors.foreground }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							styles.label,
+							{ color: colors.foreground },
+						]}
+					>
 						{label}
 					</Text>
 				)}
@@ -106,15 +112,15 @@ Input.displayName = "Input";
 
 const styles = StyleSheet.create({
 	container: {
-		width: '100%',
+		width: "100%",
 	},
 	label: {
 		marginBottom: 8,
 	},
 	inputWrapper: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		borderRadius: 8,     // Match desktop rounded-lg (was 12)
+		flexDirection: "row",
+		alignItems: "center",
+		borderRadius: 8, // Match desktop rounded-lg (was 12)
 		borderWidth: 1,
 	},
 	leftIcon: {
@@ -125,9 +131,9 @@ const styles = StyleSheet.create({
 	},
 	input: {
 		flex: 1,
-		minHeight: 44,       // Keep mobile-friendly touch target
+		minHeight: 44, // Keep mobile-friendly touch target
 		paddingHorizontal: 12, // Match desktop px-3 (was 16)
-		paddingVertical: 8,    // Adjusted for mobile (was 12)
+		paddingVertical: 8, // Adjusted for mobile (was 12)
 	},
 	helperText: {
 		marginTop: 6,

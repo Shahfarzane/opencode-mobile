@@ -1,4 +1,4 @@
-export { WarmSandDark, WarmSandLight, getThemeColors } from "./colors";
+export { getThemeColors, WarmSandDark, WarmSandLight } from "./colors";
 export { useColors, useTheme } from "./hooks";
 export { Radius, SemanticSpacing, Spacing } from "./spacing";
 export type { ThemeColors, ThemeContextValue } from "./ThemeProvider";

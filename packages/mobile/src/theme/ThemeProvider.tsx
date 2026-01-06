@@ -1,9 +1,9 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
 	type Theme,
 	warmSandDarkTheme,
 	warmSandLightTheme,
 } from "@openchamber/shared/themes";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type React from "react";
 import {
 	createContext,
@@ -181,7 +181,11 @@ export function ThemeProvider({ children, forcedTheme }: ThemeProviderProps) {
 
 	useEffect(() => {
 		AsyncStorage.getItem(THEME_MODE_KEY).then((savedMode) => {
-			if (savedMode === "system" || savedMode === "light" || savedMode === "dark") {
+			if (
+				savedMode === "system" ||
+				savedMode === "light" ||
+				savedMode === "dark"
+			) {
 				setThemeModeState(savedMode);
 			}
 			setIsLoaded(true);

@@ -3739,20 +3739,48 @@ async function main(options = {}) {
 
   let ptyLib = null;
   let ptyLoadError = null;
+  let ptyBackend = null; // 'bun-pty' or 'node-pty'
+
+  // Detect if running under Bun runtime
+  const isBunRuntime = typeof globalThis.Bun !== 'undefined';
+  console.log('[PTY] Runtime detection:', { isBunRuntime, bunVersion: globalThis.Bun?.version });
+
   const getPtyLib = async () => {
     if (ptyLib) return ptyLib;
     if (ptyLoadError) throw ptyLoadError;
 
+    // Try bun-pty first if running under Bun (node-pty has compatibility issues with Bun)
+    if (isBunRuntime) {
+      try {
+        console.log('[PTY] Attempting to load bun-pty...');
+        ptyLib = await import('bun-pty');
+        ptyBackend = 'bun-pty';
+        console.log('[PTY] bun-pty loaded successfully');
+        return ptyLib;
+      } catch (bunPtyError) {
+        console.error('[PTY] bun-pty failed to load:', bunPtyError);
+        console.log('[PTY] Falling back to node-pty...');
+      }
+    } else {
+      console.log('[PTY] Not running under Bun, using node-pty');
+    }
+
+    // Try node-pty (default for Node.js runtime)
     try {
       ptyLib = await import('node-pty');
+      ptyBackend = 'node-pty';
       console.log('node-pty loaded successfully');
       return ptyLib;
     } catch (error) {
       ptyLoadError = error;
-      console.error('Failed to load node-pty:', error.message);
+      console.error('Failed to load PTY library:', error.message);
       console.error('Terminal functionality will not be available.');
-      console.error('To fix: run "npm rebuild node-pty" or "npm install"');
-      throw new Error('node-pty is not available. Run: npm rebuild node-pty');
+      if (isBunRuntime) {
+        console.error('To fix: run "bun add bun-pty" or switch to Node.js runtime');
+      } else {
+        console.error('To fix: run "npm rebuild node-pty" or "npm install"');
+      }
+      throw new Error('PTY library is not available. Terminal disabled.');
     }
   };
 

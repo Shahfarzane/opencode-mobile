@@ -1,6 +1,11 @@
 import NetInfo, { type NetInfoState } from "@react-native-community/netinfo";
-import { sessionsApi, type Session, type SessionMessage } from "../api/sessions";
 import {
+	type Session,
+	type SessionMessage,
+	sessionsApi,
+} from "../api/sessions";
+import {
+	type CachedSession,
 	cacheMessages,
 	cacheSessionList,
 	getCachedMessages,
@@ -9,7 +14,6 @@ import {
 	isSessionListStale,
 	removeCachedSession,
 	updateCachedSession,
-	type CachedSession,
 } from "./offlineCache";
 
 export type NetworkStatus = "online" | "offline" | "unknown";
@@ -28,7 +32,9 @@ export function getNetworkStatus(): NetworkStatus {
 	return currentNetworkStatus;
 }
 
-export function subscribeToNetworkStatus(callback: (status: NetworkStatus) => void): () => void {
+export function subscribeToNetworkStatus(
+	callback: (status: NetworkStatus) => void,
+): () => void {
 	networkListeners.push(callback);
 	callback(currentNetworkStatus);
 
@@ -102,7 +108,10 @@ export async function fetchSessionsWithCache(): Promise<{
 			stale: false,
 		};
 	} catch (error) {
-		console.error("[SessionSync] Failed to fetch sessions, using cache:", error);
+		console.error(
+			"[SessionSync] Failed to fetch sessions, using cache:",
+			error,
+		);
 
 		if (cachedSessions.length > 0) {
 			return {
@@ -166,7 +175,10 @@ export async function fetchMessagesWithCache(
 			isComplete: true,
 		};
 	} catch (error) {
-		console.error("[SessionSync] Failed to fetch messages, using cache:", error);
+		console.error(
+			"[SessionSync] Failed to fetch messages, using cache:",
+			error,
+		);
 
 		const cached = await getCachedMessages(sessionId);
 		if (cached) {
@@ -236,7 +248,10 @@ export async function updateSessionWithSync(
 		try {
 			await sessionsApi.updateTitle(sessionId, updates.title);
 		} catch (error) {
-			console.error("[SessionSync] Failed to update session title on server:", error);
+			console.error(
+				"[SessionSync] Failed to update session title on server:",
+				error,
+			);
 		}
 	}
 
@@ -264,7 +279,10 @@ export function getCachedSessionById(
 	return sessions.find((s) => s.id === sessionId);
 }
 
-export function isSessionCached(sessions: CachedSession[], sessionId: string): boolean {
+export function isSessionCached(
+	sessions: CachedSession[],
+	sessionId: string,
+): boolean {
 	const session = getCachedSessionById(sessions, sessionId);
 	return session?.isFullCache ?? false;
 }

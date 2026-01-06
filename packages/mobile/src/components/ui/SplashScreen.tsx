@@ -138,7 +138,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
 					{LEFT_FACE_CELLS.map((cell, index) => (
 						<Path
-							key={`left-${index}`}
+							key={`left-${cell.path}-${index}`}
 							d={cell.path}
 							fill={cellHighlightColor}
 							opacity={cell.opacity}
@@ -155,7 +155,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
 					{RIGHT_FACE_CELLS.map((cell, index) => (
 						<Path
-							key={`right-${index}`}
+							key={`right-${cell.path}-${index}`}
 							d={cell.path}
 							fill={cellHighlightColor}
 							opacity={cell.opacity}

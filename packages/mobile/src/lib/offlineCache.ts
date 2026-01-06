@@ -80,7 +80,10 @@ async function loadLRUOrder(): Promise<string[]> {
 
 async function saveLRUOrder(): Promise<void> {
 	try {
-		await AsyncStorage.setItem(STORAGE_KEYS.LRU_ORDER, JSON.stringify(lruOrder));
+		await AsyncStorage.setItem(
+			STORAGE_KEYS.LRU_ORDER,
+			JSON.stringify(lruOrder),
+		);
 	} catch (error) {
 		console.error("[OfflineCache] Failed to save LRU order:", error);
 	}
@@ -134,7 +137,10 @@ async function loadCacheStats(): Promise<CacheStats> {
 
 async function saveCacheStats(): Promise<void> {
 	try {
-		await AsyncStorage.setItem(STORAGE_KEYS.CACHE_STATS, JSON.stringify(cacheStats));
+		await AsyncStorage.setItem(
+			STORAGE_KEYS.CACHE_STATS,
+			JSON.stringify(cacheStats),
+		);
 	} catch (error) {
 		console.error("[OfflineCache] Failed to save cache stats:", error);
 	}
@@ -165,7 +171,9 @@ export async function getCachedSessionList(): Promise<{
 			AsyncStorage.getItem(STORAGE_KEYS.SESSION_LIST_META),
 		]);
 
-		const sessions: CachedSession[] = sessionsJson ? JSON.parse(sessionsJson) : [];
+		const sessions: CachedSession[] = sessionsJson
+			? JSON.parse(sessionsJson)
+			: [];
 		const meta: SessionListMeta | null = metaJson ? JSON.parse(metaJson) : null;
 
 		cacheStats.hits++;
@@ -190,16 +198,18 @@ export async function cacheSessionList(
 		const { sessions: existingCached } = await getCachedSessionList();
 		const existingMap = new Map(existingCached.map((s) => [s.id, s]));
 
-		const cachedSessions: CachedSession[] = sessions.slice(0, config.maxSessions).map((session) => {
-			const existing = existingMap.get(session.id);
-			return {
-				...session,
-				cachedAt: existing?.cachedAt ?? now,
-				syncedAt: now,
-				isFullCache: existing?.isFullCache ?? false,
-				messageCount: existing?.messageCount ?? 0,
-			};
-		});
+		const cachedSessions: CachedSession[] = sessions
+			.slice(0, config.maxSessions)
+			.map((session) => {
+				const existing = existingMap.get(session.id);
+				return {
+					...session,
+					cachedAt: existing?.cachedAt ?? now,
+					syncedAt: now,
+					isFullCache: existing?.isFullCache ?? false,
+					messageCount: existing?.messageCount ?? 0,
+				};
+			});
 
 		const meta: SessionListMeta = {
 			fetchedAt: now,
@@ -208,8 +218,14 @@ export async function cacheSessionList(
 		};
 
 		await Promise.all([
-			AsyncStorage.setItem(STORAGE_KEYS.SESSION_LIST, JSON.stringify(cachedSessions)),
-			AsyncStorage.setItem(STORAGE_KEYS.SESSION_LIST_META, JSON.stringify(meta)),
+			AsyncStorage.setItem(
+				STORAGE_KEYS.SESSION_LIST,
+				JSON.stringify(cachedSessions),
+			),
+			AsyncStorage.setItem(
+				STORAGE_KEYS.SESSION_LIST_META,
+				JSON.stringify(meta),
+			),
 		]);
 
 		for (const session of cachedSessions) {
@@ -220,7 +236,9 @@ export async function cacheSessionList(
 	}
 }
 
-export async function isSessionListStale(config: CacheConfig = DEFAULT_CACHE_CONFIG): Promise<boolean> {
+export async function isSessionListStale(
+	config: CacheConfig = DEFAULT_CACHE_CONFIG,
+): Promise<boolean> {
 	try {
 		const metaJson = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_LIST_META);
 		if (!metaJson) return true;
@@ -253,7 +271,10 @@ export async function updateCachedSession(session: Session): Promise<void> {
 			});
 		}
 
-		await AsyncStorage.setItem(STORAGE_KEYS.SESSION_LIST, JSON.stringify(sessions));
+		await AsyncStorage.setItem(
+			STORAGE_KEYS.SESSION_LIST,
+			JSON.stringify(sessions),
+		);
 		await touchSession(session.id);
 	} catch (error) {
 		console.error("[OfflineCache] Failed to update cached session:", error);
@@ -264,7 +285,10 @@ export async function removeCachedSession(sessionId: string): Promise<void> {
 	try {
 		const { sessions } = await getCachedSessionList();
 		const filtered = sessions.filter((s) => s.id !== sessionId);
-		await AsyncStorage.setItem(STORAGE_KEYS.SESSION_LIST, JSON.stringify(filtered));
+		await AsyncStorage.setItem(
+			STORAGE_KEYS.SESSION_LIST,
+			JSON.stringify(filtered),
+		);
 
 		await clearCachedMessages(sessionId);
 		await removeFromLRU(sessionId);
@@ -273,7 +297,9 @@ export async function removeCachedSession(sessionId: string): Promise<void> {
 	}
 }
 
-export async function getCachedMessages(sessionId: string): Promise<CachedMessages | null> {
+export async function getCachedMessages(
+	sessionId: string,
+): Promise<CachedMessages | null> {
 	try {
 		await ensureCacheDir();
 		const cacheFile = getMessageCacheFile(sessionId);
@@ -367,7 +393,12 @@ export async function appendCachedMessages(
 			(a, b) => (a.info.createdAt ?? 0) - (b.info.createdAt ?? 0),
 		);
 
-		await cacheMessages(sessionId, merged, existing?.isComplete ?? false, config);
+		await cacheMessages(
+			sessionId,
+			merged,
+			existing?.isComplete ?? false,
+			config,
+		);
 	} catch (error) {
 		console.error("[OfflineCache] Failed to append cached messages:", error);
 	}
@@ -381,7 +412,10 @@ export async function clearCachedMessages(sessionId: string): Promise<void> {
 			const fileInfo = cacheFile.size;
 			if (typeof fileInfo === "number") {
 				cacheStats.totalSize = Math.max(0, cacheStats.totalSize - fileInfo);
-				cacheStats.sessionsWithMessages = Math.max(0, cacheStats.sessionsWithMessages - 1);
+				cacheStats.sessionsWithMessages = Math.max(
+					0,
+					cacheStats.sessionsWithMessages - 1,
+				);
 			}
 
 			await cacheFile.delete();
@@ -406,14 +440,23 @@ async function updateSessionCacheMetadata(
 		if (index > -1) {
 			sessions[index].messageCount = messageCount;
 			sessions[index].isFullCache = isFullCache;
-			await AsyncStorage.setItem(STORAGE_KEYS.SESSION_LIST, JSON.stringify(sessions));
+			await AsyncStorage.setItem(
+				STORAGE_KEYS.SESSION_LIST,
+				JSON.stringify(sessions),
+			);
 		}
 	} catch (error) {
-		console.error("[OfflineCache] Failed to update session cache metadata:", error);
+		console.error(
+			"[OfflineCache] Failed to update session cache metadata:",
+			error,
+		);
 	}
 }
 
-async function evictIfNeeded(newSize: number, config: CacheConfig): Promise<void> {
+async function evictIfNeeded(
+	newSize: number,
+	config: CacheConfig,
+): Promise<void> {
 	await loadCacheStats();
 
 	if (cacheStats.totalSize + newSize <= config.maxCacheSize) {
@@ -423,7 +466,10 @@ async function evictIfNeeded(newSize: number, config: CacheConfig): Promise<void
 	console.log("[OfflineCache] Evicting to make room for new data...");
 
 	const toEvict = await getLeastRecentlyUsed(
-		Math.ceil((cacheStats.totalSize + newSize - config.maxCacheSize) / (config.maxCacheSize / config.maxSessions)),
+		Math.ceil(
+			(cacheStats.totalSize + newSize - config.maxCacheSize) /
+				(config.maxCacheSize / config.maxSessions),
+		),
 	);
 
 	for (const sessionId of toEvict) {
@@ -438,7 +484,9 @@ async function evictIfNeeded(newSize: number, config: CacheConfig): Promise<void
 	await saveCacheStats();
 }
 
-export async function cleanupExpiredCache(config: CacheConfig = DEFAULT_CACHE_CONFIG): Promise<void> {
+export async function cleanupExpiredCache(
+	config: CacheConfig = DEFAULT_CACHE_CONFIG,
+): Promise<void> {
 	try {
 		await ensureCacheDir();
 
@@ -469,9 +517,14 @@ export async function cleanupExpiredCache(config: CacheConfig = DEFAULT_CACHE_CO
 		}
 
 		if (cleanedCount > 0) {
-			console.log(`[OfflineCache] Cleaned up ${cleanedCount} expired cache files`);
+			console.log(
+				`[OfflineCache] Cleaned up ${cleanedCount} expired cache files`,
+			);
 			cacheStats.lastCleanup = now;
-			cacheStats.sessionsWithMessages = Math.max(0, cacheStats.sessionsWithMessages - cleanedCount);
+			cacheStats.sessionsWithMessages = Math.max(
+				0,
+				cacheStats.sessionsWithMessages - cleanedCount,
+			);
 			await saveCacheStats();
 		}
 	} catch (error) {
@@ -493,15 +546,22 @@ export async function getModelFavorites(): Promise<ModelPreference[]> {
 	}
 }
 
-export async function setModelFavorites(favorites: ModelPreference[]): Promise<void> {
+export async function setModelFavorites(
+	favorites: ModelPreference[],
+): Promise<void> {
 	try {
-		await AsyncStorage.setItem(STORAGE_KEYS.MODEL_FAVORITES, JSON.stringify(favorites));
+		await AsyncStorage.setItem(
+			STORAGE_KEYS.MODEL_FAVORITES,
+			JSON.stringify(favorites),
+		);
 	} catch (error) {
 		console.error("[OfflineCache] Failed to save model favorites:", error);
 	}
 }
 
-export async function toggleModelFavorite(model: ModelPreference): Promise<boolean> {
+export async function toggleModelFavorite(
+	model: ModelPreference,
+): Promise<boolean> {
 	const favorites = await getModelFavorites();
 	const index = favorites.findIndex(
 		(f) => f.providerId === model.providerId && f.modelId === model.modelId,
@@ -517,14 +577,18 @@ export async function toggleModelFavorite(model: ModelPreference): Promise<boole
 	return index === -1;
 }
 
-export async function isModelFavorite(model: ModelPreference): Promise<boolean> {
+export async function isModelFavorite(
+	model: ModelPreference,
+): Promise<boolean> {
 	const favorites = await getModelFavorites();
 	return favorites.some(
 		(f) => f.providerId === model.providerId && f.modelId === model.modelId,
 	);
 }
 
-export async function getModelRecents(limit: number = 5): Promise<ModelPreference[]> {
+export async function getModelRecents(
+	limit: number = 5,
+): Promise<ModelPreference[]> {
 	try {
 		const stored = await AsyncStorage.getItem(STORAGE_KEYS.MODEL_RECENTS);
 		const recents: ModelPreference[] = stored ? JSON.parse(stored) : [];
@@ -534,19 +598,26 @@ export async function getModelRecents(limit: number = 5): Promise<ModelPreferenc
 	}
 }
 
-export async function addModelToRecents(model: ModelPreference, maxRecents: number = 10): Promise<void> {
+export async function addModelToRecents(
+	model: ModelPreference,
+	maxRecents: number = 10,
+): Promise<void> {
 	try {
 		const recents = await getModelRecents(maxRecents);
 
 		const filtered = recents.filter(
-			(r) => !(r.providerId === model.providerId && r.modelId === model.modelId),
+			(r) =>
+				!(r.providerId === model.providerId && r.modelId === model.modelId),
 		);
 
 		filtered.unshift(model);
 
 		const limited = filtered.slice(0, maxRecents);
 
-		await AsyncStorage.setItem(STORAGE_KEYS.MODEL_RECENTS, JSON.stringify(limited));
+		await AsyncStorage.setItem(
+			STORAGE_KEYS.MODEL_RECENTS,
+			JSON.stringify(limited),
+		);
 	} catch (error) {
 		console.error("[OfflineCache] Failed to add model to recents:", error);
 	}

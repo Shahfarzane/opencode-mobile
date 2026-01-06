@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { type FileListEntry, filesApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { Spacing, typography, useTheme } from "../../src/theme";
+import { typography, useTheme } from "../../src/theme";
 
 function BackButton() {
 	const { colors } = useTheme();
@@ -195,7 +195,7 @@ export default function DirectoryScreen() {
 				styles.container,
 				{
 					backgroundColor: colors.background,
-					paddingTop: insets.top + Spacing.md,
+					paddingTop: insets.top + 16,
 				},
 			]}
 		>
@@ -300,7 +300,7 @@ export default function DirectoryScreen() {
 					{
 						borderTopColor: colors.border + "66",
 						backgroundColor: colors.background,
-						paddingBottom: insets.bottom + Spacing.lg,
+						paddingBottom: insets.bottom + 24,
 					},
 				]}
 			>
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	header: {
-		paddingHorizontal: Spacing.lg,
+		paddingHorizontal: 24,
 	},
 	backBtn: {
 		flexDirection: "row",
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
 		paddingRight: 12,
 	},
 	pathSection: {
-		paddingHorizontal: Spacing.lg,
+		paddingHorizontal: 24,
 		marginTop: 24,
 	},
 	pathInput: {
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		marginHorizontal: Spacing.md,
+		marginHorizontal: 16,
 		marginTop: 16,
 		padding: 14,
 		borderWidth: 1,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
-		marginHorizontal: Spacing.md,
+		marginHorizontal: 16,
 		marginBottom: 8,
 		padding: 14,
 		borderWidth: 1,
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
-		paddingHorizontal: Spacing.lg,
+		paddingHorizontal: 24,
 	},
 	retryBtn: {
 		marginTop: 16,
@@ -388,8 +388,8 @@ const styles = StyleSheet.create({
 	},
 	bottomBar: {
 		borderTopWidth: 1,
-		paddingHorizontal: Spacing.lg,
-		paddingTop: Spacing.md,
+		paddingHorizontal: 24,
+		paddingTop: 16,
 	},
 	selectBtn: {
 		marginTop: 12,
