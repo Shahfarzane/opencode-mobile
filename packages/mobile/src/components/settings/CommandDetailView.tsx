@@ -8,6 +8,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import Svg, { Path } from "react-native-svg";
 import {
 	type Agent,
@@ -101,6 +102,7 @@ export function CommandDetailView({
 			return;
 		}
 
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 		setIsSaving(true);
 		try {
 			const config: CommandConfig = {
@@ -119,12 +121,15 @@ export function CommandDetailView({
 			}
 
 			if (success) {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 				Alert.alert("Success", isNewCommand ? "Command created" : "Command updated");
 				onBack();
 			} else {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 				Alert.alert("Error", "Failed to save command");
 			}
 		} catch (error) {
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert(
 				"Error",
 				error instanceof Error ? error.message : "Failed to save command",
@@ -135,6 +140,7 @@ export function CommandDetailView({
 	};
 
 	const handleDelete = () => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 		Alert.alert(
 			"Delete Command",
 			`Are you sure you want to delete "/${commandName}"?`,
@@ -148,12 +154,15 @@ export function CommandDetailView({
 						try {
 							const success = await commandsApi.delete(commandName);
 							if (success) {
+								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 								onDeleted?.();
 								onBack();
 							} else {
+								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 								Alert.alert("Error", "Failed to delete command");
 							}
 						} catch (error) {
+							Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 							Alert.alert(
 								"Error",
 								error instanceof Error ? error.message : "Failed to delete",

@@ -8,6 +8,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import Svg, { Path } from "react-native-svg";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { typography, useTheme } from "@/theme";
@@ -88,6 +89,7 @@ export function GitIdentityDetailView({
 			return;
 		}
 
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 		setIsSaving(true);
 		try {
 			const profileData: GitIdentityProfile = {
@@ -101,13 +103,16 @@ export function GitIdentityDetailView({
 
 			if (isNewProfile) {
 				await gitApi.createIdentity(profileData);
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 				Alert.alert("Success", "Git identity created");
 			} else {
 				await gitApi.updateIdentity(profileId, profileData);
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 				Alert.alert("Success", "Git identity updated");
 			}
 			onBack();
 		} catch (error) {
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert(
 				"Error",
 				error instanceof Error ? error.message : "Failed to save git identity",
@@ -118,6 +123,7 @@ export function GitIdentityDetailView({
 	};
 
 	const handleDelete = () => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 		Alert.alert(
 			"Delete Git Identity",
 			`Are you sure you want to delete "${name}"?`,
@@ -130,9 +136,11 @@ export function GitIdentityDetailView({
 						setIsSaving(true);
 						try {
 							await gitApi.deleteIdentity(profileId);
+							Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 							onDeleted?.();
 							onBack();
 						} catch (error) {
+							Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 							Alert.alert(
 								"Error",
 								error instanceof Error ? error.message : "Failed to delete",
