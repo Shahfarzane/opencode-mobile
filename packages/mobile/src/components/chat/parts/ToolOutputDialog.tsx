@@ -191,7 +191,12 @@ export function ToolOutputDialog({
 				<View style={styles.header}>
 					<View style={styles.headerTitle}>
 						{getToolIcon(toolName, colors.foreground)}
-						<Text style={[typography.uiHeader, { color: colors.foreground, fontWeight: "600" }]}>
+						<Text
+							style={[
+								typography.uiHeader,
+								{ color: colors.foreground, fontWeight: "600" },
+							]}
+						>
 							{toolName}
 						</Text>
 					</View>
@@ -246,88 +251,88 @@ export function ToolOutputDialog({
 							</View>
 						)}
 
-					{part.output && part.output.trim().length > 0 && (
-						<View style={styles.section}>
-							<View style={styles.sectionHeader}>
-								<Text
+						{part.output && part.output.trim().length > 0 && (
+							<View style={styles.section}>
+								<View style={styles.sectionHeader}>
+									<Text
+										style={[
+											typography.meta,
+											{ color: colors.mutedForeground, fontWeight: "500" },
+										]}
+									>
+										Output
+									</Text>
+									<Pressable onPress={handleCopyOutput} hitSlop={8}>
+										<CopyIcon color={colors.mutedForeground} />
+									</Pressable>
+								</View>
+								<View
 									style={[
-										typography.meta,
-										{ color: colors.mutedForeground, fontWeight: "500" },
+										styles.codeBlock,
+										{
+											backgroundColor: "transparent",
+											borderColor: `${colors.border}33`,
+										},
 									]}
 								>
-									Output
-								</Text>
-								<Pressable onPress={handleCopyOutput} hitSlop={8}>
-									<CopyIcon color={colors.mutedForeground} />
-								</Pressable>
+									<Text
+										style={[typography.code, { color: colors.foreground }]}
+										selectable
+									>
+										{part.output}
+									</Text>
+								</View>
 							</View>
-							<View
-								style={[
-									styles.codeBlock,
-									{
-										backgroundColor: "transparent",
-										borderColor: `${colors.border}33`,
-									},
-								]}
-							>
-								<Text
-									style={[typography.code, { color: colors.foreground }]}
-									selectable
-								>
-									{part.output}
-								</Text>
-							</View>
-						</View>
-					)}
+						)}
 
-					{part.error && part.error.trim().length > 0 && (
-						<View style={styles.section}>
-							<View style={styles.sectionHeader}>
-								<Text
+						{part.error && part.error.trim().length > 0 && (
+							<View style={styles.section}>
+								<View style={styles.sectionHeader}>
+									<Text
+										style={[
+											typography.meta,
+											{ color: colors.destructive, fontWeight: "500" },
+										]}
+									>
+										Error
+									</Text>
+									<Pressable onPress={handleCopyOutput} hitSlop={8}>
+										<CopyIcon color={colors.mutedForeground} />
+									</Pressable>
+								</View>
+								<View
 									style={[
-										typography.meta,
-										{ color: colors.destructive, fontWeight: "500" },
+										styles.codeBlock,
+										{
+											backgroundColor: `${colors.destructive}10`,
+											borderColor: `${colors.destructive}33`,
+										},
 									]}
 								>
-									Error
-								</Text>
-								<Pressable onPress={handleCopyOutput} hitSlop={8}>
-									<CopyIcon color={colors.mutedForeground} />
-								</Pressable>
+									<Text
+										style={[typography.code, { color: colors.destructive }]}
+										selectable
+									>
+										{part.error}
+									</Text>
+								</View>
 							</View>
-							<View
-								style={[
-									styles.codeBlock,
-									{
-										backgroundColor: `${colors.destructive}10`,
-										borderColor: `${colors.destructive}33`,
-									},
-								]}
-							>
-								<Text
-									style={[typography.code, { color: colors.destructive }]}
-									selectable
-								>
-									{part.error}
-								</Text>
-							</View>
-						</View>
-					)}
+						)}
 
-					{!part.output && !part.error && (
-						<View style={styles.emptyState}>
-							<Text
-								style={[typography.body, { color: colors.mutedForeground }]}
-							>
-								Command completed successfully
-							</Text>
-							<Text
-								style={[typography.micro, { color: colors.mutedForeground }]}
-							>
-								No output was produced
-							</Text>
-						</View>
-					)}
+						{!part.output && !part.error && (
+							<View style={styles.emptyState}>
+								<Text
+									style={[typography.body, { color: colors.mutedForeground }]}
+								>
+									Command completed successfully
+								</Text>
+								<Text
+									style={[typography.micro, { color: colors.mutedForeground }]}
+								>
+									No output was produced
+								</Text>
+							</View>
+						)}
 					</ScrollView>
 				</View>
 			</View>

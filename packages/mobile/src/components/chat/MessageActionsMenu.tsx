@@ -1,6 +1,4 @@
-import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
@@ -79,7 +77,6 @@ export function MessageActionsMenu({
 	onCopy,
 	onBranchSession,
 	onRevert,
-	isAssistantMessage,
 }: MessageActionsMenuProps) {
 	const { colors, isDark } = useTheme();
 
@@ -179,37 +176,6 @@ export function MessageActionsMenu({
 			</Pressable>
 		</Modal>
 	);
-}
-
-interface UseMessageActionsReturn {
-	showMenu: boolean;
-	openMenu: () => Promise<void>;
-	closeMenu: () => void;
-	copyMessageContent: (content: string) => Promise<void>;
-}
-
-export function useMessageActions(): UseMessageActionsReturn {
-	const [showMenu, setShowMenu] = useState(false);
-
-	const openMenu = async () => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-		setShowMenu(true);
-	};
-
-	const closeMenu = () => {
-		setShowMenu(false);
-	};
-
-	const copyMessageContent = async (content: string) => {
-		await Clipboard.setStringAsync(content);
-	};
-
-	return {
-		showMenu,
-		openMenu,
-		closeMenu,
-		copyMessageContent,
-	};
 }
 
 const styles = StyleSheet.create({

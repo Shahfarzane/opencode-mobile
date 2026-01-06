@@ -14,8 +14,8 @@ import Svg, { Path } from "react-native-svg";
 import { AiAgentIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
 import {
-	AttachedFilesList,
 	type AttachedFile,
+	AttachedFilesList,
 	FileAttachmentButton,
 } from "./FileAttachment";
 
@@ -309,7 +309,8 @@ function ProviderLogo({ providerId }: { providerId: string }) {
 		const normalizedId = id.toLowerCase();
 		if (normalizedId.includes("anthropic")) return "A\\";
 		if (normalizedId.includes("openai")) return "O";
-		if (normalizedId.includes("google") || normalizedId.includes("gemini")) return "G";
+		if (normalizedId.includes("google") || normalizedId.includes("gemini"))
+			return "G";
 		if (normalizedId.includes("mistral")) return "M";
 		if (normalizedId.includes("groq")) return "Gr";
 		if (normalizedId.includes("ollama")) return "Ol";
@@ -319,7 +320,12 @@ function ProviderLogo({ providerId }: { providerId: string }) {
 	};
 
 	return (
-		<Text style={[typography.micro, { color: colors.mutedForeground, fontWeight: "600" }]}>
+		<Text
+			style={[
+				typography.micro,
+				{ color: colors.mutedForeground, fontWeight: "600" },
+			]}
+		>
 			{getProviderSymbol(providerId)}
 		</Text>
 	);
@@ -356,7 +362,9 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 	return (
 		<View style={styles.agentBadgeContainer}>
 			<AiAgentIcon size={14} color={badgeColor} />
-			<Text style={[typography.micro, { color: badgeColor, fontWeight: "500" }]}>
+			<Text
+				style={[typography.micro, { color: badgeColor, fontWeight: "500" }]}
+			>
 				{capitalizedName}
 			</Text>
 		</View>
@@ -581,7 +589,8 @@ export function ChatInput({
 		setAutocompleteItems([]);
 	}, []);
 
-	const canSend = (text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
+	const canSend =
+		(text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
 	// Match desktop's semi-transparent input background
 	const inputBackground = colors.input + "1A"; // ~10% opacity like bg-input/10
@@ -661,7 +670,10 @@ export function ChatInput({
 									<>
 										<ProviderLogo providerId={modelInfo.providerId} />
 										<Text
-											style={[typography.micro, { color: colors.mutedForeground }]}
+											style={[
+												typography.micro,
+												{ color: colors.mutedForeground },
+											]}
 											numberOfLines={1}
 										>
 											{modelInfo.modelName}
@@ -669,7 +681,10 @@ export function ChatInput({
 									</>
 								) : (
 									<Text
-										style={[typography.micro, { color: colors.mutedForeground }]}
+										style={[
+											typography.micro,
+											{ color: colors.mutedForeground },
+										]}
 										numberOfLines={1}
 									>
 										Select model

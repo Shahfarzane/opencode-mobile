@@ -5,7 +5,13 @@ import { typography, useTheme } from "@/theme";
 import { ToolOutputDialog } from "./ToolOutputDialog";
 
 // Chevron down icon (matches ReasoningPart)
-function ChevronDownIcon({ size = 14, color }: { size?: number; color: string }) {
+function ChevronDownIcon({
+	size = 14,
+	color,
+}: {
+	size?: number;
+	color: string;
+}) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
 			<Path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z" />
@@ -145,8 +151,6 @@ function getToolIcon(toolName: string, color: string) {
 	);
 }
 
-
-
 function tryParseSessionId(output: string): string | undefined {
 	// Try to extract session ID from output - common patterns
 	const patterns = [
@@ -201,7 +205,8 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 
 	// Check if this is a Task tool with a subagent session
 	const isTaskTool = toolName.toLowerCase() === "task";
-	const subAgentSessionId = part.sessionId ||
+	const subAgentSessionId =
+		part.sessionId ||
 		(part.input?.sessionId as string) ||
 		(part.output && tryParseSessionId(part.output));
 
@@ -212,20 +217,35 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 				style={styles.header}
 			>
 				<View style={styles.headerLeft}>
-					<View style={{ width: 14, height: 14, justifyContent: "center", alignItems: "center" }}>
+					<View
+						style={{
+							width: 14,
+							height: 14,
+							justifyContent: "center",
+							alignItems: "center",
+						}}
+					>
 						{isExpanded ? (
 							<ChevronDownIcon size={14} color={colors.mutedForeground} />
 						) : (
-							getToolIcon(toolName, part.state === "error" ? colors.destructive : colors.mutedForeground)
+							getToolIcon(
+								toolName,
+								part.state === "error"
+									? colors.destructive
+									: colors.mutedForeground,
+							)
 						)}
 					</View>
-					<Text 
+					<Text
 						style={[
-							typography.meta, 
-							{ 
-								color: part.state === "error" ? colors.destructive : colors.foreground,
+							typography.meta,
+							{
+								color:
+									part.state === "error"
+										? colors.destructive
+										: colors.foreground,
 								fontWeight: "500",
-							}
+							},
 						]}
 					>
 						{toolName}
