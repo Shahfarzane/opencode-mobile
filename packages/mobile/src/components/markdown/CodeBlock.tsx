@@ -33,7 +33,13 @@ const LANGUAGE_COLORS: Record<string, string> = {
 };
 
 // Simple syntax highlighting tokens
-type TokenType = "keyword" | "string" | "comment" | "number" | "function" | "default";
+type TokenType =
+	| "keyword"
+	| "string"
+	| "comment"
+	| "number"
+	| "function"
+	| "default";
 
 interface Token {
 	type: TokenType;
@@ -44,58 +50,179 @@ interface Token {
 function getTokenColor(type: TokenType, isDark: boolean): string {
 	const colors = isDark
 		? {
-				keyword: "#C586C0",    // purple
-				string: "#CE9178",     // orange
-				comment: "#6A9955",    // green
-				number: "#B5CEA8",     // light green
-				function: "#DCDCAA",   // yellow
-				default: "#D4D4D4",    // light gray
-		  }
+				keyword: "#C586C0", // purple
+				string: "#CE9178", // orange
+				comment: "#6A9955", // green
+				number: "#B5CEA8", // light green
+				function: "#DCDCAA", // yellow
+				default: "#D4D4D4", // light gray
+			}
 		: {
-				keyword: "#AF00DB",    // purple
-				string: "#A31515",     // red
-				comment: "#008000",    // green
-				number: "#098658",     // teal
-				function: "#795E26",   // brown
-				default: "#000000",    // black
-		  };
+				keyword: "#AF00DB", // purple
+				string: "#A31515", // red
+				comment: "#008000", // green
+				number: "#098658", // teal
+				function: "#795E26", // brown
+				default: "#000000", // black
+			};
 	return colors[type];
 }
 
 // Keywords for common languages
 const KEYWORDS: Record<string, Set<string>> = {
 	typescript: new Set([
-		"const", "let", "var", "function", "return", "if", "else", "for", "while",
-		"class", "interface", "type", "import", "export", "from", "async", "await",
-		"try", "catch", "throw", "new", "this", "true", "false", "null", "undefined",
-		"extends", "implements", "private", "public", "protected", "static", "readonly",
+		"const",
+		"let",
+		"var",
+		"function",
+		"return",
+		"if",
+		"else",
+		"for",
+		"while",
+		"class",
+		"interface",
+		"type",
+		"import",
+		"export",
+		"from",
+		"async",
+		"await",
+		"try",
+		"catch",
+		"throw",
+		"new",
+		"this",
+		"true",
+		"false",
+		"null",
+		"undefined",
+		"extends",
+		"implements",
+		"private",
+		"public",
+		"protected",
+		"static",
+		"readonly",
 	]),
 	javascript: new Set([
-		"const", "let", "var", "function", "return", "if", "else", "for", "while",
-		"class", "import", "export", "from", "async", "await", "try", "catch",
-		"throw", "new", "this", "true", "false", "null", "undefined",
+		"const",
+		"let",
+		"var",
+		"function",
+		"return",
+		"if",
+		"else",
+		"for",
+		"while",
+		"class",
+		"import",
+		"export",
+		"from",
+		"async",
+		"await",
+		"try",
+		"catch",
+		"throw",
+		"new",
+		"this",
+		"true",
+		"false",
+		"null",
+		"undefined",
 	]),
 	python: new Set([
-		"def", "class", "return", "if", "else", "elif", "for", "while", "import",
-		"from", "try", "except", "raise", "with", "as", "True", "False", "None",
-		"and", "or", "not", "in", "is", "lambda", "pass", "break", "continue",
+		"def",
+		"class",
+		"return",
+		"if",
+		"else",
+		"elif",
+		"for",
+		"while",
+		"import",
+		"from",
+		"try",
+		"except",
+		"raise",
+		"with",
+		"as",
+		"True",
+		"False",
+		"None",
+		"and",
+		"or",
+		"not",
+		"in",
+		"is",
+		"lambda",
+		"pass",
+		"break",
+		"continue",
 	]),
 	rust: new Set([
-		"fn", "let", "mut", "const", "if", "else", "for", "while", "loop", "match",
-		"impl", "struct", "enum", "trait", "pub", "use", "mod", "return", "self",
-		"true", "false", "async", "await", "move", "ref", "where",
+		"fn",
+		"let",
+		"mut",
+		"const",
+		"if",
+		"else",
+		"for",
+		"while",
+		"loop",
+		"match",
+		"impl",
+		"struct",
+		"enum",
+		"trait",
+		"pub",
+		"use",
+		"mod",
+		"return",
+		"self",
+		"true",
+		"false",
+		"async",
+		"await",
+		"move",
+		"ref",
+		"where",
 	]),
 	go: new Set([
-		"func", "var", "const", "if", "else", "for", "range", "switch", "case",
-		"return", "struct", "interface", "package", "import", "type", "true",
-		"false", "nil", "go", "defer", "chan", "map", "make", "new",
+		"func",
+		"var",
+		"const",
+		"if",
+		"else",
+		"for",
+		"range",
+		"switch",
+		"case",
+		"return",
+		"struct",
+		"interface",
+		"package",
+		"import",
+		"type",
+		"true",
+		"false",
+		"nil",
+		"go",
+		"defer",
+		"chan",
+		"map",
+		"make",
+		"new",
 	]),
 };
 
 // Simple tokenizer for syntax highlighting
 function tokenize(code: string, language: string): Token[] {
 	const tokens: Token[] = [];
-	const lang = language.toLowerCase().replace("tsx", "typescript").replace("jsx", "javascript");
+	const lang = language
+		.toLowerCase()
+		.replace("tsx", "typescript")
+		.replace("jsx", "javascript");
 	const keywords = KEYWORDS[lang] || KEYWORDS.typescript || new Set();
 
 	let i = 0;
@@ -230,7 +357,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 					<View style={styles.lineNumbers}>
 						{lines.map((_, lineNum) => (
 							<Text
-								key={`num-${lineNum}`}
+								key={`num-${lines[lineNum]}-${lineNum}`}
 								style={[
 									typography.code,
 									styles.lineNumber,
@@ -244,13 +371,13 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 					<View style={styles.codeLines}>
 						{highlightedLines.map((tokens, lineNum) => (
 							<Text
-								key={`line-${lineNum}`}
+								key={`line-${lineNum}-${tokens.length}`}
 								style={[typography.code, styles.codeLine]}
 							>
 								{tokens.length > 0 ? (
 									tokens.map((token, tokenIdx) => (
 										<Text
-											key={`token-${lineNum}-${tokenIdx}`}
+											key={`token-${lineNum}-${tokenIdx}-${token.text}`}
 											style={{ color: getTokenColor(token.type, isDark) }}
 										>
 											{token.text}

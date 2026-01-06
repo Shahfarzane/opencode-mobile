@@ -26,15 +26,15 @@ import {
 	CommandDetailView,
 	CommandsList,
 	type CommandsListRef,
-	GitIdentityDetailView,
 	GitIdentitiesList,
 	type GitIdentitiesListRef,
+	GitIdentityDetailView,
 	ProviderDetailView,
 	ProvidersList,
 } from "../../src/components/settings";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { type ThemeMode, useThemeMode } from "../../src/theme/ThemeProvider";
 import { typography, useTheme } from "../../src/theme";
+import { type ThemeMode, useThemeMode } from "../../src/theme/ThemeProvider";
 
 type SettingsTab = "general" | "agents" | "commands" | "providers" | "git";
 
@@ -137,7 +137,9 @@ function ThemeModeSelector() {
 	const { themeMode, setThemeMode } = useThemeMode();
 
 	return (
-		<View style={[themeSelectorStyles.container, { backgroundColor: colors.muted }]}>
+		<View
+			style={[themeSelectorStyles.container, { backgroundColor: colors.muted }]}
+		>
 			{THEME_MODE_OPTIONS.map((option) => {
 				const isSelected = themeMode === option.value;
 				return (
@@ -160,7 +162,9 @@ function ThemeModeSelector() {
 							style={[
 								typography.uiLabel,
 								{
-									color: isSelected ? colors.foreground : colors.mutedForeground,
+									color: isSelected
+										? colors.foreground
+										: colors.mutedForeground,
 									fontWeight: isSelected ? "600" : "400",
 								},
 							]}
@@ -188,11 +192,15 @@ const themeSelectorStyles = StyleSheet.create({
 	},
 });
 
-function getConnectionType(url: string | null): { type: string; label: string } {
+function getConnectionType(url: string | null): {
+	type: string;
+	label: string;
+} {
 	if (!url) return { type: "unknown", label: "Not connected" };
 
 	const isTailscale = url.includes(".ts.net") || /100\.\d+\.\d+\.\d+/.test(url);
-	const isCloudflare = url.includes(".trycloudflare.com") || url.includes("cloudflare");
+	const isCloudflare =
+		url.includes(".trycloudflare.com") || url.includes("cloudflare");
 
 	if (isTailscale) return { type: "tailscale", label: "via Tailscale" };
 	if (isCloudflare) return { type: "cloudflare", label: "via Cloudflare" };
@@ -745,10 +753,7 @@ export default function SettingsScreen() {
 
 		if (activeTab === "providers" && selectedItem) {
 			return (
-				<ProviderDetailView
-					providerId={selectedItem}
-					onBack={handleBack}
-				/>
+				<ProviderDetailView providerId={selectedItem} onBack={handleBack} />
 			);
 		}
 
@@ -781,12 +786,7 @@ export default function SettingsScreen() {
 	};
 
 	return (
-		<View
-			style={[
-				styles.container,
-				{ backgroundColor: colors.background },
-			]}
-		>
+		<View style={[styles.container, { backgroundColor: colors.background }]}>
 			{showDetail && activeTab === "general" && (
 				<View style={[styles.header, { borderBottomColor: colors.border }]}>
 					<Pressable onPress={handleBack} style={styles.backButton}>

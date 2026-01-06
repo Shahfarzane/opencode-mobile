@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { terminalApi } from "../../src/api";
+import { AnsiText } from "../../src/components/terminal/AnsiText";
 import { useTerminalStream } from "../../src/hooks/useTerminalStream";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { useTerminalStore } from "../../src/stores/useTerminalStore";
@@ -371,16 +372,11 @@ export default function TerminalScreen() {
 					style={[styles.terminalOutput, { backgroundColor: terminalBg }]}
 					contentContainerStyle={styles.terminalContent}
 				>
-					<Text
-						style={[
-							typography.code,
-							styles.terminalText,
-							{ color: terminalText },
-						]}
-						selectable
-					>
-						{output || ""}
-					</Text>
+					<AnsiText
+						text={output || ""}
+						style={[typography.code, styles.terminalText]}
+						baseColor={terminalText}
+					/>
 				</ScrollView>
 
 				{error && (

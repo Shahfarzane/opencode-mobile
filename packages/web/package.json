@@ -13,13 +13,13 @@
   },
   "scripts": {
     "dev": "bun run build:watch",
-    "dev:server": "node server/index.js --port 3001",
-    "dev:server:watch": "nodemon --watch server --ext js --exec \"node server/index.js --port 3001\"",
+    "dev:server": "bun server/index.js --port 3001",
+    "dev:server:watch": "bun --watch server/index.js --port 3001",
     "build": "vite build",
     "build:watch": "vite build --watch",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js",
-    "start": "node bin/cli.js serve"
+    "start": "bun bin/cli.js serve"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.2.7",
@@ -46,6 +46,7 @@
     "http-proxy-middleware": "^3.0.5",
     "jsonc-parser": "^3.3.1",
     "next-themes": "^0.4.6",
+    "bun-pty": "^0.4.5",
     "node-pty": "^1.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

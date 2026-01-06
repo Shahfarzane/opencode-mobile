@@ -38,7 +38,12 @@ export interface StepFinishPart {
 	id?: string;
 }
 
-export type MessagePart = TextPart | ToolPart | ReasoningPart | StepStartPart | StepFinishPart;
+export type MessagePart =
+	| TextPart
+	| ToolPart
+	| ReasoningPart
+	| StepStartPart
+	| StepFinishPart;
 
 export interface StreamEvent {
 	type: string;
@@ -62,18 +67,20 @@ export function extractPartText(part: MessagePart): string {
 		return (part as TextPart).text || (part as TextPart).content || "";
 	}
 	if (part.type === "reasoning") {
-		return (part as ReasoningPart).text || (part as ReasoningPart).content || "";
+		return (
+			(part as ReasoningPart).text || (part as ReasoningPart).content || ""
+		);
 	}
 	return "";
 }
 
 export function normalizePart(part: MessagePart): MessagePart {
 	if (!part) return part;
-	
+
 	const normalized = { ...part };
 	if (!normalized.type) {
 		(normalized as { type: string }).type = "text";
 	}
-	
+
 	return normalized;
 }

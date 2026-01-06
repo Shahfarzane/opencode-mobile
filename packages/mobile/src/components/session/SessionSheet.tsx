@@ -1,9 +1,9 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomSheet, {
-	BottomSheetScrollView,
 	BottomSheetBackdrop,
 	type BottomSheetBackdropProps,
+	BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -12,12 +12,12 @@ import type { Session } from "@/api/sessions";
 import { WifiOffIcon } from "@/components/icons";
 import {
 	getNetworkStatus,
-	subscribeToNetworkStatus,
 	type NetworkStatus,
+	subscribeToNetworkStatus,
 } from "@/lib/sessionSync";
 import { typography, useTheme } from "@/theme";
 import { DirectoryRow } from "./DirectoryRow";
-import { SessionListItem, type SessionCacheInfo } from "./SessionListItem";
+import { type SessionCacheInfo, SessionListItem } from "./SessionListItem";
 import { SheetHeader } from "./SheetHeader";
 import { WorkspaceGroup } from "./WorkspaceGroup";
 
@@ -105,9 +105,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		const [expandedSessionGroups, setExpandedSessionGroups] = useState<
 			Set<string>
 		>(new Set());
-		const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(
-			getNetworkStatus,
-		);
+		const [networkStatus, setNetworkStatus] =
+			useState<NetworkStatus>(getNetworkStatus);
 
 		// Calculate snap points based on available height (accounting for status bar)
 		const snapPoints = useMemo(() => {
@@ -157,11 +156,15 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		useEffect(() => {
 			const loadExpandedParents = async () => {
 				try {
-					const stored = await AsyncStorage.getItem(EXPANDED_PARENTS_STORAGE_KEY);
+					const stored = await AsyncStorage.getItem(
+						EXPANDED_PARENTS_STORAGE_KEY,
+					);
 					if (stored) {
 						const parsed = JSON.parse(stored);
 						if (Array.isArray(parsed)) {
-							setExpandedParents(new Set(parsed.filter((item) => typeof item === "string")));
+							setExpandedParents(
+								new Set(parsed.filter((item) => typeof item === "string")),
+							);
 						}
 					}
 				} catch {
@@ -223,9 +226,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				if (!groups.has(key)) {
 					groups.set(key, {
 						id: key,
-						label: isMain
-							? "Main workspace"
-							: formatDirectoryName(sessionDir),
+						label: isMain ? "Main workspace" : formatDirectoryName(sessionDir),
 						description: sessionDir,
 						isMain,
 						directory: sessionDir || normalizedRoot,
@@ -394,7 +395,9 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 						/>
 						{hasChildren && isExpanded && (
 							<View>
-								{node.children.map((child) => renderSessionNode(child, depth + 1))}
+								{node.children.map((child) =>
+									renderSessionNode(child, depth + 1),
+								)}
 							</View>
 						)}
 					</View>
@@ -431,9 +434,16 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				<SheetHeader title="Sessions" onClose={handleDismiss} />
 
 				{isOffline && (
-					<View style={[styles.offlineBanner, { backgroundColor: colors.warning }]}>
+					<View
+						style={[styles.offlineBanner, { backgroundColor: colors.warning }]}
+					>
 						<WifiOffIcon color={colors.background} size={14} />
-						<Text style={[typography.micro, { color: colors.background, fontWeight: "600" }]}>
+						<Text
+							style={[
+								typography.micro,
+								{ color: colors.background, fontWeight: "600" },
+							]}
+						>
 							Offline Mode
 						</Text>
 					</View>
@@ -457,16 +467,22 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 					{/* Loading State */}
 					{isLoading ? (
 						<View style={styles.emptyState}>
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.uiLabel, { color: colors.mutedForeground }]}
+							>
 								Loading sessions...
 							</Text>
 						</View>
 					) : sessions.length === 0 ? (
 						<View style={styles.emptyState}>
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.uiLabel, { color: colors.mutedForeground }]}
+							>
 								No sessions yet
 							</Text>
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.micro, { color: colors.mutedForeground }]}
+							>
 								Create your first session to start coding.
 							</Text>
 						</View>
@@ -478,7 +494,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 							const visibleSessions = isExpanded
 								? group.sessions
 								: group.sessions.slice(0, MAX_VISIBLE_SESSIONS);
-							const remainingCount = group.sessions.length - visibleSessions.length;
+							const remainingCount =
+								group.sessions.length - visibleSessions.length;
 
 							return (
 								<WorkspaceGroup

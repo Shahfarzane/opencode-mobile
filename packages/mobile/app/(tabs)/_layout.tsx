@@ -7,6 +7,10 @@ import type { ContextUsage } from "../../src/components/chat";
 import { Header } from "../../src/components/layout/Header";
 import { SessionSheet } from "../../src/components/session";
 import type { SessionCacheInfo } from "../../src/components/session/SessionListItem";
+import {
+	ContextUsageContext,
+	SessionSheetContext,
+} from "../../src/contexts/tabs-context";
 import { useEdgeSwipe } from "../../src/hooks/useEdgeSwipe";
 import type { CachedSession } from "../../src/lib/offlineCache";
 import {
@@ -17,7 +21,6 @@ import {
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 import ChatScreen from "./chat";
-import { ContextUsageContext, SessionSheetContext } from "../../src/contexts/tabs-context";
 import DiffScreen from "./diff";
 import GitScreen from "./git";
 import SettingsScreen from "./settings";
@@ -53,8 +56,12 @@ export default function TabsLayout() {
 	const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 	const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 	const [isGitRepo, setIsGitRepo] = useState(false);
-	const [streamingSessionIds, setStreamingSessionIds] = useState<Set<string>>(new Set());
-	const [sessionCacheInfo, setSessionCacheInfo] = useState<Map<string, SessionCacheInfo>>(new Map());
+	const [streamingSessionIds, setStreamingSessionIds] = useState<Set<string>>(
+		new Set(),
+	);
+	const [sessionCacheInfo, setSessionCacheInfo] = useState<
+		Map<string, SessionCacheInfo>
+	>(new Map());
 
 	const sheetRef = useRef<BottomSheet>(null);
 
@@ -64,7 +71,9 @@ export default function TabsLayout() {
 
 	// Callbacks for chat screen to sync streaming state
 	// Use refs that get updated each render to avoid stale closures
-	const updateStreamingSessionsRef = useRef<(ids: Set<string>) => void>(() => {});
+	const updateStreamingSessionsRef = useRef<(ids: Set<string>) => void>(
+		() => {},
+	);
 	updateStreamingSessionsRef.current = (ids) => setStreamingSessionIds(ids);
 
 	const setCurrentSessionIdRef = useRef<(id: string | null) => void>(() => {});
@@ -149,58 +158,70 @@ export default function TabsLayout() {
 		sheetRef.current?.close();
 	}, []);
 
-	const renameSession = useCallback(async (targetSessionId: string, title: string) => {
-		try {
-			await sessionsApi.updateTitle(targetSessionId, title);
-			setSessions((prev) =>
-				prev.map((s) => (s.id === targetSessionId ? { ...s, title } : s)),
-			);
-		} catch (error) {
-			console.error("Failed to rename session:", error);
-		}
-	}, []);
-
-	const shareSession = useCallback(async (targetSessionId: string): Promise<Session | null> => {
-		try {
-			const updated = await sessionsApi.share(targetSessionId);
-			setSessions((prev) =>
-				prev.map((s) => (s.id === targetSessionId ? updated : s)),
-			);
-			return updated;
-		} catch (error) {
-			console.error("Failed to share session:", error);
-			return null;
-		}
-	}, []);
-
-	const unshareSession = useCallback(async (targetSessionId: string): Promise<boolean> => {
-		try {
-			const updated = await sessionsApi.unshare(targetSessionId);
-			setSessions((prev) =>
-				prev.map((s) => (s.id === targetSessionId ? updated : s)),
-			);
-			return true;
-		} catch (error) {
-			console.error("Failed to unshare session:", error);
-			return false;
-		}
-	}, []);
-
-	const deleteSession = useCallback(async (targetSessionId: string): Promise<boolean> => {
-		try {
-			await sessionsApi.delete(targetSessionId);
-			setSessions((prev) => prev.filter((s) => s.id !== targetSessionId));
-
-			// If we deleted the current session, clear it
-			if (targetSessionId === currentSessionId) {
-				setCurrentSessionIdRef.current(null);
+	const renameSession = useCallback(
+		async (targetSessionId: string, title: string) => {
+			try {
+				await sessionsApi.updateTitle(targetSessionId, title);
+				setSessions((prev) =>
+					prev.map((s) => (s.id === targetSessionId ? { ...s, title } : s)),
+				);
+			} catch (error) {
+				console.error("Failed to rename session:", error);
 			}
-			return true;
-		} catch (error) {
-			console.error("Failed to delete session:", error);
-			return false;
-		}
-	}, [currentSessionId]);
+		},
+		[],
+	);
+
+	const shareSession = useCallback(
+		async (targetSessionId: string): Promise<Session | null> => {
+			try {
+				const updated = await sessionsApi.share(targetSessionId);
+				setSessions((prev) =>
+					prev.map((s) => (s.id === targetSessionId ? updated : s)),
+				);
+				return updated;
+			} catch (error) {
+				console.error("Failed to share session:", error);
+				return null;
+			}
+		},
+		[],
+	);
+
+	const unshareSession = useCallback(
+		async (targetSessionId: string): Promise<boolean> => {
+			try {
+				const updated = await sessionsApi.unshare(targetSessionId);
+				setSessions((prev) =>
+					prev.map((s) => (s.id === targetSessionId ? updated : s)),
+				);
+				return true;
+			} catch (error) {
+				console.error("Failed to unshare session:", error);
+				return false;
+			}
+		},
+		[],
+	);
+
+	const deleteSession = useCallback(
+		async (targetSessionId: string): Promise<boolean> => {
+			try {
+				await sessionsApi.delete(targetSessionId);
+				setSessions((prev) => prev.filter((s) => s.id !== targetSessionId));
+
+				// If we deleted the current session, clear it
+				if (targetSessionId === currentSessionId) {
+					setCurrentSessionIdRef.current(null);
+				}
+				return true;
+			} catch (error) {
+				console.error("Failed to delete session:", error);
+				return false;
+			}
+		},
+		[currentSessionId],
+	);
 
 	const handleChangeDirectory = useCallback(() => {
 		router.push("/onboarding/directory");
@@ -299,7 +320,9 @@ export default function TabsLayout() {
 	return (
 		<SessionSheetContext.Provider value={sessionSheetValue}>
 			<ContextUsageContext.Provider value={contextUsageValue}>
-				<View style={[styles.container, { backgroundColor: colors.background }]}>
+				<View
+					style={[styles.container, { backgroundColor: colors.background }]}
+				>
 					<Header
 						activeTab={activeTab}
 						onTabChange={handleTabChange}

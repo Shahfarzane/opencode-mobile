@@ -5,9 +5,8 @@ import {
 	ChatIcon,
 	CodeIcon,
 	GitBranchIcon,
-	MenuIcon,
+	PlaylistAddIcon,
 	SettingsIcon,
-	SidebarIcon,
 	TerminalIcon,
 } from "@/components/icons";
 import { useTheme } from "@/theme";
@@ -78,21 +77,22 @@ export function Header({
 			]}
 		>
 			<View style={styles.content}>
+				{/* Left section: Sessions button + context usage */}
 				<View style={styles.leftSection}>
-					{/* Always show sidebar button - use onSessionsPress on chat tab, onMenuPress otherwise */}
 					<Pressable
 						onPress={onSessionsPress || onMenuPress}
-						style={styles.menuButton}
+						style={styles.iconButton}
 						hitSlop={8}
 					>
-						<SidebarIcon color={colors.mutedForeground} size={20} />
+						<PlaylistAddIcon color={colors.mutedForeground} size={20} />
 					</Pressable>
 					{showContextUsage && (
 						<ContextUsageDisplay usage={contextUsage} size="compact" />
 					)}
 				</View>
 
-				<View style={styles.tabsSection}>
+				{/* Right section: Tabs + settings */}
+				<View style={styles.rightSection}>
 					{tabs.map((tab) => {
 						const isActive = activeTab === tab.id;
 						const showGitDot = tab.id === "git" && diffFileCount > 0;
@@ -100,7 +100,7 @@ export function Header({
 							<Pressable
 								key={tab.id}
 								onPress={() => onTabChange(tab.id)}
-								style={styles.tabButton}
+								style={styles.iconButton}
 								hitSlop={4}
 							>
 								<View style={styles.tabContent}>
@@ -108,14 +108,6 @@ export function Header({
 										tab.id,
 										isActive ? colors.foreground : colors.mutedForeground,
 										20,
-									)}
-									{isActive && (
-										<View
-											style={[
-												styles.activeIndicator,
-												{ backgroundColor: colors.foreground },
-											]}
-										/>
 									)}
 									{/* Orange dot for git tab when there are changes */}
 									{showGitDot && (
@@ -133,15 +125,17 @@ export function Header({
 
 					<Pressable
 						onPress={onSettingsPress}
-						style={styles.settingsButton}
+						style={styles.iconButton}
 						hitSlop={4}
 					>
-						<SettingsIcon color={colors.mutedForeground} size={20} />
-						{hasUpdate && (
-							<View
-								style={[styles.updateDot, { backgroundColor: colors.primary }]}
-							/>
-						)}
+						<View style={styles.tabContent}>
+							<SettingsIcon color={colors.mutedForeground} size={20} />
+							{hasUpdate && (
+								<View
+									style={[styles.updateDot, { backgroundColor: colors.primary }]}
+								/>
+							)}
+						</View>
 					</Pressable>
 				</View>
 			</View>
@@ -158,52 +152,39 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 12,
-		height: 52,
+		paddingVertical: 8,
 	},
 	leftSection: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
 	},
-	menuButton: {
-		padding: 8,
-		marginLeft: -8,
-	},
-	tabsSection: {
+	rightSection: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
 	},
-	tabButton: {
-		padding: 10,
+	iconButton: {
+		width: 36,
+		height: 36,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	tabContent: {
 		position: "relative",
 	},
-	activeIndicator: {
-		position: "absolute",
-		bottom: -10,
-		left: 0,
-		right: 0,
-		height: 2,
-		borderRadius: 1,
-	},
-	settingsButton: {
-		padding: 10,
-		position: "relative",
-	},
 	updateDot: {
 		position: "absolute",
-		top: 6,
-		right: 6,
+		top: 0,
+		right: 0,
 		width: 8,
 		height: 8,
 		borderRadius: 4,
 	},
 	changeDot: {
 		position: "absolute",
-		top: 2,
-		right: 2,
+		top: 0,
+		right: 0,
 		width: 8,
 		height: 8,
 		borderRadius: 4,

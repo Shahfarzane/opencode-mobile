@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
-import type { ContextUsage } from "../components/chat";
 import type { Session } from "../api";
+import type { ContextUsage } from "../components/chat";
 
 export interface ContextUsageContextType {
 	contextUsage: ContextUsage | null;

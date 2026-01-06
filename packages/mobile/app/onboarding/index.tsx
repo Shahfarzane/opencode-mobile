@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
-import { Spacing, typography, useTheme } from "../../src/theme";
+import { typography, useTheme } from "../../src/theme";
 
 function Logo({ size = 64 }: { size?: number }) {
 	const { colors } = useTheme();
@@ -19,8 +19,19 @@ function Logo({ size = 64 }: { size?: number }) {
 				borderRadius: size / 4,
 			}}
 		>
-			<Svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none">
-				<Circle cx="12" cy="12" r="9" stroke={colors.primaryForeground} strokeWidth="1.5" />
+			<Svg
+				width={size * 0.5}
+				height={size * 0.5}
+				viewBox="0 0 24 24"
+				fill="none"
+			>
+				<Circle
+					cx="12"
+					cy="12"
+					r="9"
+					stroke={colors.primaryForeground}
+					strokeWidth="1.5"
+				/>
 				<Path
 					d="M8.5 12h7M12 8.5v7"
 					stroke={colors.primaryForeground}
@@ -44,24 +55,37 @@ export default function OnboardingIndex() {
 					flexGrow: 1,
 					paddingTop: insets.top + 48,
 					paddingBottom: insets.bottom + 32,
-					paddingHorizontal: Spacing.lg,
+					paddingHorizontal: 24,
 				}}
 				showsVerticalScrollIndicator={false}
 			>
 				{/* Hero */}
 				<View style={styles.hero}>
 					<Logo size={64} />
-					<Text style={[typography.h1, { color: colors.foreground, marginTop: 24 }]}>
+					<Text
+						style={[typography.h1, { color: colors.foreground, marginTop: 24 }]}
+					>
 						OpenChamber
 					</Text>
-					<Text style={[typography.meta, styles.subtitle, { color: colors.mutedForeground }]}>
+					<Text
+						style={[
+							typography.meta,
+							styles.subtitle,
+							{ color: colors.mutedForeground },
+						]}
+					>
 						Connect to your OpenCode server to start coding with AI assistance
 					</Text>
 				</View>
 
 				{/* Connection info */}
 				<View style={[styles.infoCard, { borderColor: colors.border + "66" }]}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Supported connections
 					</Text>
 					<View style={styles.infoList}>
@@ -99,7 +123,12 @@ export default function OnboardingIndex() {
 								strokeLinejoin="round"
 							/>
 						</Svg>
-						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.primaryForeground, fontWeight: "600" },
+							]}
+						>
 							Scan QR Code
 						</Text>
 					</Pressable>
@@ -122,7 +151,13 @@ export default function OnboardingIndex() {
 				</View>
 
 				{/* Footer */}
-				<Text style={[typography.micro, styles.footer, { color: colors.mutedForeground }]}>
+				<Text
+					style={[
+						typography.micro,
+						styles.footer,
+						{ color: colors.mutedForeground },
+					]}
+				>
 					Make sure OpenCode is running on your computer
 				</Text>
 			</ScrollView>
@@ -152,7 +187,7 @@ const styles = StyleSheet.create({
 	infoCard: {
 		borderWidth: 1,
 		borderRadius: 8,
-		padding: Spacing.md,
+		padding: 16,
 		marginBottom: 32,
 	},
 	infoList: {
