@@ -8,6 +8,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import Svg, { Path } from "react-native-svg";
 import { type Provider, providersApi } from "@/api";
 import { typography, useTheme } from "@/theme";
@@ -56,16 +57,20 @@ export function ProviderDetailView({
 			return;
 		}
 
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 		setIsSaving(true);
 		try {
 			const success = await providersApi.setApiKey(providerId, apiKey.trim());
 			if (success) {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 				Alert.alert("Success", "API key saved");
 				setApiKey("");
 			} else {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 				Alert.alert("Error", "Failed to save API key");
 			}
 		} catch (error) {
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert(
 				"Error",
 				error instanceof Error ? error.message : "Failed to save API key",

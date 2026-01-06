@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
@@ -115,6 +116,7 @@ export function AgentDetailView({
 			return;
 		}
 
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 		setIsSaving(true);
 		try {
 			const config: AgentConfig = {
@@ -135,12 +137,15 @@ export function AgentDetailView({
 			}
 
 			if (success) {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 				Alert.alert("Success", isNewAgent ? "Agent created" : "Agent updated");
 				onBack();
 			} else {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 				Alert.alert("Error", "Failed to save agent");
 			}
 		} catch (error) {
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert(
 				"Error",
 				error instanceof Error ? error.message : "Failed to save agent",
@@ -151,6 +156,7 @@ export function AgentDetailView({
 	};
 
 	const handleDelete = () => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 		Alert.alert(
 			"Delete Agent",
 			`Are you sure you want to delete "${agentName}"?`,
@@ -164,12 +170,15 @@ export function AgentDetailView({
 						try {
 							const success = await agentsApi.delete(agentName);
 							if (success) {
+								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 								onDeleted?.();
 								onBack();
 							} else {
+								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 								Alert.alert("Error", "Failed to delete agent");
 							}
 						} catch (error) {
+							Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 							Alert.alert(
 								"Error",
 								error instanceof Error ? error.message : "Failed to delete",
