@@ -146,7 +146,8 @@ export default defineConfig({
             return 'vendor-diff';
           }
 
-          // Markdown processing
+          // Markdown processing - let these fall through to default vendor chunk
+          // to avoid circular dependency initialization issues
           if (
             packageName === 'react-markdown' ||
             packageName.includes('remark') ||
@@ -162,7 +163,7 @@ export default defineConfig({
             packagePath.includes('mdast') ||
             packagePath.includes('micromark')
           ) {
-            return 'vendor-markdown';
+            return undefined; // Falls into default vendor chunk
           }
 
           // Terminal
