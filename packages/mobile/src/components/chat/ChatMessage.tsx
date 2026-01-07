@@ -313,16 +313,6 @@ function AssistantMessage({
 							</Text>
 						</View>
 					)}
-					{isStreaming && (
-						<View
-							className="px-2 py-0.5 rounded-md"
-							style={{ backgroundColor: `${colors.primary}20` }}
-						>
-							<Text style={[typography.micro, { color: colors.primary }]}>
-								Working...
-							</Text>
-						</View>
-					)}
 				</View>
 			)}
 

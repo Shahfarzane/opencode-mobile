@@ -5,6 +5,7 @@ export type { ThemeColors, ThemeContextValue } from "./ThemeProvider";
 export { ThemeProvider } from "./ThemeProvider";
 export { FontFamily, FontSize, FontWeight, LineHeight } from "./typography";
 export {
+	FixedLineHeights,
 	FontFamily as Fonts,
 	FontSizes,
 	fontStyle,

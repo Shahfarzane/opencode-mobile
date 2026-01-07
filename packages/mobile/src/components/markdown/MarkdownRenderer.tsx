@@ -1,7 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
 import { Text, type TextStyle, type ViewStyle } from "react-native";
-import { FontSizes, LineHeights, useTheme } from "@/theme";
+import { FontSizes, FixedLineHeights, useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -77,7 +77,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			color: colors.foreground,
 			fontFamily: "IBMPlexMono-Regular",
 			fontSize: FontSizes.markdown,
-			lineHeight: FontSizes.markdown * LineHeights.normal,
+			lineHeight: FixedLineHeights.body, // Fixed 24px (matches desktop)
 		},
 		heading1: {
 			color: colors.foreground,

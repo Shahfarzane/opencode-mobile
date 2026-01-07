@@ -70,6 +70,15 @@ export const LineHeights = {
 	relaxed: 1.625,
 } as const;
 
+// Fixed line heights matching desktop CSS variables
+// Desktop uses fixed values, not multipliers
+export const FixedLineHeights = {
+	ui: 16, // 1rem - for badges, labels, captions, buttons
+	body: 24, // 1.5rem - for markdown body text
+	heading: 20, // 1.25rem - for headings
+	code: 22, // 1.4rem - for code blocks
+} as const;
+
 interface TypographyStyles {
 	markdown: TextStyle;
 	code: TextStyle;
@@ -89,36 +98,43 @@ interface TypographyStyles {
 }
 
 export const typography = StyleSheet.create<TypographyStyles>({
+	// Body text uses fixed 24px line height (matches desktop --markdown-body-line-height: 1.5rem)
 	markdown: {
 		fontFamily: FontFamily.regular,
 		fontSize: FontSizes.markdown,
-		lineHeight: FontSizes.markdown * LineHeights.normal,
+		lineHeight: FixedLineHeights.body,
 	},
+	// Code uses fixed 22px line height (matches desktop --code-block-line-height: 1.4rem)
 	code: {
 		fontFamily: FontFamily.regular,
 		fontSize: FontSizes.code,
-		lineHeight: FontSizes.code * LineHeights.tight,
+		lineHeight: FixedLineHeights.code,
 	},
+	// UI elements use fixed 16px line height (matches desktop --ui-label-line-height: 1rem)
 	uiHeader: {
 		fontFamily: FontFamily.semiBold,
 		fontSize: FontSizes.uiHeader,
-		lineHeight: FontSizes.uiHeader * LineHeights.tight,
+		lineHeight: FixedLineHeights.heading,
 	},
 	uiLabel: {
 		fontFamily: FontFamily.medium,
 		fontSize: FontSizes.uiLabel,
-		lineHeight: FontSizes.uiLabel * LineHeights.normal,
+		lineHeight: FixedLineHeights.ui,
+		letterSpacing: 0.4, // ~0.03em at 14px (desktop: --ui-label-letter-spacing: 0.03em)
 	},
 	meta: {
 		fontFamily: FontFamily.regular,
 		fontSize: FontSizes.meta,
-		lineHeight: FontSizes.meta * LineHeights.normal,
+		lineHeight: FixedLineHeights.ui,
 	},
+	// Micro (badges) use fixed 16px line height (matches desktop --ui-badge-line-height: 1rem)
 	micro: {
 		fontFamily: FontFamily.regular,
 		fontSize: FontSizes.micro,
-		lineHeight: FontSizes.micro * LineHeights.normal,
+		lineHeight: FixedLineHeights.ui,
+		letterSpacing: 0.35, // ~0.025em at 14px (desktop: --ui-badge-letter-spacing: 0.025em)
 	},
+	// Headings use fixed 20px line height (matches desktop --h1-line-height: 1.25rem)
 	h1: {
 		fontFamily: FontFamily.bold,
 		fontSize: FontSizes.h1,
@@ -142,27 +158,30 @@ export const typography = StyleSheet.create<TypographyStyles>({
 	body: {
 		fontFamily: FontFamily.regular,
 		fontSize: FontSizes.markdown,
-		lineHeight: FontSizes.markdown * LineHeights.normal,
+		lineHeight: FixedLineHeights.body,
 	},
 	bodySmall: {
 		fontFamily: FontFamily.regular,
 		fontSize: FontSizes.uiLabel,
-		lineHeight: FontSizes.uiLabel * LineHeights.normal,
+		lineHeight: FixedLineHeights.ui,
 	},
 	caption: {
 		fontFamily: FontFamily.regular,
 		fontSize: FontSizes.micro,
-		lineHeight: FontSizes.micro * LineHeights.normal,
+		lineHeight: FixedLineHeights.ui,
+		letterSpacing: 0.35,
 	},
 	button: {
 		fontFamily: FontFamily.medium,
 		fontSize: FontSizes.uiLabel,
-		lineHeight: FontSizes.uiLabel * LineHeights.tight,
+		lineHeight: FixedLineHeights.ui,
+		letterSpacing: 0.28, // ~0.02em at 14px (desktop: --ui-button-letter-spacing: 0.02em)
 	},
 	buttonSmall: {
 		fontFamily: FontFamily.medium,
 		fontSize: FontSizes.micro,
-		lineHeight: FontSizes.micro * LineHeights.tight,
+		lineHeight: FixedLineHeights.ui,
+		letterSpacing: 0.28,
 	},
 });
 
