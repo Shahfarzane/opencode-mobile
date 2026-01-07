@@ -629,7 +629,7 @@ export function ChatInput({
 						setCursorPosition(e.nativeEvent.selection.start)
 					}
 					placeholder={placeholder}
-					placeholderTextColor={colors.mutedForeground}
+					placeholderTextColor={`${colors.mutedForeground}80`} // 50% opacity for clearer placeholder distinction
 					multiline
 					maxLength={10000}
 					editable={!isLoading}

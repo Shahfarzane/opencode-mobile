@@ -49,7 +49,13 @@ interface SessionListItemProps {
 
 function formatDateLabel(value: number | string | undefined): string {
 	if (!value) return "";
-	const date = new Date(value);
+	// Handle Unix timestamps: if the number is less than 10^12, assume seconds and convert to ms
+	// Unix timestamp in seconds for 2024+ is ~1.7 billion, in milliseconds is ~1.7 trillion
+	let timestamp = typeof value === "string" ? parseInt(value, 10) : value;
+	if (timestamp < 1e12) {
+		timestamp = timestamp * 1000;
+	}
+	const date = new Date(timestamp);
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 	const sessionDate = new Date(

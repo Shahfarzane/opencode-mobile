@@ -42,7 +42,7 @@ export const MOBILE_TYPOGRAPHY = {
 	uiHeader: "0.9375rem",
 	uiLabel: "0.875rem",
 	meta: "0.875rem",
-	micro: "0.8125rem",
+	micro: "0.875rem", // Aligned with desktop (14px)
 } as const;
 
 export type FontSizeOption = keyof typeof FONT_SIZE_SCALES;
