@@ -1,0 +1,33 @@
+# Visual Analysis Flow
+# Uses AI to analyze and describe each screen of the app
+# Useful for LLM understanding of the UI
+
+appId: ceo.nerd.opencode
+
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Capture and analyze the main screen
+- takeScreenshot: analysis-main
+- assertWithAI: |
+    Describe what you see on this screen including:
+    - Main UI elements visible
+    - Navigation structure
+    - Color scheme and theme
+    - Any text or labels shown
+
+# If there are tabs, analyze each one
+- evalScript: ${output.tabAnalysis = []}
+
+# Scroll to see more content if available
+- scroll:
+    direction: DOWN
+- waitForAnimationToEnd
+- takeScreenshot: analysis-scrolled
+
+- assertWithAI: |
+    After scrolling, describe:
+    - New content that appeared
+    - List items or cards visible
+    - Any loading states or empty states

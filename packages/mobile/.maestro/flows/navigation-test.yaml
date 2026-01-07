@@ -1,0 +1,35 @@
+# Navigation Test Flow
+# Tests tab navigation and settings access
+
+appId: ceo.nerd.opencode
+
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Screenshot initial screen
+- takeScreenshot: 01-initial
+
+# Use AI to navigate through the app
+- ai: "Look for tabs at the bottom of the screen and tap on the Chat tab"
+- waitForAnimationToEnd
+- takeScreenshot: 02-chat-tab
+
+- ai: "Tap on the Files tab or folder icon in the tab bar"
+- waitForAnimationToEnd
+- takeScreenshot: 03-files-tab
+
+- ai: "Tap on the Terminal tab in the navigation"
+- waitForAnimationToEnd
+- takeScreenshot: 04-terminal-tab
+
+- ai: "Tap on the Git tab or branch icon"
+- waitForAnimationToEnd
+- takeScreenshot: 05-git-tab
+
+# Open settings
+- ai: "Tap on Settings, gear icon, or any settings button"
+- waitForAnimationToEnd
+- takeScreenshot: 06-settings
+
+- assertWithAI: "A settings or configuration screen is visible"
