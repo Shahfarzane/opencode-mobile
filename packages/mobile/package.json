@@ -10,8 +10,10 @@
     "android": "expo run:android",
     "web": "expo start --web",
     "prebuild": "expo prebuild",
-    "build:ios": "eas build --platform ios",
-    "build:ios:local": "eas build --platform ios --local",
+    "build:dev": "eas build --profile development --platform ios",
+    "build:dev:simulator": "eas build --profile development-simulator --platform ios",
+    "build:preview": "eas build --profile preview --platform ios",
+    "build:production": "eas build --profile production --platform ios",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js"
   },

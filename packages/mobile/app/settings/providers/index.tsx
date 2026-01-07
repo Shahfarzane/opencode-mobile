@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft, KeyIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
-import { Fonts, typography, Spacing, useTheme } from "@/theme";
+import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
 export default function ProvidersListScreen() {
 	const { colors } = useTheme();
@@ -99,10 +99,7 @@ export default function ProvidersListScreen() {
 				>
 					<View style={styles.section}>
 						<Text
-							style={[
-								styles.sectionTitle,
-								{ color: colors.mutedForeground },
-							]}
+							style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 						>
 							{providers.length} PROVIDER{providers.length !== 1 ? "S" : ""}
 						</Text>
@@ -120,7 +117,9 @@ export default function ProvidersListScreen() {
 					{providers.length === 0 && (
 						<View style={styles.emptyContainer}>
 							<KeyIcon color={colors.mutedForeground} size={40} />
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.uiLabel, { color: colors.mutedForeground }]}
+							>
 								No providers configured
 							</Text>
 						</View>

@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Command, commandsApi, isCommandBuiltIn } from "@/api";
 import { ChevronLeft, CommandIcon, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
-import { Fonts, typography, Spacing, useTheme } from "@/theme";
+import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
 export default function CommandsListScreen() {
 	const { colors } = useTheme();
@@ -108,10 +108,7 @@ export default function CommandsListScreen() {
 					{builtInCommands.length > 0 && (
 						<View style={styles.section}>
 							<Text
-								style={[
-									styles.sectionTitle,
-									{ color: colors.mutedForeground },
-								]}
+								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
 								BUILT-IN COMMANDS
 							</Text>
@@ -130,10 +127,7 @@ export default function CommandsListScreen() {
 					{customCommands.length > 0 && (
 						<View style={styles.section}>
 							<Text
-								style={[
-									styles.sectionTitle,
-									{ color: colors.mutedForeground },
-								]}
+								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
 								CUSTOM COMMANDS
 							</Text>
@@ -152,7 +146,9 @@ export default function CommandsListScreen() {
 					{commands.length === 0 && (
 						<View style={styles.emptyContainer}>
 							<CommandIcon color={colors.mutedForeground} size={40} />
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.uiLabel, { color: colors.mutedForeground }]}
+							>
 								No custom commands yet
 							</Text>
 							<Pressable
@@ -160,10 +156,15 @@ export default function CommandsListScreen() {
 									Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 									handleSelectCommand("__new__");
 								}}
-								style={[styles.createButton, { backgroundColor: colors.primary }]}
+								style={[
+									styles.createButton,
+									{ backgroundColor: colors.primary },
+								]}
 							>
 								<PlusIcon size={16} color={colors.background} />
-								<Text style={[typography.uiLabel, { color: colors.background }]}>
+								<Text
+									style={[typography.uiLabel, { color: colors.background }]}
+								>
 									Create your first command
 								</Text>
 							</Pressable>

@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { ChevronLeft, PlusIcon, UsersIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
-import { Fonts, typography, Spacing, useTheme } from "@/theme";
+import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
 export default function GitIdentitiesListScreen() {
 	const { colors } = useTheme();
@@ -104,10 +104,7 @@ export default function GitIdentitiesListScreen() {
 				>
 					<View style={styles.section}>
 						<Text
-							style={[
-								styles.sectionTitle,
-								{ color: colors.mutedForeground },
-							]}
+							style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 						>
 							{profiles.length} IDENTIT{profiles.length !== 1 ? "IES" : "Y"}
 						</Text>
@@ -132,7 +129,9 @@ export default function GitIdentitiesListScreen() {
 					{profiles.length === 0 && (
 						<View style={styles.emptyContainer}>
 							<UsersIcon color={colors.mutedForeground} size={40} />
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.uiLabel, { color: colors.mutedForeground }]}
+							>
 								No git identities yet
 							</Text>
 							<Pressable
@@ -140,10 +139,15 @@ export default function GitIdentitiesListScreen() {
 									Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 									handleSelectProfile("__new__");
 								}}
-								style={[styles.createButton, { backgroundColor: colors.primary }]}
+								style={[
+									styles.createButton,
+									{ backgroundColor: colors.primary },
+								]}
 							>
 								<PlusIcon size={16} color={colors.background} />
-								<Text style={[typography.uiLabel, { color: colors.background }]}>
+								<Text
+									style={[typography.uiLabel, { color: colors.background }]}
+								>
 									Create your first identity
 								</Text>
 							</Pressable>

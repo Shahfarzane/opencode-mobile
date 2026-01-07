@@ -1,9 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import {
-	SettingsGroup,
-	SettingsScreen,
-} from "@/components/settings";
-import { Radius, Spacing, Fonts, useTheme } from "@/theme";
+import { SettingsGroup, SettingsScreen } from "@/components/settings";
+import { Fonts, Radius, Spacing, useTheme } from "@/theme";
 import { type ThemeMode, useThemeMode } from "@/theme/ThemeProvider";
 
 interface ThemeModeOption {
@@ -71,7 +68,10 @@ function ThemeModeSelector() {
 						>
 							{isSelected && (
 								<View
-									style={[styles.radioInner, { backgroundColor: colors.background }]}
+									style={[
+										styles.radioInner,
+										{ backgroundColor: colors.background },
+									]}
 								/>
 							)}
 						</View>

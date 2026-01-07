@@ -10,7 +10,23 @@ import {
   updateConfigUpdateMessage,
 } from "@/lib/configUpdate";
 import { getSafeStorage } from "./utils/safeStorage";
-import { useConfigStore } from "@/stores/useConfigStore";
+// Re-export agent utilities for backward compatibility
+export {
+  type AgentWithExtras,
+  isAgentBuiltIn,
+  isAgentHidden,
+  filterVisibleAgents,
+} from "./utils/agentUtils";
+import { filterVisibleAgents } from "./utils/agentUtils";
+
+// Note: useConfigStore is accessed via window global to avoid circular dependency
+// useConfigStore imports filterVisibleAgents from agentUtils (which we re-export)
+// This file needs useConfigStore for performFullConfigRefresh
+const getConfigStore = () => {
+  // Access via window global to break circular dependency at module initialization time
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (window as any).__zustand_config_store__;
+};
 
 // Note: useDirectoryStore cannot be imported at top level to avoid circular dependency
 // useDirectoryStore -> useAgentsStore (for refreshAfterOpenCodeRestart)
@@ -53,30 +69,6 @@ export interface AgentConfig {
   disable?: boolean;
   scope?: AgentScope;
 }
-
-// Extended Agent type for API properties not in SDK types
-export type AgentWithExtras = Agent & {
-  native?: boolean;
-  hidden?: boolean;
-  options?: { hidden?: boolean };
-};
-
-// Helper to check if agent is built-in (handles both SDK 'builtIn' and API 'native')
-export const isAgentBuiltIn = (agent: Agent): boolean => {
-  const extended = agent as AgentWithExtras & { builtIn?: boolean };
-  return extended.native === true || extended.builtIn === true;
-};
-
-// Helper to check if agent is hidden (internal agents like title, compaction, summary)
-// Checks both top-level hidden and options.hidden (OpenCode API inconsistency workaround)
-export const isAgentHidden = (agent: Agent): boolean => {
-  const extended = agent as AgentWithExtras;
-  return extended.hidden === true || extended.options?.hidden === true;
-};
-
-// Helper to filter only visible (non-hidden) agents
-export const filterVisibleAgents = (agents: Agent[]): Agent[] =>
-  agents.filter((agent) => !isAgentHidden(agent));
 
 const CONFIG_EVENT_SOURCE = "useAgentsStore";
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -446,7 +438,7 @@ async function performFullConfigRefresh(options: { message?: string; delayMs?: n
     await waitForOpenCodeConnection(delayMs);
     updateConfigUpdateMessage("Refreshing providers and agents…");
 
-    const configStore = useConfigStore.getState();
+    const configStore = getConfigStore().getState();
     const agentsStore = useAgentsStore.getState();
 
     await Promise.all([
