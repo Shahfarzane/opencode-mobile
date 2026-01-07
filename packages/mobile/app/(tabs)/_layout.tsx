@@ -1,7 +1,7 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { gitApi, type Session, sessionsApi } from "../../src/api";
 import type { ContextUsage } from "../../src/components/chat";
 import { Header } from "../../src/components/layout/Header";
@@ -19,35 +19,18 @@ import {
 	initializeSessionSync,
 } from "../../src/lib/sessionSync";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { typography, useTheme } from "../../src/theme";
+import { useTheme } from "../../src/theme";
 import ChatScreen from "./chat";
 import DiffScreen from "./diff";
 import GitScreen from "./git";
-import SettingsScreen from "./settings";
 import TerminalScreen from "./terminal";
 
 type MainTab = "chat" | "diff" | "terminal" | "git";
-
-function PlaceholderScreen({ title }: { title: string }) {
-	const { colors } = useTheme();
-
-	return (
-		<View style={[styles.placeholder, { backgroundColor: colors.background }]}>
-			<Text style={[typography.uiHeader, { color: colors.foreground }]}>
-				{title}
-			</Text>
-			<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
-				Coming soon
-			</Text>
-		</View>
-	);
-}
 
 export default function TabsLayout() {
 	const { colors } = useTheme();
 	const { isConnected, directory } = useConnectionStore();
 	const [activeTab, setActiveTab] = useState<MainTab>("chat");
-	const [showSettings, setShowSettings] = useState(false);
 	const [contextUsage, setContextUsage] = useState<ContextUsage | null>(null);
 	const [diffFileCount, setDiffFileCount] = useState(0);
 
@@ -240,12 +223,11 @@ export default function TabsLayout() {
 	}, []);
 
 	const handleSettingsPress = useCallback(() => {
-		setShowSettings(true);
+		router.push("/settings");
 	}, []);
 
 	const handleTabChange = useCallback((tab: MainTab) => {
 		setActiveTab(tab);
-		setShowSettings(false);
 	}, []);
 
 	const contextUsageValue = useMemo(
@@ -299,10 +281,6 @@ export default function TabsLayout() {
 	);
 
 	const renderContent = () => {
-		if (showSettings) {
-			return <SettingsScreen />;
-		}
-
 		switch (activeTab) {
 			case "chat":
 				return <ChatScreen />;

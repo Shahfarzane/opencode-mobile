@@ -6,6 +6,12 @@ function remToPixels(rem: string): number {
 }
 
 export const FontFamily = {
+	// Sans fonts (for UI text)
+	sans: "IBMPlexSans-Regular",
+	sansMedium: "IBMPlexSans-Medium",
+	sansSemiBold: "IBMPlexSans-SemiBold",
+	sansBold: "IBMPlexSans-Bold",
+	// Mono fonts (for code and technical content)
 	mono: "IBMPlexMono-Regular",
 	monoMedium: "IBMPlexMono-Medium",
 	monoSemiBold: "IBMPlexMono-SemiBold",

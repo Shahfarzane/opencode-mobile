@@ -128,43 +128,19 @@ export default function ChatScreen() {
 
 	// Derive modelInfo from current selection
 	const modelInfo: ModelInfo | undefined = useMemo(() => {
-		if (__DEV__) {
-			console.log("[Chat] Deriving modelInfo:", {
-				currentProviderId,
-				currentModelId,
-				providersCount: providers.length,
-				providerIds: providers.map((p) => p.id),
-			});
-		}
-
 		if (!currentProviderId || !currentModelId) {
-			if (__DEV__)
-				console.log("[Chat] modelInfo: undefined (no provider/model selected)");
 			return undefined;
 		}
 
 		const provider = providers.find((p) => p.id === currentProviderId);
 		const model = provider?.models?.find((m) => m.id === currentModelId);
 
-		if (__DEV__) {
-			console.log("[Chat] Found provider/model:", {
-				providerFound: !!provider,
-				providerModelsCount: provider?.models?.length,
-				modelFound: !!model,
-				modelId: model?.id,
-				modelName: model?.name,
-				modelNameType: typeof model?.name,
-			});
-		}
-
 		if (!provider || !model) {
-			if (__DEV__)
-				console.log("[Chat] modelInfo: undefined (provider/model not found)");
 			return undefined;
 		}
 
 		const displayName = model.name || model.id;
-		const result = {
+		return {
 			modelId: model.id,
 			modelName:
 				displayName.length > 40
@@ -173,9 +149,6 @@ export default function ChatScreen() {
 			providerId: provider.id,
 			providerName: provider.name,
 		};
-
-		if (__DEV__) console.log("[Chat] modelInfo result:", result);
-		return result;
 	}, [providers, currentProviderId, currentModelId]);
 
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
@@ -210,14 +183,6 @@ export default function ChatScreen() {
 
 			lastEventTimeRef.current = Date.now();
 
-			if (__DEV__) {
-				console.log(
-					"[Chat] Event:",
-					event.type,
-					props.part?.type || props.info?.finish || "",
-				);
-			}
-
 			if (event.type === "session.error" || event.type === "message.error") {
 				console.error("[Chat] Stream error:", props);
 				setIsLoading(false);
@@ -248,12 +213,6 @@ export default function ChatScreen() {
 					title?: string;
 				};
 				const updatedSessionId = sessionInfo?.id || props.sessionID;
-				if (__DEV__) {
-					console.log("[Chat] session.updated:", {
-						sessionId: updatedSessionId,
-						title: sessionInfo?.title,
-					});
-				}
 				// Refresh sessions list to get updated title
 				if (_refreshSessions && updatedSessionId === sessionId) {
 					_refreshSessions();
@@ -265,50 +224,23 @@ export default function ChatScreen() {
 				// Extract server's message ID from event
 				const serverMessageId = props.info?.id || props.messageID;
 
-				// Debug: Log all part events to understand message flow
-				if (__DEV__) {
-					console.log("[Chat] message.part.updated:", {
-						role: props.info?.role,
-						partType: props.part?.type,
-						partText: props.part?.text?.slice(0, 50),
-						partContent: props.part?.content?.slice(0, 50),
-						hasActiveAssistant: !!currentAssistantMessageIdRef.current,
-						serverMessageId,
-						trackedAssistantId: currentAssistantMessageIdRef.current,
-					});
-				}
-
 				// Only process parts for assistant messages - ignore user message events
-				// Check explicit role if available
 				if (props.info?.role === "user") {
-					if (__DEV__) console.log("[Chat] Skipping user role event");
 					return;
 				}
 
 				// Ensure we have an active assistant message being tracked
 				if (!currentAssistantMessageIdRef.current) {
-					if (__DEV__)
-						console.log("[Chat] Skipping - no active assistant message");
 					return;
 				}
 
 				// Skip events for non-assistant messages based on server message ID pattern
-				// Server uses IDs like "msg_01JX..." for messages, while we use "assistant-" prefix
-				// If server sends role info, that takes precedence (handled above)
-				// This catches events where role info is missing but we can infer from ID pattern
 				if (serverMessageId && typeof serverMessageId === "string") {
-					// If it looks like a server-generated ID (starts with msg_ or is a ULID)
-					// and we have no role info, this might be a user message event - skip it
 					const looksLikeServerMessageId =
 						serverMessageId.startsWith("msg_") ||
 						(serverMessageId.length > 20 &&
 							/^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
 					if (looksLikeServerMessageId && props.info?.role === undefined) {
-						if (__DEV__)
-							console.log(
-								"[Chat] Skipping - server message ID with unknown role:",
-								serverMessageId,
-							);
 						return;
 					}
 				}
@@ -345,47 +277,23 @@ export default function ChatScreen() {
 				const serverParts = props.parts;
 				const serverMessageId = info?.id || props.messageID;
 
-				// Debug: Log all message.updated events
-				if (__DEV__) {
-					console.log("[Chat] message.updated:", {
-						role: info?.role,
-						finish: info?.finish,
-						partsCount: serverParts?.length,
-						hasActiveAssistant: !!currentAssistantMessageIdRef.current,
-						serverMessageId,
-						trackedAssistantId: currentAssistantMessageIdRef.current,
-					});
-				}
-
 				// Only process assistant messages - ignore user message events
-				// The server sends message.updated for both user and assistant messages
 				if (info?.role === "user") {
-					if (__DEV__) console.log("[Chat] Skipping user message.updated");
 					return;
 				}
 
 				// Ensure we have an active assistant message being tracked
 				if (!currentAssistantMessageIdRef.current) {
-					if (__DEV__)
-						console.log(
-							"[Chat] Skipping message.updated - no active assistant",
-						);
 					return;
 				}
 
 				// Skip events for non-assistant messages based on server message ID pattern
-				// (same logic as message.part.updated)
 				if (serverMessageId && typeof serverMessageId === "string") {
 					const looksLikeServerMessageId =
 						serverMessageId.startsWith("msg_") ||
 						(serverMessageId.length > 20 &&
 							/^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
 					if (looksLikeServerMessageId && info?.role === undefined) {
-						if (__DEV__)
-							console.log(
-								"[Chat] Skipping message.updated - server ID with unknown role:",
-								serverMessageId,
-							);
 						return;
 					}
 				}
@@ -414,13 +322,6 @@ export default function ChatScreen() {
 					info?.finish === "cancelled" ||
 					info?.finish === "error" ||
 					(info?.time?.completed && typeof info.time.completed === "number");
-
-				if (__DEV__ && isComplete) {
-					console.log("[Chat] Message complete:", {
-						finish: info?.finish,
-						partsCount: partsArray.length,
-					});
-				}
 
 				const assistantId = currentAssistantMessageIdRef.current;
 				if (assistantId) {
@@ -489,12 +390,6 @@ export default function ChatScreen() {
 		const fetchSettings = async () => {
 			try {
 				const result = await settingsApi.load();
-				if (__DEV__) {
-					console.log("[Chat] Settings loaded:", {
-						defaultAgent: result.settings.defaultAgent,
-						defaultModel: result.settings.defaultModel,
-					});
-				}
 				setOpenChamberSettings(result.settings);
 			} catch (err) {
 				console.error("[Chat] Failed to fetch settings:", err);
@@ -510,13 +405,7 @@ export default function ChatScreen() {
 
 		const fetchProviders = async () => {
 			try {
-				if (__DEV__) console.log("[Chat] Fetching providers...");
 				const data = await providersApi.list();
-
-				if (__DEV__) {
-					console.log("[Chat] Providers fetched:", data.length);
-				}
-
 				setProviders(data);
 			} catch (err) {
 				console.error("Failed to fetch providers:", err);
@@ -533,18 +422,6 @@ export default function ChatScreen() {
 		const fetchAgents = async () => {
 			try {
 				const data = await agentsApi.list();
-				if (__DEV__) {
-					console.log("[Chat] Agents loaded:", data.length);
-					console.log(
-						"[Chat] Agents with models:",
-						data
-							.filter((a) => a.model?.providerID && a.model?.modelID)
-							.map((a) => ({
-								name: a.name,
-								model: a.model,
-							})),
-					);
-				}
 				setAgents(data);
 
 				// Set default agent if not already set
@@ -565,34 +442,14 @@ export default function ChatScreen() {
 						);
 						if (settingsAgent) {
 							resolvedAgent = settingsAgent;
-							if (__DEV__)
-								console.log(
-									"[Chat] Using settings.defaultAgent:",
-									settingsAgent.name,
-								);
-						} else {
-							if (__DEV__)
-								console.log(
-									"[Chat] settings.defaultAgent not found in agents list:",
-									openChamberSettings.defaultAgent,
-								);
 						}
 					}
 
 					// 2. Fall back to default logic
 					if (!resolvedAgent) {
 						resolvedAgent = fallbackAgent;
-						if (__DEV__)
-							console.log("[Chat] Using fallback agent:", resolvedAgent?.name);
 					}
 
-					if (__DEV__)
-						console.log(
-							"[Chat] Final selected agent:",
-							resolvedAgent?.name,
-							"model:",
-							JSON.stringify(resolvedAgent?.model),
-						);
 					if (resolvedAgent) {
 						setCurrentAgentName(resolvedAgent.name);
 					}
@@ -609,47 +466,12 @@ export default function ChatScreen() {
 	// Priority: settings.defaultModel → agent's preferred model → fallback
 	const hasAppliedDefaultModelRef = useRef(false);
 	useEffect(() => {
-		if (__DEV__) {
-			console.log("[Chat] === MODEL SELECTION EFFECT DEBUG ===");
-			console.log(
-				"[Chat] hasAppliedDefaultModelRef:",
-				hasAppliedDefaultModelRef.current,
-			);
-			console.log("[Chat] currentAgentName:", currentAgentName);
-			console.log("[Chat] agents.length:", agents.length);
-			console.log("[Chat] providers.length:", providers.length);
-			console.log(
-				"[Chat] settings.defaultModel:",
-				openChamberSettings?.defaultModel,
-			);
-		}
-
 		// Only apply default model once (for initial default)
-		// Don't override user's manual model selection
-		if (hasAppliedDefaultModelRef.current) {
-			if (__DEV__) console.log("[Chat] Skipping: already applied");
-			return;
-		}
-		if (providers.length === 0) {
-			if (__DEV__) console.log("[Chat] Skipping: no providers");
-			return;
-		}
-		// Wait for settings to load before making default model decision
-		// This ensures we can properly respect settings.defaultModel
-		if (openChamberSettings === null) {
-			if (__DEV__) console.log("[Chat] Skipping: settings not loaded yet");
-			return;
-		}
-		// Wait for agents to load so we can check agent's preferred model
-		if (agents.length === 0) {
-			if (__DEV__) console.log("[Chat] Skipping: no agents loaded yet");
-			return;
-		}
-		// Wait for an agent to be selected (either from settings or fallback)
-		if (!currentAgentName) {
-			if (__DEV__) console.log("[Chat] Skipping: no agent selected yet");
-			return;
-		}
+		if (hasAppliedDefaultModelRef.current) return;
+		if (providers.length === 0) return;
+		if (openChamberSettings === null) return;
+		if (agents.length === 0) return;
+		if (!currentAgentName) return;
 
 		// Helper to validate model exists in providers
 		const validateModel = (providerId: string, modelId: string): boolean => {
@@ -666,7 +488,7 @@ export default function ChatScreen() {
 			const parts = modelString.split("/");
 			if (parts.length >= 2) {
 				const providerId = parts[0];
-				const modelId = parts.slice(1).join("/"); // Handle model IDs that contain '/'
+				const modelId = parts.slice(1).join("/");
 				return { providerId, modelId };
 			}
 			return null;
@@ -675,91 +497,49 @@ export default function ChatScreen() {
 		let resolvedProviderId: string | undefined;
 		let resolvedModelId: string | undefined;
 
-		// 1. Check settings for default model (like desktop Step 1)
+		// 1. Check settings for default model
 		if (openChamberSettings?.defaultModel) {
-			if (__DEV__)
-				console.log(
-					"[Chat] Step 1: Checking settings.defaultModel:",
-					openChamberSettings.defaultModel,
-				);
 			const parsed = parseModelString(openChamberSettings.defaultModel);
-			if (__DEV__) console.log("[Chat] Parsed model string:", parsed);
 			if (parsed && validateModel(parsed.providerId, parsed.modelId)) {
 				resolvedProviderId = parsed.providerId;
 				resolvedModelId = parsed.modelId;
-				if (__DEV__)
-					console.log(
-						"[Chat] Using settings.defaultModel:",
-						resolvedProviderId,
-						resolvedModelId,
-					);
 			}
 		}
 
-		// 2. Fall back to agent's preferred model (like desktop Step 2)
+		// 2. Fall back to agent's preferred model
 		if (!resolvedProviderId && currentAgentName) {
 			const agent = agents.find((a) => a.name === currentAgentName);
-			if (__DEV__)
-				console.log(
-					"[Chat] Step 2: Checking agent's preferred model:",
-					agent?.name,
-					agent?.model,
-				);
 			if (agent?.model?.providerID && agent?.model?.modelID) {
 				if (validateModel(agent.model.providerID, agent.model.modelID)) {
 					resolvedProviderId = agent.model.providerID;
 					resolvedModelId = agent.model.modelID;
-					if (__DEV__)
-						console.log(
-							"[Chat] Using agent's preferred model:",
-							resolvedProviderId,
-							resolvedModelId,
-						);
 				}
 			}
 		}
 
-		// 3. Fall back to opencode/big-pickle (like desktop Step 3)
+		// 3. Fall back to opencode/big-pickle
 		if (!resolvedProviderId) {
-			if (__DEV__)
-				console.log("[Chat] Step 3: Checking fallback opencode/big-pickle");
 			if (validateModel("opencode", "big-pickle")) {
 				resolvedProviderId = "opencode";
 				resolvedModelId = "big-pickle";
-				if (__DEV__) console.log("[Chat] Using fallback opencode/big-pickle");
 			}
 		}
 
 		// 4. Last resort: find Anthropic provider and use first model
 		if (!resolvedProviderId) {
-			if (__DEV__)
-				console.log("[Chat] Step 4: Last resort - first Anthropic model");
 			const anthropicProvider = providers.find((p) => p.id === "anthropic");
 			const firstModel = anthropicProvider?.models?.[0];
 			if (anthropicProvider && firstModel) {
 				resolvedProviderId = anthropicProvider.id;
 				resolvedModelId = firstModel.id;
-				if (__DEV__)
-					console.log(
-						"[Chat] Using first Anthropic model:",
-						resolvedProviderId,
-						resolvedModelId,
-					);
 			}
 		}
 
 		// Apply the resolved model
 		if (resolvedProviderId && resolvedModelId) {
-			if (__DEV__) {
-				console.log("[Chat] === FINAL MODEL SELECTION ===");
-				console.log("[Chat] Provider:", resolvedProviderId);
-				console.log("[Chat] Model:", resolvedModelId);
-			}
 			hasAppliedDefaultModelRef.current = true;
 			setCurrentProviderId(resolvedProviderId);
 			setCurrentModelId(resolvedModelId);
-		} else {
-			if (__DEV__) console.log("[Chat] No model resolved, keeping default");
 		}
 	}, [currentAgentName, agents, providers, openChamberSettings]);
 
@@ -824,12 +604,8 @@ export default function ChatScreen() {
 		async (id: string) => {
 			if (!isConnected) return;
 
-			// Prevent multiple simultaneous loads (avoids re-entry during state updates)
-			if (isLoadingSessionRef.current) {
-				if (__DEV__)
-					console.log("[Chat] Skipping load - already loading session");
-				return;
-			}
+			// Prevent multiple simultaneous loads
+			if (isLoadingSessionRef.current) return;
 			isLoadingSessionRef.current = true;
 
 			try {
@@ -904,32 +680,20 @@ export default function ChatScreen() {
 				setMessages(loadedMessages);
 
 				// Restore model/agent selection from the session's last used values
-				// Use refs for stable access - prevents infinite loops from array reference changes
 				if (lastProviderID && lastModelID) {
-					// Verify the provider/model exists before setting
 					const provider = providersRef.current.find(
 						(p) => p.id === lastProviderID,
 					);
 					const model = provider?.models?.find((m) => m.id === lastModelID);
 					if (provider && model) {
-						if (__DEV__) {
-							console.log("[Chat] Restoring session model:", {
-								providerId: lastProviderID,
-								modelId: lastModelID,
-							});
-						}
 						setCurrentProviderId(lastProviderID);
 						setCurrentModelId(lastModelID);
 					}
 				}
 
 				if (lastAgentName) {
-					// Verify the agent exists before setting
 					const agent = agentsRef.current.find((a) => a.name === lastAgentName);
 					if (agent) {
-						if (__DEV__) {
-							console.log("[Chat] Restoring session agent:", lastAgentName);
-						}
 						setCurrentAgentName(lastAgentName);
 					}
 				}
@@ -943,30 +707,14 @@ export default function ChatScreen() {
 	);
 
 	// Sync with context's currentSessionId
-	// Note: Don't reload messages if we're currently streaming (would overwrite the placeholder)
 	useEffect(() => {
 		if (currentSessionId !== prevContextSessionIdRef.current) {
-			if (__DEV__)
-				console.log(
-					"[Chat] Context session changed:",
-					prevContextSessionIdRef.current,
-					"→",
-					currentSessionId,
-				);
 			prevContextSessionIdRef.current = currentSessionId;
 			setSessionId(currentSessionId);
 			if (currentSessionId) {
 				// Don't reload if we're streaming - would overwrite the assistant placeholder
 				if (!isLoading) {
-					if (__DEV__)
-						console.log(
-							"[Chat] Loading messages for session:",
-							currentSessionId,
-						);
 					loadSessionMessages(currentSessionId);
-				} else {
-					if (__DEV__)
-						console.log("[Chat] Skipping message load - currently streaming");
 				}
 			} else {
 				setMessages([]);
@@ -975,20 +723,11 @@ export default function ChatScreen() {
 	}, [currentSessionId, loadSessionMessages, isLoading]);
 
 	// Update context when local sessionId changes (e.g., after creating a new session)
-	// Only sync TO context when we have a NEW session (not when syncing FROM context)
 	const prevLocalSessionIdRef = useRef<string | null>(null);
 	useEffect(() => {
-		// Only push to context if:
-		// 1. We have a _setCurrentSessionId function
-		// 2. Local sessionId actually changed (not just re-render)
-		// 3. The change was NOT caused by context (context already matches)
 		if (_setCurrentSessionId && sessionId !== prevLocalSessionIdRef.current) {
 			prevLocalSessionIdRef.current = sessionId;
-			// Only sync if this is a local change (sessionId differs from what context has)
-			// AND we're setting a real session (not clearing - that's handled by context)
 			if (sessionId && sessionId !== currentSessionId) {
-				if (__DEV__)
-					console.log("[Chat] Syncing local session to context:", sessionId);
 				_setCurrentSessionId(sessionId);
 			}
 		}
@@ -1023,26 +762,7 @@ export default function ChatScreen() {
 	const handleSend = useCallback(
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		async (content: string, _attachedFiles?: AttachedFile[]) => {
-			if (__DEV__) {
-				console.log("[Chat] === SEND MESSAGE DEBUG ===");
-				console.log("[Chat] isConnected:", isConnected);
-				console.log("[Chat] isLoading:", isLoading);
-				console.log("[Chat] currentProviderId:", currentProviderId);
-				console.log("[Chat] currentModelId:", currentModelId);
-				console.log("[Chat] currentAgentName:", currentAgentName);
-				console.log("[Chat] sessionId:", sessionId);
-			}
-
-			if (!isConnected || isLoading) {
-				if (__DEV__)
-					console.log(
-						"[Chat] Blocked: isConnected=",
-						isConnected,
-						"isLoading=",
-						isLoading,
-					);
-				return;
-			}
+			if (!isConnected || isLoading) return;
 
 			setIsLoading(true);
 
@@ -1058,9 +778,7 @@ export default function ChatScreen() {
 			try {
 				let currentSessionId = sessionId;
 				if (!currentSessionId) {
-					if (__DEV__) console.log("[Chat] Creating new session...");
 					currentSessionId = await createSession();
-					if (__DEV__) console.log("[Chat] Created session:", currentSessionId);
 					setSessionId(currentSessionId);
 				}
 
@@ -1081,8 +799,6 @@ export default function ChatScreen() {
 
 				setMessages((prev) => [...prev, assistantMessage]);
 
-				if (__DEV__)
-					console.log("[Chat] Sending message to session:", currentSessionId);
 				await sessionsApi.sendMessage(
 					currentSessionId,
 					content,
@@ -1090,7 +806,6 @@ export default function ChatScreen() {
 					currentModelId,
 					currentAgentName,
 				);
-				if (__DEV__) console.log("[Chat] Message sent successfully");
 			} catch (error) {
 				console.error("Failed to send message:", error);
 				const errorMessage: Message = {

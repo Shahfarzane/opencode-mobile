@@ -1,7 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
 import { Text, type TextStyle, type ViewStyle } from "react-native";
-import { FontSizes, FixedLineHeights, useTheme } from "@/theme";
+import { FontSizes, FixedLineHeights, FontFamilySans, FontFamilyMono, useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -61,7 +61,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			<Text
 				key={node.key}
 				style={{
-					fontFamily: "IBMPlexMono-Regular",
+					fontFamily: FontFamilyMono.regular,
 					fontSize: FontSizes.code,
 					backgroundColor: colors.muted,
 					color: colors.foreground,
@@ -73,29 +73,31 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 	};
 
 	const styles = {
+		// Body text uses Sans font (matches desktop --font-sans)
 		body: {
 			color: colors.foreground,
-			fontFamily: "IBMPlexMono-Regular",
+			fontFamily: FontFamilySans.regular,
 			fontSize: FontSizes.markdown,
 			lineHeight: FixedLineHeights.body, // Fixed 24px (matches desktop)
 		},
+		// Headings use Sans font
 		heading1: {
 			color: colors.foreground,
-			fontFamily: "IBMPlexMono-Bold",
+			fontFamily: FontFamilySans.bold,
 			fontSize: FontSizes.h1,
 			marginTop: 16,
 			marginBottom: 8,
 		},
 		heading2: {
 			color: colors.foreground,
-			fontFamily: "IBMPlexMono-SemiBold",
+			fontFamily: FontFamilySans.semiBold,
 			fontSize: FontSizes.h2,
 			marginTop: 14,
 			marginBottom: 6,
 		},
 		heading3: {
 			color: colors.foreground,
-			fontFamily: "IBMPlexMono-SemiBold",
+			fontFamily: FontFamilySans.semiBold,
 			fontSize: FontSizes.h3,
 			marginTop: 12,
 			marginBottom: 4,
@@ -133,11 +135,12 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		ordered_list: {
 			marginBottom: 8,
 		},
+		// Code blocks use Mono font
 		code_block: {
 			backgroundColor: colors.muted,
 			borderRadius: 8,
 			padding: 12,
-			fontFamily: "IBMPlexMono-Regular",
+			fontFamily: FontFamilyMono.regular,
 			fontSize: FontSizes.code,
 		},
 		hr: {
@@ -156,7 +159,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		},
 		th: {
 			padding: 8,
-			fontFamily: "IBMPlexMono-SemiBold",
+			fontFamily: FontFamilySans.semiBold,
 		},
 		td: {
 			padding: 8,
@@ -164,7 +167,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			borderTopWidth: 1,
 		},
 		strong: {
-			fontFamily: "IBMPlexMono-SemiBold",
+			fontFamily: FontFamilySans.semiBold,
 		},
 		em: {
 			fontStyle: "italic" as const,

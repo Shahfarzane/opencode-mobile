@@ -29,6 +29,13 @@ function RootLayoutContent() {
 				<Stack.Screen name="index" />
 				<Stack.Screen name="onboarding" />
 				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="settings"
+					options={{
+						presentation: "modal",
+						animation: "slide_from_bottom",
+					}}
+				/>
 			</Stack>
 			<StatusBar style={isDark ? "light" : "dark"} />
 		</>
@@ -37,6 +44,12 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
 	const [fontsLoaded, fontError] = useFonts({
+		// Sans fonts - for UI text (headers, labels, buttons, settings)
+		"IBMPlexSans-Regular": require("../assets/fonts/IBMPlexSans-Regular.ttf"),
+		"IBMPlexSans-Medium": require("../assets/fonts/IBMPlexSans-Medium.ttf"),
+		"IBMPlexSans-SemiBold": require("../assets/fonts/IBMPlexSans-SemiBold.ttf"),
+		"IBMPlexSans-Bold": require("../assets/fonts/IBMPlexSans-Bold.ttf"),
+		// Mono fonts - for code blocks and technical content
 		"IBMPlexMono-Regular": require("../assets/fonts/IBMPlexMono-Regular.ttf"),
 		"IBMPlexMono-Medium": require("../assets/fonts/IBMPlexMono-Medium.ttf"),
 		"IBMPlexMono-SemiBold": require("../assets/fonts/IBMPlexMono-SemiBold.ttf"),
@@ -44,6 +57,12 @@ export default function RootLayout() {
 	});
 
 	useEffect(() => {
+		if (fontError) {
+			console.error("Font loading error:", fontError);
+		}
+		if (fontsLoaded) {
+			console.log("Fonts loaded successfully");
+		}
 		if (fontsLoaded || fontError) {
 			SplashScreen.hideAsync();
 		}
