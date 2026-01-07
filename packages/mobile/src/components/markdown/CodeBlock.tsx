@@ -352,48 +352,59 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 				showsHorizontalScrollIndicator={true}
 				style={[styles.codeScrollView, { backgroundColor: colors.card }]}
 				contentContainerStyle={styles.codeScrollContent}
+				nestedScrollEnabled={true}
 			>
-				<View style={styles.codeContent}>
-					<View style={styles.lineNumbers}>
-						{lines.map((_, lineNum) => (
-							<Text
-								key={`num-${lines[lineNum]}-${lineNum}`}
-								style={[
-									typography.code,
-									styles.lineNumber,
-									{ color: colors.mutedForeground },
-								]}
-							>
-								{lineNum + 1}
-							</Text>
-						))}
+				<ScrollView
+					nestedScrollEnabled={true}
+					showsVerticalScrollIndicator={true}
+					style={styles.verticalScrollView}
+					contentContainerStyle={styles.verticalScrollContent}
+				>
+					<View style={styles.codeContent}>
+						<View style={styles.lineNumbers}>
+							{lines.map((_, lineNum) => (
+								<Text
+									key={`num-${lines[lineNum]}-${lineNum}`}
+									style={[
+										typography.code,
+										styles.lineNumber,
+										{ color: colors.mutedForeground },
+									]}
+								>
+									{lineNum + 1}
+								</Text>
+							))}
+						</View>
+						<View style={styles.codeLines}>
+							{highlightedLines.map((tokens, lineNum) => (
+								<Text
+									key={`line-${lineNum}-${tokens.length}`}
+									style={[typography.code, styles.codeLine]}
+									numberOfLines={1}
+								>
+									{tokens.length > 0 ? (
+										tokens.map((token, tokenIdx) => (
+											<Text
+												key={`token-${lineNum}-${tokenIdx}-${token.text}`}
+												style={{ color: getTokenColor(token.type, isDark) }}
+											>
+												{token.text}
+											</Text>
+										))
+									) : (
+										<Text style={{ color: colors.foreground }}> </Text>
+									)}
+								</Text>
+							))}
+						</View>
 					</View>
-					<View style={styles.codeLines}>
-						{highlightedLines.map((tokens, lineNum) => (
-							<Text
-								key={`line-${lineNum}-${tokens.length}`}
-								style={[typography.code, styles.codeLine]}
-							>
-								{tokens.length > 0 ? (
-									tokens.map((token, tokenIdx) => (
-										<Text
-											key={`token-${lineNum}-${tokenIdx}-${token.text}`}
-											style={{ color: getTokenColor(token.type, isDark) }}
-										>
-											{token.text}
-										</Text>
-									))
-								) : (
-									<Text style={{ color: colors.foreground }}> </Text>
-								)}
-							</Text>
-						))}
-					</View>
-				</View>
+				</ScrollView>
 			</ScrollView>
 		</View>
 	);
 }
+
+const MAX_CODE_BLOCK_HEIGHT = 400;
 
 const styles = StyleSheet.create({
 	container: {
@@ -427,10 +438,16 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 	},
 	codeScrollView: {
-		flexGrow: 0,
+		maxHeight: MAX_CODE_BLOCK_HEIGHT,
 	},
 	codeScrollContent: {
-		minWidth: "100%",
+		flexGrow: 1,
+	},
+	verticalScrollView: {
+		flex: 1,
+	},
+	verticalScrollContent: {
+		flexGrow: 1,
 	},
 	codeContent: {
 		flexDirection: "row",
