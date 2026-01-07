@@ -6,10 +6,15 @@ export { ThemeProvider } from "./ThemeProvider";
 export { FontFamily, FontSize, FontWeight, LineHeight } from "./typography";
 export {
 	FixedLineHeights,
-	FontFamily as Fonts,
+	FontFamily as FontFamilyLegacy,
+	FontFamilyMono,
+	FontFamilySans,
 	FontSizes,
+	Fonts,
 	fontStyle,
 	getFontFamily,
+	getMonoFontFamily,
 	LineHeights,
+	monoFontStyle,
 	typography,
 } from "./typography.styles";

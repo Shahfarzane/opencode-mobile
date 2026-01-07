@@ -22,7 +22,7 @@ function ReasoningMarkdown({
 	const markdownStyles = {
 		body: {
 			color,
-			fontFamily: "IBMPlexMono-Regular",
+			fontFamily: Fonts.monoRegular,
 			fontSize: FontSizes.code,
 			lineHeight: FontSizes.code * LineHeights.normal,
 			fontStyle: "italic" as const,
@@ -32,14 +32,14 @@ function ReasoningMarkdown({
 			marginBottom: 4,
 		},
 		strong: {
-			fontFamily: "IBMPlexMono-SemiBold",
+			fontFamily: Fonts.monoSemiBold,
 			fontStyle: "italic" as const,
 		},
 		em: {
 			fontStyle: "italic" as const,
 		},
 		code_inline: {
-			fontFamily: "IBMPlexMono-Regular",
+			fontFamily: Fonts.monoRegular,
 			fontSize: FontSizes.micro,
 			backgroundColor: colors.muted,
 			color: colors.foreground,

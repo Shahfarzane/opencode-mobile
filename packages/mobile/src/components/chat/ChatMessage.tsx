@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
-import { FontSizes, fontStyle, typography, useTheme } from "@/theme";
+import { FontSizes, FontFamilySans, fontStyle, typography, useTheme } from "@/theme";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu, useMessageActions } from "./MessageActionsMenu";
 import { ReasoningPart, ToolPart } from "./parts";
@@ -61,7 +61,7 @@ function ProviderLogo({ modelName, color }: { modelName?: string; color: string 
 	return (
 		<Text
 			style={{
-				fontFamily: "IBMPlexMono-SemiBold",
+				fontFamily: FontFamilySans.semiBold,
 				fontSize: FontSizes.micro,
 				color,
 			}}
