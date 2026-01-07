@@ -223,10 +223,10 @@ function RenderPart({
 
 		return (
 			<FadeInView key={partKey} isNew={isLastPart && isStreaming}>
-				<View className="mb-1">
+				<View style={{ marginBottom: 4 }}>
 					<MarkdownRenderer content={textContent} />
 					{isLastPart && isStreaming && (
-						<Text className="ml-0.5" style={{ color: colors.primary }}>▊</Text>
+						<Text style={{ marginLeft: 2, color: colors.primary }}>▊</Text>
 					)}
 				</View>
 			</FadeInView>
@@ -316,7 +316,7 @@ function AssistantMessage({
 				</View>
 			)}
 
-			<Pressable onLongPress={openMenu} className="w-full pl-3">
+			<Pressable onLongPress={openMenu} style={{ paddingLeft: 12 }}>
 				{hasParts ? (
 					message.parts!.map((part, idx) => (
 						<RenderPart
@@ -330,10 +330,10 @@ function AssistantMessage({
 						/>
 					))
 				) : (
-					<View className="mb-1">
+					<View style={{ marginBottom: 4 }}>
 						<MarkdownRenderer content={message.content} />
 						{isStreaming && (
-							<Text className="ml-0.5" style={{ color: colors.primary }}>▊</Text>
+							<Text style={{ marginLeft: 2, color: colors.primary }}>▊</Text>
 						)}
 					</View>
 				)}

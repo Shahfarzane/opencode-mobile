@@ -1,18 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { SettingsGroup, SettingsScreen } from "@/components/settings";
-import { Fonts, Radius, Spacing, useTheme } from "@/theme";
+import { SettingsScreen } from "@/components/settings";
+import { Fonts, Spacing, useTheme } from "@/theme";
 import { type ThemeMode, useThemeMode } from "@/theme/ThemeProvider";
 
-interface ThemeModeOption {
-	value: ThemeMode;
-	label: string;
-	description: string;
-}
-
-const THEME_MODE_OPTIONS: ThemeModeOption[] = [
-	{ value: "system", label: "System", description: "Follow system settings" },
-	{ value: "light", label: "Light", description: "Always use light theme" },
-	{ value: "dark", label: "Dark", description: "Always use dark theme" },
+const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+	{ value: "system", label: "System" },
+	{ value: "light", label: "Light" },
+	{ value: "dark", label: "Dark" },
 ];
 
 function ThemeModeSelector() {
@@ -20,61 +14,31 @@ function ThemeModeSelector() {
 	const { themeMode, setThemeMode } = useThemeMode();
 
 	return (
-		<View style={styles.selectorContainer}>
-			{THEME_MODE_OPTIONS.map((option) => {
+		<View style={[styles.segmentedControl, { backgroundColor: colors.muted }]}>
+			{THEME_OPTIONS.map((option) => {
 				const isSelected = themeMode === option.value;
 				return (
 					<Pressable
 						key={option.value}
 						onPress={() => setThemeMode(option.value)}
 						style={[
-							styles.option,
-							{
-								backgroundColor: isSelected
-									? colors.primary + "20"
-									: "transparent",
-								borderColor: isSelected ? colors.primary : colors.border,
-							},
+							styles.segment,
+							isSelected && [
+								styles.segmentSelected,
+								{ backgroundColor: colors.primary },
+							],
 						]}
 					>
-						<View style={styles.optionContent}>
-							<Text
-								style={[
-									styles.optionLabel,
-									{
-										color: isSelected ? colors.primary : colors.foreground,
-									},
-								]}
-							>
-								{option.label}
-							</Text>
-							<Text
-								style={[
-									styles.optionDescription,
-									{ color: colors.mutedForeground },
-								]}
-							>
-								{option.description}
-							</Text>
-						</View>
-						<View
+						<Text
 							style={[
-								styles.radio,
+								styles.segmentLabel,
 								{
-									borderColor: isSelected ? colors.primary : colors.border,
-									backgroundColor: isSelected ? colors.primary : "transparent",
+									color: isSelected ? colors.background : colors.foreground,
 								},
 							]}
 						>
-							{isSelected && (
-								<View
-									style={[
-										styles.radioInner,
-										{ backgroundColor: colors.background },
-									]}
-								/>
-							)}
-						</View>
+							{option.label}
+						</Text>
 					</Pressable>
 				);
 			})}
@@ -83,55 +47,54 @@ function ThemeModeSelector() {
 }
 
 export default function AppearanceScreen() {
+	const { colors } = useTheme();
+
 	return (
 		<SettingsScreen title="Appearance">
-			<SettingsGroup
-				header="Theme"
-				footer="Choose how the app should appear. System will automatically switch between light and dark based on your device settings."
-			>
+			<View style={styles.section}>
+				<Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>
+					Theme Mode
+				</Text>
 				<ThemeModeSelector />
-			</SettingsGroup>
+			</View>
 		</SettingsScreen>
 	);
 }
 
 const styles = StyleSheet.create({
-	selectorContainer: {
-		padding: Spacing[3],
-		gap: Spacing[2],
+	section: {
+		paddingHorizontal: Spacing[4],
+		paddingTop: Spacing[6],
 	},
-	option: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		padding: Spacing[3],
-		borderRadius: Radius.lg,
-		borderWidth: 1,
-	},
-	optionContent: {
-		flex: 1,
-	},
-	optionLabel: {
-		fontSize: 15,
-		fontFamily: Fonts.medium,
-		marginBottom: 2,
-	},
-	optionDescription: {
+	sectionHeader: {
 		fontSize: 13,
-		fontFamily: Fonts.regular,
+		fontFamily: Fonts.medium,
+		textTransform: "uppercase",
+		letterSpacing: 0.5,
+		marginBottom: Spacing[3],
 	},
-	radio: {
-		width: 22,
-		height: 22,
-		borderRadius: 11,
-		borderWidth: 2,
+	segmentedControl: {
+		flexDirection: "row",
+		borderRadius: 8,
+		padding: 3,
+	},
+	segment: {
+		flex: 1,
+		paddingVertical: 8,
+		paddingHorizontal: 12,
 		alignItems: "center",
 		justifyContent: "center",
-		marginLeft: Spacing[3],
+		borderRadius: 6,
 	},
-	radioInner: {
-		width: 10,
-		height: 10,
-		borderRadius: 5,
+	segmentSelected: {
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.1,
+		shadowRadius: 2,
+		elevation: 2,
+	},
+	segmentLabel: {
+		fontSize: 14,
+		fontFamily: Fonts.medium,
 	},
 });

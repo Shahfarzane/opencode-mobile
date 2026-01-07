@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Agent, agentsApi, isAgentBuiltIn, isAgentHidden } from "@/api";
-import { ChevronLeft, PlusIcon, RobotIcon } from "@/components/icons";
+import { ChevronLeft, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
@@ -117,7 +117,6 @@ export default function AgentsListScreen() {
 									subtitle={agent.description}
 									badge={agent.mode}
 									onPress={() => handleSelectAgent(agent.name)}
-									icon={<RobotIcon color={colors.primary} size={18} />}
 								/>
 							))}
 						</View>
@@ -137,7 +136,6 @@ export default function AgentsListScreen() {
 									subtitle={agent.description}
 									badge={agent.mode}
 									onPress={() => handleSelectAgent(agent.name)}
-									icon={<RobotIcon color={colors.primary} size={18} />}
 								/>
 							))}
 						</View>
@@ -145,11 +143,10 @@ export default function AgentsListScreen() {
 
 					{agents.length === 0 && (
 						<View style={styles.emptyContainer}>
-							<RobotIcon color={colors.mutedForeground} size={40} />
 							<Text
 								style={[typography.uiLabel, { color: colors.mutedForeground }]}
 							>
-								No custom agents yet
+								No agents yet
 							</Text>
 							<Pressable
 								onPress={() => {
@@ -218,14 +215,14 @@ const styles = StyleSheet.create({
 		paddingTop: Spacing[4],
 	},
 	section: {
-		marginBottom: Spacing[4],
+		marginBottom: Spacing[5],
 	},
 	sectionTitle: {
-		fontSize: 12,
-		fontFamily: Fonts.semiBold,
+		fontSize: 13,
+		fontFamily: Fonts.medium,
 		letterSpacing: 0.5,
+		marginBottom: Spacing[1],
 		paddingHorizontal: Spacing[4],
-		marginBottom: Spacing[2],
 	},
 	emptyContainer: {
 		flex: 1,

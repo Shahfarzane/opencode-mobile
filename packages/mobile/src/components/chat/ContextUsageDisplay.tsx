@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { contextUsageDisplayStyles } from "./ContextUsageDisplay.styles";
 
 export interface ContextUsage {
 	totalTokens: number;
@@ -94,7 +95,7 @@ export function ContextUsageDisplay({
 				onPressIn={handleLongPressStart}
 				onPressOut={handleLongPressEnd}
 				onPress={() => setModalVisible(true)}
-				style={styles.container}
+				className={contextUsageDisplayStyles.container({})}
 			>
 				<DonutChartIcon
 					color={colors.mutedForeground}
@@ -118,32 +119,37 @@ export function ContextUsageDisplay({
 				onRequestClose={() => setModalVisible(false)}
 			>
 				<Pressable
-					style={styles.modalOverlay}
+					className={contextUsageDisplayStyles.modalOverlay({})}
+					style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
 					onPress={() => setModalVisible(false)}
 				>
 					<View
-						style={[
-							styles.modalContent,
-							{ backgroundColor: colors.card, borderColor: colors.border },
-						]}
+						className={contextUsageDisplayStyles.modalContent({})}
+						style={{
+							backgroundColor: colors.card,
+							borderColor: colors.border,
+							borderWidth: 1,
+						}}
 					>
 						<Text
+							className={contextUsageDisplayStyles.modalTitle({})}
 							style={[
 								typography.uiLabel,
-								styles.modalTitle,
-								{ color: colors.foreground },
+								{ fontFamily: Fonts.semiBold, color: colors.foreground },
 							]}
 						>
 							Context Usage
 						</Text>
 
 						<View
-							style={[
-								styles.statsContainer,
-								{ backgroundColor: colors.muted, borderColor: colors.border },
-							]}
+							className={contextUsageDisplayStyles.statsContainer({})}
+							style={{
+								backgroundColor: colors.muted,
+								borderColor: colors.border,
+								borderWidth: 1,
+							}}
 						>
-							<View style={styles.statRow}>
+							<View className={contextUsageDisplayStyles.statRow({})}>
 								<Text
 									style={[typography.meta, { color: colors.mutedForeground }]}
 								>
@@ -160,7 +166,7 @@ export function ContextUsageDisplay({
 								</Text>
 							</View>
 
-							<View style={styles.statRow}>
+							<View className={contextUsageDisplayStyles.statRow({})}>
 								<Text
 									style={[typography.meta, { color: colors.mutedForeground }]}
 								>
@@ -177,7 +183,7 @@ export function ContextUsageDisplay({
 								</Text>
 							</View>
 
-							<View style={styles.statRow}>
+							<View className={contextUsageDisplayStyles.statRow({})}>
 								<Text
 									style={[typography.meta, { color: colors.mutedForeground }]}
 								>
@@ -195,11 +201,8 @@ export function ContextUsageDisplay({
 							</View>
 
 							<View
-								style={[
-									styles.statRow,
-									styles.statRowLast,
-									{ borderTopColor: colors.border },
-								]}
+								className={contextUsageDisplayStyles.statRowLast({})}
+								style={{ borderTopColor: colors.border, borderTopWidth: 1 }}
 							>
 								<Text
 									style={[typography.meta, { color: colors.mutedForeground }]}
@@ -223,45 +226,3 @@ export function ContextUsageDisplay({
 		</>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-	},
-	modalOverlay: {
-		flex: 1,
-		backgroundColor: "rgba(0, 0, 0, 0.5)",
-		justifyContent: "center",
-		alignItems: "center",
-		padding: 24,
-	},
-	modalContent: {
-		width: "100%",
-		maxWidth: 320,
-		borderRadius: 16,
-		padding: 16,
-		borderWidth: 1,
-	},
-	modalTitle: {
-		fontFamily: Fonts.semiBold,
-		marginBottom: 12,
-	},
-	statsContainer: {
-		borderRadius: 12,
-		padding: 12,
-		borderWidth: 1,
-	},
-	statRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingVertical: 4,
-	},
-	statRowLast: {
-		marginTop: 8,
-		paddingTop: 8,
-		borderTopWidth: 1,
-	},
-});

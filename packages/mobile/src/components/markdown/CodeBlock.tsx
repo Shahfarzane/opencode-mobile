@@ -1,8 +1,32 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Pressable, Text, View } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
+import { MAX_CODE_BLOCK_HEIGHT } from "./CodeBlock.styles";
+
+// Chevron icon component
+function ChevronIcon({ expanded, color }: { expanded: boolean; color: string }) {
+	return (
+		<Svg
+			width={12}
+			height={12}
+			viewBox="0 0 24 24"
+			fill="none"
+			style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}
+		>
+			<Path
+				d="M9 18l6-6-6-6"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
 
 type CodeBlockProps = {
 	code: string;
@@ -310,6 +334,7 @@ function tokenize(code: string, language: string): Token[] {
 export function CodeBlock({ code, language }: CodeBlockProps) {
 	const { colors, isDark } = useTheme();
 	const [copied, setCopied] = useState(false);
+	const [expanded, setExpanded] = useState(true);
 
 	const languageColor =
 		LANGUAGE_COLORS[language.toLowerCase()] || colors.mutedForeground;
@@ -321,6 +346,11 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 		setTimeout(() => setCopied(false), 2000);
 	}, [code]);
 
+	const handleToggle = useCallback(() => {
+		Haptics.selectionAsync();
+		setExpanded((prev) => !prev);
+	}, []);
+
 	const trimmedCode = code.replace(/\n$/, "");
 	const lines = trimmedCode.split("\n");
 
@@ -330,141 +360,117 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 	}, [lines, language]);
 
 	return (
-		<View style={[styles.container, { borderColor: colors.border }]}>
-			<View style={[styles.header, { backgroundColor: colors.muted }]}>
-				<View style={styles.languageInfo}>
+		<View
+			style={{
+				marginVertical: 8,
+				borderRadius: 8,
+				borderColor: colors.border,
+				borderWidth: 1,
+				overflow: 'hidden',
+			}}
+		>
+			{/* Header - always visible, tappable to toggle */}
+			<Pressable
+				onPress={handleToggle}
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					paddingHorizontal: 12,
+					paddingVertical: 8,
+					backgroundColor: colors.muted,
+				}}
+			>
+				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+					<ChevronIcon expanded={expanded} color={colors.mutedForeground} />
 					<View
-						style={[styles.languageDot, { backgroundColor: languageColor }]}
+						style={{
+							width: 10,
+							height: 10,
+							borderRadius: 5,
+							backgroundColor: languageColor,
+						}}
 					/>
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{language || "text"}
 					</Text>
+					<Text style={[typography.micro, { color: colors.mutedForeground, opacity: 0.6 }]}>
+						({lines.length} {lines.length === 1 ? 'line' : 'lines'})
+					</Text>
 				</View>
-				<Pressable onPress={handleCopy} style={styles.copyButton}>
+				<Pressable
+					onPress={(e) => {
+						e.stopPropagation();
+						handleCopy();
+					}}
+					style={{ paddingHorizontal: 8, paddingVertical: 4 }}
+				>
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{copied ? "Copied!" : "Copy"}
 					</Text>
 				</Pressable>
-			</View>
+			</Pressable>
 
-			<ScrollView
-				horizontal
-				showsHorizontalScrollIndicator={true}
-				style={[styles.codeScrollView, { backgroundColor: colors.card }]}
-				contentContainerStyle={styles.codeScrollContent}
-				nestedScrollEnabled={true}
-			>
+			{/* Code content - collapsible */}
+			{expanded && (
 				<ScrollView
-					nestedScrollEnabled={true}
-					showsVerticalScrollIndicator={true}
-					style={styles.verticalScrollView}
-					contentContainerStyle={styles.verticalScrollContent}
+					horizontal
+					style={{ backgroundColor: colors.card }}
+					showsHorizontalScrollIndicator={true}
+					contentContainerStyle={{ flexGrow: 0 }}
 				>
-					<View style={styles.codeContent}>
-						<View style={styles.lineNumbers}>
+					<View style={{ flexDirection: 'row', padding: 12, maxHeight: MAX_CODE_BLOCK_HEIGHT }}>
+						<View style={{ marginRight: 12, alignItems: 'flex-end' }}>
 							{lines.map((_, lineNum) => (
 								<Text
-									key={`num-${lines[lineNum]}-${lineNum}`}
-									style={[
-										typography.code,
-										styles.lineNumber,
-										{ color: colors.mutedForeground },
-									]}
+									key={`num-${lineNum}`}
+									style={{
+										fontFamily: typography.code.fontFamily,
+										fontSize: 14,
+										lineHeight: 20,
+										color: colors.mutedForeground,
+										opacity: 0.5,
+									}}
 								>
 									{lineNum + 1}
 								</Text>
 							))}
 						</View>
-						<View style={styles.codeLines}>
+						<View>
 							{highlightedLines.map((tokens, lineNum) => (
-								<Text
-									key={`line-${lineNum}-${tokens.length}`}
-									style={[typography.code, styles.codeLine]}
-									numberOfLines={1}
-								>
+								<View key={`line-${lineNum}`} style={{ flexDirection: 'row', flexWrap: 'nowrap' }}>
 									{tokens.length > 0 ? (
 										tokens.map((token, tokenIdx) => (
 											<Text
-												key={`token-${lineNum}-${tokenIdx}-${token.text}`}
-												style={{ color: getTokenColor(token.type, isDark) }}
+												key={`token-${lineNum}-${tokenIdx}`}
+												style={{
+													fontFamily: typography.code.fontFamily,
+													fontSize: 14,
+													lineHeight: 20,
+													color: getTokenColor(token.type, isDark),
+												}}
 											>
 												{token.text}
 											</Text>
 										))
 									) : (
-										<Text style={{ color: colors.foreground }}> </Text>
+										<Text
+											style={{
+												fontFamily: typography.code.fontFamily,
+												fontSize: 14,
+												lineHeight: 20,
+												color: colors.foreground,
+											}}
+										>
+											{' '}
+										</Text>
 									)}
-								</Text>
+								</View>
 							))}
 						</View>
 					</View>
 				</ScrollView>
-			</ScrollView>
+			)}
 		</View>
 	);
 }
-
-const MAX_CODE_BLOCK_HEIGHT = 400;
-
-const styles = StyleSheet.create({
-	container: {
-		marginVertical: 8,
-		overflow: "hidden",
-		borderRadius: 8,
-		borderWidth: 1,
-		width: "100%",
-		alignSelf: "stretch",
-	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-	},
-	languageInfo: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	languageDot: {
-		height: 10,
-		width: 10,
-		borderRadius: 5,
-	},
-	copyButton: {
-		borderRadius: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-	},
-	codeScrollView: {
-		maxHeight: MAX_CODE_BLOCK_HEIGHT,
-	},
-	codeScrollContent: {
-		flexGrow: 1,
-	},
-	verticalScrollView: {
-		flex: 1,
-	},
-	verticalScrollContent: {
-		flexGrow: 1,
-	},
-	codeContent: {
-		flexDirection: "row",
-		padding: 12,
-	},
-	codeLines: {
-		flexShrink: 0,
-	},
-	lineNumbers: {
-		marginRight: 12,
-		alignItems: "flex-end",
-	},
-	lineNumber: {
-		lineHeight: 20,
-		opacity: 0.5,
-	},
-	codeLine: {
-		lineHeight: 20,
-	},
-});

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type GitIdentityProfile, gitApi } from "@/api";
-import { ChevronLeft, PlusIcon, UsersIcon } from "@/components/icons";
+import { ChevronLeft, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
@@ -102,33 +102,26 @@ export default function GitIdentitiesListScreen() {
 						/>
 					}
 				>
-					<View style={styles.section}>
-						<Text
-							style={[styles.sectionTitle, { color: colors.mutedForeground }]}
-						>
-							{profiles.length} IDENTIT{profiles.length !== 1 ? "IES" : "Y"}
-						</Text>
-						{profiles.map((profile) => (
-							<SettingsListItem
-								key={profile.id}
-								title={profile.name}
-								subtitle={profile.userEmail}
-								onPress={() => handleSelectProfile(profile.id)}
-								icon={
-									<View
-										style={[
-											styles.colorDot,
-											{ backgroundColor: profile.color || colors.primary },
-										]}
-									/>
-								}
-							/>
-						))}
-					</View>
+					{profiles.length > 0 && (
+						<View style={styles.section}>
+							<Text
+								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+							>
+								{profiles.length} IDENTIT{profiles.length !== 1 ? "IES" : "Y"}
+							</Text>
+							{profiles.map((profile) => (
+								<SettingsListItem
+									key={profile.id}
+									title={profile.name}
+									subtitle={profile.userEmail}
+									onPress={() => handleSelectProfile(profile.id)}
+								/>
+							))}
+						</View>
+					)}
 
 					{profiles.length === 0 && (
 						<View style={styles.emptyContainer}>
-							<UsersIcon color={colors.mutedForeground} size={40} />
 							<Text
 								style={[typography.uiLabel, { color: colors.mutedForeground }]}
 							>
@@ -201,19 +194,14 @@ const styles = StyleSheet.create({
 		paddingTop: Spacing[4],
 	},
 	section: {
-		marginBottom: Spacing[4],
+		marginBottom: Spacing[5],
 	},
 	sectionTitle: {
-		fontSize: 12,
-		fontFamily: Fonts.semiBold,
+		fontSize: 13,
+		fontFamily: Fonts.medium,
 		letterSpacing: 0.5,
+		marginBottom: Spacing[1],
 		paddingHorizontal: Spacing[4],
-		marginBottom: Spacing[2],
-	},
-	colorDot: {
-		width: 18,
-		height: 18,
-		borderRadius: 9,
 	},
 	emptyContainer: {
 		flex: 1,

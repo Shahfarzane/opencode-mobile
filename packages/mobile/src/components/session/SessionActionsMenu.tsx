@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 import {
 	CopyIcon,
 	LinkOffIcon,
@@ -9,6 +9,7 @@ import {
 	TrashIcon,
 } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
+import { sessionActionsMenuStyles } from "./SessionActionsMenu.styles";
 
 interface SessionActionsMenuProps {
 	visible: boolean;
@@ -75,24 +76,31 @@ export function SessionActionsMenu({
 			animationType="fade"
 			onRequestClose={onClose}
 		>
-			<Pressable style={styles.overlay} onPress={onClose}>
+			<Pressable
+				className={sessionActionsMenuStyles.overlay({})}
+				style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+				onPress={onClose}
+			>
 				<View
-					style={[
-						styles.menu,
-						{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							shadowColor: isDark ? "#000" : "#666",
-						},
-					]}
+					className={sessionActionsMenuStyles.menu({})}
+					style={{
+						backgroundColor: colors.card,
+						borderColor: colors.border,
+						borderWidth: 1,
+						shadowColor: isDark ? "#000" : "#666",
+						shadowOffset: { width: 0, height: 4 },
+						shadowOpacity: 0.15,
+						shadowRadius: 12,
+						elevation: 8,
+					}}
 				>
 					{/* Rename */}
 					<Pressable
 						onPress={handleRename}
-						style={({ pressed }) => [
-							styles.menuItem,
-							{ backgroundColor: pressed ? colors.muted : "transparent" },
-						]}
+						className={sessionActionsMenuStyles.menuItem({})}
+						style={({ pressed }) => ({
+							backgroundColor: pressed ? colors.muted : "transparent",
+						})}
 					>
 						<PencilIcon color={colors.foreground} size={18} />
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
@@ -100,16 +108,19 @@ export function SessionActionsMenu({
 						</Text>
 					</Pressable>
 
-					<View style={[styles.divider, { backgroundColor: colors.border }]} />
+					<View
+						className={sessionActionsMenuStyles.divider({})}
+						style={{ backgroundColor: colors.border }}
+					/>
 
 					{/* Share section */}
 					{!isShared ? (
 						<Pressable
 							onPress={handleShare}
-							style={({ pressed }) => [
-								styles.menuItem,
-								{ backgroundColor: pressed ? colors.muted : "transparent" },
-							]}
+							className={sessionActionsMenuStyles.menuItem({})}
+							style={({ pressed }) => ({
+								backgroundColor: pressed ? colors.muted : "transparent",
+							})}
 						>
 							<ShareIcon color={colors.foreground} size={18} />
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
@@ -120,10 +131,10 @@ export function SessionActionsMenu({
 						<>
 							<Pressable
 								onPress={handleCopyLink}
-								style={({ pressed }) => [
-									styles.menuItem,
-									{ backgroundColor: pressed ? colors.muted : "transparent" },
-								]}
+								className={sessionActionsMenuStyles.menuItem({})}
+								style={({ pressed }) => ({
+									backgroundColor: pressed ? colors.muted : "transparent",
+								})}
 							>
 								<CopyIcon color={colors.foreground} size={18} />
 								<Text
@@ -135,10 +146,10 @@ export function SessionActionsMenu({
 
 							<Pressable
 								onPress={handleUnshare}
-								style={({ pressed }) => [
-									styles.menuItem,
-									{ backgroundColor: pressed ? colors.muted : "transparent" },
-								]}
+								className={sessionActionsMenuStyles.menuItem({})}
+								style={({ pressed }) => ({
+									backgroundColor: pressed ? colors.muted : "transparent",
+								})}
 							>
 								<LinkOffIcon color={colors.foreground} size={18} />
 								<Text
@@ -150,15 +161,18 @@ export function SessionActionsMenu({
 						</>
 					)}
 
-					<View style={[styles.divider, { backgroundColor: colors.border }]} />
+					<View
+						className={sessionActionsMenuStyles.divider({})}
+						style={{ backgroundColor: colors.border }}
+					/>
 
 					{/* Delete */}
 					<Pressable
 						onPress={handleDelete}
-						style={({ pressed }) => [
-							styles.menuItem,
-							{ backgroundColor: pressed ? colors.muted : "transparent" },
-						]}
+						className={sessionActionsMenuStyles.menuItem({})}
+						style={({ pressed }) => ({
+							backgroundColor: pressed ? colors.muted : "transparent",
+						})}
 					>
 						<TrashIcon color={colors.destructive} size={18} />
 						<Text style={[typography.uiLabel, { color: colors.destructive }]}>
@@ -170,32 +184,3 @@ export function SessionActionsMenu({
 		</Modal>
 	);
 }
-
-const styles = StyleSheet.create({
-	overlay: {
-		flex: 1,
-		backgroundColor: "rgba(0, 0, 0, 0.4)",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	menu: {
-		borderRadius: 12,
-		borderWidth: 1,
-		minWidth: 180,
-		overflow: "hidden",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.15,
-		shadowRadius: 12,
-		elevation: 8,
-	},
-	menuItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-	},
-	divider: {
-		height: 1,
-	},
-});

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Pressable, Text, View } from "react-native";
 import { LoaderIcon, StopIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
+import { statusRowStyles } from "./StatusRow.styles";
 
 interface StatusRowProps {
 	isWorking?: boolean;
@@ -43,8 +44,11 @@ export function StatusRow({
 	});
 
 	return (
-		<View style={[styles.container, { backgroundColor: colors.muted }]}>
-			<View style={styles.left}>
+		<View
+			className={statusRowStyles.container({})}
+			style={{ backgroundColor: colors.muted }}
+		>
+			<View className={statusRowStyles.left({})}>
 				{isWorking && (
 					<Animated.View style={{ transform: [{ rotate: spin }] }}>
 						<LoaderIcon size={14} color={colors.primary} />
@@ -66,7 +70,8 @@ export function StatusRow({
 			{isWorking && canAbort && onAbort && (
 				<Pressable
 					onPress={onAbort}
-					style={[styles.abortButton, { backgroundColor: colors.destructive }]}
+					className={statusRowStyles.abortButton({})}
+					style={{ backgroundColor: colors.destructive }}
 					hitSlop={8}
 				>
 					<StopIcon size={12} color={colors.destructiveForeground} />
@@ -80,29 +85,3 @@ export function StatusRow({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		marginBottom: 8,
-	},
-	left: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		flex: 1,
-	},
-	abortButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-		borderRadius: 6,
-	},
-});

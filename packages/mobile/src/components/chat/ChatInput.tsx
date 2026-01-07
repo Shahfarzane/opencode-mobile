@@ -5,7 +5,6 @@ import {
 	Animated,
 	Keyboard,
 	Pressable,
-	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -13,6 +12,7 @@ import {
 import Svg, { Path } from "react-native-svg";
 import { AiAgentIcon } from "@/components/icons";
 import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { chatInputStyles } from "./ChatInput.styles";
 import {
 	type AttachedFile,
 	AttachedFilesList,
@@ -102,8 +102,19 @@ function StopIcon({ color, size = 20 }: { color: string; size?: number }) {
 function AgentIcon() {
 	const { colors } = useTheme();
 	return (
-		<View style={[styles.triggerIcon, { backgroundColor: `${colors.info}15` }]}>
-			<Text style={[styles.triggerIconText, { color: colors.info }]}>#</Text>
+		<View
+			className={chatInputStyles.triggerIcon({})}
+			style={{ backgroundColor: `${colors.info}15` }}
+		>
+			<Text
+				style={{
+					fontFamily: Fonts.medium,
+					fontSize: FontSizes.uiLabel,
+					color: colors.info,
+				}}
+			>
+				#
+			</Text>
 		</View>
 	);
 }
@@ -112,9 +123,18 @@ function CommandIcon() {
 	const { colors } = useTheme();
 	return (
 		<View
-			style={[styles.triggerIcon, { backgroundColor: `${colors.warning}15` }]}
+			className={chatInputStyles.triggerIcon({})}
+			style={{ backgroundColor: `${colors.warning}15` }}
 		>
-			<Text style={[styles.triggerIconText, { color: colors.warning }]}>/</Text>
+			<Text
+				style={{
+					fontFamily: Fonts.medium,
+					fontSize: FontSizes.uiLabel,
+					color: colors.warning,
+				}}
+			>
+				/
+			</Text>
 		</View>
 	);
 }
@@ -147,12 +167,18 @@ function FileIcon({ extension }: { extension?: string }) {
 
 	return (
 		<View
-			style={[
-				styles.triggerIcon,
-				{ backgroundColor: `${colors.mutedForeground}15` },
-			]}
+			className={chatInputStyles.triggerIcon({})}
+			style={{ backgroundColor: `${colors.mutedForeground}15` }}
 		>
-			<Text style={[styles.triggerIconText, { color: getColor() }]}>@</Text>
+			<Text
+				style={{
+					fontFamily: Fonts.medium,
+					fontSize: FontSizes.uiLabel,
+					color: getColor(),
+				}}
+			>
+				@
+			</Text>
 		</View>
 	);
 }
@@ -193,15 +219,15 @@ function AutocompleteOverlay({
 					Haptics.selectionAsync();
 					onSelect(item);
 				}}
-				style={({ pressed }) => [
-					styles.autocompleteItem,
-					pressed && { backgroundColor: `${colors.foreground}08` },
-				]}
+				className={chatInputStyles.autocompleteItem({})}
+				style={({ pressed }) =>
+					pressed ? { backgroundColor: `${colors.foreground}08` } : undefined
+				}
 			>
 				{item.type === "agent" && <AgentIcon />}
 				{item.type === "command" && <CommandIcon />}
 				{item.type === "file" && <FileIcon extension={item.extension} />}
-				<View style={styles.autocompleteItemContent}>
+				<View className={chatInputStyles.autocompleteItemContent({})}>
 					<Text style={[typography.code, { color: colors.foreground }]}>
 						{item.type === "agent" && `#${item.name}`}
 						{item.type === "command" && `/${item.name}`}
@@ -248,22 +274,23 @@ function AutocompleteOverlay({
 
 	return (
 		<Animated.View
-			style={[
-				styles.autocompleteOverlay,
-				{
-					opacity: fadeAnim,
-					transform: [{ translateY: slideAnim }],
-					borderColor: colors.border,
-					backgroundColor: colors.background,
-					shadowColor: colors.foreground,
-				},
-			]}
+			className={chatInputStyles.autocompleteOverlay({})}
+			style={{
+				opacity: fadeAnim,
+				transform: [{ translateY: slideAnim }],
+				borderColor: colors.border,
+				borderWidth: 1,
+				backgroundColor: colors.background,
+				shadowColor: colors.foreground,
+				shadowOffset: { width: 0, height: -2 },
+				shadowOpacity: 0.08,
+				shadowRadius: 12,
+				elevation: 8,
+			}}
 		>
 			<View
-				style={[
-					styles.autocompleteHeader,
-					{ borderBottomColor: colors.border },
-				]}
+				className={chatInputStyles.autocompleteHeader({})}
+				style={{ borderBottomColor: colors.border, borderBottomWidth: 1 }}
 			>
 				<Text
 					style={[
@@ -362,7 +389,7 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 	const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
 
 	return (
-		<View style={styles.agentBadgeContainer}>
+		<View className={chatInputStyles.agentBadgeContainer({})}>
 			<AiAgentIcon size={14} color={badgeColor} />
 			<Text
 				style={[typography.micro, fontStyle("500"), { color: badgeColor }]}
@@ -598,7 +625,7 @@ export function ChatInput({
 	const inputBackground = colors.input + "1A"; // ~10% opacity like bg-input/10
 
 	return (
-		<View style={styles.container}>
+		<View className={chatInputStyles.container({})}>
 			{autocompleteType && (
 				<AutocompleteOverlay
 					type={autocompleteType}
@@ -613,13 +640,12 @@ export function ChatInput({
 			)}
 
 			<View
-				style={[
-					styles.inputContainer,
-					{
-						borderColor: permissionColors?.border ?? colors.border,
-						backgroundColor: inputBackground,
-					},
-				]}
+				className={chatInputStyles.inputContainer({})}
+				style={{
+					borderColor: permissionColors?.border ?? colors.border,
+					borderWidth: 1,
+					backgroundColor: inputBackground,
+				}}
 			>
 				<TextInput
 					ref={inputRef}
@@ -629,21 +655,18 @@ export function ChatInput({
 						setCursorPosition(e.nativeEvent.selection.start)
 					}
 					placeholder={placeholder}
-					placeholderTextColor={`${colors.mutedForeground}80`} // 50% opacity for clearer placeholder distinction
+					placeholderTextColor={`${colors.mutedForeground}80`}
 					multiline
 					maxLength={10000}
 					editable={!isLoading}
-					style={[
-						styles.textInput,
-						typography.body,
-						{ color: colors.foreground },
-					]}
+					className={chatInputStyles.textInput({})}
+					style={[typography.body, { color: colors.foreground, textAlignVertical: "top" }]}
 				/>
 
-				<View style={styles.toolbar}>
+				<View className={chatInputStyles.toolbar({})}>
 					{/* Left: Attachment button (flex-shrink-0) */}
-					<View style={styles.toolbarLeftSection}>
-						<View style={styles.toolbarButton}>
+					<View className={chatInputStyles.toolbarLeftSection({})}>
+						<View className={chatInputStyles.toolbarButton({})}>
 							<FileAttachmentButton
 								onFileAttached={handleFileAttached}
 								disabled={isLoading}
@@ -652,9 +675,9 @@ export function ChatInput({
 					</View>
 
 					{/* Right section: Model + Agent + Send (flex-1) */}
-					<View style={styles.toolbarRightSection}>
+					<View className={chatInputStyles.toolbarRightSection({})}>
 						{/* Model selector (flex-1 with overflow hidden) */}
-						<View style={styles.modelInfoContainer}>
+						<View className={chatInputStyles.modelInfoContainer({})}>
 							<Pressable
 								onPress={() => {
 									if (onModelPress) {
@@ -662,10 +685,10 @@ export function ChatInput({
 										onModelPress();
 									}
 								}}
-								style={({ pressed }) => [
-									styles.modelSelector,
-									pressed && onModelPress && { opacity: 0.7 },
-								]}
+								className={chatInputStyles.modelSelector({})}
+								style={({ pressed }) =>
+									pressed && onModelPress ? { opacity: 0.7 } : undefined
+								}
 								disabled={!onModelPress}
 							>
 								{modelInfo ? (
@@ -705,7 +728,7 @@ export function ChatInput({
 									}
 								}}
 								disabled={!onAgentPress}
-								style={styles.agentPressable}
+								className={chatInputStyles.agentPressable({})}
 							>
 								<AgentBadge name={activeAgent.name} color={activeAgent.color} />
 							</Pressable>
@@ -715,10 +738,10 @@ export function ChatInput({
 						<Pressable
 							onPress={handleSend}
 							disabled={!canSend && !isLoading}
-							style={({ pressed }) => [
-								styles.toolbarButton,
-								pressed && canSend && { opacity: 0.7 },
-							]}
+							className={chatInputStyles.toolbarButton({})}
+							style={({ pressed }) =>
+								pressed && canSend ? { opacity: 0.7 } : undefined
+							}
 							hitSlop={8}
 						>
 							{isLoading ? (
@@ -736,126 +759,5 @@ export function ChatInput({
 		</View>
 	);
 }
-
-// Mobile-optimized spacing constants (matches PWA mobile CSS)
-const MOBILE_SPACING = {
-	inputBorderRadius: 12, // rounded-xl
-	inputPaddingH: 12, // px-3
-	inputPaddingV: 10, // py-2.5 - PWA mobile uses symmetric padding
-	toolbarPaddingH: 6, // px-1.5 - tighter for mobile
-	toolbarPaddingV: 6, // py-1.5
-	toolbarButtonSize: 36, // h-9 w-9 - touch-friendly
-	toolbarButtonRadius: 8,
-	toolbarGap: 6, // gap-x-1.5
-	bubbleRadius: 12, // rounded-xl
-	agentBadgePaddingH: 6, // px-1.5
-	agentBadgePaddingV: 0, // py-0
-	agentBadgeRadius: 4, // rounded
-};
-
-const styles = StyleSheet.create({
-	container: {
-		position: "relative",
-	},
-	inputContainer: {
-		borderRadius: MOBILE_SPACING.inputBorderRadius,
-		borderWidth: 1,
-		overflow: "hidden",
-	},
-	textInput: {
-		minHeight: 52,
-		maxHeight: 140,
-		paddingHorizontal: MOBILE_SPACING.inputPaddingH,
-		paddingVertical: MOBILE_SPACING.inputPaddingV, // symmetric padding for mobile
-		textAlignVertical: "top",
-	},
-	toolbar: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: MOBILE_SPACING.toolbarPaddingH,
-		paddingVertical: MOBILE_SPACING.toolbarPaddingV,
-		gap: MOBILE_SPACING.toolbarGap,
-	},
-	toolbarLeftSection: {
-		flexShrink: 0,
-	},
-	toolbarRightSection: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "flex-end",
-		gap: MOBILE_SPACING.toolbarGap,
-		minWidth: 0,
-	},
-	toolbarButton: {
-		width: MOBILE_SPACING.toolbarButtonSize,
-		height: MOBILE_SPACING.toolbarButtonSize,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: MOBILE_SPACING.toolbarButtonRadius,
-		flexShrink: 0,
-	},
-	modelInfoContainer: {
-		flex: 1,
-		minWidth: 0,
-		overflow: "hidden",
-		alignItems: "flex-end",
-	},
-	modelSelector: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		minWidth: 0,
-	},
-	agentPressable: {
-		flexShrink: 0,
-	},
-	agentBadgeContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-	},
-	triggerIcon: {
-		height: 24,
-		width: 24,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 6,
-	},
-	triggerIconText: {
-		fontFamily: Fonts.medium,
-		fontSize: FontSizes.uiLabel,
-	},
-	autocompleteOverlay: {
-		position: "absolute",
-		bottom: "100%",
-		left: 0,
-		right: 0,
-		marginBottom: 8,
-		maxHeight: 280,
-		borderRadius: MOBILE_SPACING.inputBorderRadius,
-		borderWidth: 1,
-		shadowOffset: { width: 0, height: -2 },
-		shadowOpacity: 0.08,
-		shadowRadius: 12,
-		elevation: 8,
-	},
-	autocompleteHeader: {
-		borderBottomWidth: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-	},
-	autocompleteItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-	},
-	autocompleteItemContent: {
-		flex: 1,
-	},
-});
 
 export type { ModelInfo, AgentInfo };
