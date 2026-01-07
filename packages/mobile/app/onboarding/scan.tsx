@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { serverApi } from "@/api";
 import { useServerConnection } from "@/hooks/useServerConnection";
+import { useConnectionStore } from "@/stores/useConnectionStore";
 import { Spacing, typography, useTheme } from "../../src/theme";
 
 function BackButton({ light }: { light?: boolean }) {
@@ -54,6 +56,7 @@ export default function ScanScreen() {
 	const [permission, requestPermission] = useCameraPermissions();
 	const [scanned, setScanned] = useState(false);
 	const { pairWithQRCode, isConnecting } = useServerConnection();
+	const setDirectory = useConnectionStore((state) => state.setDirectory);
 
 	useEffect(() => {
 		if (!permission?.granted) {
@@ -75,7 +78,21 @@ export default function ScanScreen() {
 			}
 
 			await pairWithQRCode(data);
-			router.push("/onboarding/directory");
+
+			// Auto-fetch and set the server's working directory
+			const serverDirectory = await serverApi.getServerDirectory();
+			if (serverDirectory) {
+				await setDirectory(serverDirectory);
+				router.replace("/(tabs)/chat");
+			} else {
+				// Fallback to directory selection if we couldn't get server directory
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+				Alert.alert(
+					"Select Directory",
+					"Could not detect server's working directory. Please select it manually.",
+					[{ text: "OK", onPress: () => router.push("/onboarding/directory") }],
+				);
+			}
 		} catch (error) {
 			Alert.alert(
 				"Connection Failed",

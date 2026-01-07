@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+	ActivityIndicator,
 	Alert,
 	KeyboardAvoidingView,
 	Platform,
@@ -14,7 +15,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { serverApi } from "@/api";
 import { useServerConnection } from "@/hooks/useServerConnection";
+import { useConnectionStore } from "@/stores/useConnectionStore";
 import { Spacing, typography, useTheme } from "../../src/theme";
 
 type ConnectionType = "local" | "tailscale" | "cloudflare";
@@ -70,6 +73,7 @@ export default function ManualScreen() {
 	const [serverUrl, setServerUrl] = useState("");
 	const [password, setPassword] = useState("");
 	const { connectWithPassword, isConnecting } = useServerConnection();
+	const setDirectory = useConnectionStore((state) => state.setDirectory);
 
 	const config = CONFIGS[connectionType];
 
@@ -91,8 +95,22 @@ export default function ManualScreen() {
 			}
 
 			await connectWithPassword(url, password);
-			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-			router.push("/onboarding/directory");
+
+			// Auto-fetch and set the server's working directory
+			const serverDirectory = await serverApi.getServerDirectory();
+			if (serverDirectory) {
+				await setDirectory(serverDirectory);
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+				router.replace("/(tabs)/chat");
+			} else {
+				// Fallback to directory selection if we couldn't get server directory
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+				Alert.alert(
+					"Select Directory",
+					"Could not detect server's working directory. Please select it manually.",
+					[{ text: "OK", onPress: () => router.push("/onboarding/directory") }],
+				);
+			}
 		} catch (error) {
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert(

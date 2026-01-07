@@ -51,3 +51,5 @@ export type {
 export { terminalApi } from "./terminal";
 export type { ToolsAPI } from "./tools";
 export { toolsApi } from "./tools";
+export type { ProjectInfo, ServerPathInfo } from "./server";
+export { serverApi } from "./server";
