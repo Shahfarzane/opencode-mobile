@@ -1,0 +1,140 @@
+/**
+ * Theme Definitions
+ * Maps semantic color tokens to palette values
+ * Supports light/dark mode via @variant
+ * All colors in OKLCH format for perceptual uniformity
+ */
+
+@theme inline static {
+  /* Surface colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  /* Primary - Golden Sand */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  /* Secondary */
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  /* Muted surfaces */
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  /* Accent */
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  /* Status colors */
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  /* Borders and inputs */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Disabled state */
+  --opacity-disabled: 0.5;
+}
+
+@layer theme {
+  :root {
+    /* Dark theme (default for this app) */
+    @variant dark {
+      /* Surface colors */
+      --background: oklch(0.15 0.01 50);
+      --foreground: oklch(0.83 0.02 95);
+      --card: oklch(0.18 0.01 55);
+      --card-foreground: oklch(0.83 0.02 95);
+      --popover: oklch(0.22 0.01 55);
+      --popover-foreground: oklch(0.83 0.02 95);
+
+      /* Primary - Golden Sand */
+      --primary: oklch(0.80 0.16 85);
+      --primary-hover: oklch(0.84 0.15 85);
+      --primary-foreground: oklch(0.15 0.01 50);
+
+      /* Secondary */
+      --secondary: oklch(0.28 0.01 60);
+      --secondary-foreground: oklch(0.83 0.02 95);
+
+      /* Muted surfaces */
+      --muted: oklch(0.33 0.01 60);
+      --muted-foreground: oklch(0.75 0.02 95);
+
+      /* Accent */
+      --accent: oklch(0.28 0.01 60);
+      --accent-foreground: oklch(0.83 0.02 95);
+
+      /* Status colors */
+      --destructive: oklch(0.67 0.12 25);
+      --destructive-foreground: oklch(0.15 0.01 50);
+      --success: oklch(0.68 0.12 142);
+      --success-foreground: oklch(0.15 0.01 50);
+      --info: oklch(0.68 0.10 235);
+      --info-foreground: oklch(0.15 0.01 50);
+      --warning: oklch(0.75 0.14 80);
+      --warning-foreground: oklch(0.15 0.01 50);
+
+      /* Borders and inputs */
+      --border: oklch(0.30 0.01 55);
+      --input: oklch(0.33 0.01 60);
+      --ring: oklch(0.80 0.16 85);
+    }
+
+    @variant light {
+      /* Surface colors */
+      --background: oklch(0.97 0.01 90);
+      --foreground: oklch(0.24 0.01 60);
+      --card: oklch(1.00 0 0);
+      --card-foreground: oklch(0.24 0.01 60);
+      --popover: oklch(1.00 0 0);
+      --popover-foreground: oklch(0.24 0.01 60);
+
+      /* Primary - Golden Sand */
+      --primary: oklch(0.72 0.14 80);
+      --primary-hover: oklch(0.65 0.14 78);
+      --primary-foreground: oklch(1.00 0 0);
+
+      /* Secondary */
+      --secondary: oklch(0.93 0.01 90);
+      --secondary-foreground: oklch(0.24 0.01 60);
+
+      /* Muted surfaces */
+      --muted: oklch(0.93 0.01 90);
+      --muted-foreground: oklch(0.50 0.01 60);
+
+      /* Accent */
+      --accent: oklch(0.93 0.01 90);
+      --accent-foreground: oklch(0.24 0.01 60);
+
+      /* Status colors */
+      --destructive: oklch(0.58 0.15 25);
+      --destructive-foreground: oklch(1.00 0 0);
+      --success: oklch(0.57 0.12 142);
+      --success-foreground: oklch(1.00 0 0);
+      --info: oklch(0.58 0.10 235);
+      --info-foreground: oklch(1.00 0 0);
+      --warning: oklch(0.65 0.14 78);
+      --warning-foreground: oklch(1.00 0 0);
+
+      /* Borders and inputs */
+      --border: oklch(0.87 0.01 90);
+      --input: oklch(0.93 0.01 90);
+      --ring: oklch(0.72 0.14 80);
+    }
+  }
+}

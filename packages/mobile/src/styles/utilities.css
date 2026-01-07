@@ -1,0 +1,73 @@
+/**
+ * Custom Tailwind Utilities
+ * React Native specific utilities and helpers
+ */
+
+@layer utilities {
+  /* Hairline borders (1px on all devices) */
+  .h-hairline {
+    height: hairlineWidth();
+  }
+
+  .w-hairline {
+    width: hairlineWidth();
+  }
+
+  .border-hairline {
+    border-width: hairlineWidth();
+  }
+
+  .border-t-hairline {
+    border-top-width: hairlineWidth();
+  }
+
+  .border-b-hairline {
+    border-bottom-width: hairlineWidth();
+  }
+
+  .border-l-hairline {
+    border-left-width: hairlineWidth();
+  }
+
+  .border-r-hairline {
+    border-right-width: hairlineWidth();
+  }
+
+  /* Disabled state */
+  .opacity-disabled {
+    opacity: var(--opacity-disabled, 0.5);
+  }
+
+  /* Safe area utilities */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .py-safe {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Touch target minimum size (44x44 for iOS) */
+  .min-touch {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

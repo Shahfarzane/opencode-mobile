@@ -1,0 +1,32 @@
+/**
+ * OpenChamber Mobile - Main Stylesheet
+ *
+ * This is the entry point for all CSS styles.
+ * Import order matters - base imports first, then customizations.
+ */
+
+/* Tailwind CSS v4 */
+@import 'tailwindcss';
+
+/* Uniwind - React Native CSS bridge */
+@import 'uniwind';
+
+/* Custom CSS */
+@import './variables.css';
+@import './theme.css';
+@import './utilities.css';
+
+/* Tell Tailwind to scan src directory for classes */
+@source '../';
+
+/* Typography - Font families */
+@theme {
+  --font-sans: 'IBMPlexSans-Regular';
+  --font-sans-medium: 'IBMPlexSans-Medium';
+  --font-sans-semibold: 'IBMPlexSans-SemiBold';
+  --font-sans-bold: 'IBMPlexSans-Bold';
+  --font-mono: 'IBMPlexMono-Regular';
+  --font-mono-medium: 'IBMPlexMono-Medium';
+  --font-mono-semibold: 'IBMPlexMono-SemiBold';
+  --font-mono-bold: 'IBMPlexMono-Bold';
+}

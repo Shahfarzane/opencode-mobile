@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { TRANSITION_DURATION } from "@/lib/animations";
 import { useTheme } from "@/theme";
+import { scrollShadowStyles } from "./ScrollShadow.styles";
 
 interface ScrollShadowProps extends ScrollViewProps {
 	/**
@@ -110,7 +111,7 @@ export function ScrollShadow({
 	const transparentColor = backgroundColor + "00"; // Fully transparent
 
 	return (
-		<View style={[styles.container, containerStyle]}>
+		<View className={scrollShadowStyles.container({})} style={containerStyle}>
 			<ScrollView
 				{...scrollViewProps}
 				onScroll={handleScroll}
@@ -124,10 +125,8 @@ export function ScrollShadow({
 			{/* Top shadow gradient */}
 			{showTopShadow && (
 				<Animated.View
-					style={[
-						styles.shadowTop,
-						{ height: shadowHeight, opacity: topOpacity },
-					]}
+					className={scrollShadowStyles.shadowTop({})}
+					style={{ height: shadowHeight, opacity: topOpacity }}
 					pointerEvents="none"
 				>
 					<LinearGradient
@@ -140,10 +139,8 @@ export function ScrollShadow({
 			{/* Bottom shadow gradient */}
 			{showBottomShadow && (
 				<Animated.View
-					style={[
-						styles.shadowBottom,
-						{ height: shadowHeight, opacity: bottomOpacity },
-					]}
+					className={scrollShadowStyles.shadowBottom({})}
+					style={{ height: shadowHeight, opacity: bottomOpacity }}
 					pointerEvents="none"
 				>
 					<LinearGradient
@@ -232,7 +229,7 @@ export function ScrollShadowHorizontal({
 	const transparentColor = backgroundColor + "00";
 
 	return (
-		<View style={[styles.container, containerStyle]}>
+		<View className={scrollShadowStyles.container({})} style={containerStyle}>
 			<ScrollView
 				{...scrollViewProps}
 				horizontal
@@ -247,10 +244,8 @@ export function ScrollShadowHorizontal({
 			{/* Left shadow gradient */}
 			{showLeftShadow && (
 				<Animated.View
-					style={[
-						styles.shadowLeft,
-						{ width: shadowWidth, opacity: leftOpacity },
-					]}
+					className={scrollShadowStyles.shadowLeft({})}
+					style={{ width: shadowWidth, opacity: leftOpacity }}
 					pointerEvents="none"
 				>
 					<LinearGradient
@@ -265,10 +260,8 @@ export function ScrollShadowHorizontal({
 			{/* Right shadow gradient */}
 			{showRightShadow && (
 				<Animated.View
-					style={[
-						styles.shadowRight,
-						{ width: shadowWidth, opacity: rightOpacity },
-					]}
+					className={scrollShadowStyles.shadowRight({})}
+					style={{ width: shadowWidth, opacity: rightOpacity }}
 					pointerEvents="none"
 				>
 					<LinearGradient
@@ -282,34 +275,3 @@ export function ScrollShadowHorizontal({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		position: "relative",
-	},
-	shadowTop: {
-		position: "absolute",
-		top: 0,
-		left: 0,
-		right: 0,
-	},
-	shadowBottom: {
-		position: "absolute",
-		bottom: 0,
-		left: 0,
-		right: 0,
-	},
-	shadowLeft: {
-		position: "absolute",
-		top: 0,
-		bottom: 0,
-		left: 0,
-	},
-	shadowRight: {
-		position: "absolute",
-		top: 0,
-		bottom: 0,
-		right: 0,
-	},
-});

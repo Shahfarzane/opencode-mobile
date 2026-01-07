@@ -1,6 +1,7 @@
 import { Children, useCallback, useEffect, useState } from "react";
 import type { TextStyle, ViewStyle } from "react-native";
-import { Animated as RNAnimated, StyleSheet, Text, View } from "react-native";
+import { Animated as RNAnimated, Text, View } from "react-native";
+import { textLoopStyles } from "./TextLoop.styles";
 
 interface TextLoopProps {
 	children: React.ReactNode[];
@@ -61,7 +62,7 @@ export function TextLoop({
 	}, [interval, nextItem, opacity, translateY]);
 
 	return (
-		<View style={[styles.container, style]}>
+		<View className={textLoopStyles.container({})} style={style}>
 			<RNAnimated.View style={{ opacity, transform: [{ translateY }] }}>
 				{typeof items[currentIndex] === "string" ? (
 					<Text style={textStyle}>{items[currentIndex]}</Text>
@@ -72,12 +73,5 @@ export function TextLoop({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		alignItems: "center",
-		justifyContent: "center",
-	},
-});
 
 export default TextLoop;

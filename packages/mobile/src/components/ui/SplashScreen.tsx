@@ -1,7 +1,7 @@
 import * as ExpoSplashScreen from "expo-splash-screen";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import Animated, {
 	Easing,
 	useAnimatedStyle,
@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { G, Path } from "react-native-svg";
 import { useTheme } from "../../theme";
+import { splashScreenStyles } from "./SplashScreen.styles";
 
 // Note: preventAutoHideAsync() is called in app/_layout.tsx at module level
 // to ensure it runs early enough in the app lifecycle for preview builds
@@ -123,10 +124,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
 	return (
 		<View
-			style={[styles.container, { backgroundColor: colors.background }]}
+			className={splashScreenStyles.container({})}
+			style={{ backgroundColor: colors.background }}
 			onLayout={onLayoutRootView}
 		>
-			<View style={styles.logoContainer}>
+			<View className={splashScreenStyles.logoContainer({})}>
 				<Svg width={180} height={180} viewBox="0 0 100 100" fill="none">
 					<Path
 						d={`M${CENTER.x} ${CENTER.y} L${LEFT.x} ${LEFT.y} L${BOTTOM_LEFT.x} ${BOTTOM_LEFT.y} L${BOTTOM.x} ${BOTTOM.y} Z`}
@@ -172,7 +174,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 				</Svg>
 
 				{/* @ts-expect-error - react-native-reanimated types incompatible with React 19 */}
-				<Animated.View style={[styles.logoOverlay, logoAnimatedStyle]}>
+				<Animated.View
+					className={splashScreenStyles.logoOverlay({})}
+					style={logoAnimatedStyle}
+				>
 					<Svg width={180} height={180} viewBox="0 0 100 100" fill="none">
 						<G transform={`${ISO_MATRIX} scale(0.75)`}>
 							<Path
@@ -193,32 +198,5 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 		</View>
 	);
 };
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		position: "absolute",
-		top: 0,
-		left: 0,
-		right: 0,
-		bottom: 0,
-		zIndex: 9999,
-	},
-	logoContainer: {
-		width: 180,
-		height: 180,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	logoOverlay: {
-		position: "absolute",
-		width: 180,
-		height: 180,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-});
 
 export default SplashScreen;

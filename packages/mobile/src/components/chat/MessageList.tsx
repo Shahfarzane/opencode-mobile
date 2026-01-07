@@ -6,12 +6,13 @@ import type {
 	NativeSyntheticEvent,
 	TextStyle,
 } from "react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 import { OpenChamberLogo } from "../ui/OpenChamberLogo";
 import { TextLoop } from "../ui/TextLoop";
 import { ChatMessage } from "./ChatMessage";
+import { messageListStyles } from "./MessageList.styles";
 import type { Message } from "./types";
 
 // Arrow down icon for scroll-to-bottom button
@@ -61,15 +62,15 @@ function EmptyState() {
 	const textColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
 
 	return (
-		<View style={styles.emptyContainer}>
+		<View className={messageListStyles.emptyContainer({})}>
 			<OpenChamberLogo width={120} height={120} opacity={0.15} isAnimated />
 			<TextLoop
 				interval={4}
-				style={styles.textLoopContainer}
+				style={{ minHeight: 24 }}
 				textStyle={
 					{
 						...typography.uiLabel,
-						...styles.phraseText,
+						textAlign: "center",
 						color: textColor,
 					} as TextStyle
 				}
@@ -144,7 +145,7 @@ export function MessageList({
 	}
 
 	return (
-		<View style={styles.container}>
+		<View className={messageListStyles.container({})}>
 			<FlashList
 				ref={listRef}
 				data={messages}
@@ -152,7 +153,7 @@ export function MessageList({
 				keyExtractor={keyExtractor}
 				extraData={messages}
 				{...({ estimatedItemSize: 120 } as object)}
-				contentContainerStyle={styles.listContent}
+				contentContainerClassName={messageListStyles.listContent({})}
 				onContentSizeChange={handleContentSizeChange}
 				onScroll={handleScroll}
 				scrollEventThrottle={16}
@@ -162,14 +163,18 @@ export function MessageList({
 			{showScrollButton && messages.length > 0 && (
 				<Pressable
 					onPress={scrollToBottom}
-					style={({ pressed }) => [
-						styles.scrollToBottomButton,
-						{
-							backgroundColor: colors.background,
-							borderColor: colors.border,
-							opacity: pressed ? 0.8 : 1,
-						},
-					]}
+					className={messageListStyles.scrollToBottomButton({})}
+					style={({ pressed }) => ({
+						backgroundColor: colors.background,
+						borderColor: colors.border,
+						borderWidth: 1,
+						opacity: pressed ? 0.8 : 1,
+						shadowColor: "#000",
+						shadowOffset: { width: 0, height: 4 },
+						shadowOpacity: 0.15,
+						shadowRadius: 8,
+						elevation: 4,
+					})}
 				>
 					<ArrowDownIcon color={colors.foreground} size={16} />
 				</Pressable>
@@ -177,43 +182,3 @@ export function MessageList({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		position: "relative",
-	},
-	emptyContainer: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		paddingHorizontal: 32,
-		gap: 20,
-	},
-	textLoopContainer: {
-		minHeight: 24,
-	},
-	phraseText: {
-		textAlign: "center",
-	},
-	listContent: {
-		paddingTop: 12,
-		paddingBottom: 16,
-	},
-	scrollToBottomButton: {
-		position: "absolute",
-		bottom: 12,
-		alignSelf: "center",
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		borderWidth: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.15,
-		shadowRadius: 8,
-		elevation: 4,
-	},
-});

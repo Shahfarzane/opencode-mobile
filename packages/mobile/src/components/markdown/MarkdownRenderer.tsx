@@ -1,6 +1,6 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
-import { Text, type TextStyle, type ViewStyle } from "react-native";
+import { Text, View, type TextStyle, type ViewStyle } from "react-native";
 import { FontSizes, FixedLineHeights, FontFamilySans, FontFamilyMono, useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
@@ -37,6 +37,13 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 				language={node.sourceInfo || "text"}
 			/>
 		),
+		code_block: (node: RuleNode) => (
+			<CodeBlock
+				key={node.key}
+				code={node.content ?? ""}
+				language="text"
+			/>
+		),
 		paragraph: (
 			node: RuleNode,
 			children: ReactNode,
@@ -62,12 +69,17 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 				key={node.key}
 				style={{
 					fontFamily: FontFamilyMono.regular,
-					fontSize: FontSizes.code,
+					fontSize: 14,
+					lineHeight: 20,
 					backgroundColor: colors.muted,
 					color: colors.foreground,
+					paddingHorizontal: 6,
+					paddingVertical: 2,
+					borderRadius: 4,
+					overflow: "hidden",
 				}}
 			>
-				{` ${node.content} `}
+				{node.content}
 			</Text>
 		),
 	};
@@ -163,13 +175,16 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		ordered_list: {
 			marginBottom: 8,
 		},
-		// Code blocks use Mono font
+		// Code blocks - minimal style since CodeBlock component handles rendering
 		code_block: {
-			backgroundColor: colors.muted,
-			borderRadius: 8,
-			padding: 12,
-			fontFamily: FontFamilyMono.regular,
-			fontSize: FontSizes.code,
+			backgroundColor: "transparent",
+			padding: 0,
+			margin: 0,
+		},
+		fence: {
+			backgroundColor: "transparent",
+			padding: 0,
+			margin: 0,
 		},
 		hr: {
 			backgroundColor: colors.border,
@@ -177,22 +192,37 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			marginVertical: 16,
 		},
 		table: {
-			borderColor: colors.border,
 			borderWidth: 1,
+			borderColor: colors.border,
 			borderRadius: 8,
-			overflow: "hidden" as const,
+			marginVertical: 8,
+			overflow: "hidden",
 		},
 		thead: {
 			backgroundColor: colors.muted,
 		},
+		tbody: {},
+		tr: {
+			borderBottomWidth: 1,
+			borderBottomColor: colors.border,
+			flexDirection: "row" as const,
+		},
 		th: {
-			padding: 8,
+			padding: 10,
 			fontFamily: FontFamilySans.semiBold,
+			fontSize: FontSizes.uiLabel,
+			color: colors.foreground,
+			flex: 1,
+			borderRightWidth: 1,
+			borderRightColor: colors.border,
 		},
 		td: {
-			padding: 8,
-			borderTopColor: colors.border,
-			borderTopWidth: 1,
+			padding: 10,
+			fontSize: FontSizes.uiLabel,
+			color: colors.foreground,
+			flex: 1,
+			borderRightWidth: 1,
+			borderRightColor: colors.border,
 		},
 		strong: {
 			fontFamily: FontFamilySans.semiBold,

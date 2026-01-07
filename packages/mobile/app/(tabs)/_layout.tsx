@@ -133,6 +133,8 @@ export default function TabsLayout() {
 	const selectSession = useCallback((session: Session) => {
 		setCurrentSessionIdRef.current(session.id);
 		sheetRef.current?.close();
+		// Navigate to chat tab when selecting a session
+		setActiveTab("chat");
 		// ChatScreen will handle loading messages via its own effect
 	}, []);
 

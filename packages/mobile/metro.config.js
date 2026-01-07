@@ -35,6 +35,6 @@ config.resolver.assetExts = [
 ];
 
 module.exports = withUniwindConfig(config, {
-  cssEntryFile: "./global.css",
+  cssEntryFile: "./src/styles/index.css",
   dtsFile: "./src/uniwind-types.d.ts",
 });

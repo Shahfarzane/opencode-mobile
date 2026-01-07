@@ -1,48 +1,50 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, View } from "react-native";
-import Svg, { Path, Rect } from "react-native-svg";
 import {
-	SettingsGroup,
-	SettingsRow,
-	SettingsScreen,
-} from "@/components/settings";
-import { TrashIcon } from "@/components/icons";
+	ActivityIndicator,
+	Alert,
+	Pressable,
+	StyleSheet,
+	Switch,
+	Text,
+	View,
+} from "react-native";
+import { SettingsScreen } from "@/components/settings";
 import { settingsApi, type SettingsPayload } from "@/api";
-import { useTheme } from "@/theme";
+import { Fonts, Spacing, useTheme } from "@/theme";
 
-function BrainIcon({ color }: { color: string }) {
-	return (
-		<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
+interface ToggleRowProps {
+	title: string;
+	description?: string;
+	value: boolean;
+	onValueChange: (value: boolean) => void;
 }
 
-function QueueIcon({ color }: { color: string }) {
+function ToggleRow({ title, description, value, onValueChange }: ToggleRowProps) {
+	const { colors } = useTheme();
+
 	return (
-		<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-			<Rect
-				x="3"
-				y="3"
-				width="18"
-				height="18"
-				rx="2"
-				stroke={color}
-				strokeWidth={2}
+		<Pressable
+			onPress={() => onValueChange(!value)}
+			style={styles.toggleRow}
+		>
+			<Switch
+				value={value}
+				onValueChange={onValueChange}
+				trackColor={{ false: colors.muted, true: colors.primary }}
+				thumbColor="#FFFFFF"
+				ios_backgroundColor={colors.muted}
 			/>
-			<Path
-				d="M9 3v18M15 3v18M3 9h18M3 15h18"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
+			<View style={styles.toggleContent}>
+				<Text style={[styles.toggleTitle, { color: colors.foreground }]}>
+					{title}
+				</Text>
+				{description && (
+					<Text style={[styles.toggleDescription, { color: colors.mutedForeground }]}>
+						{description}
+					</Text>
+				)}
+			</View>
+		</Pressable>
 	);
 }
 
@@ -90,7 +92,7 @@ export default function PreferencesScreen() {
 	if (isLoading) {
 		return (
 			<SettingsScreen title="Preferences">
-				<View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+				<View style={styles.loadingContainer}>
 					<ActivityIndicator size="large" color={colors.primary} />
 				</View>
 			</SettingsScreen>
@@ -99,58 +101,69 @@ export default function PreferencesScreen() {
 
 	return (
 		<SettingsScreen title="Preferences">
-			<SettingsGroup
-				header="AI Behavior"
-				footer="Show the AI's reasoning process in responses."
-			>
-				<SettingsRow
-					icon={<BrainIcon color={colors.primary} />}
-					title="Show Reasoning Traces"
-					subtitle="Display AI thinking process"
-					toggle={settings?.showReasoningTraces ?? true}
-					onToggleChange={(value) =>
+			<View style={styles.content}>
+				<ToggleRow
+					title="Show thinking / reasoning traces"
+					value={settings?.showReasoningTraces ?? true}
+					onValueChange={(value) =>
 						handleToggleSetting("showReasoningTraces", value)
 					}
 				/>
-			</SettingsGroup>
 
-			<SettingsGroup
-				header="Sessions"
-				footer={
-					settings?.autoDeleteEnabled
-						? `Sessions older than ${settings?.autoDeleteAfterDays ?? 7} days will be automatically deleted.`
-						: "Sessions will be kept indefinitely."
-				}
-			>
-				<SettingsRow
-					icon={<TrashIcon size={20} color={colors.primary} />}
-					title="Auto-delete Sessions"
-					subtitle={
+				<ToggleRow
+					title="Auto-delete old sessions"
+					description={
 						settings?.autoDeleteEnabled
-							? `After ${settings?.autoDeleteAfterDays ?? 7} days`
-							: "Disabled"
+							? `Sessions older than ${settings?.autoDeleteAfterDays ?? 7} days`
+							: "Sessions kept indefinitely"
 					}
-					toggle={settings?.autoDeleteEnabled ?? false}
-					onToggleChange={(value) =>
+					value={settings?.autoDeleteEnabled ?? false}
+					onValueChange={(value) =>
 						handleToggleSetting("autoDeleteEnabled", value)
 					}
 				/>
-			</SettingsGroup>
 
-			<SettingsGroup
-				header="Message Queue"
-				footer="Queue messages to be sent after the current response completes."
-			>
-				<SettingsRow
-					icon={<QueueIcon color={colors.primary} />}
-					title="Queue Mode"
-					subtitle="Queue messages while processing"
-					toggle={settings?.queueModeEnabled ?? false}
-					onToggleChange={(value) =>
+				<ToggleRow
+					title="Queue messages by default"
+					description="Enter sends immediately, hold to queue"
+					value={settings?.queueModeEnabled ?? false}
+					onValueChange={(value) =>
 						handleToggleSetting("queueModeEnabled", value)
 					}
 				/>
-			</SettingsGroup>
+			</View>
 		</SettingsScreen>
 	);
 }
+
+const styles = StyleSheet.create({
+	loadingContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	content: {
+		paddingTop: Spacing[4],
+		paddingHorizontal: Spacing[4],
+		gap: Spacing[2],
+	},
+	toggleRow: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		paddingVertical: Spacing[2],
+		gap: Spacing[3],
+	},
+	toggleContent: {
+		flex: 1,
+		paddingTop: 2,
+	},
+	toggleTitle: {
+		fontSize: 15,
+		fontFamily: Fonts.medium,
+	},
+	toggleDescription: {
+		fontSize: 13,
+		fontFamily: Fonts.regular,
+		marginTop: 2,
+	},
+});

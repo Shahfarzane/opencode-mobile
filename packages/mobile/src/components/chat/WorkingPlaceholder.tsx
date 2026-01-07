@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Text, View } from "react-native";
 import { Fonts, FontSizes, useTheme } from "../../theme";
+import { workingPlaceholderStyles } from "./WorkingPlaceholder.styles";
 
 // State machine timing constants
 const STATUS_DISPLAY_TIME = 1500; // Minimum time to show a status
@@ -153,28 +154,29 @@ export function WorkingPlaceholder({
 	};
 
 	return (
-		<View style={styles.container}>
-			<View style={[styles.indicator, { backgroundColor: getActivityColor() }]}>
+		<View className={workingPlaceholderStyles.container({})}>
+			<View
+				className={workingPlaceholderStyles.indicator({})}
+				style={{ backgroundColor: getActivityColor() }}
+			>
 				{displayState === "showing" && (
 					<Animated.View
-						style={[
-							styles.pulse,
-							{
-								backgroundColor: getActivityColor(),
-								opacity: shimmerAnim.interpolate({
-									inputRange: [0, 1],
-									outputRange: [0.3, 0],
-								}),
-								transform: [
-									{
-										scale: shimmerAnim.interpolate({
-											inputRange: [0, 1],
-											outputRange: [1, 2],
-										}),
-									},
-								],
-							},
-						]}
+						className={workingPlaceholderStyles.pulse({})}
+						style={{
+							backgroundColor: getActivityColor(),
+							opacity: shimmerAnim.interpolate({
+								inputRange: [0, 1],
+								outputRange: [0.3, 0],
+							}),
+							transform: [
+								{
+									scale: shimmerAnim.interpolate({
+										inputRange: [0, 1],
+										outputRange: [1, 2],
+									}),
+								},
+							],
+						}}
 					/>
 				)}
 			</View>
@@ -182,15 +184,14 @@ export function WorkingPlaceholder({
 				style={{ opacity: displayState === "showing" ? opacity : 1 }}
 			>
 				<Text
-					style={[
-						styles.text,
-						{
-							color:
-								displayState === "done"
-									? colors.mutedForeground
-									: colors.foreground,
-						},
-					]}
+					style={{
+						fontFamily: Fonts.medium,
+						fontSize: FontSizes.uiLabel,
+						color:
+							displayState === "done"
+								? colors.mutedForeground
+								: colors.foreground,
+					}}
 				>
 					{displayedStatus}
 				</Text>
@@ -198,31 +199,3 @@ export function WorkingPlaceholder({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 8,
-		gap: 8,
-	},
-	indicator: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		position: "relative",
-	},
-	pulse: {
-		position: "absolute",
-		top: 0,
-		left: 0,
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-	},
-	text: {
-		fontFamily: Fonts.medium,
-		fontSize: FontSizes.uiLabel,
-	},
-});

@@ -5,10 +5,11 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Fonts, FontSizes, fontStyle, typography, useTheme } from "@/theme";
+import { timelineSheetStyles } from "./TimelineSheet.styles";
 import type { Message } from "./types";
 
 interface TimelineTurn {
@@ -127,37 +128,47 @@ function TimelineTurnItem({
 	};
 
 	return (
-		<View style={styles.turnItem}>
+		<View className={timelineSheetStyles.turnItem({})}>
 			{/* Turn indicator */}
-			<View style={styles.turnIndicator}>
+			<View className={timelineSheetStyles.turnIndicator({})}>
 				<View
-					style={[
-						styles.turnDot,
-						{
-							backgroundColor: colors.primary,
-							borderColor: isDark ? colors.background : colors.card,
-						},
-					]}
+					className={timelineSheetStyles.turnDot({})}
+					style={{
+						backgroundColor: colors.primary,
+						borderColor: isDark ? colors.background : colors.card,
+						borderWidth: 2,
+					}}
 				>
-					<Text style={[styles.turnNumber, { color: colors.background }]}>
+					<Text
+						style={{
+							fontFamily: Fonts.bold,
+							fontSize: FontSizes.xxs,
+							color: colors.background,
+						}}
+					>
 						{turn.turnNumber}
 					</Text>
 				</View>
 				{!isLast && (
-					<View style={[styles.turnLine, { backgroundColor: colors.border }]} />
+					<View
+						className={timelineSheetStyles.turnLine({})}
+						style={{ backgroundColor: colors.border }}
+					/>
 				)}
 			</View>
 
 			{/* Turn content */}
-			<View style={styles.turnContent}>
+			<View className={timelineSheetStyles.turnContent({})}>
 				<View
-					style={[
-						styles.turnCard,
-						{ backgroundColor: colors.card, borderColor: colors.border },
-					]}
+					className={timelineSheetStyles.turnCard({})}
+					style={{
+						backgroundColor: colors.card,
+						borderColor: colors.border,
+						borderWidth: 1,
+					}}
 				>
 					{/* User message */}
-					<View style={styles.turnHeader}>
+					<View className={timelineSheetStyles.turnHeader({})}>
 						<Text
 							style={[
 								typography.uiLabel,
@@ -176,11 +187,8 @@ function TimelineTurnItem({
 						)}
 					</View>
 					<Text
-						style={[
-							typography.body,
-							styles.messagePreview,
-							{ color: colors.foreground },
-						]}
+						className={timelineSheetStyles.messagePreview({})}
+						style={[typography.body, { color: colors.foreground }]}
 						numberOfLines={2}
 					>
 						{userMessagePreview}
@@ -189,10 +197,8 @@ function TimelineTurnItem({
 					{/* Assistant response preview */}
 					{assistantPreview && (
 						<View
-							style={[
-								styles.assistantPreview,
-								{ backgroundColor: `${colors.muted}80` },
-							]}
+							className={timelineSheetStyles.assistantPreview({})}
+							style={{ backgroundColor: `${colors.muted}80` }}
 						>
 							<Text
 								style={[typography.micro, { color: colors.mutedForeground }]}
@@ -204,16 +210,14 @@ function TimelineTurnItem({
 					)}
 
 					{/* Action buttons */}
-					<View style={styles.turnActions}>
+					<View className={timelineSheetStyles.turnActions({})}>
 						<Pressable
 							onPress={handleNavigate}
-							style={({ pressed }) => [
-								styles.actionButton,
-								{
-									backgroundColor: `${colors.primary}15`,
-									opacity: pressed ? 0.7 : 1,
-								},
-							]}
+							className={timelineSheetStyles.actionButton({})}
+							style={({ pressed }) => ({
+								backgroundColor: `${colors.primary}15`,
+								opacity: pressed ? 0.7 : 1,
+							})}
 						>
 							<ArrowRightIcon color={colors.primary} size={12} />
 							<Text style={[typography.micro, { color: colors.primary }]}>
@@ -222,13 +226,11 @@ function TimelineTurnItem({
 						</Pressable>
 						<Pressable
 							onPress={handleFork}
-							style={({ pressed }) => [
-								styles.actionButton,
-								{
-									backgroundColor: `${colors.info}15`,
-									opacity: pressed ? 0.7 : 1,
-								},
-							]}
+							className={timelineSheetStyles.actionButton({})}
+							style={({ pressed }) => ({
+								backgroundColor: `${colors.info}15`,
+								opacity: pressed ? 0.7 : 1,
+							})}
 						>
 							<GitBranchIcon color={colors.info} size={12} />
 							<Text style={[typography.micro, { color: colors.info }]}>
@@ -306,8 +308,11 @@ export const TimelineSheet = forwardRef<BottomSheet, TimelineSheetProps>(
 				backgroundStyle={{ backgroundColor: colors.background }}
 				handleIndicatorStyle={{ backgroundColor: colors.mutedForeground }}
 			>
-				<View style={[styles.header, { borderBottomColor: colors.border }]}>
-					<View style={styles.headerTitle}>
+				<View
+					className={timelineSheetStyles.header({})}
+					style={{ borderBottomColor: colors.border, borderBottomWidth: 1 }}
+				>
+					<View className={timelineSheetStyles.headerTitle({})}>
 						<ClockIcon color={colors.foreground} size={18} />
 						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 							Timeline
@@ -319,13 +324,10 @@ export const TimelineSheet = forwardRef<BottomSheet, TimelineSheetProps>(
 				</View>
 
 				<BottomSheetScrollView
-					contentContainerStyle={[
-						styles.scrollContent,
-						{ paddingBottom: insets.bottom + 16 },
-					]}
+					contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}
 				>
 					{turns.length === 0 ? (
-						<View style={styles.emptyState}>
+						<View className={timelineSheetStyles.emptyState({})}>
 							<Text
 								style={[typography.body, { color: colors.mutedForeground }]}
 							>
@@ -348,87 +350,3 @@ export const TimelineSheet = forwardRef<BottomSheet, TimelineSheetProps>(
 		);
 	},
 );
-
-const styles = StyleSheet.create({
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 20,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
-	},
-	headerTitle: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	scrollContent: {
-		padding: 16,
-	},
-	emptyState: {
-		alignItems: "center",
-		paddingVertical: 40,
-	},
-	turnItem: {
-		flexDirection: "row",
-		marginBottom: 8,
-	},
-	turnIndicator: {
-		width: 32,
-		alignItems: "center",
-	},
-	turnDot: {
-		width: 24,
-		height: 24,
-		borderRadius: 12,
-		alignItems: "center",
-		justifyContent: "center",
-		borderWidth: 2,
-	},
-	turnNumber: {
-		fontFamily: Fonts.bold,
-		fontSize: FontSizes.xxs,
-	},
-	turnLine: {
-		width: 2,
-		flex: 1,
-		marginTop: 4,
-	},
-	turnContent: {
-		flex: 1,
-		paddingLeft: 8,
-	},
-	turnCard: {
-		borderRadius: 10,
-		borderWidth: 1,
-		padding: 12,
-	},
-	turnHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		marginBottom: 6,
-	},
-	messagePreview: {
-		lineHeight: 20,
-	},
-	assistantPreview: {
-		marginTop: 8,
-		padding: 8,
-		borderRadius: 6,
-	},
-	turnActions: {
-		flexDirection: "row",
-		gap: 8,
-		marginTop: 10,
-	},
-	actionButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-		borderRadius: 6,
-	},
-});

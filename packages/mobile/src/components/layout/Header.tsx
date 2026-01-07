@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type ContextUsage, ContextUsageDisplay } from "@/components/chat";
 import {
@@ -10,6 +10,7 @@ import {
 	TerminalIcon,
 } from "@/components/icons";
 import { useTheme } from "@/theme";
+import { headerStyles } from "./Header.styles";
 
 type MainTab = "chat" | "diff" | "terminal" | "git";
 
@@ -67,21 +68,20 @@ export function Header({
 
 	return (
 		<View
-			style={[
-				styles.container,
-				{
-					backgroundColor: colors.background,
-					borderBottomColor: colors.border,
-					paddingTop: insets.top,
-				},
-			]}
+			className={headerStyles.container({})}
+			style={{
+				backgroundColor: colors.background,
+				borderBottomColor: colors.border,
+				borderBottomWidth: 1,
+				paddingTop: insets.top,
+			}}
 		>
-			<View style={styles.content}>
+			<View className={headerStyles.content({})}>
 				{/* Left section: Sessions button + context usage */}
-				<View style={styles.leftSection}>
+				<View className={headerStyles.leftSection({})}>
 					<Pressable
 						onPress={onSessionsPress || onMenuPress}
-						style={styles.iconButton}
+						className={headerStyles.iconButton({})}
 						hitSlop={8}
 					>
 						<PlaylistAddIcon color={colors.mutedForeground} size={20} />
@@ -92,7 +92,7 @@ export function Header({
 				</View>
 
 				{/* Right section: Tabs + settings */}
-				<View style={styles.rightSection}>
+				<View className={headerStyles.rightSection({})}>
 					{tabs.map((tab) => {
 						const isActive = activeTab === tab.id;
 						const showGitDot = tab.id === "git" && diffFileCount > 0;
@@ -100,10 +100,10 @@ export function Header({
 							<Pressable
 								key={tab.id}
 								onPress={() => onTabChange(tab.id)}
-								style={styles.iconButton}
+								className={headerStyles.iconButton({})}
 								hitSlop={4}
 							>
-								<View style={styles.tabContent}>
+								<View className={headerStyles.tabContent({})}>
 									{getTabIcon(
 										tab.id,
 										isActive ? colors.foreground : colors.mutedForeground,
@@ -112,10 +112,8 @@ export function Header({
 									{/* Orange dot for git tab when there are changes */}
 									{showGitDot && (
 										<View
-											style={[
-												styles.changeDot,
-												{ backgroundColor: colors.primary },
-											]}
+											className={headerStyles.changeDot({})}
+											style={{ backgroundColor: colors.primary }}
 										/>
 									)}
 								</View>
@@ -125,14 +123,15 @@ export function Header({
 
 					<Pressable
 						onPress={onSettingsPress}
-						style={styles.iconButton}
+						className={headerStyles.iconButton({})}
 						hitSlop={4}
 					>
-						<View style={styles.tabContent}>
+						<View className={headerStyles.tabContent({})}>
 							<SettingsIcon color={colors.mutedForeground} size={20} />
 							{hasUpdate && (
 								<View
-									style={[styles.updateDot, { backgroundColor: colors.primary }]}
+									className={headerStyles.updateDot({})}
+									style={{ backgroundColor: colors.primary }}
 								/>
 							)}
 						</View>
@@ -142,53 +141,5 @@ export function Header({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		borderBottomWidth: 1,
-	},
-	content: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-	},
-	leftSection: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	rightSection: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-	},
-	iconButton: {
-		width: 36,
-		height: 36,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	tabContent: {
-		position: "relative",
-	},
-	updateDot: {
-		position: "absolute",
-		top: 0,
-		right: 0,
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-	},
-	changeDot: {
-		position: "absolute",
-		top: 0,
-		right: 0,
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-	},
-});
 
 export default Header;

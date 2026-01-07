@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
-import { ChevronLeft, KeyIcon } from "@/components/icons";
+import { ChevronLeft } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
@@ -97,26 +97,26 @@ export default function ProvidersListScreen() {
 						/>
 					}
 				>
-					<View style={styles.section}>
-						<Text
-							style={[styles.sectionTitle, { color: colors.mutedForeground }]}
-						>
-							{providers.length} PROVIDER{providers.length !== 1 ? "S" : ""}
-						</Text>
-						{providers.map((provider) => (
-							<SettingsListItem
-								key={provider.id}
-								title={provider.name}
-								subtitle={`${provider.models?.length || 0} models`}
-								onPress={() => handleSelectProvider(provider.id)}
-								icon={<KeyIcon color={colors.primary} size={18} />}
-							/>
-						))}
-					</View>
+					{providers.length > 0 && (
+						<View style={styles.section}>
+							<Text
+								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+							>
+								{providers.length} PROVIDER{providers.length !== 1 ? "S" : ""}
+							</Text>
+							{providers.map((provider) => (
+								<SettingsListItem
+									key={provider.id}
+									title={provider.name}
+									subtitle={`${provider.models?.length || 0} models`}
+									onPress={() => handleSelectProvider(provider.id)}
+								/>
+							))}
+						</View>
+					)}
 
 					{providers.length === 0 && (
 						<View style={styles.emptyContainer}>
-							<KeyIcon color={colors.mutedForeground} size={40} />
 							<Text
 								style={[typography.uiLabel, { color: colors.mutedForeground }]}
 							>
@@ -165,14 +165,14 @@ const styles = StyleSheet.create({
 		paddingTop: Spacing[4],
 	},
 	section: {
-		marginBottom: Spacing[4],
+		marginBottom: Spacing[5],
 	},
 	sectionTitle: {
-		fontSize: 12,
-		fontFamily: Fonts.semiBold,
+		fontSize: 13,
+		fontFamily: Fonts.medium,
 		letterSpacing: 0.5,
+		marginBottom: Spacing[1],
 		paddingHorizontal: Spacing[4],
-		marginBottom: Spacing[2],
 	},
 	emptyContainer: {
 		flex: 1,

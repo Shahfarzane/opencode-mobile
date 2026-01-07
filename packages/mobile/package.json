@@ -43,7 +43,6 @@
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
-    "nativewind": "^5.0.0-preview.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -66,6 +65,8 @@
     "babel-preset-expo": "^54.0.9",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
+    "tailwind-variants": "^3.2.2",
+    "tailwind-merge": "^3.4.0",
     "typescript": "~5.9.3"
   }
 }
