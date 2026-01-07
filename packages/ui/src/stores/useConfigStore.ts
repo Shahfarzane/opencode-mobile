@@ -8,7 +8,7 @@ import { scopeMatches, subscribeToConfigChanges } from "@/lib/configSync";
 import type { ModelMetadata } from "@/types";
 import { getSafeStorage } from "./utils/safeStorage";
 import type { SessionStore } from "./types/sessionTypes";
-import { filterVisibleAgents } from "./useAgentsStore";
+import { filterVisibleAgents } from "./utils/agentUtils";
 import { isDesktopRuntime, getDesktopSettings } from "@/lib/desktop";
 import { getRegisteredRuntimeAPIs } from "@/contexts/runtimeAPIRegistry";
 import { updateDesktopSettings } from "@/lib/persistence";

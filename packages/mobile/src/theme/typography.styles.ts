@@ -130,10 +130,11 @@ export const FontSizes = {
 	xs: 12, // 0.75rem - matches desktop text-xs
 	microSmall: 11, // 0.7rem - matches desktop git stats text-[0.7rem]
 	xxs: 10, // Very small text for UI elements like turn numbers
-	h1: 24,
-	h2: 20,
-	h3: 18,
-	h4: 16,
+	// Heading sizes use PWA proportional em values (relative to markdown body 16px)
+	h1: Math.round(remToPixels(MOBILE_TYPOGRAPHY.markdown) * 1.125), // ~18px (PWA: 1.125em)
+	h2: Math.round(remToPixels(MOBILE_TYPOGRAPHY.markdown) * 1.0625), // ~17px (PWA: 1.0625em)
+	h3: remToPixels(MOBILE_TYPOGRAPHY.markdown), // 16px (PWA: 1em)
+	h4: remToPixels(MOBILE_TYPOGRAPHY.markdown), // 16px (PWA: 1em)
 } as const;
 
 export const LineHeights = {
@@ -215,27 +216,27 @@ export const typography = StyleSheet.create<TypographyStyles>({
 		lineHeight: FixedLineHeights.ui,
 		letterSpacing: 0.2, // Reduced for Sans (was 0.35 for Mono)
 	},
-	// Headings use Sans with tight line height
-	// (matches desktop --h1-line-height: 1.25rem)
+	// Headings use Sans with proportional em-based sizes (matching PWA streamdown)
+	// PWA uses: h1=1.125em, h2=1.0625em, h3=1em, h4-h6=1em relative to body
 	h1: {
-		fontFamily: FontFamilySans.bold,
-		fontSize: FontSizes.h1,
-		lineHeight: FontSizes.h1 * LineHeights.tight,
+		fontFamily: FontFamilySans.semiBold,
+		fontSize: Math.round(FontSizes.markdown * 1.125), // ~18px (PWA: 1.125em)
+		lineHeight: Math.round(FontSizes.markdown * 1.125 * LineHeights.tight),
 	},
 	h2: {
 		fontFamily: FontFamilySans.semiBold,
-		fontSize: FontSizes.h2,
-		lineHeight: FontSizes.h2 * LineHeights.tight,
+		fontSize: Math.round(FontSizes.markdown * 1.0625), // ~17px (PWA: 1.0625em)
+		lineHeight: Math.round(FontSizes.markdown * 1.0625 * LineHeights.tight),
 	},
 	h3: {
 		fontFamily: FontFamilySans.semiBold,
-		fontSize: FontSizes.h3,
-		lineHeight: FontSizes.h3 * LineHeights.tight,
+		fontSize: FontSizes.markdown, // 16px (PWA: 1em)
+		lineHeight: Math.round(FontSizes.markdown * LineHeights.tight),
 	},
 	h4: {
 		fontFamily: FontFamilySans.semiBold,
-		fontSize: FontSizes.h4,
-		lineHeight: FontSizes.h4 * LineHeights.tight,
+		fontSize: FontSizes.markdown, // 16px (PWA: 1em)
+		lineHeight: Math.round(FontSizes.markdown * LineHeights.tight),
 	},
 	body: {
 		fontFamily: FontFamilySans.regular,

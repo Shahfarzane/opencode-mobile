@@ -80,27 +80,55 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			fontSize: FontSizes.markdown,
 			lineHeight: FixedLineHeights.body, // Fixed 24px (matches desktop)
 		},
-		// Headings use Sans font
+		// Headings use Sans font with em-proportional sizes (matching PWA streamdown)
+		// PWA uses: h1=1.125em, h2=1.0625em, h3=1em, h4-h6=1em relative to body
 		heading1: {
 			color: colors.foreground,
-			fontFamily: FontFamilySans.bold,
-			fontSize: FontSizes.h1,
-			marginTop: 16,
-			marginBottom: 8,
+			fontFamily: FontFamilySans.semiBold,
+			fontSize: Math.round(FontSizes.markdown * 1.125), // ~18px (PWA: 1.125em)
+			lineHeight: Math.round(FontSizes.markdown * 1.125 * 1.25), // tight line-height
+			marginTop: FontSizes.markdown, // 1em = 16px
+			marginBottom: FontSizes.markdown * 0.5, // 0.5em = 8px
 		},
 		heading2: {
 			color: colors.foreground,
 			fontFamily: FontFamilySans.semiBold,
-			fontSize: FontSizes.h2,
-			marginTop: 14,
-			marginBottom: 6,
+			fontSize: Math.round(FontSizes.markdown * 1.0625), // ~17px (PWA: 1.0625em)
+			lineHeight: Math.round(FontSizes.markdown * 1.0625 * 1.25),
+			marginTop: FontSizes.markdown, // 1em = 16px
+			marginBottom: FontSizes.markdown * 0.5, // 0.5em = 8px
 		},
 		heading3: {
 			color: colors.foreground,
 			fontFamily: FontFamilySans.semiBold,
-			fontSize: FontSizes.h3,
-			marginTop: 12,
-			marginBottom: 4,
+			fontSize: FontSizes.markdown, // 16px (PWA: 1em)
+			lineHeight: Math.round(FontSizes.markdown * 1.25),
+			marginTop: FontSizes.markdown * 0.75, // 0.75em = 12px
+			marginBottom: FontSizes.markdown * 0.5, // 0.5em = 8px
+		},
+		heading4: {
+			color: colors.foreground,
+			fontFamily: FontFamilySans.semiBold,
+			fontSize: FontSizes.markdown, // 16px (PWA: 1em)
+			lineHeight: Math.round(FontSizes.markdown * 1.25),
+			marginTop: FontSizes.markdown * 0.75,
+			marginBottom: FontSizes.markdown * 0.5,
+		},
+		heading5: {
+			color: colors.foreground,
+			fontFamily: FontFamilySans.semiBold,
+			fontSize: FontSizes.markdown,
+			lineHeight: Math.round(FontSizes.markdown * 1.25),
+			marginTop: FontSizes.markdown * 0.75,
+			marginBottom: FontSizes.markdown * 0.5,
+		},
+		heading6: {
+			color: colors.foreground,
+			fontFamily: FontFamilySans.semiBold,
+			fontSize: FontSizes.markdown,
+			lineHeight: Math.round(FontSizes.markdown * 1.25),
+			marginTop: FontSizes.markdown * 0.75,
+			marginBottom: FontSizes.markdown * 0.5,
 		},
 		paragraph: {
 			marginTop: 0,

@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Radius, Spacing, useTheme, Fonts } from "@/theme";
+import { Radius, Spacing, useTheme, Fonts, FontSizes, FixedLineHeights } from "@/theme";
 
 interface SettingsGroupProps {
 	/** Section header text (displayed above the group) */
@@ -74,10 +74,10 @@ const styles = StyleSheet.create({
 		marginBottom: Spacing[6],
 	},
 	header: {
-		fontSize: 13,
-		fontFamily: Fonts.regular,
+		fontSize: FontSizes.xs, // 12px - iOS-style section header
+		fontFamily: Fonts.medium,
 		textTransform: "uppercase",
-		letterSpacing: 0.5,
+		letterSpacing: 0.8,
 		marginBottom: Spacing[2],
 		marginLeft: Spacing[4],
 	},
@@ -91,10 +91,10 @@ const styles = StyleSheet.create({
 		marginLeft: Spacing[4] + 24 + Spacing[3], // icon container + gap
 	},
 	footer: {
-		fontSize: 13,
+		fontSize: FontSizes.meta, // 14px - matches desktop meta typography
 		fontFamily: Fonts.regular,
 		marginTop: Spacing[2],
 		marginHorizontal: Spacing[4],
-		lineHeight: 18,
+		lineHeight: FixedLineHeights.ui, // 16px
 	},
 });

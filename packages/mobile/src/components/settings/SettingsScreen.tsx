@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, XIcon } from "@/components/icons";
-import { Spacing, useTheme, Fonts } from "@/theme";
+import { Spacing, useTheme, Fonts, FontSizes } from "@/theme";
 
 interface SettingsScreenProps {
 	/** Screen title */
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	title: {
-		fontSize: 17,
+		fontSize: FontSizes.uiHeader, // 15px - matches design system
 		fontFamily: Fonts.semiBold,
 		textAlign: "center",
 	},

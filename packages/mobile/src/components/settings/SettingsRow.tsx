@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { ChevronRightIcon } from "@/components/icons";
-import { Spacing, useTheme, Fonts } from "@/theme";
+import { Spacing, useTheme, Fonts, FontSizes, FixedLineHeights } from "@/theme";
 
 interface SettingsRowBaseProps {
 	/** Row icon (rendered on the left) */
@@ -183,14 +183,14 @@ const styles = StyleSheet.create({
 		marginRight: Spacing[2],
 	},
 	title: {
-		fontSize: 15,
+		fontSize: FontSizes.uiHeader, // 15px
 		fontFamily: Fonts.regular,
 		lineHeight: 20,
 	},
 	subtitle: {
-		fontSize: 13,
+		fontSize: FontSizes.meta, // 14px - matches desktop meta typography
 		fontFamily: Fonts.regular,
-		lineHeight: 18,
+		lineHeight: FixedLineHeights.ui, // 16px
 		marginTop: 2,
 	},
 	rightContainer: {
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
 		gap: Spacing[2],
 	},
 	value: {
-		fontSize: 15,
+		fontSize: FontSizes.uiHeader, // 15px
 		fontFamily: Fonts.regular,
 	},
 });

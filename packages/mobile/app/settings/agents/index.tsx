@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Agent, agentsApi, isAgentBuiltIn, isAgentHidden } from "@/api";
 import { ChevronLeft, PlusIcon, RobotIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
-import { Fonts, fontStyle, Spacing, typography, useTheme } from "@/theme";
+import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
 export default function AgentsListScreen() {
 	const { colors } = useTheme();
@@ -75,9 +75,7 @@ export default function AgentsListScreen() {
 				>
 					<ChevronLeft size={24} color={colors.foreground} />
 				</Pressable>
-				<Text style={[styles.title, { color: colors.foreground }]}>
-					Agents
-				</Text>
+				<Text style={[styles.title, { color: colors.foreground }]}>Agents</Text>
 				<Pressable
 					onPress={() => handleSelectAgent("__new__")}
 					style={[styles.addButton, { backgroundColor: colors.primary }]}
@@ -108,10 +106,7 @@ export default function AgentsListScreen() {
 					{builtInAgents.length > 0 && (
 						<View style={styles.section}>
 							<Text
-								style={[
-									styles.sectionTitle,
-									{ color: colors.mutedForeground },
-								]}
+								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
 								BUILT-IN AGENTS
 							</Text>
@@ -131,10 +126,7 @@ export default function AgentsListScreen() {
 					{customAgents.length > 0 && (
 						<View style={styles.section}>
 							<Text
-								style={[
-									styles.sectionTitle,
-									{ color: colors.mutedForeground },
-								]}
+								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
 								CUSTOM AGENTS
 							</Text>
@@ -154,7 +146,9 @@ export default function AgentsListScreen() {
 					{agents.length === 0 && (
 						<View style={styles.emptyContainer}>
 							<RobotIcon color={colors.mutedForeground} size={40} />
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.uiLabel, { color: colors.mutedForeground }]}
+							>
 								No custom agents yet
 							</Text>
 							<Pressable
@@ -162,10 +156,15 @@ export default function AgentsListScreen() {
 									Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 									handleSelectAgent("__new__");
 								}}
-								style={[styles.createButton, { backgroundColor: colors.primary }]}
+								style={[
+									styles.createButton,
+									{ backgroundColor: colors.primary },
+								]}
 							>
 								<PlusIcon size={16} color={colors.background} />
-								<Text style={[typography.uiLabel, { color: colors.background }]}>
+								<Text
+									style={[typography.uiLabel, { color: colors.background }]}
+								>
 									Create your first agent
 								</Text>
 							</Pressable>
