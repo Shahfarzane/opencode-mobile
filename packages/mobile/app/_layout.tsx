@@ -1,4 +1,10 @@
 import "../src/styles/index.css";
+
+// Initialize Reactotron in development mode
+if (__DEV__) {
+	require("../src/config/ReactotronConfig");
+}
+
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";

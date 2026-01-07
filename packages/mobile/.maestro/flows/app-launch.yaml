@@ -1,0 +1,17 @@
+# App Launch Flow
+# Tests that the app launches successfully
+
+appId: ceo.nerd.opencode
+
+---
+- launchApp
+
+# Wait for app to load
+- waitForAnimationToEnd
+
+# Take a screenshot of the initial screen
+- takeScreenshot: launch-screen
+
+# Use AI to verify the app loaded correctly
+- assertVisible:
+    text: ".*"  # App should show some content

@@ -1,0 +1,18 @@
+# UI Exploration Flow
+# Takes screenshots and captures app state for analysis
+
+appId: ceo.nerd.opencode
+
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Take initial screenshot
+- takeScreenshot: initial-state
+
+# Scroll down to see more content
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: after-scroll

@@ -1,0 +1,6 @@
+# Secrets
+.env
+
+# Screenshots
+screenshots/*.png
+screenshots/*.jpg

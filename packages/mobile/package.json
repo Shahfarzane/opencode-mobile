@@ -5,6 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "start:clear": "expo start --clear",
     "ios": "expo run:ios",
     "ios:simulator": "expo start --ios",
     "android": "expo run:android",
@@ -15,7 +16,11 @@
     "build:preview": "eas build --profile preview --platform ios",
     "build:production": "eas build --profile production --platform ios",
     "type-check": "tsc --noEmit",
-    "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js"
+    "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js",
+    "maestro": "source .maestro/.env && maestro test .maestro/flows",
+    "maestro:studio": "source .maestro/.env && maestro studio",
+    "maestro:record": "source .maestro/.env && maestro record",
+    "maestro:ai": "source .maestro/.env && maestro test .maestro/flows/ai-explore.yaml"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -60,13 +65,15 @@
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/plugin-transform-react-jsx": "^7.27.1",
+    "@react-native-community/cli-debugger-ui": "^15.1.3",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/react": "~19.0.14",
     "babel-preset-expo": "^54.0.9",
+    "reactotron-react-native": "^5.1.18",
     "sharp": "^0.34.5",
-    "tailwindcss": "^4.1.18",
-    "tailwind-variants": "^3.2.2",
     "tailwind-merge": "^3.4.0",
+    "tailwind-variants": "^3.2.2",
+    "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3"
   }
 }

@@ -1,0 +1,22 @@
+# Maestro Configuration for OpenChamber Mobile
+# https://maestro.mobile.dev/
+
+# App configuration
+appId: ceo.nerd.opencode
+
+# Default settings
+flows:
+  - .maestro/flows/**/*.yaml
+
+# AI settings (for visual understanding)
+# Set MAESTRO_API_KEY env var for AI features
+ai:
+  enabled: true
+
+# Screenshot settings
+screenshots:
+  enabled: true
+  path: .maestro/screenshots
+
+# Timeout settings (in milliseconds)
+defaultTimeout: 10000
