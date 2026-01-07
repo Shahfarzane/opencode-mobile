@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
 import type { Permission } from "./types";
 
@@ -41,30 +41,31 @@ function BashDetails({ permission }: { permission: Permission }) {
 	const timeout = getMetaNum(permission.metadata, "timeout");
 
 	return (
-		<View style={styles.content}>
+		<View className="p-3 gap-2">
 			{description && (
 				<Text
 					style={[
 						typography.meta,
-						styles.description,
-						{ color: colors.mutedForeground },
+						{ color: colors.mutedForeground, lineHeight: 20 },
 					]}
 				>
 					{description}
 				</Text>
 			)}
 			{workingDir && (
-				<View style={styles.metaRow}>
+				<View className="flex-row items-center gap-2 flex-wrap">
 					<Text
 						style={[
 							typography.micro,
-							styles.metaLabel,
-							{ color: colors.mutedForeground },
+							{ color: colors.mutedForeground, fontFamily: Fonts.medium },
 						]}
 					>
 						Directory:
 					</Text>
-					<View style={[styles.codeInline, { backgroundColor: colors.muted }]}>
+					<View
+						className="flex-1 px-2 py-1 rounded"
+						style={{ backgroundColor: colors.muted }}
+					>
 						<Text
 							style={[typography.code, { color: colors.foreground }]}
 							numberOfLines={1}
@@ -75,7 +76,10 @@ function BashDetails({ permission }: { permission: Permission }) {
 				</View>
 			)}
 			{command && (
-				<View style={[styles.codeBlock, { backgroundColor: colors.muted }]}>
+				<View
+					className="p-2 rounded-md"
+					style={{ backgroundColor: colors.muted }}
+				>
 					<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 						<Text style={[typography.code, { color: colors.foreground }]}>
 							{command}
@@ -101,30 +105,31 @@ function EditDetails({ permission }: { permission: Permission }) {
 	const description = getMeta(permission.metadata, "description");
 
 	return (
-		<View style={styles.content}>
+		<View className="p-3 gap-2">
 			{description && (
 				<Text
 					style={[
 						typography.meta,
-						styles.description,
-						{ color: colors.mutedForeground },
+						{ color: colors.mutedForeground, lineHeight: 20 },
 					]}
 				>
 					{description}
 				</Text>
 			)}
 			{filePath && (
-				<View style={styles.metaRow}>
+				<View className="flex-row items-center gap-2 flex-wrap">
 					<Text
 						style={[
 							typography.micro,
-							styles.metaLabel,
-							{ color: colors.mutedForeground },
+							{ color: colors.mutedForeground, fontFamily: Fonts.medium },
 						]}
 					>
 						File:
 					</Text>
-					<View style={[styles.codeInline, { backgroundColor: colors.muted }]}>
+					<View
+						className="flex-1 px-2 py-1 rounded"
+						style={{ backgroundColor: colors.muted }}
+					>
 						<Text
 							style={[typography.code, { color: colors.foreground }]}
 							numberOfLines={1}
@@ -146,30 +151,31 @@ function WriteDetails({ permission }: { permission: Permission }) {
 	const description = getMeta(permission.metadata, "description");
 
 	return (
-		<View style={styles.content}>
+		<View className="p-3 gap-2">
 			{description && (
 				<Text
 					style={[
 						typography.meta,
-						styles.description,
-						{ color: colors.mutedForeground },
+						{ color: colors.mutedForeground, lineHeight: 20 },
 					]}
 				>
 					{description}
 				</Text>
 			)}
 			{filePath && (
-				<View style={styles.metaRow}>
+				<View className="flex-row items-center gap-2 flex-wrap">
 					<Text
 						style={[
 							typography.micro,
-							styles.metaLabel,
-							{ color: colors.mutedForeground },
+							{ color: colors.mutedForeground, fontFamily: Fonts.medium },
 						]}
 					>
 						File:
 					</Text>
-					<View style={[styles.codeInline, { backgroundColor: colors.muted }]}>
+					<View
+						className="flex-1 px-2 py-1 rounded"
+						style={{ backgroundColor: colors.muted }}
+					>
 						<Text
 							style={[typography.code, { color: colors.foreground }]}
 							numberOfLines={1}
@@ -210,25 +216,22 @@ function WebFetchDetails({ permission }: { permission: Permission }) {
 	};
 
 	return (
-		<View style={styles.content}>
+		<View className="p-3 gap-2">
 			{description && (
 				<Text
 					style={[
 						typography.meta,
-						styles.description,
-						{ color: colors.mutedForeground },
+						{ color: colors.mutedForeground, lineHeight: 20 },
 					]}
 				>
 					{description}
 				</Text>
 			)}
 			{url && (
-				<View style={styles.requestRow}>
+				<View className="flex-row items-start gap-2">
 					<View
-						style={[
-							styles.methodBadge,
-							{ backgroundColor: `${getMethodColor()}20` },
-						]}
+						className="px-1.5 py-0.5 rounded"
+						style={{ backgroundColor: `${getMethodColor()}20` }}
 					>
 						<Text
 							style={[
@@ -241,7 +244,8 @@ function WebFetchDetails({ permission }: { permission: Permission }) {
 						</Text>
 					</View>
 					<View
-						style={[styles.urlContainer, { backgroundColor: colors.muted }]}
+						className="flex-1 px-2 py-1 rounded"
+						style={{ backgroundColor: colors.muted }}
 					>
 						<Text
 							style={[typography.code, { color: colors.foreground }]}
@@ -262,13 +266,12 @@ function GenericDetails({ permission }: { permission: Permission }) {
 	const title = permission.title;
 
 	return (
-		<View style={styles.content}>
+		<View className="p-3 gap-2">
 			{description && (
 				<Text
 					style={[
 						typography.meta,
-						styles.description,
-						{ color: colors.mutedForeground },
+						{ color: colors.mutedForeground, lineHeight: 20 },
 					]}
 				>
 					{description}
@@ -288,23 +291,24 @@ function PatternDisplay({ pattern }: { pattern: string | string[] }) {
 	const patterns = Array.isArray(pattern) ? pattern : [pattern];
 
 	return (
-		<View style={[styles.patternContainer, { backgroundColor: colors.muted }]}>
+		<View
+			className="p-2 rounded-md gap-1"
+			style={{ backgroundColor: colors.muted }}
+		>
 			<Text
 				style={[
 					typography.micro,
-					styles.patternLabel,
-					{ color: colors.mutedForeground },
+					{ color: colors.mutedForeground, fontFamily: Fonts.medium, marginBottom: 2 },
 				]}
 			>
 				Pattern:
 			</Text>
-		{patterns.map((p) => (
-			<Text
-				key={p}
+			{patterns.map((p) => (
+				<Text
+					key={p}
 					style={[
 						typography.code,
-						styles.patternText,
-						{ color: colors.foreground },
+						{ color: colors.foreground, fontSize: FontSizes.xs },
 					]}
 					numberOfLines={1}
 				>
@@ -352,71 +356,10 @@ export function PermissionDetails({ permission }: PermissionDetailsProps) {
 		<View>
 			{renderToolDetails()}
 			{permission.pattern && (
-				<View style={styles.patternWrapper}>
+				<View className="px-3 pb-3">
 					<PatternDisplay pattern={permission.pattern} />
 				</View>
 			)}
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	content: {
-		padding: 12,
-		gap: 8,
-	},
-	description: {
-		lineHeight: 20,
-	},
-	metaRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		flexWrap: "wrap",
-	},
-	metaLabel: {
-		fontFamily: Fonts.medium,
-	},
-	codeInline: {
-		flex: 1,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 4,
-	},
-	codeBlock: {
-		padding: 8,
-		borderRadius: 6,
-	},
-	requestRow: {
-		flexDirection: "row",
-		alignItems: "flex-start",
-		gap: 8,
-	},
-	methodBadge: {
-		paddingHorizontal: 6,
-		paddingVertical: 3,
-		borderRadius: 4,
-	},
-	urlContainer: {
-		flex: 1,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 4,
-	},
-	patternWrapper: {
-		paddingHorizontal: 12,
-		paddingBottom: 12,
-	},
-	patternContainer: {
-		padding: 8,
-		borderRadius: 6,
-		gap: 4,
-	},
-	patternLabel: {
-		fontFamily: Fonts.medium,
-		marginBottom: 2,
-	},
-	patternText: {
-		fontSize: FontSizes.xs,
-	},
-});

@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,
 	Pressable,
-	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -94,14 +93,13 @@ export function SessionListItem({
 	const [editTitle, setEditTitle] = useState("");
 	const animatedOpacity = useRef(new Animated.Value(1)).current;
 
-	// Streaming pulse animation - matches desktop 1.8s duration
 	useEffect(() => {
 		if (isStreaming) {
 			const animation = Animated.loop(
 				Animated.sequence([
 					Animated.timing(animatedOpacity, {
 						toValue: 0.5,
-						duration: 900, // 900ms * 2 = 1.8s full cycle
+						duration: 900,
 						useNativeDriver: true,
 					}),
 					Animated.timing(animatedOpacity, {
@@ -160,46 +158,42 @@ export function SessionListItem({
 	const hasGitStats =
 		typeof additions === "number" || typeof deletions === "number";
 
-	// Editing mode
+	const getBackgroundColor = (pressed: boolean) => {
+		if (isSelected) {
+			return isDark ? `${colors.accent}CC` : `${colors.primary}1F`;
+		}
+		if (pressed) {
+			return isDark ? `${colors.accent}66` : `${colors.primary}0F`;
+		}
+		return "transparent";
+	};
+
 	if (isEditing) {
 		return (
 			<View
-				style={[
-					styles.container,
-					{
-						paddingLeft: 6 + depth * 20,
-						backgroundColor: isDark
-							? `${colors.accent}CC` // 80% opacity - matches dark:bg-accent/80
-							: `${colors.primary}1F`, // 12% opacity - matches bg-primary/12
-					},
-				]}
+				className="flex-row items-center px-1.5 py-1 rounded-md mb-0.5 relative"
+				style={{
+					paddingLeft: 6 + depth * 20,
+					backgroundColor: isDark
+						? `${colors.accent}CC`
+						: `${colors.primary}1F`,
+				}}
 			>
-				<View style={styles.editContainer}>
+				<View className="flex-row items-center flex-1 gap-2">
 					<TextInput
 						value={editTitle}
 						onChangeText={setEditTitle}
-						style={[
-							typography.uiLabel,
-							styles.editInput,
-							{ color: colors.foreground },
-						]}
+						className="flex-1 py-1"
+						style={[typography.uiLabel, { color: colors.foreground }]}
 						autoFocus
 						placeholder="Rename session"
 						placeholderTextColor={colors.mutedForeground}
 						onSubmitEditing={handleSaveEdit}
 					/>
-					<Pressable
-						onPress={handleSaveEdit}
-						style={styles.editButton}
-						hitSlop={8}
-					>
+					<Pressable onPress={handleSaveEdit} className="p-1" hitSlop={8}>
 						<CheckIcon color={colors.foreground} size={16} />
 					</Pressable>
-					<Pressable
-						onPress={handleCancelEdit}
-						style={styles.editButton}
-						hitSlop={8}
-					>
+					<Pressable onPress={handleCancelEdit} className="p-1" hitSlop={8}>
 						<XIcon color={colors.mutedForeground} size={16} />
 					</Pressable>
 				</View>
@@ -212,29 +206,18 @@ export function SessionListItem({
 			<Pressable
 				onPress={handleSelect}
 				disabled={isMissingDirectory}
-				style={({ pressed }) => [
-					styles.container,
-					{
-						paddingLeft: 6 + depth * 20,
-						backgroundColor: isSelected
-							? isDark
-								? `${colors.accent}CC` // 80% opacity - matches dark:bg-accent/80
-								: `${colors.primary}1F` // 12% opacity - matches bg-primary/12
-							: pressed
-								? isDark
-									? `${colors.accent}66` // 40% opacity - matches dark:bg-accent/40
-									: `${colors.primary}0F` // 6% opacity - matches bg-primary/6
-								: "transparent",
-						opacity: isMissingDirectory ? 0.75 : 1,
-					},
-				]}
+				className="flex-row items-center px-1.5 py-1 rounded-md mb-0.5 relative"
+				style={({ pressed }) => ({
+					paddingLeft: 6 + depth * 20,
+					backgroundColor: getBackgroundColor(pressed),
+					opacity: isMissingDirectory ? 0.75 : 1,
+				})}
 			>
-				<View style={styles.content}>
-					{/* Title row */}
+				<View className="flex-1 min-w-0">
 					<Animated.Text
+						className="mb-px"
 						style={[
 							typography.uiLabel,
-							styles.title,
 							{
 								color: colors.foreground,
 								fontFamily: getFontFamily(isSelected ? "600" : "400"),
@@ -246,80 +229,66 @@ export function SessionListItem({
 						{sessionTitle}
 					</Animated.Text>
 
-					{/* Meta row - matches desktop typography-micro text-muted-foreground/60 */}
-					<View style={styles.metaRow}>
-						{/* Expand/collapse for children */}
+					<View className="flex-row items-center gap-2 flex-wrap">
 						{hasChildren && (
-							<Pressable
-								onPress={handleToggleExpand}
-								style={styles.expandButton}
-								hitSlop={4}
-							>
+							<Pressable onPress={handleToggleExpand} className="p-0.5" hitSlop={4}>
 								{isExpanded ? (
-									<ChevronDownIcon
-										color={`${colors.mutedForeground}99`} // 60% opacity
-										size={12}
-									/>
+									<ChevronDownIcon color={`${colors.mutedForeground}99`} size={12} />
 								) : (
-									<ChevronRightIcon
-										color={`${colors.mutedForeground}99`} // 60% opacity
-										size={12}
-									/>
+									<ChevronRightIcon color={`${colors.mutedForeground}99`} size={12} />
 								)}
 							</Pressable>
 						)}
 
-						{/* Date */}
 						<Text style={[typography.micro, { color: `${colors.mutedForeground}99` }]}>
 							{formatDateLabel(timestamp)}
 						</Text>
 
-						{/* Share indicator */}
-						{isShared && (
-							<ShareIcon color={colors.info} size={12} />
-						)}
+						{isShared && <ShareIcon color={colors.info} size={12} />}
 
-						{/* Git diff stats */}
 						{hasGitStats && ((additions ?? 0) !== 0 || (deletions ?? 0) !== 0) && (
-							<View style={styles.gitStats}>
+							<View className="flex-row items-center">
 								<Text
-									style={[
-										styles.gitStatText,
-										{ color: colors.success },
-									]}
+									style={{
+										fontFamily: Fonts.medium,
+										fontSize: FontSizes.microSmall,
+										lineHeight: FontSizes.microSmall,
+										color: colors.success,
+									}}
 								>
 									+{Math.max(0, additions ?? 0)}
 								</Text>
 								<Text
-									style={[
-										styles.gitStatDivider,
-										{ color: colors.mutedForeground },
-									]}
+									style={{
+										fontSize: FontSizes.microSmall,
+										color: colors.mutedForeground,
+										opacity: 0.5,
+										marginHorizontal: 1,
+									}}
 								>
 									/
 								</Text>
 								<Text
-									style={[
-										styles.gitStatText,
-										{ color: colors.destructive },
-									]}
+									style={{
+										fontFamily: Fonts.medium,
+										fontSize: FontSizes.microSmall,
+										lineHeight: FontSizes.microSmall,
+										color: colors.destructive,
+									}}
 								>
 									-{Math.max(0, deletions ?? 0)}
 								</Text>
 							</View>
 						)}
 
-						{/* Child count */}
 						{hasChildren && (
-							<Text
-								style={[typography.micro, { color: `${colors.mutedForeground}99` }]}
-							>
+							<Text style={[typography.micro, { color: `${colors.mutedForeground}99` }]}>
 								{childCount} {childCount === 1 ? "task" : "tasks"}
 							</Text>
 						)}
 
 						{(isOffline || cacheInfo?.isCached) && (
-							<View style={styles.cacheIndicator}>
+							<View className="flex-row items-center">
 								{isOffline ? (
 									<CloudOffIcon color={colors.warning} size={11} />
 								) : (
@@ -328,16 +297,10 @@ export function SessionListItem({
 							</View>
 						)}
 
-						{/* Missing directory warning */}
 						{isMissingDirectory && (
-							<View style={styles.warningBadge}>
+							<View className="flex-row items-center gap-0.5">
 								<WarningIcon color={colors.warning} size={12} />
-								<Text
-									style={[
-										typography.micro,
-										{ color: colors.warning },
-									]}
-								>
+								<Text style={[typography.micro, { color: colors.warning }]}>
 									Missing
 								</Text>
 							</View>
@@ -345,22 +308,14 @@ export function SessionListItem({
 					</View>
 				</View>
 
-				{/* Actions button */}
-				<Pressable
-					onPress={handleOpenMenu}
-					style={styles.menuButton}
-					hitSlop={8}
-				>
+				<Pressable onPress={handleOpenMenu} className="p-1.5 ml-1" hitSlop={8}>
 					<MoreVerticalIcon color={colors.mutedForeground} size={18} />
 				</Pressable>
 
-				{/* Selection indicator - orange bar on right edge */}
 				{isSelected && (
 					<View
-						style={[
-							styles.selectionBar,
-							{ backgroundColor: colors.primary },
-						]}
+						className="absolute right-0 top-1 bottom-1 w-0.5 rounded-sm"
+						style={{ backgroundColor: colors.primary }}
 					/>
 				)}
 			</Pressable>
@@ -379,80 +334,3 @@ export function SessionListItem({
 		</>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingLeft: 6, // matches desktop px-1.5
-		paddingRight: 6,
-		paddingVertical: 4, // matches desktop py-1
-		borderRadius: 6, // matches desktop rounded-md
-		marginBottom: 2,
-		position: "relative",
-	},
-	content: {
-		flex: 1,
-		minWidth: 0,
-	},
-	title: {
-		marginBottom: 1,
-	},
-	metaRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8, // matches desktop gap-2
-		flexWrap: "wrap",
-	},
-	expandButton: {
-		padding: 2,
-	},
-	gitStats: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	gitStatText: {
-		fontFamily: Fonts.medium,
-		fontSize: FontSizes.microSmall, // matches desktop text-[0.7rem]
-		lineHeight: FontSizes.microSmall, // matches desktop leading-none
-	},
-	gitStatDivider: {
-		fontSize: FontSizes.microSmall,
-		opacity: 0.5,
-		marginHorizontal: 1,
-	},
-	warningBadge: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 2,
-	},
-	cacheIndicator: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	menuButton: {
-		padding: 6,
-		marginLeft: 4,
-	},
-	editContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		flex: 1,
-		gap: 8,
-	},
-	editInput: {
-		flex: 1,
-		paddingVertical: 4,
-	},
-	editButton: {
-		padding: 4,
-	},
-	selectionBar: {
-		position: "absolute",
-		right: 0,
-		top: 4,
-		bottom: 4,
-		width: 2,
-		borderRadius: 1,
-	},
-});

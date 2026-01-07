@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { PlusIcon } from "@/components/icons";
 import { FontSizes, Fonts, typography, useTheme } from "@/theme";
 
@@ -46,28 +46,28 @@ export function WorkspaceGroup({
 		showMoreButton?.onToggle();
 	}, [showMoreButton]);
 
+	const getPressedBg = (pressed: boolean) =>
+		pressed
+			? isDark
+				? "rgba(255,255,255,0.03)"
+				: "rgba(0,0,0,0.02)"
+			: "transparent";
+
 	return (
-		<View style={styles.container}>
-			{/* Group Header */}
+		<View className="mb-1">
 			<Pressable
 				onPress={handleToggleCollapse}
-				style={({ pressed }) => [
-					styles.headerRow,
-					{
-						backgroundColor: pressed
-							? isDark
-								? "rgba(255,255,255,0.03)"
-								: "rgba(0,0,0,0.02)"
-							: "transparent",
-						borderBottomColor: colors.border,
-					},
-				]}
+				className="flex-row items-center justify-between pt-1.5 pb-1 px-1 border-b"
+				style={({ pressed }) => ({
+					backgroundColor: getPressedBg(pressed),
+					borderBottomColor: colors.border,
+				})}
 			>
 				<Text
+					className="flex-1"
 					style={[
 						typography.micro,
-						styles.headerLabel,
-						{ color: colors.mutedForeground },
+						{ color: colors.mutedForeground, fontFamily: Fonts.medium },
 					]}
 					numberOfLines={1}
 				>
@@ -76,34 +76,30 @@ export function WorkspaceGroup({
 
 				<Pressable
 					onPress={handleCreateSession}
-					style={({ pressed }) => [
-						styles.addButton,
-						{
-							backgroundColor: pressed
-								? isDark
-									? "rgba(255,255,255,0.1)"
-									: "rgba(0,0,0,0.05)"
-								: "transparent",
-						},
-					]}
+					className="w-5 h-5 items-center justify-center rounded-md"
+					style={({ pressed }) => ({
+						backgroundColor: pressed
+							? isDark
+								? "rgba(255,255,255,0.1)"
+								: "rgba(0,0,0,0.05)"
+							: "transparent",
+					})}
 					hitSlop={8}
 				>
 					<PlusIcon color={`${colors.mutedForeground}B3`} size={18} />
 				</Pressable>
 			</Pressable>
 
-			{/* Sessions */}
 			{!isCollapsed && (
-				<View style={styles.sessionsContainer}>
+				<View className="pt-1 gap-2.5">
 					{children}
 
-					{/* Show more/fewer button - matches desktop text-muted-foreground/70 */}
 					{showMoreButton &&
 						(showMoreButton.remainingCount > 0 ||
 							showMoreButton.isExpanded) && (
 							<Pressable
 								onPress={handleToggleShowMore}
-								style={styles.showMoreButton}
+								className="py-0.5 px-1.5 mt-0.5"
 							>
 								<Text
 									style={[
@@ -111,7 +107,7 @@ export function WorkspaceGroup({
 										{
 											color: `${colors.mutedForeground}B3`,
 											fontSize: FontSizes.xs,
-										}, // 70% opacity, text-xs
+										},
 									]}
 								>
 									{showMoreButton.isExpanded
@@ -121,14 +117,10 @@ export function WorkspaceGroup({
 							</Pressable>
 						)}
 
-					{/* Empty state */}
 					{sessionCount === 0 && (
 						<Text
-							style={[
-								typography.micro,
-								styles.emptyText,
-								{ color: colors.mutedForeground },
-							]}
+							className="py-1 px-1"
+							style={[typography.micro, { color: colors.mutedForeground }]}
 						>
 							No sessions in this workspace yet.
 						</Text>
@@ -138,42 +130,3 @@ export function WorkspaceGroup({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		marginBottom: 4,
-	},
-	headerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingTop: 6,
-		paddingBottom: 4,
-		paddingHorizontal: 4,
-		borderBottomWidth: 1,
-	},
-	headerLabel: {
-		fontFamily: Fonts.medium,
-		flex: 1,
-	},
-	addButton: {
-		width: 20, // matches desktop h-5 w-5
-		height: 20,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 6,
-	},
-	sessionsContainer: {
-		paddingTop: 4,
-		gap: 10,
-	},
-	showMoreButton: {
-		paddingVertical: 2,
-		paddingHorizontal: 6,
-		marginTop: 2,
-	},
-	emptyText: {
-		paddingVertical: 4,
-		paddingHorizontal: 4,
-	},
-});

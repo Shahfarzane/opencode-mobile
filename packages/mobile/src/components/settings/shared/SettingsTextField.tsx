@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-	StyleSheet,
-	Text,
-	TextInput,
-	type TextInputProps,
-	View,
-} from "react-native";
+import { Text, TextInput, type TextInputProps, View } from "react-native";
 import { typography, useTheme } from "@/theme";
 
 interface SettingsTextFieldProps extends Omit<TextInputProps, "style"> {
@@ -32,8 +26,8 @@ export function SettingsTextField({
 			: colors.border;
 
 	return (
-		<View style={styles.container}>
-			<View style={styles.labelRow}>
+		<View className="gap-1.5">
+			<View className="flex-row items-center">
 				<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 					{label}
 					{required && <Text style={{ color: colors.destructive }}> *</Text>}
@@ -41,19 +35,16 @@ export function SettingsTextField({
 			</View>
 			{description && (
 				<Text
-					style={[
-						typography.meta,
-						styles.description,
-						{ color: colors.mutedForeground },
-					]}
+					className="-mt-0.5"
+					style={[typography.meta, { color: colors.mutedForeground }]}
 				>
 					{description}
 				</Text>
 			)}
 			<TextInput
+				className="px-3 py-2.5 rounded-lg border"
 				style={[
 					typography.uiLabel,
-					styles.input,
 					{
 						color: colors.foreground,
 						backgroundColor: colors.muted,
@@ -73,22 +64,3 @@ export function SettingsTextField({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		gap: 6,
-	},
-	labelRow: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	description: {
-		marginTop: -2,
-	},
-	input: {
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		borderRadius: 8,
-		borderWidth: 1,
-	},
-});

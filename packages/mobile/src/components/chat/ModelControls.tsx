@@ -3,7 +3,6 @@ import {
 	Modal,
 	Pressable,
 	ScrollView,
-	StyleSheet,
 	Text,
 	View,
 } from "react-native";
@@ -106,21 +105,15 @@ export function ModelControls({
 			<Pressable
 				onPress={() => !disabled && setShowPicker(true)}
 				disabled={disabled}
-				style={[
-					styles.button,
-					{
-						backgroundColor: colors.muted,
-						borderColor: colors.border,
-						opacity: disabled ? 0.5 : 1,
-					},
-				]}
+				className="flex-row items-center gap-1.5 px-2 py-1 rounded-md"
+				style={{
+					backgroundColor: colors.muted,
+					borderColor: colors.border,
+					opacity: disabled ? 0.5 : 1,
+				}}
 			>
 				<Text
-					style={[
-						typography.micro,
-						styles.buttonText,
-						{ color: colors.foreground },
-					]}
+					style={[typography.micro, { color: colors.foreground, maxWidth: 140 }]}
 					numberOfLines={1}
 				>
 					{displayText}
@@ -135,23 +128,20 @@ export function ModelControls({
 				onRequestClose={() => setShowPicker(false)}
 			>
 				<View
-					style={[
-						styles.modalContainer,
-						{
-							backgroundColor: colors.background,
-							paddingTop: insets.top,
-						},
-					]}
+					className="flex-1"
+					style={{ backgroundColor: colors.background, paddingTop: insets.top }}
 				>
 					<View
-						style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+						className="flex-row items-center justify-between border-b px-4 py-3"
+						style={{ borderBottomColor: colors.border }}
 					>
 						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 							Select Model
 						</Text>
 						<Pressable
 							onPress={() => setShowPicker(false)}
-							style={[styles.closeButton, { backgroundColor: colors.muted }]}
+							className="rounded-lg px-3 py-2"
+							style={{ backgroundColor: colors.muted }}
 						>
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 								Done
@@ -159,31 +149,26 @@ export function ModelControls({
 						</Pressable>
 					</View>
 
-					<ScrollView
-						style={styles.scrollView}
-						contentContainerStyle={styles.scrollContent}
-					>
+					<ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
 						{providers.map((provider) => {
 							const isExpanded = expandedProvider === provider.id;
 							const isCurrentProvider = provider.id === currentProviderId;
 
 							return (
-								<View key={provider.id} style={styles.providerSection}>
+								<View key={provider.id} className="mb-3">
 									<Pressable
 										onPress={() => toggleProvider(provider.id)}
-										style={[
-											styles.providerHeader,
-											{
-												backgroundColor: isCurrentProvider
-													? `${colors.primary}10`
-													: colors.card,
-												borderColor: isCurrentProvider
-													? colors.primary
-													: colors.border,
-											},
-										]}
+										className="flex-row items-center justify-between p-3 rounded-xl border"
+										style={{
+											backgroundColor: isCurrentProvider
+												? `${colors.primary}10`
+												: colors.card,
+											borderColor: isCurrentProvider
+												? colors.primary
+												: colors.border,
+										}}
 									>
-										<View style={styles.providerInfo}>
+										<View className="flex-1">
 											<Text
 												style={[
 													typography.uiLabel,
@@ -213,7 +198,8 @@ export function ModelControls({
 
 									{isExpanded && (
 										<View
-											style={[styles.modelList, { borderColor: colors.border }]}
+											className="mt-1 rounded-xl border overflow-hidden"
+											style={{ borderColor: colors.border }}
 										>
 											{provider.models.map((model) => {
 												const isSelected =
@@ -226,14 +212,12 @@ export function ModelControls({
 														onPress={() =>
 															handleModelSelect(provider.id, model.id)
 														}
-														style={[
-															styles.modelItem,
-															{
-																backgroundColor: isSelected
-																	? `${colors.primary}15`
-																	: "transparent",
-															},
-														]}
+														className="flex-row items-center justify-between px-3 py-2.5"
+														style={{
+															backgroundColor: isSelected
+																? `${colors.primary}15`
+																: "transparent",
+														}}
 													>
 														<Text
 															style={[
@@ -265,67 +249,3 @@ export function ModelControls({
 		</>
 	);
 }
-
-const styles = StyleSheet.create({
-	button: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 6,
-		borderWidth: 0,
-	},
-	buttonText: {
-		maxWidth: 140,
-	},
-	modalContainer: {
-		flex: 1,
-	},
-	modalHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-	},
-	closeButton: {
-		borderRadius: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-	},
-	scrollView: {
-		flex: 1,
-	},
-	scrollContent: {
-		padding: 16,
-	},
-	providerSection: {
-		marginBottom: 12,
-	},
-	providerHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		padding: 12,
-		borderRadius: 12,
-		borderWidth: 1,
-	},
-	providerInfo: {
-		flex: 1,
-	},
-	modelList: {
-		marginTop: 4,
-		borderRadius: 12,
-		borderWidth: 1,
-		overflow: "hidden",
-	},
-	modelItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-	},
-});

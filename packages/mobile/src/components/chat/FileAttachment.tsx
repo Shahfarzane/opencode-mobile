@@ -9,7 +9,6 @@ import {
 	type LayoutRectangle,
 	Modal,
 	Pressable,
-	StyleSheet,
 	Text,
 	View,
 } from "react-native";
@@ -154,7 +153,8 @@ export function FileAttachmentButton({
 				<Pressable
 					onPress={showOptions}
 					disabled={disabled}
-					style={[styles.attachButton, { opacity: disabled ? 0.5 : 1 }]}
+					className="p-1.5"
+					style={{ opacity: disabled ? 0.5 : 1 }}
 					hitSlop={8}
 				>
 					<PlusCircleIcon size={20} color={colors.mutedForeground} />
@@ -168,35 +168,41 @@ export function FileAttachmentButton({
 				onRequestClose={() => setIsPickerOpen(false)}
 			>
 				<Pressable
-					style={styles.modalBackdrop}
+					className="flex-1"
+					style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
 					onPress={() => setIsPickerOpen(false)}
 				>
 					<View
-						style={[
-							styles.optionsMenu,
-							{
-								backgroundColor: colors.card,
-								borderColor: colors.border,
-								// Position menu above the button
-								position: "absolute",
-								left: Math.max(buttonLayout?.x ?? 16, 16),
-								// Always position above the button with proper offset
-								bottom: buttonLayout
-									? Dimensions.get("window").height - buttonLayout.y + 8
-									: insets.bottom + 80,
-							},
-						]}
+						className="rounded-lg border overflow-hidden min-w-[160px]"
+						style={{
+							backgroundColor: colors.card,
+							borderColor: colors.border,
+							position: "absolute",
+							left: Math.max(buttonLayout?.x ?? 16, 16),
+							bottom: buttonLayout
+								? Dimensions.get("window").height - buttonLayout.y + 8
+								: insets.bottom + 80,
+							shadowColor: "#000",
+							shadowOffset: { width: 0, height: 2 },
+							shadowOpacity: 0.15,
+							shadowRadius: 8,
+							elevation: 8,
+						}}
 					>
 						<Pressable
 							onPress={handleImagePick}
-							style={[styles.optionItem, { borderBottomColor: colors.border }]}
+							className="flex-row items-center gap-3 px-4 py-3 border-b"
+							style={{ borderBottomColor: colors.border }}
 						>
 							<ImageIcon size={20} color={colors.foreground} />
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 								Photo Library
 							</Text>
 						</Pressable>
-						<Pressable onPress={handleDocumentPick} style={styles.optionItem}>
+						<Pressable
+							onPress={handleDocumentPick}
+							className="flex-row items-center gap-3 px-4 py-3"
+						>
 							<FileIcon size={20} color={colors.foreground} />
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 								Files
@@ -215,7 +221,7 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 	if (files.length === 0) return null;
 
 	return (
-		<View style={styles.filesList}>
+		<View className="flex-row flex-wrap gap-2 mb-2">
 			{files.map((file) => {
 				const isImage = file.type.startsWith("image/");
 				const extension = getFileExtension(file.name);
@@ -223,22 +229,21 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 				return (
 					<View
 						key={file.id}
-						style={[
-							styles.fileChip,
-							{
-								backgroundColor: colors.muted,
-								borderColor: colors.border,
-							},
-						]}
+						className="flex-row items-center gap-2 pl-1 pr-2 py-1 rounded-lg border"
+						style={{
+							backgroundColor: colors.muted,
+							borderColor: colors.border,
+						}}
 					>
 						{isImage && file.uri ? (
-							<Image source={{ uri: file.uri }} style={styles.fileThumbnail} />
+							<Image
+								source={{ uri: file.uri }}
+								className="w-8 h-8 rounded"
+							/>
 						) : (
 							<View
-								style={[
-									styles.fileIconWrapper,
-									{ backgroundColor: colors.card },
-								]}
+								className="w-8 h-8 rounded items-center justify-center"
+								style={{ backgroundColor: colors.card }}
 							>
 								<Text
 									style={[typography.micro, { color: colors.mutedForeground }]}
@@ -248,7 +253,7 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 							</View>
 						)}
 
-						<View style={styles.fileInfo}>
+						<View className="max-w-[100px]">
 							<Text
 								style={[typography.micro, { color: colors.foreground }]}
 								numberOfLines={1}
@@ -264,7 +269,7 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 
 						<Pressable
 							onPress={() => onRemove(file.id)}
-							style={styles.removeButton}
+							className="p-1"
 							hitSlop={8}
 						>
 							<XIcon size={14} color={colors.mutedForeground} />
@@ -276,65 +281,4 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 	);
 }
 
-const styles = StyleSheet.create({
-	attachButton: {
-		padding: 6,
-	},
-	modalBackdrop: {
-		flex: 1,
-		backgroundColor: "rgba(0, 0, 0, 0.3)",
-	},
-	optionsMenu: {
-		borderRadius: 8,
-		borderWidth: 1,
-		overflow: "hidden",
-		minWidth: 160,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.15,
-		shadowRadius: 8,
-		elevation: 8,
-	},
-	optionItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
-	},
-	filesList: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: 8,
-		marginBottom: 8,
-	},
-	fileChip: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingLeft: 4,
-		paddingRight: 8,
-		paddingVertical: 4,
-		borderRadius: 8,
-		borderWidth: 1,
-	},
-	fileThumbnail: {
-		width: 32,
-		height: 32,
-		borderRadius: 4,
-	},
-	fileIconWrapper: {
-		width: 32,
-		height: 32,
-		borderRadius: 4,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	fileInfo: {
-		maxWidth: 100,
-	},
-	removeButton: {
-		padding: 4,
-	},
-});
+

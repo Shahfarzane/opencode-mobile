@@ -1,7 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Fonts, FontSizes, LineHeights, typography, useTheme } from "@/theme";
 
@@ -10,7 +10,6 @@ const Markdown = MarkdownLib as unknown as ComponentType<{
 	children?: ReactNode;
 }>;
 
-// Lightweight markdown renderer for reasoning text (muted, italic style)
 function ReasoningMarkdown({
 	content,
 	color,
@@ -76,7 +75,6 @@ interface ReasoningPartProps {
 	part: ReasoningPartData;
 }
 
-// Brain icon (RiBrainAi3Line equivalent)
 function BrainIcon({ size = 14, color }: { size?: number; color: string }) {
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -85,7 +83,6 @@ function BrainIcon({ size = 14, color }: { size?: number; color: string }) {
 	);
 }
 
-// Chevron down icon
 function ChevronDownIcon({
 	size = 14,
 	color,
@@ -100,7 +97,6 @@ function ChevronDownIcon({
 	);
 }
 
-// Clean reasoning text (remove blockquote markers)
 function cleanReasoningText(text: string): string {
 	if (typeof text !== "string" || text.trim().length === 0) {
 		return "";
@@ -114,22 +110,20 @@ function cleanReasoningText(text: string): string {
 		.trim();
 }
 
-// Strip markdown formatting for plain text display
 function stripMarkdown(text: string): string {
 	return text
-		.replace(/\*\*(.+?)\*\*/g, "$1") // bold **text**
-		.replace(/\*(.+?)\*/g, "$1") // italic *text*
-		.replace(/__(.+?)__/g, "$1") // bold __text__
-		.replace(/_(.+?)_/g, "$1") // italic _text_
-		.replace(/~~(.+?)~~/g, "$1") // strikethrough
-		.replace(/`(.+?)`/g, "$1") // inline code
-		.replace(/\[(.+?)\]\(.+?\)/g, "$1") // links [text](url)
-		.replace(/^#{1,6}\s+/gm, "") // headings
-		.replace(/^[-*+]\s+/gm, "") // list items
-		.replace(/^\d+\.\s+/gm, ""); // numbered lists
+		.replace(/\*\*(.+?)\*\*/g, "$1")
+		.replace(/\*(.+?)\*/g, "$1")
+		.replace(/__(.+?)__/g, "$1")
+		.replace(/_(.+?)_/g, "$1")
+		.replace(/~~(.+?)~~/g, "$1")
+		.replace(/`(.+?)`/g, "$1")
+		.replace(/\[(.+?)\]\(.+?\)/g, "$1")
+		.replace(/^#{1,6}\s+/gm, "")
+		.replace(/^[-*+]\s+/gm, "")
+		.replace(/^\d+\.\s+/gm, "");
 }
 
-// Get first sentence/line as summary
 function getReasoningSummary(text: string): string {
 	if (!text) return "";
 
@@ -150,7 +144,6 @@ function getReasoningSummary(text: string): string {
 		summary = trimmed.substring(0, cutoff).trim();
 	}
 
-	// Strip markdown formatting from summary
 	return stripMarkdown(summary);
 }
 
@@ -173,15 +166,13 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 	}
 
 	return (
-		<View style={styles.container}>
-			{/* Header row - clickable */}
+		<View className="my-0.5">
 			<Pressable
 				onPress={() => setIsExpanded(!isExpanded)}
-				style={styles.headerRow}
+				className="flex-row items-center py-1.5 px-0.5 gap-2"
 			>
-				{/* Icon + Label */}
-				<View style={styles.labelSection}>
-					<View style={styles.iconContainer}>
+				<View className="flex-row items-center gap-2 shrink-0">
+					<View className="w-3.5 h-3.5 items-center justify-center">
 						{isExpanded ? (
 							<ChevronDownIcon size={14} color={colors.mutedForeground} />
 						) : (
@@ -191,8 +182,7 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 					<Text
 						style={[
 							typography.meta,
-							styles.label,
-							{ color: colors.foreground },
+							{ color: colors.foreground, fontFamily: Fonts.medium },
 						]}
 					>
 						Thinking
@@ -204,9 +194,8 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 					)}
 				</View>
 
-				{/* Summary */}
 				{summary && !isExpanded && (
-					<View style={styles.summaryContainer}>
+					<View className="flex-1 min-w-0">
 						<Text
 							style={[
 								typography.meta,
@@ -220,13 +209,10 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 				)}
 			</Pressable>
 
-			{/* Expanded content */}
 			{isExpanded && (
 				<View
-					style={[
-						styles.expandedContent,
-						{ borderLeftColor: `${colors.border}CC` },
-					]}
+					className="ml-1.5 pl-4 py-1 border-l"
+					style={{ borderLeftColor: `${colors.border}CC` }}
 				>
 					<ReasoningMarkdown
 						content={textContent + (part.isStreaming ? " ▊" : "")}
@@ -237,42 +223,3 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		marginVertical: 2,
-	},
-	headerRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingVertical: 6,
-		paddingHorizontal: 2,
-		gap: 8,
-	},
-	labelSection: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		flexShrink: 0,
-	},
-	iconContainer: {
-		width: 14,
-		height: 14,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	label: {
-		fontFamily: Fonts.medium,
-	},
-	summaryContainer: {
-		flex: 1,
-		minWidth: 0,
-	},
-	expandedContent: {
-		marginLeft: 7,
-		paddingLeft: 16,
-		paddingTop: 4,
-		paddingBottom: 4,
-		borderLeftWidth: 1,
-	},
-});

@@ -6,7 +6,7 @@ import BottomSheet, {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Session } from "@/api/sessions";
 import { WifiOffIcon } from "@/components/icons";
@@ -21,10 +21,8 @@ import { type SessionCacheInfo, SessionListItem } from "./SessionListItem";
 import { SheetHeader } from "./SheetHeader";
 import { WorkspaceGroup } from "./WorkspaceGroup";
 
-// Storage key for expanded parents persistence (matches desktop)
 const EXPANDED_PARENTS_STORAGE_KEY = "oc.sessions.expandedParents";
 
-// Types for session tree structure
 type SessionNode = {
 	session: Session;
 	children: SessionNode[];
@@ -108,13 +106,10 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		const [networkStatus, setNetworkStatus] =
 			useState<NetworkStatus>(getNetworkStatus);
 
-		// Calculate snap points based on available height (accounting for status bar)
 		const snapPoints = useMemo(() => {
-			// Use percentage-based snap points that account for safe areas
 			return ["50%", "90%"];
 		}, []);
 
-		// Sort sessions by creation time (newest first)
 		const sortedSessions = useMemo(() => {
 			return [...sessions].sort((a, b) => {
 				const timeA = a.time?.created || a.createdAt || 0;
@@ -123,11 +118,10 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			});
 		}, [sessions]);
 
-		// Build parent-child maps and parent map (for auto-expand)
 		const { childrenMap, sessionMap, parentMap } = useMemo(() => {
 			const sessionMap = new Map(sortedSessions.map((s) => [s.id, s]));
 			const childrenMap = new Map<string, Session[]>();
-			const parentMap = new Map<string, string>(); // session ID → parent session ID
+			const parentMap = new Map<string, string>();
 
 			for (const session of sortedSessions) {
 				if (session.parentID && sessionMap.has(session.parentID)) {
@@ -174,7 +168,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			loadExpandedParents();
 		}, []);
 
-		// Auto-expand ancestors when selecting a child session (matches desktop)
 		useEffect(() => {
 			if (!currentSessionId) return;
 			setExpandedParents((previous) => {
@@ -192,7 +185,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			});
 		}, [currentSessionId, parentMap]);
 
-		// Build session node tree
 		const buildNode = useCallback(
 			(session: Session): SessionNode => {
 				const children = childrenMap.get(session.id) || [];
@@ -204,18 +196,15 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			[childrenMap],
 		);
 
-		// Group sessions by directory
 		const groupedSessions = useMemo<SessionGroupData[]>(() => {
 			const groups = new Map<string, SessionGroupData>();
 			const normalizedRoot = normalizePath(currentDirectory);
 
-			// Get root sessions (no parent or parent not in current list)
 			const roots = sortedSessions.filter((session) => {
 				if (!session.parentID) return true;
 				return !sessionMap.has(session.parentID);
 			});
 
-			// Group each root session
 			roots.forEach((session) => {
 				const sessionDir = normalizePath(session.directory);
 				const isMain =
@@ -237,7 +226,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				groups.get(key)!.sessions.push(buildNode(session));
 			});
 
-			// Ensure main group always exists
 			if (!groups.has("main")) {
 				groups.set("main", {
 					id: "main",
@@ -249,7 +237,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				});
 			}
 
-			// Sort: main first, then alphabetical
 			return Array.from(groups.values()).sort((a, b) => {
 				if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
 				return a.label.localeCompare(b.label);
@@ -292,13 +279,10 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				} else {
 					next.add(sessionId);
 				}
-				// Persist to storage (matches desktop behavior)
 				AsyncStorage.setItem(
 					EXPANDED_PARENTS_STORAGE_KEY,
 					JSON.stringify(Array.from(next)),
-				).catch(() => {
-					// Ignore errors
-				});
+				).catch(() => {});
 				return next;
 			});
 		}, []);
@@ -315,7 +299,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			});
 		}, []);
 
-		// Count total children recursively
 		const countChildren = useCallback((node: SessionNode): number => {
 			let count = node.children.length;
 			node.children.forEach((child) => {
@@ -364,9 +347,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 					await onUnshareSession?.(session.id);
 				};
 
-				const handleCopyLink = () => {
-					// Copy is handled by SessionActionsMenu
-				};
+				const handleCopyLink = () => {};
 
 				const handleDelete = async () => {
 					await onDeleteSession?.(session.id);
@@ -429,13 +410,14 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				backgroundStyle={{ backgroundColor: colors.background }}
 				handleIndicatorStyle={{ backgroundColor: colors.mutedForeground }}
 				backdropComponent={renderBackdrop}
-				style={styles.bottomSheet}
+				style={{ zIndex: 1000, elevation: 1000 }}
 			>
 				<SheetHeader title="Sessions" onClose={handleDismiss} />
 
 				{isOffline && (
 					<View
-						style={[styles.offlineBanner, { backgroundColor: colors.warning }]}
+						className="flex-row items-center justify-center gap-1.5 py-1.5 mx-3 mb-2 rounded-md"
+						style={{ backgroundColor: colors.warning }}
 					>
 						<WifiOffIcon color={colors.background} size={14} />
 						<Text
@@ -459,15 +441,15 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				/>
 
 				<BottomSheetScrollView
-					style={styles.scrollView}
-					contentContainerStyle={[
-						styles.scrollContent,
-						{ paddingBottom: Math.max(40, insets.bottom + 20) },
-					]}
+					className="flex-1"
+					contentContainerStyle={{
+						paddingLeft: 10,
+						paddingRight: 4,
+						paddingBottom: Math.max(40, insets.bottom + 20),
+					}}
 				>
-					{/* Loading State */}
 					{isLoading ? (
-						<View style={styles.emptyState}>
+						<View className="items-center py-6 gap-1">
 							<Text
 								style={[typography.uiLabel, { color: colors.mutedForeground }]}
 							>
@@ -475,7 +457,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 							</Text>
 						</View>
 					) : sessions.length === 0 ? (
-						<View style={styles.emptyState}>
+						<View className="items-center py-6 gap-1">
 							<Text
 								style={[typography.uiLabel, { color: colors.mutedForeground }]}
 							>
@@ -488,7 +470,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 							</Text>
 						</View>
 					) : (
-						/* Session Groups */
 						groupedSessions.map((group) => {
 							const isCollapsed = collapsedGroups.has(group.id);
 							const isExpanded = expandedSessionGroups.has(group.id);
@@ -527,35 +508,5 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		);
 	},
 );
-
-const styles = StyleSheet.create({
-	bottomSheet: {
-		zIndex: 1000,
-		elevation: 1000,
-	},
-	scrollView: {
-		flex: 1,
-	},
-	scrollContent: {
-		paddingLeft: 10,
-		paddingRight: 4,
-		paddingBottom: 40,
-	},
-	emptyState: {
-		alignItems: "center",
-		paddingVertical: 24,
-		gap: 4,
-	},
-	offlineBanner: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 6,
-		paddingVertical: 6,
-		marginHorizontal: 12,
-		marginBottom: 8,
-		borderRadius: 6,
-	},
-});
 
 export default SessionSheet;

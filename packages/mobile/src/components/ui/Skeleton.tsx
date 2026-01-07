@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import {
 	Animated,
 	type DimensionValue,
-	StyleSheet,
 	View,
 	type ViewStyle,
 } from "react-native";
@@ -17,10 +16,6 @@ interface SkeletonProps {
 	style?: ViewStyle;
 }
 
-/**
- * Skeleton loading component with shimmer animation
- * Matches desktop loading states
- */
 export function Skeleton({
 	width,
 	height,
@@ -66,8 +61,8 @@ export function Skeleton({
 
 	return (
 		<Animated.View
+			className="overflow-hidden"
 			style={[
-				styles.skeleton,
 				{ backgroundColor: colors.muted },
 				getVariantStyle(),
 				{ opacity: animatedValue },
@@ -77,16 +72,10 @@ export function Skeleton({
 	);
 }
 
-/**
- * Pre-composed skeleton for common avatar loading
- */
 export function SkeletonAvatar({ size = 40 }: { size?: number }) {
 	return <Skeleton variant="circle" width={size} height={size} />;
 }
 
-/**
- * Pre-composed skeleton for text line loading
- */
 export function SkeletonText({
 	width = "100%",
 	lines = 1,
@@ -99,7 +88,7 @@ export function SkeletonText({
 	}
 
 	return (
-		<View style={styles.textContainer}>
+		<View className="gap-2">
 			{Array.from({ length: lines }).map((_, index, arr) => (
 				<Skeleton
 					key={`skeleton-${arr.length}-${index}`}
@@ -111,25 +100,20 @@ export function SkeletonText({
 	);
 }
 
-/**
- * Pre-composed skeleton for card loading
- */
 export function SkeletonCard() {
 	const { colors } = useTheme();
 
 	return (
 		<View
-			style={[
-				styles.card,
-				{
-					backgroundColor: colors.card,
-					borderColor: colors.border,
-				},
-			]}
+			className="p-4 rounded-xl border gap-3"
+			style={{
+				backgroundColor: colors.card,
+				borderColor: colors.border,
+			}}
 		>
-			<View style={styles.cardHeader}>
+			<View className="flex-row items-center gap-3">
 				<SkeletonAvatar size={32} />
-				<View style={styles.cardHeaderText}>
+				<View className="flex-1 gap-1">
 					<Skeleton variant="text" width={120} height={14} />
 					<Skeleton variant="text" width={80} height={12} />
 				</View>
@@ -139,72 +123,23 @@ export function SkeletonCard() {
 	);
 }
 
-/**
- * Pre-composed skeleton for message bubble loading
- */
 export function SkeletonMessage({ isUser = false }: { isUser?: boolean }) {
 	const { colors } = useTheme();
 
 	return (
-		<View
-			style={[
-				styles.message,
-				isUser ? styles.messageUser : styles.messageAssistant,
-			]}
-		>
+		<View className={`px-4 py-1 ${isUser ? "items-end" : "items-start"}`}>
 			<View
-				style={[
-					styles.messageBubble,
-					{
-						backgroundColor: isUser
-							? colors.chatUserMessageBackground
-							: colors.muted,
-						alignSelf: isUser ? "flex-end" : "flex-start",
-						maxWidth: isUser ? "85%" : "90%",
-					},
-				]}
+				className="p-3 rounded-xl min-w-[100px]"
+				style={{
+					backgroundColor: isUser
+						? colors.chatUserMessageBackground
+						: colors.muted,
+					alignSelf: isUser ? "flex-end" : "flex-start",
+					maxWidth: isUser ? "85%" : "90%",
+				}}
 			>
 				<SkeletonText lines={2} />
 			</View>
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	skeleton: {
-		overflow: "hidden",
-	},
-	textContainer: {
-		gap: 8,
-	},
-	card: {
-		padding: 16,
-		borderRadius: 12,
-		borderWidth: 1,
-		gap: 12,
-	},
-	cardHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-	},
-	cardHeaderText: {
-		flex: 1,
-		gap: 4,
-	},
-	message: {
-		paddingHorizontal: 16,
-		paddingVertical: 4,
-	},
-	messageUser: {
-		alignItems: "flex-end",
-	},
-	messageAssistant: {
-		alignItems: "flex-start",
-	},
-	messageBubble: {
-		padding: 12,
-		borderRadius: 12,
-		minWidth: 100,
-	},
-});

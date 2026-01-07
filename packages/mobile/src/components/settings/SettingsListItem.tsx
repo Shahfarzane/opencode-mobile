@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 
@@ -36,24 +36,23 @@ export function SettingsListItem({
 		<Pressable
 			onPress={handlePress}
 			disabled={!onPress}
-			style={({ pressed }) => [
-				styles.container,
-				{
-					backgroundColor: isSelected
-						? colors.primary + "15"
-						: pressed
-							? colors.muted
-							: "transparent",
-				},
-			]}
+			className="flex-row items-center gap-3 px-3 py-2 rounded-lg"
+			style={{
+				backgroundColor: isSelected
+					? colors.primary + "15"
+					: "transparent",
+			}}
 		>
 			{icon && (
-				<View style={[styles.iconContainer, { backgroundColor: colors.muted }]}>
+				<View
+					className="w-9 h-9 items-center justify-center rounded-lg"
+					style={{ backgroundColor: colors.muted }}
+				>
 					{icon}
 				</View>
 			)}
-			<View style={styles.content}>
-				<View style={styles.titleRow}>
+			<View className="flex-1 min-w-0">
+				<View className="flex-row items-center gap-2">
 					<Text
 						style={[typography.uiLabel, { color: colors.foreground }]}
 						numberOfLines={1}
@@ -62,10 +61,8 @@ export function SettingsListItem({
 					</Text>
 					{badge && (
 						<View
-							style={[
-								styles.badge,
-								{ backgroundColor: colors.muted, borderColor: colors.border },
-							]}
+							className="px-1.5 py-0.5 rounded border"
+							style={{ backgroundColor: colors.muted, borderColor: colors.border }}
 						>
 							<Text
 								style={[typography.micro, { color: colors.mutedForeground }]}
@@ -98,36 +95,3 @@ export function SettingsListItem({
 		</Pressable>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-		paddingHorizontal: 12, // px-3 to match PWA
-		paddingVertical: 8, // py-2 to match PWA
-		borderRadius: 8,
-	},
-	iconContainer: {
-		width: 36,
-		height: 36,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 8,
-	},
-	content: {
-		flex: 1,
-		minWidth: 0,
-	},
-	titleRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	badge: {
-		paddingHorizontal: 6,
-		paddingVertical: 2,
-		borderRadius: 4,
-		borderWidth: 1,
-	},
-});

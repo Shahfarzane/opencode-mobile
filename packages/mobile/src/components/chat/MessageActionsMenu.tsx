@@ -1,7 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useCallback, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 
@@ -134,23 +134,29 @@ export function MessageActionsMenu({
 			animationType="fade"
 			onRequestClose={onClose}
 		>
-			<Pressable style={styles.overlay} onPress={onClose}>
+			<Pressable
+				className="flex-1 justify-center items-center"
+				style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+				onPress={onClose}
+			>
 				<View
-					style={[
-						styles.menu,
-						{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							shadowColor: isDark ? "#000" : "#666",
-						},
-					]}
+					className="rounded-xl border min-w-[180px] overflow-hidden"
+					style={{
+						backgroundColor: colors.card,
+						borderColor: colors.border,
+						shadowColor: isDark ? "#000" : "#666",
+						shadowOffset: { width: 0, height: 4 },
+						shadowOpacity: 0.15,
+						shadowRadius: 12,
+						elevation: 8,
+					}}
 				>
 					<Pressable
 						onPress={handleCopy}
-						style={({ pressed }) => [
-							styles.menuItem,
-							{ backgroundColor: pressed ? colors.muted : "transparent" },
-						]}
+						className="flex-row items-center gap-3 px-4 py-3.5"
+						style={({ pressed }) => ({
+							backgroundColor: pressed ? colors.muted : "transparent",
+						})}
 					>
 						<CopyIcon color={colors.foreground} />
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
@@ -160,15 +166,13 @@ export function MessageActionsMenu({
 
 					{onRevert && (
 						<>
-							<View
-								style={[styles.divider, { backgroundColor: colors.border }]}
-							/>
+							<View className="h-px" style={{ backgroundColor: colors.border }} />
 							<Pressable
 								onPress={handleRevert}
-								style={({ pressed }) => [
-									styles.menuItem,
-									{ backgroundColor: pressed ? colors.muted : "transparent" },
-								]}
+								className="flex-row items-center gap-3 px-4 py-3.5"
+								style={({ pressed }) => ({
+									backgroundColor: pressed ? colors.muted : "transparent",
+								})}
 							>
 								<RevertIcon color={colors.foreground} />
 								<Text
@@ -182,15 +186,13 @@ export function MessageActionsMenu({
 
 					{onBranchSession && (
 						<>
-							<View
-								style={[styles.divider, { backgroundColor: colors.border }]}
-							/>
+							<View className="h-px" style={{ backgroundColor: colors.border }} />
 							<Pressable
 								onPress={handleBranch}
-								style={({ pressed }) => [
-									styles.menuItem,
-									{ backgroundColor: pressed ? colors.muted : "transparent" },
-								]}
+								className="flex-row items-center gap-3 px-4 py-3.5"
+								style={({ pressed }) => ({
+									backgroundColor: pressed ? colors.muted : "transparent",
+								})}
 							>
 								<BranchIcon color={colors.foreground} />
 								<Text
@@ -207,31 +209,4 @@ export function MessageActionsMenu({
 	);
 }
 
-const styles = StyleSheet.create({
-	overlay: {
-		flex: 1,
-		backgroundColor: "rgba(0, 0, 0, 0.4)",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	menu: {
-		borderRadius: 12,
-		borderWidth: 1,
-		minWidth: 180,
-		overflow: "hidden",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.15,
-		shadowRadius: 12,
-		elevation: 8,
-	},
-	menuItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-	},
-	divider: {
-		height: 1,
-	},
-});
+

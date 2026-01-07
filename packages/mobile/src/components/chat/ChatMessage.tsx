@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Pressable, Text, View } from "react-native";
 import { FontSizes, fontStyle, typography, useTheme } from "@/theme";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu, useMessageActions } from "./MessageActionsMenu";
@@ -99,17 +99,16 @@ function UserMessage({
 		: `${colors.primary}1A`;
 
 	return (
-		<View style={styles.userMessageContainer}>
-			<Pressable onLongPress={openMenu} style={styles.userMessageWrapper}>
+		<View className="mb-2 px-3">
+			<Pressable onLongPress={openMenu} className="flex-row justify-end items-start gap-2">
 				<View
-					style={[
-						styles.userBubble,
-						{
-							backgroundColor: bubbleBackground,
-							borderRadius: 12, // rounded-xl
-							borderBottomRightRadius: 2, // rounded-br-xs
-						},
-					]}
+					className="px-3.5 pt-2.5 pb-1.5"
+					style={{
+						maxWidth: "85%",
+						backgroundColor: bubbleBackground,
+						borderRadius: 12,
+						borderBottomRightRadius: 2,
+					}}
 				>
 					<Text style={[typography.body, { color: colors.foreground }]}>
 						{content}
@@ -224,10 +223,10 @@ function RenderPart({
 
 		return (
 			<FadeInView key={partKey} isNew={isLastPart && isStreaming}>
-				<View style={styles.textContainer}>
+				<View className="mb-1">
 					<MarkdownRenderer content={textContent} />
 					{isLastPart && isStreaming && (
-						<Text style={[styles.cursor, { color: colors.primary }]}>▊</Text>
+						<Text className="ml-0.5" style={{ color: colors.primary }}>▊</Text>
 					)}
 				</View>
 			</FadeInView>
@@ -282,17 +281,16 @@ function AssistantMessage({
 	};
 
 	return (
-		<View style={styles.assistantMessageContainer}>
+		<View className="mb-2 px-3">
 			{showHeader && (
-				<View style={styles.assistantHeader}>
-					<View style={styles.assistantAvatarSmall}>
+				<View className="flex-row items-center gap-2 mb-2 pl-3">
+					<View className="items-center justify-center">
 						<ProviderLogo modelName={modelName} color={colors.mutedForeground} />
 					</View>
 					<Text
 						style={[
 							typography.uiHeader,
 							fontStyle("700"),
-							styles.assistantName,
 							{ color: colors.foreground },
 						]}
 						numberOfLines={1}
@@ -301,10 +299,8 @@ function AssistantMessage({
 					</Text>
 					{agentName && (
 						<View
-							style={[
-								styles.agentBadge,
-								{ backgroundColor: `${getAgentColor(agentName)}20` },
-							]}
+							className="px-1.5 py-0 rounded"
+							style={{ backgroundColor: `${getAgentColor(agentName)}20` }}
 						>
 							<Text
 								style={[
@@ -319,10 +315,8 @@ function AssistantMessage({
 					)}
 					{isStreaming && (
 						<View
-							style={[
-								styles.streamingBadge,
-								{ backgroundColor: `${colors.primary}20` },
-							]}
+							className="px-2 py-0.5 rounded-md"
+							style={{ backgroundColor: `${colors.primary}20` }}
 						>
 							<Text style={[typography.micro, { color: colors.primary }]}>
 								Working...
@@ -332,7 +326,7 @@ function AssistantMessage({
 				</View>
 			)}
 
-			<Pressable onLongPress={openMenu} style={styles.assistantContent}>
+			<Pressable onLongPress={openMenu} className="w-full pl-3">
 				{hasParts ? (
 					message.parts!.map((part, idx) => (
 						<RenderPart
@@ -346,10 +340,10 @@ function AssistantMessage({
 						/>
 					))
 				) : (
-					<View style={styles.textContainer}>
+					<View className="mb-1">
 						<MarkdownRenderer content={message.content} />
 						{isStreaming && (
-							<Text style={[styles.cursor, { color: colors.primary }]}>▊</Text>
+							<Text className="ml-0.5" style={{ color: colors.primary }}>▊</Text>
 						)}
 					</View>
 				)}
@@ -396,84 +390,3 @@ export function ChatMessage({
 		/>
 	);
 }
-
-// Desktop-aligned spacing constants
-const DESKTOP_MESSAGE_SPACING = {
-	containerPaddingH: 12, // Match desktop's chat-column padding
-	bubbleRadius: 12, // rounded-xl
-	bubbleRadiusCutout: 2, // rounded-br-xs
-	bubblePaddingH: 14, // px-3.5
-	bubblePaddingTop: 10, // pt-2.5
-	bubblePaddingBottom: 6, // pb-1.5
-	headerPaddingLeft: 12, // pl-3
-	headerGap: 8, // gap-2
-	headerMarginBottom: 8, // mb-2
-	agentBadgePaddingH: 6, // px-1.5
-	agentBadgePaddingV: 0, // py-0
-	agentBadgeRadius: 4, // rounded
-};
-
-const styles = StyleSheet.create({
-	userMessageContainer: {
-		marginBottom: 8,
-		paddingHorizontal: DESKTOP_MESSAGE_SPACING.containerPaddingH,
-	},
-	userMessageWrapper: {
-		flexDirection: "row",
-		justifyContent: "flex-end",
-		alignItems: "flex-start",
-		gap: 8,
-	},
-	userBubble: {
-		maxWidth: "85%",
-		paddingHorizontal: DESKTOP_MESSAGE_SPACING.bubblePaddingH,
-		paddingTop: DESKTOP_MESSAGE_SPACING.bubblePaddingTop,
-		paddingBottom: DESKTOP_MESSAGE_SPACING.bubblePaddingBottom,
-	},
-
-	assistantMessageContainer: {
-		marginBottom: 8,
-		paddingHorizontal: DESKTOP_MESSAGE_SPACING.containerPaddingH,
-	},
-	assistantHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: DESKTOP_MESSAGE_SPACING.headerGap,
-		marginBottom: DESKTOP_MESSAGE_SPACING.headerMarginBottom,
-		paddingLeft: DESKTOP_MESSAGE_SPACING.headerPaddingLeft,
-	},
-	assistantAvatar: {
-		width: 28,
-		height: 28,
-		borderRadius: 8,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	assistantAvatarSmall: {
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	assistantName: {
-		// fontWeight handled via fontStyle("700") at usage site
-	},
-	agentBadge: {
-		paddingHorizontal: DESKTOP_MESSAGE_SPACING.agentBadgePaddingH,
-		paddingVertical: DESKTOP_MESSAGE_SPACING.agentBadgePaddingV,
-		borderRadius: DESKTOP_MESSAGE_SPACING.agentBadgeRadius,
-	},
-	streamingBadge: {
-		paddingHorizontal: 8,
-		paddingVertical: 2,
-		borderRadius: 6,
-	},
-	assistantContent: {
-		width: "100%",
-		paddingLeft: DESKTOP_MESSAGE_SPACING.headerPaddingLeft,
-	},
-	textContainer: {
-		marginBottom: 4,
-	},
-	cursor: {
-		marginLeft: 2,
-	},
-});

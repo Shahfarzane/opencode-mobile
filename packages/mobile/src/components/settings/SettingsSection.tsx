@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Fonts, typography, useTheme } from "@/theme";
 
 interface SettingsSectionProps {
@@ -17,18 +17,18 @@ export function SettingsSection({
 	const { colors } = useTheme();
 
 	return (
-		<View style={styles.container}>
+		<View className="mt-4">
 			{showDivider && (
-				<View style={[styles.divider, { backgroundColor: colors.border }]} />
+				<View className="h-px mb-4" style={{ backgroundColor: colors.border }} />
 			)}
 			{(title || description) && (
-				<View style={styles.header}>
+				<View className="mb-3">
 					{title && (
 						<Text
+							className="mb-1"
 							style={[
 								typography.uiLabel,
-								styles.title,
-								{ color: colors.foreground },
+								{ color: colors.foreground, fontFamily: Fonts.semiBold },
 							]}
 						>
 							{title}
@@ -45,20 +45,3 @@ export function SettingsSection({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		marginTop: 16,
-	},
-	divider: {
-		height: 1,
-		marginBottom: 16,
-	},
-	header: {
-		marginBottom: 12,
-	},
-	title: {
-		fontFamily: Fonts.semiBold,
-		marginBottom: 4,
-	},
-});
