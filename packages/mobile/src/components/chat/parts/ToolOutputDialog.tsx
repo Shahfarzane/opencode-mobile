@@ -4,12 +4,11 @@ import {
 	Modal,
 	Pressable,
 	ScrollView,
-	StyleSheet,
 	Text,
 	View,
 } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { fontStyle, typography, useTheme } from "@/theme";
 import type { ToolPartData } from "./ToolPart";
 
 interface ToolOutputDialogProps {
@@ -187,9 +186,9 @@ export function ToolOutputDialog({
 			presentationStyle="pageSheet"
 			onRequestClose={onClose}
 		>
-			<View style={[styles.container, { backgroundColor: colors.background }]}>
-				<View style={styles.header}>
-					<View style={styles.headerTitle}>
+			<View className="flex-1" style={{ backgroundColor: colors.background }}>
+				<View className="flex-row items-center justify-between px-4 py-3">
+					<View className="flex-row items-center gap-2">
 						{getToolIcon(toolName, colors.foreground)}
 						<Text
 							style={[
@@ -201,29 +200,27 @@ export function ToolOutputDialog({
 							{toolName}
 						</Text>
 					</View>
-					<Pressable onPress={onClose} hitSlop={12} style={styles.closeButton}>
+					<Pressable onPress={onClose} hitSlop={12} className="p-1">
 						<CloseIcon color={colors.mutedForeground} />
 					</Pressable>
 				</View>
 
 				<View
-					style={[
-						styles.contentWrapper,
-						{
-							backgroundColor: isDark
-								? "rgba(28, 27, 26, 0.3)"
-								: "rgba(242, 240, 229, 0.3)",
-							borderColor: `${colors.border}4D`,
-						},
-					]}
+					className="flex-1 mx-4 mb-4 rounded-xl border overflow-hidden"
+					style={{
+						backgroundColor: isDark
+							? "rgba(28, 27, 26, 0.3)"
+							: "rgba(242, 240, 229, 0.3)",
+						borderColor: `${colors.border}4D`,
+					}}
 				>
 					<ScrollView
-						style={styles.scrollView}
-						contentContainerStyle={styles.scrollContent}
+						className="flex-1"
+						contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
 					>
 						{part.input && Object.keys(part.input).length > 0 && (
-							<View style={styles.section}>
-								<View style={styles.sectionHeader}>
+							<View className="mb-4">
+								<View className="flex-row items-center justify-between mb-2">
 									<Text
 										style={[
 											typography.meta,
@@ -238,13 +235,11 @@ export function ToolOutputDialog({
 									</Pressable>
 								</View>
 								<View
-									style={[
-										styles.codeBlock,
-										{
-											backgroundColor: "transparent",
-											borderColor: `${colors.border}33`,
-										},
-									]}
+									className="rounded-xl border p-3"
+									style={{
+										backgroundColor: "transparent",
+										borderColor: `${colors.border}33`,
+									}}
 								>
 									<Text style={[typography.code, { color: colors.foreground }]}>
 										{formatInputForDisplay(part.input)}
@@ -254,8 +249,8 @@ export function ToolOutputDialog({
 						)}
 
 						{part.output && part.output.trim().length > 0 && (
-							<View style={styles.section}>
-								<View style={styles.sectionHeader}>
+							<View className="mb-4">
+								<View className="flex-row items-center justify-between mb-2">
 									<Text
 										style={[
 											typography.meta,
@@ -270,13 +265,11 @@ export function ToolOutputDialog({
 									</Pressable>
 								</View>
 								<View
-									style={[
-										styles.codeBlock,
-										{
-											backgroundColor: "transparent",
-											borderColor: `${colors.border}33`,
-										},
-									]}
+									className="rounded-xl border p-3"
+									style={{
+										backgroundColor: "transparent",
+										borderColor: `${colors.border}33`,
+									}}
 								>
 									<Text
 										style={[typography.code, { color: colors.foreground }]}
@@ -289,8 +282,8 @@ export function ToolOutputDialog({
 						)}
 
 						{part.error && part.error.trim().length > 0 && (
-							<View style={styles.section}>
-								<View style={styles.sectionHeader}>
+							<View className="mb-4">
+								<View className="flex-row items-center justify-between mb-2">
 									<Text
 										style={[
 											typography.meta,
@@ -305,13 +298,11 @@ export function ToolOutputDialog({
 									</Pressable>
 								</View>
 								<View
-									style={[
-										styles.codeBlock,
-										{
-											backgroundColor: `${colors.destructive}10`,
-											borderColor: `${colors.destructive}33`,
-										},
-									]}
+									className="rounded-xl border p-3"
+									style={{
+										backgroundColor: `${colors.destructive}10`,
+										borderColor: `${colors.destructive}33`,
+									}}
 								>
 									<Text
 										style={[typography.code, { color: colors.destructive }]}
@@ -324,7 +315,7 @@ export function ToolOutputDialog({
 						)}
 
 						{!part.output && !part.error && (
-							<View style={styles.emptyState}>
+							<View className="items-center py-10 gap-2">
 								<Text
 									style={[typography.body, { color: colors.mutedForeground }]}
 								>
@@ -344,58 +335,4 @@ export function ToolOutputDialog({
 	);
 }
 
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 0,
-	},
-	headerTitle: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	closeButton: {
-		padding: 4,
-	},
-	contentWrapper: {
-		flex: 1,
-		marginHorizontal: 16,
-		marginBottom: 16,
-		borderRadius: 12,
-		borderWidth: 1,
-		overflow: "hidden",
-	},
-	scrollView: {
-		flex: 1,
-	},
-	scrollContent: {
-		padding: 12,
-		paddingBottom: 40,
-	},
-	section: {
-		marginBottom: 16,
-	},
-	sectionHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		marginBottom: 8,
-	},
-	codeBlock: {
-		borderRadius: 12,
-		borderWidth: 1,
-		padding: 12,
-	},
-	emptyState: {
-		alignItems: "center",
-		paddingVertical: 40,
-		gap: 8,
-	},
-});
+

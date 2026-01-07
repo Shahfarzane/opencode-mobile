@@ -4,7 +4,6 @@ import {
 	ActivityIndicator,
 	Pressable,
 	type PressableProps,
-	StyleSheet,
 	Text,
 	type ViewStyle,
 } from "react-native";
@@ -26,13 +25,18 @@ interface ButtonProps extends Omit<PressableProps, "style"> {
 	style?: ViewStyle;
 }
 
-const sizeConfig: Record<
-	ButtonSize,
-	{ height: number; paddingHorizontal: number; borderRadius: number }
-> = {
-	sm: { height: 36, paddingHorizontal: 12, borderRadius: 8 },
-	md: { height: 44, paddingHorizontal: 16, borderRadius: 8 }, // Standardized radius to match desktop
-	lg: { height: 56, paddingHorizontal: 24, borderRadius: 8 }, // Standardized radius to match desktop
+const sizeClasses: Record<ButtonSize, string> = {
+	sm: "h-9 px-3 rounded-lg",
+	md: "h-11 px-4 rounded-lg",
+	lg: "h-14 px-6 rounded-lg",
+};
+
+const variantClasses: Record<ButtonVariant, string> = {
+	default: "bg-primary",
+	secondary: "bg-secondary",
+	outline: "bg-transparent border border-border",
+	ghost: "bg-transparent",
+	destructive: "bg-destructive",
 };
 
 export const Button = forwardRef<typeof Pressable, ButtonProps>(
@@ -60,21 +64,6 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 		};
 
 		const isDisabled = disabled || loading;
-		const sizeStyles = sizeConfig[size];
-
-		const getBackgroundColor = () => {
-			switch (variant) {
-				case "default":
-					return colors.primary;
-				case "secondary":
-					return colors.secondary;
-				case "outline":
-				case "ghost":
-					return "transparent";
-				case "destructive":
-					return colors.destructive;
-			}
-		};
 
 		const getTextColor = () => {
 			switch (variant) {
@@ -90,11 +79,10 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 			}
 		};
 
-		const getBorderStyle = (): ViewStyle => {
-			if (variant === "outline") {
-				return { borderWidth: 1, borderColor: colors.border };
-			}
-			return {};
+		const getLoaderColor = () => {
+			return variant === "default" || variant === "destructive"
+				? colors.primaryForeground
+				: colors.foreground;
 		};
 
 		return (
@@ -102,29 +90,12 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 				ref={ref as never}
 				disabled={isDisabled}
 				onPress={handlePress}
-				style={[
-					styles.button,
-					{
-						height: sizeStyles.height,
-						paddingHorizontal: sizeStyles.paddingHorizontal,
-						borderRadius: sizeStyles.borderRadius,
-						backgroundColor: getBackgroundColor(),
-						opacity: isDisabled ? 0.5 : 1,
-					},
-					getBorderStyle(),
-					style,
-				]}
+				className={`flex-row items-center justify-center gap-2 ${sizeClasses[size]} ${variantClasses[variant]} ${isDisabled ? "opacity-50" : ""}`}
+				style={style}
 				{...props}
 			>
 				{loading ? (
-					<ActivityIndicator
-						size="small"
-						color={
-							variant === "default" || variant === "destructive"
-								? colors.primaryForeground
-								: colors.foreground
-						}
-					/>
+					<ActivityIndicator size="small" color={getLoaderColor()} />
 				) : typeof children === "string" ? (
 					<Text style={[typography.button, { color: getTextColor() }]}>
 						{children}
@@ -138,12 +109,3 @@ export const Button = forwardRef<typeof Pressable, ButtonProps>(
 );
 
 Button.displayName = "Button";
-
-const styles = StyleSheet.create({
-	button: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 8, // Match desktop gap-2 for icon+text spacing
-	},
-});

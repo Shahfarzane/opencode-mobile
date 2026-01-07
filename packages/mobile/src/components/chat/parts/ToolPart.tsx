@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { Fonts, fontStyle, typography, useTheme } from "@/theme";
 import { ToolOutputDialog } from "./ToolOutputDialog";
 
-// Chevron down icon (matches ReasoningPart)
 function ChevronDownIcon({
 	size = 14,
 	color,
@@ -152,7 +151,6 @@ function getToolIcon(toolName: string, color: string) {
 }
 
 function tryParseSessionId(output: string): string | undefined {
-	// Try to extract session ID from output - common patterns
 	const patterns = [
 		/session[_\s]?id[:\s]*["']?([a-zA-Z0-9_-]+)["']?/i,
 		/["']sessionId["']\s*:\s*["']([a-zA-Z0-9_-]+)["']/,
@@ -203,7 +201,6 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 	const hasOutput = part.output && part.output.trim().length > 0;
 	const hasError = part.error && part.error.trim().length > 0;
 
-	// Check if this is a Task tool with a subagent session
 	const isTaskTool = toolName.toLowerCase() === "task";
 	const subAgentSessionId =
 		part.sessionId ||
@@ -211,20 +208,13 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 		(part.output && tryParseSessionId(part.output));
 
 	return (
-		<View style={styles.container}>
+		<View className="my-1">
 			<Pressable
 				onPress={() => setIsExpanded(!isExpanded)}
-				style={styles.header}
+				className="flex-row items-center gap-2 rounded-xl px-2 py-1.5"
 			>
-				<View style={styles.headerLeft}>
-					<View
-						style={{
-							width: 14,
-							height: 14,
-							justifyContent: "center",
-							alignItems: "center",
-						}}
-					>
+				<View className="flex-row items-center gap-2 flex-1 min-w-0">
+					<View className="w-3.5 h-3.5 justify-center items-center">
 						{isExpanded ? (
 							<ChevronDownIcon size={14} color={colors.mutedForeground} />
 						) : (
@@ -236,33 +226,31 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 							)
 						)}
 					</View>
-						<Text
-							style={[
-								typography.meta,
-								fontStyle("500"),
-								{
-									color:
-										part.state === "error"
-											? colors.destructive
-											: colors.foreground,
-								},
-							]}
-						>
+					<Text
+						style={[
+							typography.meta,
+							fontStyle("500"),
+							{
+								color:
+									part.state === "error"
+										? colors.destructive
+										: colors.foreground,
+							},
+						]}
+					>
 						{toolName}
 					</Text>
 					{description && (
 						<Text
-							style={[
-								typography.micro,
-								{ color: `${colors.mutedForeground}B3`, flex: 1 },
-							]}
+							className="flex-1"
+							style={[typography.micro, { color: `${colors.mutedForeground}B3` }]}
 							numberOfLines={1}
 						>
 							{description}
 						</Text>
 					)}
 				</View>
-				<View style={styles.headerRight}>
+				<View className="flex-row items-center gap-1 shrink-0">
 					{part.state === "running" && (
 						<Text style={[typography.micro, { color: colors.info }]}>●</Text>
 					)}
@@ -271,21 +259,19 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 
 			{isExpanded && (
 				<View
-					style={[
-						styles.expandedContent,
-						{
-							borderColor: `${colors.border}80`,
-							backgroundColor: colors.background,
-						},
-					]}
+					className="mt-2 ml-5 pl-3 border-l gap-2"
+					style={{
+						borderColor: `${colors.border}80`,
+						backgroundColor: colors.background,
+					}}
 				>
 					{part.input && Object.keys(part.input).length > 0 && (
-						<View style={styles.section}>
+						<View>
 							<Text
+								className="mb-1"
 								style={[
 									typography.micro,
-									styles.sectionLabel,
-									{ color: colors.mutedForeground },
+									{ color: colors.mutedForeground, fontFamily: Fonts.medium },
 								]}
 							>
 								Input:
@@ -298,17 +284,12 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					)}
 
 					{hasOutput && (
-						<View
-							style={[
-								styles.section,
-								part.input ? styles.sectionMargin : undefined,
-							]}
-						>
+						<View className={part.input ? "mt-2" : ""}>
 							<Text
+								className="mb-1"
 								style={[
 									typography.micro,
-									styles.sectionLabel,
-									{ color: colors.mutedForeground },
+									{ color: colors.mutedForeground, fontFamily: Fonts.medium },
 								]}
 							>
 								Output:
@@ -321,17 +302,12 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					)}
 
 					{hasError && (
-						<View
-							style={[
-								styles.section,
-								part.input || hasOutput ? styles.sectionMargin : undefined,
-							]}
-						>
+						<View className={part.input || hasOutput ? "mt-2" : ""}>
 							<Text
+								className="mb-1"
 								style={[
 									typography.micro,
-									styles.sectionLabel,
-									{ color: colors.destructive },
+									{ color: colors.destructive, fontFamily: Fonts.medium },
 								]}
 							>
 								Error:
@@ -347,10 +323,8 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 						(part.input && Object.keys(part.input).length > 0)) && (
 						<Pressable
 							onPress={() => setShowDialog(true)}
-							style={[
-								styles.viewFullButton,
-								{ backgroundColor: `${colors.primary}15` },
-							]}
+							className="mt-2 py-2 px-3 rounded-lg items-center"
+							style={{ backgroundColor: `${colors.primary}15` }}
 						>
 							<Text style={[typography.micro, { color: colors.primary }]}>
 								View Full Output
@@ -358,14 +332,11 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 						</Pressable>
 					)}
 
-					{/* SubAgent Session Navigation */}
 					{isTaskTool && subAgentSessionId && onSelectSession && (
 						<Pressable
 							onPress={() => onSelectSession(subAgentSessionId)}
-							style={[
-								styles.subAgentButton,
-								{ backgroundColor: `${colors.info}15` },
-							]}
+							className="mt-2 py-2 px-3 rounded-lg flex-row items-center justify-center gap-1.5"
+							style={{ backgroundColor: `${colors.info}15` }}
 						>
 							{getToolIcon("external_link", colors.info)}
 							<Text style={[typography.micro, { color: colors.info }]}>
@@ -384,62 +355,3 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		marginVertical: 4,
-	},
-	header: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		borderRadius: 12,
-		paddingHorizontal: 8,
-		paddingVertical: 6,
-	},
-	headerLeft: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		flex: 1,
-		minWidth: 0,
-	},
-	headerRight: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		flexShrink: 0,
-	},
-	expandedContent: {
-		marginTop: 8,
-		marginLeft: 20,
-		paddingLeft: 12,
-		borderLeftWidth: 1,
-		gap: 8,
-	},
-	section: {},
-	sectionMargin: {
-		marginTop: 8,
-	},
-	viewFullButton: {
-		marginTop: 8,
-		paddingVertical: 8,
-		paddingHorizontal: 12,
-		borderRadius: 8,
-		alignItems: "center",
-	},
-	subAgentButton: {
-		marginTop: 8,
-		paddingVertical: 8,
-		paddingHorizontal: 12,
-		borderRadius: 8,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 6,
-	},
-	sectionLabel: {
-		fontFamily: Fonts.medium,
-		marginBottom: 4,
-	},
-});

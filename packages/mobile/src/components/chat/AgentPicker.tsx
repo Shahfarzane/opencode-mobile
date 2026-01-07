@@ -4,7 +4,6 @@ import {
 	Modal,
 	Pressable,
 	ScrollView,
-	StyleSheet,
 	Text,
 	View,
 } from "react-native";
@@ -24,26 +23,6 @@ interface AgentPickerProps {
 	onAgentChange: (agentName: string) => void;
 	visible: boolean;
 	onClose: () => void;
-}
-
-function RobotIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 8V4m0 0a2 2 0 100-4 2 2 0 000 4zM5 12h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<Path
-				d="M9 16h.01M15 16h.01"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
 }
 
 function CheckIcon({ color, size = 16 }: { color: string; size?: number }) {
@@ -111,23 +90,20 @@ export function AgentPicker({
 			onRequestClose={onClose}
 		>
 			<View
-				style={[
-					styles.modalContainer,
-					{
-						backgroundColor: colors.background,
-						paddingTop: insets.top,
-					},
-				]}
+				className="flex-1"
+				style={{ backgroundColor: colors.background, paddingTop: insets.top }}
 			>
 				<View
-					style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+					className="flex-row items-center justify-between border-b px-4 py-3"
+					style={{ borderBottomColor: colors.border }}
 				>
 					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 						Select Agent
 					</Text>
 					<Pressable
 						onPress={onClose}
-						style={[styles.closeButton, { backgroundColor: colors.muted }]}
+						className="rounded-lg px-3 py-2"
+						style={{ backgroundColor: colors.muted }}
 					>
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 							Done
@@ -135,10 +111,7 @@ export function AgentPicker({
 					</Pressable>
 				</View>
 
-				<ScrollView
-					style={styles.scrollView}
-					contentContainerStyle={styles.scrollContent}
-				>
+				<ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 12 }}>
 					{primaryAgents.map((agent) => {
 						const isSelected = agent.name === currentAgentName;
 						const agentColor = getAgentColor(agent.name);
@@ -147,23 +120,19 @@ export function AgentPicker({
 							<Pressable
 								key={agent.name}
 								onPress={() => handleAgentSelect(agent.name)}
-								style={[
-									styles.agentItem,
-									{
-										backgroundColor: isSelected
-											? `${agentColor}15`
-											: colors.card,
-										borderColor: isSelected ? agentColor : colors.border,
-									},
-								]}
+								className="flex-row items-center justify-between p-3.5 rounded-xl border"
+								style={{
+									backgroundColor: isSelected
+										? `${agentColor}15`
+										: colors.card,
+									borderColor: isSelected ? agentColor : colors.border,
+								}}
 							>
-								<View style={styles.agentInfo}>
-									<View style={styles.agentHeader}>
+								<View className="flex-1 mr-3">
+									<View className="flex-row items-center gap-2">
 										<View
-											style={[
-												styles.agentDot,
-												{ backgroundColor: agentColor },
-											]}
+											className="w-2 h-2 rounded-full"
+											style={{ backgroundColor: agentColor }}
 										/>
 										<Text
 											style={[
@@ -181,12 +150,10 @@ export function AgentPicker({
 									</View>
 									{agent.description && (
 										<Text
+											className="mt-1"
 											style={[
 												typography.micro,
-												{
-													color: colors.mutedForeground,
-													marginTop: 4,
-												},
+												{ color: colors.mutedForeground },
 											]}
 											numberOfLines={2}
 										>
@@ -205,51 +172,3 @@ export function AgentPicker({
 		</Modal>
 	);
 }
-
-const styles = StyleSheet.create({
-	modalContainer: {
-		flex: 1,
-	},
-	modalHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-	},
-	closeButton: {
-		borderRadius: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-	},
-	scrollView: {
-		flex: 1,
-	},
-	scrollContent: {
-		padding: 16,
-		gap: 12,
-	},
-	agentItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		padding: 14,
-		borderRadius: 12,
-		borderWidth: 1,
-	},
-	agentInfo: {
-		flex: 1,
-		marginRight: 12,
-	},
-	agentHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	agentDot: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-	},
-});

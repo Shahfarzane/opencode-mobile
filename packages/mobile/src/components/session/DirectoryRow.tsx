@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import {
 	ArrowsMergeIcon,
 	FolderIcon,
@@ -48,69 +48,56 @@ export function DirectoryRow({
 
 	const displayDirectory = formatDirectoryName(directory);
 
+	const getPressedBg = (pressed: boolean) =>
+		pressed
+			? isDark
+				? "rgba(255,255,255,0.08)"
+				: "rgba(0,0,0,0.05)"
+			: "transparent";
+
 	return (
-		<View style={styles.container}>
+		<View className="flex-row items-center h-14 px-2">
 			<Pressable
 				onPress={handleChangeDirectory}
-				style={({ pressed }) => [
-					styles.directoryButton,
-					{
-						backgroundColor: pressed
-							? isDark
-								? "rgba(255,255,255,0.08)"
-								: "rgba(0,0,0,0.05)"
-							: "transparent",
-					},
-				]}
+				className="flex-1 flex-row items-center gap-2 py-1 rounded-md"
+				style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
 			>
 				{({ pressed }) => (
 					<>
 						<View
-							style={[
-								styles.iconContainer,
-								{
-									backgroundColor: isDark
-										? "rgba(255,255,255,0.1)"
-										: "rgba(0,0,0,0.05)",
-								},
-							]}
+							className="w-8 h-8 rounded-md items-center justify-center"
+							style={{
+								backgroundColor: isDark
+									? "rgba(255,255,255,0.1)"
+									: "rgba(0,0,0,0.05)",
+							}}
 						>
 							<FolderIcon
 								color={pressed ? colors.foreground : colors.mutedForeground}
 								size={18}
 							/>
 						</View>
-					<Text
-						style={[
-							typography.uiHeader,
-							styles.directoryText,
-							fontStyle("600"),
-							{
-								color: pressed ? colors.foreground : colors.mutedForeground,
-							},
-						]}
-						numberOfLines={1}
-					>
-						{displayDirectory}
-					</Text>
+						<Text
+							className="flex-1"
+							style={[
+								typography.uiHeader,
+								fontStyle("600"),
+								{ color: pressed ? colors.foreground : colors.mutedForeground },
+							]}
+							numberOfLines={1}
+						>
+							{displayDirectory}
+						</Text>
 					</>
 				)}
 			</Pressable>
 
 			{isGitRepo && (
-				<View style={styles.actionButtons}>
+				<View className="flex-row items-center">
 					<Pressable
 						onPress={handleOpenWorktreeManager}
-						style={({ pressed }) => [
-							styles.iconButton,
-							{
-								backgroundColor: pressed
-									? isDark
-										? "rgba(255,255,255,0.1)"
-										: "rgba(0,0,0,0.05)"
-									: "transparent",
-							},
-						]}
+						className="w-7 h-10 rounded-xl items-center justify-center"
+						style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
 						hitSlop={4}
 					>
 						<GitBranchIcon color={colors.mutedForeground} size={18} />
@@ -118,16 +105,8 @@ export function DirectoryRow({
 
 					<Pressable
 						onPress={handleOpenMultiRunLauncher}
-						style={({ pressed }) => [
-							styles.iconButton,
-							{
-								backgroundColor: pressed
-									? isDark
-										? "rgba(255,255,255,0.1)"
-										: "rgba(0,0,0,0.05)"
-									: "transparent",
-							},
-						]}
+						className="w-7 h-10 rounded-xl items-center justify-center"
+						style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
 						hitSlop={4}
 					>
 						<ArrowsMergeIcon color={colors.mutedForeground} size={18} />
@@ -137,44 +116,3 @@ export function DirectoryRow({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		height: 56, // matches desktop h-14
-		paddingHorizontal: 8, // matches desktop px-2
-		gap: 0,
-	},
-	directoryButton: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingVertical: 4, // matches desktop py-1
-		paddingHorizontal: 0, // matches desktop px-0
-		borderRadius: 6,
-	},
-	iconContainer: {
-		width: 32, // matches desktop h-8 w-8
-		height: 32,
-		borderRadius: 6,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	directoryText: {
-		flex: 1,
-	},
-	actionButtons: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 0,
-	},
-	iconButton: {
-		width: 28, // matches desktop w-7
-		height: 40, // matches desktop h-10
-		borderRadius: 12, // matches desktop rounded-xl
-		alignItems: "center",
-		justifyContent: "center",
-	},
-});

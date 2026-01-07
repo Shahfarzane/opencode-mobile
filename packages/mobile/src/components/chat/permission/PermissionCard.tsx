@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { useTheme } from "@/theme";
 import { PermissionActions } from "./PermissionActions";
 import { PermissionDetails } from "./PermissionDetails";
@@ -39,13 +39,11 @@ export function PermissionCard({
 
 	return (
 		<View
-			style={[
-				styles.container,
-				{
-					backgroundColor: colors.toolBackground,
-					borderColor: colors.toolBorder,
-				},
-			]}
+			className="border rounded-xl overflow-hidden my-1"
+			style={{
+				backgroundColor: colors.toolBackground,
+				borderColor: colors.toolBorder,
+			}}
 		>
 			<PermissionHeader
 				toolName={permission.type || "Unknown Tool"}
@@ -61,12 +59,3 @@ export function PermissionCard({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		borderWidth: 1,
-		borderRadius: 12,
-		overflow: "hidden",
-		marginVertical: 4,
-	},
-});

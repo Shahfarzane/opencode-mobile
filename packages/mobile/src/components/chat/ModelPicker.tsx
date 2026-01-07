@@ -4,7 +4,6 @@ import {
 	Modal,
 	Pressable,
 	ScrollView,
-	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -108,7 +107,10 @@ function ProviderLogo({ providerId }: { providerId: string }) {
 	};
 
 	return (
-		<View style={[styles.providerLogo, { backgroundColor: colors.muted }]}>
+		<View
+			className="w-[22px] h-[22px] rounded items-center justify-center"
+			style={{ backgroundColor: colors.muted }}
+		>
 			<Text style={[typography.micro, fontStyle("600"), { color: colors.foreground }]}>
 				{getProviderSymbol(providerId)}
 			</Text>
@@ -201,23 +203,23 @@ export function ModelPicker({
 			onRequestClose={onClose}
 		>
 			<View
-				style={[
-					styles.modalContainer,
-					{
-						backgroundColor: colors.background,
-						paddingTop: insets.top,
-					},
-				]}
+				className="flex-1"
+				style={{
+					backgroundColor: colors.background,
+					paddingTop: insets.top,
+				}}
 			>
 				<View
-					style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+					className="flex-row items-center justify-between px-4 py-3 border-b"
+					style={{ borderBottomColor: colors.border }}
 				>
 					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 						Select Model
 					</Text>
 					<Pressable
 						onPress={onClose}
-						style={[styles.closeButton, { backgroundColor: colors.muted }]}
+						className="rounded-lg px-3 py-2"
+						style={{ backgroundColor: colors.muted }}
 					>
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 							Done
@@ -226,11 +228,18 @@ export function ModelPicker({
 				</View>
 
 				{/* Search Input */}
-				<View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
-					<View style={[styles.searchInputWrapper, { backgroundColor: colors.muted }]}>
+				<View
+					className="px-4 py-3 border-b"
+					style={{ borderBottomColor: colors.border }}
+				>
+					<View
+						className="flex-row items-center rounded-xl px-3 py-2.5 gap-2"
+						style={{ backgroundColor: colors.muted }}
+					>
 						<SearchIcon color={colors.mutedForeground} size={16} />
 						<TextInput
-							style={[styles.searchInput, { color: colors.foreground }]}
+							className="flex-1 p-0"
+							style={{ color: colors.foreground, fontSize: FontSizes.uiLabel }}
 							placeholder="Search models..."
 							placeholderTextColor={colors.mutedForeground}
 							value={searchQuery}
@@ -247,174 +256,172 @@ export function ModelPicker({
 				</View>
 
 				<ScrollView
-					style={styles.scrollView}
-					contentContainerStyle={styles.scrollContent}
+					className="flex-1"
+					contentContainerStyle={{ padding: 16 }}
 					keyboardShouldPersistTaps="handled"
 				>
 					{/* Search Results */}
 					{isSearching ? (
 						filteredModels.length === 0 ? (
-								<View style={styles.emptyState}>
-									<Text style={[typography.body, { color: colors.mutedForeground }]}>
-										No models found for "{searchQuery}"
-									</Text>
-								</View>
-							) : (
-								<View style={[styles.searchResults, { borderColor: colors.border }]}>
-									{filteredModels.map((model) => {
-										const isSelected =
-											model.providerId === currentProviderId &&
-											model.modelId === currentModelId;
+							<View className="py-8 items-center">
+								<Text style={[typography.body, { color: colors.mutedForeground }]}>
+									No models found for "{searchQuery}"
+								</Text>
+							</View>
+						) : (
+							<View
+								className="rounded-xl border overflow-hidden"
+								style={{ borderColor: colors.border }}
+							>
+								{filteredModels.map((model) => {
+									const isSelected =
+										model.providerId === currentProviderId &&
+										model.modelId === currentModelId;
 
-										return (
-											<Pressable
-												key={`${model.providerId}-${model.modelId}`}
-												onPress={() =>
-													handleModelSelect(model.providerId, model.modelId)
-												}
-												style={[
-													styles.searchResultItem,
-													{
-														backgroundColor: isSelected
-															? `${colors.primary}15`
-															: "transparent",
-													},
-												]}
-											>
-												<View style={styles.searchResultInfo}>
-													<Text
-														style={[
-															typography.body,
-															{
-																color: isSelected
-																	? colors.primary
-																	: colors.foreground,
-															},
-														]}
-														numberOfLines={1}
-													>
-														{model.modelName.length > 40
-															? `${model.modelName.substring(0, 37)}...`
-															: model.modelName}
-													</Text>
-													<Text
-														style={[
-															typography.micro,
-															{ color: colors.mutedForeground },
-														]}
-													>
-														{model.providerName}
-													</Text>
-												</View>
-												{isSelected && (
-													<CheckIcon size={16} color={colors.primary} />
-												)}
-											</Pressable>
-										);
-									})}
+									return (
+										<Pressable
+											key={`${model.providerId}-${model.modelId}`}
+											onPress={() =>
+												handleModelSelect(model.providerId, model.modelId)
+											}
+											className="flex-row items-center justify-between px-3 py-2.5"
+											style={{
+												backgroundColor: isSelected
+													? `${colors.primary}15`
+													: "transparent",
+											}}
+										>
+											<View className="flex-1 mr-2">
+												<Text
+													style={[
+														typography.body,
+														{
+															color: isSelected
+																? colors.primary
+																: colors.foreground,
+														},
+													]}
+													numberOfLines={1}
+												>
+													{model.modelName.length > 40
+														? `${model.modelName.substring(0, 37)}...`
+														: model.modelName}
+												</Text>
+												<Text
+													style={[
+														typography.micro,
+														{ color: colors.mutedForeground },
+													]}
+												>
+													{model.providerName}
+												</Text>
+											</View>
+											{isSelected && (
+												<CheckIcon size={16} color={colors.primary} />
+											)}
+										</Pressable>
+									);
+								})}
 							</View>
 						)
 					) : (
 						/* Provider List */
 						availableProviders.map((provider) => {
-						const isExpanded = expandedProvider === provider.id;
-						const isCurrentProvider = provider.id === currentProviderId;
+							const isExpanded = expandedProvider === provider.id;
+							const isCurrentProvider = provider.id === currentProviderId;
 
-						return (
-							<View key={provider.id} style={styles.providerSection}>
-								<Pressable
-									onPress={() => toggleProvider(provider.id)}
-									style={[
-										styles.providerHeader,
-										{
+							return (
+								<View key={provider.id} className="mb-3">
+									<Pressable
+										onPress={() => toggleProvider(provider.id)}
+										className="flex-row items-center justify-between p-3 rounded-xl border"
+										style={{
 											backgroundColor: isCurrentProvider
 												? `${colors.primary}10`
 												: colors.card,
 											borderColor: isCurrentProvider
 												? colors.primary
 												: colors.border,
-										},
-									]}
-								>
-									<View style={styles.providerInfo}>
-										<View style={styles.providerTitle}>
-											<ProviderLogo providerId={provider.id} />
+										}}
+									>
+										<View className="flex-1">
+											<View className="flex-row items-center gap-2 mb-0.5">
+												<ProviderLogo providerId={provider.id} />
+												<Text
+													style={[
+														typography.uiLabel,
+														fontStyle("600"),
+														{ color: colors.foreground },
+													]}
+												>
+													{provider.name}
+												</Text>
+											</View>
 											<Text
 												style={[
-													typography.uiLabel,
-													fontStyle("600"),
-													{ color: colors.foreground },
+													typography.micro,
+													{ color: colors.mutedForeground },
 												]}
 											>
-												{provider.name}
+												{(provider.models?.length ?? 0)} model{(provider.models?.length ?? 0) !== 1 ? 's' : ''}
 											</Text>
 										</View>
-										<Text
-											style={[
-												typography.micro,
-												{ color: colors.mutedForeground },
-											]}
+										<ChevronDownIcon
+											size={16}
+											color={colors.mutedForeground}
+											style={{
+												transform: [{ rotate: isExpanded ? "180deg" : "0deg" }],
+											}}
+										/>
+									</Pressable>
+
+									{isExpanded && provider.models && provider.models.length > 0 && (
+										<View
+											className="mt-1 rounded-xl border overflow-hidden"
+											style={{ borderColor: colors.border }}
 										>
-											{(provider.models?.length ?? 0)} model{(provider.models?.length ?? 0) !== 1 ? 's' : ''}
-										</Text>
-									</View>
-									<ChevronDownIcon
-										size={16}
-										color={colors.mutedForeground}
-										style={{
-											transform: [{ rotate: isExpanded ? "180deg" : "0deg" }],
-										}}
-									/>
-								</Pressable>
+											{provider.models.map((model) => {
+												const isSelected =
+													provider.id === currentProviderId &&
+													model.id === currentModelId;
 
-								{isExpanded && provider.models && provider.models.length > 0 && (
-									<View
-										style={[styles.modelList, { borderColor: colors.border }]}
-									>
-										{provider.models.map((model) => {
-											const isSelected =
-												provider.id === currentProviderId &&
-												model.id === currentModelId;
-
-											return (
-												<Pressable
-													key={model.id}
-													onPress={() =>
-														handleModelSelect(provider.id, model.id)
-													}
-													style={[
-														styles.modelItem,
-														{
+												return (
+													<Pressable
+														key={model.id}
+														onPress={() =>
+															handleModelSelect(provider.id, model.id)
+														}
+														className="flex-row items-center justify-between px-3 py-2.5"
+														style={{
 															backgroundColor: isSelected
 																? `${colors.primary}15`
 																: "transparent",
-														},
-													]}
-												>
-													<Text
-														style={[
-															typography.body,
-															{
-																color: isSelected
-																	? colors.primary
-																	: colors.foreground,
-															},
-														]}
-														numberOfLines={1}
+														}}
 													>
-														{getModelDisplayName(model)}
-													</Text>
-													{isSelected && (
-														<CheckIcon size={16} color={colors.primary} />
-													)}
-												</Pressable>
-											);
-										})}
-									</View>
-								)}
-							</View>
-						);
-					})
+														<Text
+															style={[
+																typography.body,
+																{
+																	color: isSelected
+																		? colors.primary
+																		: colors.foreground,
+																},
+															]}
+															numberOfLines={1}
+														>
+															{getModelDisplayName(model)}
+														</Text>
+														{isSelected && (
+															<CheckIcon size={16} color={colors.primary} />
+														)}
+													</Pressable>
+												);
+											})}
+										</View>
+									)}
+								</View>
+							);
+						})
 					)}
 				</ScrollView>
 			</View>
@@ -422,105 +429,4 @@ export function ModelPicker({
 	);
 }
 
-const styles = StyleSheet.create({
-	modalContainer: {
-		flex: 1,
-	},
-	modalHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-	},
-	closeButton: {
-		borderRadius: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-	},
-	scrollView: {
-		flex: 1,
-	},
-	scrollContent: {
-		padding: 16,
-	},
-	providerSection: {
-		marginBottom: 12,
-	},
-	providerHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		padding: 12,
-		borderRadius: 12,
-		borderWidth: 1,
-	},
-	providerInfo: {
-		flex: 1,
-	},
-	providerTitle: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		marginBottom: 2,
-	},
-	providerLogo: {
-		width: 22,
-		height: 22,
-		borderRadius: 4,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	modelList: {
-		marginTop: 4,
-		borderRadius: 12,
-		borderWidth: 1,
-		overflow: "hidden",
-	},
-	modelItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-	},
-	searchContainer: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
-	},
-	searchInputWrapper: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: 12,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		gap: 8,
-	},
-	searchInput: {
-		flex: 1,
-		fontSize: FontSizes.uiLabel,
-		padding: 0,
-	},
-	emptyState: {
-		paddingVertical: 32,
-		alignItems: "center",
-	},
-	searchResults: {
-		borderRadius: 12,
-		borderWidth: 1,
-		overflow: "hidden",
-	},
-	searchResultItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-	},
-	searchResultInfo: {
-		flex: 1,
-		marginRight: 8,
-	},
-});
+

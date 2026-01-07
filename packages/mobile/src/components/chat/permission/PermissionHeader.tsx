@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import {
 	ClockIcon,
 	FileEditIcon,
@@ -72,17 +72,18 @@ export function PermissionHeader({
 	const displayName = getToolDisplayName(toolName);
 
 	return (
-		<View style={[styles.header, { borderBottomColor: colors.border }]}>
-			<View style={styles.headerLeft}>
+		<View
+			className="flex-row justify-between items-center px-3 py-2 border-b"
+			style={{ borderBottomColor: colors.border }}
+		>
+			<View className="flex-row items-center gap-2">
 				<View
-					style={[
-						styles.iconContainer,
-						{ backgroundColor: `${colors.warning}20` },
-					]}
+					className="w-6 h-6 rounded-md items-center justify-center"
+					style={{ backgroundColor: `${colors.warning}20` }}
 				>
 					{getToolIcon(toolName, colors.warning, 16)}
 				</View>
-				<View style={styles.titleContainer}>
+				<View className="flex-row items-center gap-1">
 					<Text
 						style={[
 							typography.uiLabel,
@@ -95,7 +96,7 @@ export function PermissionHeader({
 					<QuestionIcon size={14} color={colors.mutedForeground} />
 				</View>
 			</View>
-			<View style={styles.headerRight}>
+			<View className="flex-row items-center gap-1">
 				<ClockIcon size={12} color={colors.mutedForeground} />
 				<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 					{formatRelativeTime(createdTime)}
@@ -104,36 +105,3 @@ export function PermissionHeader({
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	header: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderBottomWidth: 1,
-	},
-	headerLeft: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	iconContainer: {
-		width: 24,
-		height: 24,
-		borderRadius: 6,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	titleContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-	},
-	headerRight: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-	},
-});

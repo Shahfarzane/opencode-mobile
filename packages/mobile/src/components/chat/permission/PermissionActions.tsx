@@ -2,7 +2,6 @@ import * as Haptics from "expo-haptics";
 import {
 	ActivityIndicator,
 	Pressable,
-	StyleSheet,
 	Text,
 	View,
 } from "react-native";
@@ -28,17 +27,18 @@ export function PermissionActions({
 	};
 
 	return (
-		<View style={[styles.actions, { borderTopColor: colors.border }]}>
+		<View
+			className="flex-row items-center gap-1.5 px-3 py-2 border-t"
+			style={{ borderTopColor: colors.border }}
+		>
 			<Pressable
 				onPress={() => handlePress("once")}
 				disabled={isResponding}
-				style={({ pressed }) => [
-					styles.actionButton,
-					styles.primaryButton,
-					{ backgroundColor: colors.primary },
-					pressed && styles.actionButtonPressed,
-					isResponding && styles.actionButtonDisabled,
-				]}
+				className="flex-1 flex-row items-center justify-center gap-1 px-2 py-1.5 rounded-md"
+				style={({ pressed }) => ({
+					backgroundColor: colors.primary,
+					opacity: pressed ? 0.8 : isResponding ? 0.5 : 1,
+				})}
 			>
 				<CheckIcon size={14} color={colors.primaryForeground} />
 				<Text
@@ -55,12 +55,11 @@ export function PermissionActions({
 			<Pressable
 				onPress={() => handlePress("always")}
 				disabled={isResponding}
-				style={({ pressed }) => [
-					styles.actionButton,
-					{ backgroundColor: colors.muted },
-					pressed && styles.actionButtonPressed,
-					isResponding && styles.actionButtonDisabled,
-				]}
+				className="flex-row items-center gap-1 px-2 py-1.5 rounded-md"
+				style={({ pressed }) => ({
+					backgroundColor: colors.muted,
+					opacity: pressed ? 0.8 : isResponding ? 0.5 : 1,
+				})}
 			>
 				<ClockIcon size={14} color={colors.mutedForeground} />
 				<Text
@@ -77,12 +76,11 @@ export function PermissionActions({
 			<Pressable
 				onPress={() => handlePress("reject")}
 				disabled={isResponding}
-				style={({ pressed }) => [
-					styles.actionButton,
-					{ backgroundColor: colors.errorBackground },
-					pressed && styles.actionButtonPressed,
-					isResponding && styles.actionButtonDisabled,
-				]}
+				className="flex-row items-center gap-1 px-2 py-1.5 rounded-md"
+				style={({ pressed }) => ({
+					backgroundColor: colors.errorBackground,
+					opacity: pressed ? 0.8 : isResponding ? 0.5 : 1,
+				})}
 			>
 				<XIcon size={14} color={colors.error} />
 				<Text
@@ -96,41 +94,9 @@ export function PermissionActions({
 				<ActivityIndicator
 					size="small"
 					color={colors.primary}
-					style={styles.loader}
+					style={{ marginLeft: "auto" }}
 				/>
 			)}
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	actions: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderTopWidth: 1,
-	},
-	actionButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 6,
-		borderRadius: 6,
-	},
-	primaryButton: {
-		flex: 1,
-		justifyContent: "center",
-	},
-	actionButtonPressed: {
-		opacity: 0.8,
-	},
-	actionButtonDisabled: {
-		opacity: 0.5,
-	},
-	loader: {
-		marginLeft: "auto",
-	},
-});

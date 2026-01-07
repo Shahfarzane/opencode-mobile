@@ -1,11 +1,5 @@
 import { forwardRef, useState } from "react";
-import {
-	StyleSheet,
-	Text,
-	TextInput,
-	type TextInputProps,
-	View,
-} from "react-native";
+import { Text, TextInput, type TextInputProps, View } from "react-native";
 import { typography, useTheme } from "@/theme";
 
 interface InputProps extends TextInputProps {
@@ -43,30 +37,24 @@ export const Input = forwardRef<TextInput, InputProps>(
 		};
 
 		return (
-			<View style={styles.container}>
+			<View className="w-full">
 				{label && (
 					<Text
-						style={[
-							typography.uiLabel,
-							styles.label,
-							{ color: colors.foreground },
-						]}
+						className="mb-2"
+						style={[typography.uiLabel, { color: colors.foreground }]}
 					>
 						{label}
 					</Text>
 				)}
 
 				<View
-					style={[
-						styles.inputWrapper,
-						{
-							borderColor: getBorderColor(),
-							backgroundColor: colors.input,
-							opacity: isDisabled ? 0.5 : 1,
-						},
-					]}
+					className={`flex-row items-center rounded-lg border ${isDisabled ? "opacity-50" : ""}`}
+					style={{
+						borderColor: getBorderColor(),
+						backgroundColor: colors.input,
+					}}
 				>
-					{leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+					{leftIcon && <View className="pl-3">{leftIcon}</View>}
 
 					<TextInput
 						ref={ref}
@@ -80,23 +68,19 @@ export const Input = forwardRef<TextInput, InputProps>(
 							props.onBlur?.(e);
 						}}
 						placeholderTextColor={colors.mutedForeground}
-						style={[
-							styles.input,
-							typography.body,
-							{ color: colors.foreground },
-							style,
-						]}
+						className="flex-1 min-h-11 px-3 py-2"
+						style={[typography.body, { color: colors.foreground }, style]}
 						{...props}
 					/>
 
-					{rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
+					{rightIcon && <View className="pr-3">{rightIcon}</View>}
 				</View>
 
 				{(error || helperText) && (
 					<Text
+						className="mt-1.5"
 						style={[
 							typography.micro,
-							styles.helperText,
 							{ color: hasError ? colors.destructive : colors.mutedForeground },
 						]}
 					>
@@ -109,33 +93,3 @@ export const Input = forwardRef<TextInput, InputProps>(
 );
 
 Input.displayName = "Input";
-
-const styles = StyleSheet.create({
-	container: {
-		width: "100%",
-	},
-	label: {
-		marginBottom: 8,
-	},
-	inputWrapper: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: 8, // Match desktop rounded-lg (was 12)
-		borderWidth: 1,
-	},
-	leftIcon: {
-		paddingLeft: 12,
-	},
-	rightIcon: {
-		paddingRight: 12,
-	},
-	input: {
-		flex: 1,
-		minHeight: 44, // Keep mobile-friendly touch target
-		paddingHorizontal: 12, // Match desktop px-3 (was 16)
-		paddingVertical: 8, // Adjusted for mobile (was 12)
-	},
-	helperText: {
-		marginTop: 6,
-	},
-});
