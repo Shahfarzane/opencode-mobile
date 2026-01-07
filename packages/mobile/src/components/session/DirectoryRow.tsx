@@ -92,25 +92,29 @@ export function DirectoryRow({
 				)}
 			</Pressable>
 
-			{isGitRepo && (
+			{isGitRepo && (onOpenWorktreeManager || onOpenMultiRunLauncher) && (
 				<View className="flex-row items-center">
-					<Pressable
-						onPress={handleOpenWorktreeManager}
-						className="w-7 h-10 rounded-xl items-center justify-center"
-						style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
-						hitSlop={4}
-					>
-						<GitBranchIcon color={colors.mutedForeground} size={18} />
-					</Pressable>
+					{onOpenWorktreeManager && (
+						<Pressable
+							onPress={handleOpenWorktreeManager}
+							className="w-7 h-10 rounded-xl items-center justify-center"
+							style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
+							hitSlop={4}
+						>
+							<GitBranchIcon color={colors.mutedForeground} size={18} />
+						</Pressable>
+					)}
 
-					<Pressable
-						onPress={handleOpenMultiRunLauncher}
-						className="w-7 h-10 rounded-xl items-center justify-center"
-						style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
-						hitSlop={4}
-					>
-						<ArrowsMergeIcon color={colors.mutedForeground} size={18} />
-					</Pressable>
+					{onOpenMultiRunLauncher && (
+						<Pressable
+							onPress={handleOpenMultiRunLauncher}
+							className="w-7 h-10 rounded-xl items-center justify-center"
+							style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
+							hitSlop={4}
+						>
+							<ArrowsMergeIcon color={colors.mutedForeground} size={18} />
+						</Pressable>
+					)}
 				</View>
 			)}
 		</View>

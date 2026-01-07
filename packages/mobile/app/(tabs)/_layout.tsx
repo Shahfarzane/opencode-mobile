@@ -212,13 +212,9 @@ export default function TabsLayout() {
 		router.push("/onboarding/directory");
 	}, []);
 
-	const handleOpenWorktreeManager = useCallback(() => {
-		console.log("Open worktree manager requested");
-	}, []);
-
-	const handleOpenMultiRunLauncher = useCallback(() => {
-		console.log("Open multi-run launcher requested");
-	}, []);
+	// TODO: Implement worktree manager and multi-run launcher for mobile
+	// const handleOpenWorktreeManager = useCallback(() => {}, []);
+	// const handleOpenMultiRunLauncher = useCallback(() => {}, []);
 
 	const handleMenuPress = useCallback(() => {
 		router.push("/onboarding/directory");
@@ -255,8 +251,6 @@ export default function TabsLayout() {
 			unshareSession,
 			deleteSession,
 			changeDirectory: handleChangeDirectory,
-			openWorktreeManager: handleOpenWorktreeManager,
-			openMultiRunLauncher: handleOpenMultiRunLauncher,
 			// Internal refs for ChatScreen to sync state
 			_updateStreamingSessions: updateStreamingSessionsRef.current,
 			_setCurrentSessionId: setCurrentSessionIdRef.current,
@@ -276,8 +270,6 @@ export default function TabsLayout() {
 			unshareSession,
 			deleteSession,
 			handleChangeDirectory,
-			handleOpenWorktreeManager,
-			handleOpenMultiRunLauncher,
 			fetchSessions,
 		],
 	);
@@ -330,8 +322,6 @@ export default function TabsLayout() {
 						onUnshareSession={unshareSession}
 						onDeleteSession={deleteSession}
 						onChangeDirectory={handleChangeDirectory}
-						onOpenWorktreeManager={handleOpenWorktreeManager}
-						onOpenMultiRunLauncher={handleOpenMultiRunLauncher}
 					/>
 				</View>
 			</ContextUsageContext.Provider>

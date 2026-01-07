@@ -29,8 +29,6 @@ export interface SessionSheetContextType {
 	unshareSession: (sessionId: string) => Promise<boolean>;
 	deleteSession: (sessionId: string) => Promise<boolean>;
 	changeDirectory: () => void;
-	openWorktreeManager: () => void;
-	openMultiRunLauncher: () => void;
 	// Internal methods for ChatScreen to sync state with layout
 	_updateStreamingSessions?: (ids: Set<string>) => void;
 	_setCurrentSessionId?: (id: string | null) => void;
@@ -51,8 +49,6 @@ export const SessionSheetContext = createContext<SessionSheetContextType>({
 	unshareSession: async () => false,
 	deleteSession: async () => false,
 	changeDirectory: () => {},
-	openWorktreeManager: () => {},
-	openMultiRunLauncher: () => {},
 });
 
 export const useSessionSheetContext = () => useContext(SessionSheetContext);

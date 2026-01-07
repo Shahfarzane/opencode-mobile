@@ -13,8 +13,10 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FileIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
+import { FileIcon, FolderIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
+import { useConnectionStore } from "@/stores/useConnectionStore";
+import { ServerFilePicker } from "./ServerFilePicker";
 
 export interface AttachedFile {
 	id: string;
@@ -54,10 +56,12 @@ export function FileAttachmentButton({
 	const { colors } = useTheme();
 	const insets = useSafeAreaInsets();
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
+	const [isServerPickerOpen, setIsServerPickerOpen] = useState(false);
 	const [buttonLayout, setButtonLayout] = useState<LayoutRectangle | null>(
 		null,
 	);
 	const buttonRef = useRef<View>(null);
+	const directory = useConnectionStore((state) => state.directory);
 
 	const handleImagePick = useCallback(async () => {
 		setIsPickerOpen(false);
@@ -136,6 +140,28 @@ export function FileAttachmentButton({
 		onFileAttached(attachedFile);
 	}, [onFileAttached]);
 
+	const handleServerFilesSelected = useCallback(
+		async (files: Array<{ name: string; path: string }>) => {
+			for (const file of files) {
+				const attachedFile: AttachedFile = {
+					id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+					name: file.name,
+					type: "text/plain", // Server files are typically text
+					size: 0,
+					uri: file.path,
+				};
+				onFileAttached(attachedFile);
+			}
+			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		},
+		[onFileAttached],
+	);
+
+	const handleOpenServerPicker = useCallback(() => {
+		setIsPickerOpen(false);
+		setIsServerPickerOpen(true);
+	}, []);
+
 	const showOptions = useCallback(async () => {
 		if (disabled) return;
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -201,16 +227,38 @@ export function FileAttachmentButton({
 						</Pressable>
 						<Pressable
 							onPress={handleDocumentPick}
-							className="flex-row items-center gap-3 px-4 py-3"
+							className="flex-row items-center gap-3 px-4 py-3 border-b"
+							style={{ borderBottomColor: colors.border }}
 						>
 							<FileIcon size={20} color={colors.foreground} />
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 								Files
 							</Text>
 						</Pressable>
+						{directory && (
+							<Pressable
+								onPress={handleOpenServerPicker}
+								className="flex-row items-center gap-3 px-4 py-3"
+							>
+								<FolderIcon size={20} color={colors.foreground} />
+								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+									Project Files
+								</Text>
+							</Pressable>
+						)}
 					</View>
 				</Pressable>
 			</Modal>
+
+			{directory && (
+				<ServerFilePicker
+					visible={isServerPickerOpen}
+					onClose={() => setIsServerPickerOpen(false)}
+					onFilesSelected={handleServerFilesSelected}
+					rootDirectory={directory}
+					multiSelect
+				/>
+			)}
 		</>
 	);
 }

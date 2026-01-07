@@ -697,9 +697,10 @@ export function ChatInput({
 										<Text
 											style={[
 												typography.micro,
-												{ color: colors.mutedForeground },
+												{ color: colors.mutedForeground, flexShrink: 1 },
 											]}
 											numberOfLines={1}
+											ellipsizeMode="tail"
 										>
 											{modelInfo.modelName}
 										</Text>

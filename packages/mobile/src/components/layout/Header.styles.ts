@@ -40,6 +40,16 @@ const changeDot = tv({
   variants: {},
 });
 
+const countBadge = tv({
+  base: "absolute -top-1 -right-2 min-w-4 h-4 px-1 rounded-full items-center justify-center",
+  variants: {},
+});
+
+const countBadgeText = tv({
+  base: "text-xs font-semibold",
+  variants: {},
+});
+
 export const headerStyles = combineStyles({
   container,
   content,
@@ -49,4 +59,6 @@ export const headerStyles = combineStyles({
   tabContent,
   updateDot,
   changeDot,
+  countBadge,
+  countBadgeText,
 });
