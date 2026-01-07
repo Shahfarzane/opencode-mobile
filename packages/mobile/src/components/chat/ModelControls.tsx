@@ -113,8 +113,9 @@ export function ModelControls({
 				}}
 			>
 				<Text
-					style={[typography.micro, { color: colors.foreground, maxWidth: 140 }]}
+					style={[typography.micro, { color: colors.foreground, maxWidth: 200, flexShrink: 1 }]}
 					numberOfLines={1}
+					ellipsizeMode="tail"
 				>
 					{displayText}
 				</Text>

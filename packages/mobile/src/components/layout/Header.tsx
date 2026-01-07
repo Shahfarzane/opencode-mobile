@@ -95,7 +95,7 @@ export function Header({
 				<View className={headerStyles.rightSection({})}>
 					{tabs.map((tab) => {
 						const isActive = activeTab === tab.id;
-						const showGitDot = tab.id === "git" && diffFileCount > 0;
+						const showDiffDot = tab.id === "diff" && diffFileCount > 0;
 						return (
 							<Pressable
 								key={tab.id}
@@ -109,8 +109,8 @@ export function Header({
 										isActive ? colors.foreground : colors.mutedForeground,
 										20,
 									)}
-									{/* Orange dot for git tab when there are changes */}
-									{showGitDot && (
+									{/* Dot indicator for diff tab when there are changes */}
+									{showDiffDot && (
 										<View
 											className={headerStyles.changeDot({})}
 											style={{ backgroundColor: colors.primary }}
