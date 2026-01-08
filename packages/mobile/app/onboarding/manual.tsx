@@ -2,7 +2,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-	ActivityIndicator,
 	Alert,
 	KeyboardAvoidingView,
 	Platform,
@@ -20,7 +19,10 @@ import { Spacing, typography, useTheme } from "../../src/theme";
 
 type ConnectionType = "local" | "tailscale" | "cloudflare";
 
-const CONFIGS: Record<ConnectionType, { label: string; placeholder: string; hint: string }> = {
+const CONFIGS: Record<
+	ConnectionType,
+	{ label: string; placeholder: string; hint: string }
+> = {
 	local: {
 		label: "Local",
 		placeholder: "192.168.1.100:3000",
@@ -59,7 +61,9 @@ function BackButton() {
 					strokeLinejoin="round"
 				/>
 			</Svg>
-			<Text style={[typography.uiLabel, { color: colors.foreground }]}>Back</Text>
+			<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+				Back
+			</Text>
 		</Pressable>
 	);
 }
@@ -84,8 +88,10 @@ export default function ManualScreen() {
 
 		try {
 			let url = serverUrl.trim();
-			const hasProtocol = url.startsWith("http://") || url.startsWith("https://");
-			const isCloudflare = connectionType === "cloudflare" || url.includes(".trycloudflare.com");
+			const hasProtocol =
+				url.startsWith("http://") || url.startsWith("https://");
+			const isCloudflare =
+				connectionType === "cloudflare" || url.includes(".trycloudflare.com");
 
 			if (!hasProtocol) {
 				url = `${isCloudflare ? "https" : "http"}://${url}`;
@@ -123,10 +129,20 @@ export default function ManualScreen() {
 			>
 				<BackButton />
 
-				<Text style={[typography.h2, { color: colors.foreground, marginTop: Spacing.md }]}>
+				<Text
+					style={[
+						typography.h2,
+						{ color: colors.foreground, marginTop: Spacing.md },
+					]}
+				>
 					Connect to Server
 				</Text>
-				<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 8, lineHeight: 20 }]}>
+				<Text
+					style={[
+						typography.meta,
+						{ color: colors.mutedForeground, marginTop: 8, lineHeight: 20 },
+					]}
+				>
 					Enter your server details below
 				</Text>
 
@@ -164,7 +180,12 @@ export default function ManualScreen() {
 
 				{/* Server URL */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Server URL
 					</Text>
 					<TextInput
@@ -181,14 +202,24 @@ export default function ManualScreen() {
 							{ borderColor: colors.border, color: colors.foreground },
 						]}
 					/>
-					<Text style={[typography.micro, { color: colors.mutedForeground, marginTop: 6 }]}>
+					<Text
+						style={[
+							typography.micro,
+							{ color: colors.mutedForeground, marginTop: 6 },
+						]}
+					>
 						{config.hint}
 					</Text>
 				</View>
 
 				{/* Password */}
 				<View style={styles.field}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						Password (optional)
 					</Text>
 					<TextInput
@@ -219,7 +250,12 @@ export default function ManualScreen() {
 							pressed && !isConnecting && { opacity: 0.9 },
 						]}
 					>
-						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.primaryForeground, fontWeight: "600" },
+							]}
+						>
 							{isConnecting ? "Connecting..." : "Connect"}
 						</Text>
 					</Pressable>

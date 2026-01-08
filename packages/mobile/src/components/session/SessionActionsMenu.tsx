@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import {
 	CopyIcon,
+	FolderIcon,
 	LinkOffIcon,
 	PencilIcon,
 	ShareIcon,
@@ -30,6 +31,7 @@ interface SessionActionsMenuProps {
 	onDelete: () => void;
 	isShared?: boolean;
 	shareUrl?: string;
+	worktreePath?: string;
 	anchorPosition?: { x: number; y: number } | null;
 }
 
@@ -57,6 +59,7 @@ export function SessionActionsMenu({
 	onDelete,
 	isShared = false,
 	shareUrl,
+	worktreePath,
 	anchorPosition,
 }: SessionActionsMenuProps) {
 	const { colors, isDark } = useTheme();
@@ -129,6 +132,14 @@ export function SessionActionsMenu({
 	const handleUnshare = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		onUnshare?.();
+		onClose();
+	};
+
+	const handleCopyWorktreePath = async () => {
+		if (worktreePath) {
+			await Clipboard.setStringAsync(worktreePath);
+			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		}
 		onClose();
 	};
 
@@ -242,6 +253,27 @@ export function SessionActionsMenu({
 									style={[typography.uiLabel, { color: colors.foreground }]}
 								>
 									Unshare
+								</Text>
+							</Pressable>
+						</>
+					)}
+
+					{worktreePath && (
+						<>
+							<View
+								className={sessionActionsMenuStyles.divider({})}
+								style={{ backgroundColor: colors.border }}
+							/>
+							<Pressable
+								onPress={handleCopyWorktreePath}
+								className={sessionActionsMenuStyles.menuItem({})}
+								style={({ pressed }) => ({
+									backgroundColor: pressed ? colors.muted : "transparent",
+								})}
+							>
+								<FolderIcon color={colors.foreground} size={18} />
+								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+									Copy Worktree Path
 								</Text>
 							</Pressable>
 						</>

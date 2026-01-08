@@ -74,7 +74,10 @@ export function useDeepLinkAuth(options: UseDeepLinkAuthOptions = {}) {
 				console.log(`[DeepLinkAuth] Successfully authenticated`);
 				options.onAuthSuccess?.(authData.url);
 			} catch (err) {
-				const error = err instanceof Error ? err : new Error("Failed to authenticate with URL token");
+				const error =
+					err instanceof Error
+						? err
+						: new Error("Failed to authenticate with URL token");
 				console.error(`[DeepLinkAuth] Authentication failed:`, error.message);
 				setError(error);
 				options.onAuthError?.(error);
@@ -84,7 +87,7 @@ export function useDeepLinkAuth(options: UseDeepLinkAuthOptions = {}) {
 				setIsProcessing(false);
 			}
 		},
-		[setConnection, isProcessing, options]
+		[setConnection, isProcessing, options],
 	);
 
 	// Handle initial URL (app opened via deep link)

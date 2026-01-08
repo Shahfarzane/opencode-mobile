@@ -11,7 +11,6 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import {
 	type GitLog,
@@ -97,24 +96,222 @@ function DiffStats({
 	);
 }
 
+// Icon components for header
+function RefreshIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+function PullIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M12 4v16m0 0l-6-6m6 6l6-6"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+function PushIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M12 20V4m0 0l-6 6m6-6l6 6"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+function BranchIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
+			<Path
+				d="M18 9a9 9 0 0 1-9 9"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
+		</Svg>
+	);
+}
+
+function ChevronIcon({ color, size = 16, direction = "down" }: { color: string; size?: number; direction?: "up" | "down" }) {
+	return (
+		<Svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			style={{ transform: [{ rotate: direction === "up" ? "180deg" : "0deg" }] }}
+		>
+			<Path
+				d="M6 9l6 6 6-6"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+			/>
+		</Svg>
+	);
+}
+
+function RevertIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<Path
+				d="M3 3v5h5"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+function GitHeader({
+	status,
+	onRefresh,
+	onPull,
+	onPush,
+	isPulling,
+	isPushing,
+	isRefreshing,
+}: {
+	status: GitStatus | null;
+	onRefresh: () => void;
+	onPull: () => void;
+	onPush: () => void;
+	isPulling: boolean;
+	isPushing: boolean;
+	isRefreshing: boolean;
+}) {
+	const { colors } = useTheme();
+
+	const isBusy = isPulling || isPushing || isRefreshing;
+
+	return (
+		<View style={[styles.gitHeader, { borderBottomColor: colors.border }]}>
+			{/* Branch selector */}
+			<Pressable style={[styles.branchSelector, { backgroundColor: colors.card }]}>
+				<BranchIcon color={colors.primary} size={14} />
+				<Text
+					style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}
+					numberOfLines={1}
+				>
+					{status?.current ?? "main"}
+				</Text>
+				<ChevronIcon color={colors.mutedForeground} size={14} />
+			</Pressable>
+
+			{/* Sync status - always show */}
+			<View style={styles.syncIndicators}>
+				<Text style={[typography.meta, { color: colors.success }]}>
+					↑{status?.ahead ?? 0}
+				</Text>
+				<Text style={[typography.meta, { color: colors.destructive }]}>
+					↓{status?.behind ?? 0}
+				</Text>
+			</View>
+
+			{/* Action buttons */}
+			<View style={styles.headerActions}>
+				{/* Refresh */}
+				<Pressable
+					onPress={onRefresh}
+					disabled={isBusy}
+					style={[styles.headerIconButton, { opacity: isBusy ? 0.5 : 1 }]}
+				>
+					{isRefreshing ? (
+						<ActivityIndicator size="small" color={colors.mutedForeground} />
+					) : (
+						<RefreshIcon color={colors.mutedForeground} size={18} />
+					)}
+				</Pressable>
+
+				{/* Pull */}
+				<Pressable
+					onPress={onPull}
+					disabled={isBusy || !status}
+					style={[styles.headerIconButton, { opacity: isBusy || !status ? 0.5 : 1 }]}
+				>
+					{isPulling ? (
+						<ActivityIndicator size="small" color={colors.mutedForeground} />
+					) : (
+						<PullIcon color={colors.mutedForeground} size={18} />
+					)}
+				</Pressable>
+
+				{/* Push */}
+				<Pressable
+					onPress={onPush}
+					disabled={isBusy || !status}
+					style={[styles.headerIconButton, { opacity: isBusy || !status ? 0.5 : 1 }]}
+				>
+					{isPushing ? (
+						<ActivityIndicator size="small" color={colors.mutedForeground} />
+					) : (
+						<PushIcon color={colors.mutedForeground} size={18} />
+					)}
+				</Pressable>
+			</View>
+
+			{/* Branch dropdown (placeholder for future) */}
+			<Pressable style={[styles.branchDropdown, { backgroundColor: colors.card }]}>
+				<BranchIcon color={colors.mutedForeground} size={14} />
+				<ChevronIcon color={colors.mutedForeground} size={14} />
+			</Pressable>
+		</View>
+	);
+}
+
 function FileItem({
 	file,
 	onPress,
-	onLongPress,
-	actionLabel,
+	onRevert,
 	isSelected,
 	onToggleSelect,
 	diffStats,
 	showCheckbox = false,
+	isReverting = false,
 }: {
 	file: GitStatusFile;
 	onPress?: () => void;
-	onLongPress?: () => void;
-	actionLabel?: string;
+	onRevert?: () => void;
 	isSelected?: boolean;
 	onToggleSelect?: () => void;
 	diffStats?: { insertions: number; deletions: number };
 	showCheckbox?: boolean;
+	isReverting?: boolean;
 }) {
 	const { colors } = useTheme();
 	const status = getFileStatus(file);
@@ -131,10 +328,12 @@ function FileItem({
 		untracked: "?",
 	};
 
+	// Can revert modified files (not untracked or already staged)
+	const canRevert = status === "modified" && onRevert;
+
 	return (
 		<Pressable
 			onPress={showCheckbox ? onToggleSelect : onPress}
-			onLongPress={onLongPress}
 			style={({ pressed }) => [
 				styles.fileItem,
 				pressed && { backgroundColor: colors.muted },
@@ -165,16 +364,21 @@ function FileItem({
 					deletions={diffStats.deletions}
 				/>
 			)}
-			{actionLabel && !showCheckbox && (
-				<Pressable
-					onPress={onLongPress}
-					style={[styles.actionButton, { backgroundColor: colors.muted }]}
-				>
-					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-						{actionLabel}
-					</Text>
-				</Pressable>
-			)}
+			{/* Revert button - show for all files, functional for modified */}
+			<Pressable
+				onPress={canRevert ? onRevert : undefined}
+				disabled={!canRevert || isReverting}
+				style={[
+					styles.revertButton,
+					{ opacity: canRevert && !isReverting ? 1 : 0.3 },
+				]}
+			>
+				{isReverting ? (
+					<ActivityIndicator size="small" color={colors.mutedForeground} />
+				) : (
+					<RevertIcon color={colors.mutedForeground} size={14} />
+				)}
+			</Pressable>
 		</Pressable>
 	);
 }
@@ -368,156 +572,158 @@ function HistorySection({
 	);
 }
 
-function CommitSheet({
-	visible,
-	onClose,
+// AI sparkle icon for generate button
+function SparkleIcon({ color, size = 16 }: { color: string; size?: number }) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+			<Path
+				d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414m12.728 0l-1.414-1.414M7.05 7.05L5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z"
+				stroke={color}
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</Svg>
+	);
+}
+
+function CommitSection({
+	selectedCount,
+	commitMessage,
+	onCommitMessageChange,
+	onGenerateMessage,
+	isGeneratingMessage,
 	onCommit,
+	onCommitAndPush,
 	isCommitting,
-	stagedFiles,
+	isPushing,
 }: {
-	visible: boolean;
-	onClose: () => void;
-	onCommit: (message: string) => void;
+	selectedCount: number;
+	commitMessage: string;
+	onCommitMessageChange: (value: string) => void;
+	onGenerateMessage: () => void;
+	isGeneratingMessage: boolean;
+	onCommit: () => void;
+	onCommitAndPush: () => void;
 	isCommitting: boolean;
-	stagedFiles: GitStatusFile[];
+	isPushing: boolean;
 }) {
 	const { colors } = useTheme();
-	const [message, setMessage] = useState("");
-	const [isGenerating, setIsGenerating] = useState(false);
+	const isBusy = isCommitting || isPushing || isGeneratingMessage;
+	const hasSelectedFiles = selectedCount > 0;
+	const canCommit = commitMessage.trim() && hasSelectedFiles && !isBusy;
 
-	const generateMessage = async () => {
-		if (stagedFiles.length === 0) return;
-
-		setIsGenerating(true);
-		try {
-			const result = await gitApi.generateCommitMessage(
-				stagedFiles.map((f) => f.path),
-			);
-			if (result.message?.subject) {
-				setMessage(result.message.subject);
-			}
-		} catch (err) {
-			const errorMsg =
-				err instanceof Error
-					? err.message
-					: "Failed to generate commit message";
-			Alert.alert("Error", errorMsg);
-		} finally {
-			setIsGenerating(false);
-		}
-	};
-
-	const handleCommit = () => {
-		if (!message.trim()) {
-			Alert.alert("Error", "Please enter a commit message");
-			return;
-		}
-		onCommit(message.trim());
-		setMessage("");
-	};
-
-	if (!visible) return null;
+	// Don't render if no files selected
+	if (!hasSelectedFiles) return null;
 
 	return (
-		<View style={styles.sheetOverlay}>
-			<Pressable style={styles.sheetBackdrop} onPress={onClose} />
-			<View
-				style={[styles.sheetContent, { backgroundColor: colors.background }]}
-			>
-				<View style={styles.sheetHeader}>
-					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
-						Commit Changes
-					</Text>
-					<Pressable onPress={onClose}>
-						<Text
-							style={[typography.uiLabel, { color: colors.mutedForeground }]}
-						>
-							Cancel
-						</Text>
-					</Pressable>
-				</View>
+		<View style={[styles.commitSection, { borderColor: colors.border, backgroundColor: colors.card }]}>
+			{/* Header */}
+			<View style={styles.commitSectionHeader}>
+				<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					Commit
+				</Text>
+				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+					{selectedCount} {selectedCount === 1 ? "file" : "files"} selected
+				</Text>
+			</View>
 
-				<TextInput
-					value={message}
-					onChangeText={setMessage}
-					placeholder="Commit message..."
-					placeholderTextColor={colors.mutedForeground}
-					multiline
-					numberOfLines={4}
+			{/* Commit message input */}
+			<TextInput
+				value={commitMessage}
+				onChangeText={onCommitMessageChange}
+				placeholder="Commit message"
+				placeholderTextColor={colors.mutedForeground}
+				multiline
+				style={[
+					styles.commitInput,
+					typography.body,
+					{
+						backgroundColor: colors.background,
+						borderColor: colors.border,
+						color: colors.foreground,
+					},
+				]}
+				editable={!isBusy}
+			/>
+
+			{/* Action buttons */}
+			<View style={styles.commitActions}>
+				{/* AI Generate button */}
+				<Pressable
+					onPress={onGenerateMessage}
+					disabled={!hasSelectedFiles || isGeneratingMessage}
 					style={[
-						styles.messageInput,
-						typography.body,
+						styles.aiButton,
 						{
-							backgroundColor: colors.input,
-							borderColor: colors.border,
-							color: colors.foreground,
+							backgroundColor: colors.muted,
+							opacity: !hasSelectedFiles || isGeneratingMessage ? 0.5 : 1,
 						},
 					]}
-					editable={!isCommitting}
-				/>
+				>
+					{isGeneratingMessage ? (
+						<ActivityIndicator size="small" color={colors.foreground} />
+					) : (
+						<SparkleIcon color={colors.foreground} size={16} />
+					)}
+				</Pressable>
 
-				<View style={styles.sheetActions}>
-					<Pressable
-						onPress={generateMessage}
-						disabled={isGenerating || stagedFiles.length === 0}
-						style={[
-							styles.sheetButton,
-							{
-								backgroundColor: colors.card,
-								borderColor: colors.border,
-								opacity: isGenerating || stagedFiles.length === 0 ? 0.5 : 1,
-							},
-						]}
-					>
-						{isGenerating ? (
-							<ActivityIndicator size="small" color={colors.foreground} />
-						) : (
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: colors.foreground, fontWeight: "500" },
-								]}
-							>
-								Generate
-							</Text>
-						)}
-					</Pressable>
+				<View style={{ flex: 1 }} />
 
-					<Pressable
-						onPress={handleCommit}
-						disabled={isCommitting || !message.trim()}
-						style={[
-							styles.sheetButton,
-							{
-								backgroundColor: colors.primary,
-								opacity: isCommitting || !message.trim() ? 0.5 : 1,
-							},
-						]}
-					>
-						{isCommitting ? (
-							<ActivityIndicator
-								size="small"
-								color={colors.primaryForeground}
-							/>
-						) : (
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: colors.primaryForeground, fontWeight: "500" },
-								]}
-							>
+				{/* Commit button */}
+				<Pressable
+					onPress={onCommit}
+					disabled={!canCommit}
+					style={[
+						styles.commitButton,
+						{
+							backgroundColor: colors.card,
+							borderColor: colors.border,
+							opacity: canCommit ? 1 : 0.5,
+						},
+					]}
+				>
+					{isCommitting ? (
+						<ActivityIndicator size="small" color={colors.foreground} />
+					) : (
+						<>
+							<Text style={[typography.uiLabel, { color: colors.foreground }]}>→</Text>
+							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>
 								Commit
 							</Text>
-						)}
-					</Pressable>
-				</View>
+						</>
+					)}
+				</Pressable>
+
+				{/* Commit & Push button */}
+				<Pressable
+					onPress={onCommitAndPush}
+					disabled={!canCommit}
+					style={[
+						styles.commitPushButton,
+						{
+							backgroundColor: colors.primary,
+							opacity: canCommit ? 1 : 0.5,
+						},
+					]}
+				>
+					{isPushing ? (
+						<ActivityIndicator size="small" color={colors.primaryForeground} />
+					) : (
+						<>
+							<Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>↑</Text>
+							<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
+								Commit & Push
+							</Text>
+						</>
+					)}
+				</Pressable>
 			</View>
 		</View>
 	);
 }
 
 export default function GitScreen() {
-	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
 	const { isConnected, directory } = useConnectionStore();
 
@@ -525,13 +731,19 @@ export default function GitScreen() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [showCommitSheet, setShowCommitSheet] = useState(false);
 	const [isCommitting, setIsCommitting] = useState(false);
 	const [isPushing, setIsPushing] = useState(false);
 	const [isPulling, setIsPulling] = useState(false);
 
+	// Commit message state (for inline commit section)
+	const [commitMessage, setCommitMessage] = useState("");
+	const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
+
 	// Selection state for batch operations
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+
+	// Reverting files state
+	const [revertingFiles, setRevertingFiles] = useState<Set<string>>(new Set());
 
 	// History state
 	const [history, setHistory] = useState<GitLog | null>(null);
@@ -591,11 +803,55 @@ export default function GitScreen() {
 		loadStatus();
 	}, [loadStatus]);
 
-	const handleCommit = async (message: string) => {
+	const handleGenerateMessage = async () => {
+		const filesToUse = selectedFiles.size > 0
+			? [...selectedFiles]
+			: [...modifiedFiles, ...untrackedFiles].map(f => f.path);
+
+		if (filesToUse.length === 0) return;
+
+		setIsGeneratingMessage(true);
+		try {
+			const result = await gitApi.generateCommitMessage(filesToUse);
+			if (result.message?.subject) {
+				setCommitMessage(result.message.subject);
+			}
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to generate commit message",
+			);
+		} finally {
+			setIsGeneratingMessage(false);
+		}
+	};
+
+	const handleCommit = async () => {
+		if (!commitMessage.trim()) {
+			Alert.alert("Error", "Please enter a commit message");
+			return;
+		}
+
+		// Stage selected files first
+		if (selectedFiles.size > 0) {
+			try {
+				for (const path of selectedFiles) {
+					await gitApi.stageFile(path);
+				}
+			} catch (err) {
+				Alert.alert(
+					"Error",
+					err instanceof Error ? err.message : "Failed to stage files",
+				);
+				return;
+			}
+		}
+
 		setIsCommitting(true);
 		try {
-			await gitApi.commit(message);
-			setShowCommitSheet(false);
+			await gitApi.commit(commitMessage.trim());
+			setCommitMessage("");
+			setSelectedFiles(new Set());
 			await loadStatus();
 			Alert.alert("Success", "Changes committed successfully");
 		} catch (err) {
@@ -605,6 +861,50 @@ export default function GitScreen() {
 			);
 		} finally {
 			setIsCommitting(false);
+		}
+	};
+
+	const handleCommitAndPush = async () => {
+		if (!commitMessage.trim()) {
+			Alert.alert("Error", "Please enter a commit message");
+			return;
+		}
+
+		// Stage selected files first
+		if (selectedFiles.size > 0) {
+			try {
+				for (const path of selectedFiles) {
+					await gitApi.stageFile(path);
+				}
+			} catch (err) {
+				Alert.alert(
+					"Error",
+					err instanceof Error ? err.message : "Failed to stage files",
+				);
+				return;
+			}
+		}
+
+		setIsCommitting(true);
+		try {
+			await gitApi.commit(commitMessage.trim());
+			setCommitMessage("");
+			setSelectedFiles(new Set());
+
+			// Now push
+			setIsCommitting(false);
+			setIsPushing(true);
+			await gitApi.push();
+			await loadStatus();
+			Alert.alert("Success", "Changes committed and pushed successfully");
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to commit and push",
+			);
+		} finally {
+			setIsCommitting(false);
+			setIsPushing(false);
 		}
 	};
 
@@ -662,6 +962,7 @@ export default function GitScreen() {
 					text: "Revert",
 					style: "destructive",
 					onPress: async () => {
+						setRevertingFiles(prev => new Set(prev).add(path));
 						try {
 							await gitApi.revertFile(path);
 							await loadStatus();
@@ -670,6 +971,12 @@ export default function GitScreen() {
 								"Error",
 								err instanceof Error ? err.message : "Failed to revert file",
 							);
+						} finally {
+							setRevertingFiles(prev => {
+								const next = new Set(prev);
+								next.delete(path);
+								return next;
+							});
 						}
 					},
 				},
@@ -697,22 +1004,6 @@ export default function GitScreen() {
 
 	const handleSelectNone = () => {
 		setSelectedFiles(new Set());
-	};
-
-	const handleStageSelected = async () => {
-		if (selectedFiles.size === 0) return;
-		try {
-			for (const path of selectedFiles) {
-				await gitApi.stageFile(path);
-			}
-			setSelectedFiles(new Set());
-			await loadStatus();
-		} catch (err) {
-			Alert.alert(
-				"Error",
-				err instanceof Error ? err.message : "Failed to stage files",
-			);
-		}
 	};
 
 	// History handlers
@@ -781,14 +1072,13 @@ export default function GitScreen() {
 				}
 			>
 				{stagedFiles.length > 0 && (
-					<View>
+					<View style={[styles.changesSection, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 0 }]}>
 						<SectionHeader title="Staged Changes" count={stagedFiles.length} />
 						{stagedFiles.map((file) => (
 							<FileItem
 								key={file.path}
 								file={file}
-								onLongPress={() => handleUnstageFile(file.path)}
-								actionLabel="Unstage"
+								onPress={() => handleUnstageFile(file.path)}
 								diffStats={status?.diffStats?.[file.path]}
 							/>
 						))}
@@ -796,24 +1086,30 @@ export default function GitScreen() {
 				)}
 
 				{allUnstagedFiles.length > 0 && (
-					<View>
-						<View
-							style={[styles.changesHeader, { backgroundColor: colors.muted }]}
-						>
+					<View style={[styles.changesSection, { borderColor: colors.border, backgroundColor: colors.card }]}>
+						<View style={styles.changesHeader}>
 							<Text
 								style={[
-									typography.meta,
-									{ color: colors.mutedForeground, fontWeight: "500" },
+									typography.uiLabel,
+									{ color: colors.foreground, fontWeight: "600" },
 								]}
 							>
-								Changes ({allUnstagedFiles.length})
+								Changes
 							</Text>
-							<View style={styles.selectionButtons}>
+							<View style={styles.changesCountAndButtons}>
+								<Text
+									style={[
+										typography.meta,
+										{ color: colors.mutedForeground },
+									]}
+								>
+									{selectedFiles.size}/{allUnstagedFiles.length}
+								</Text>
 								<Pressable
 									onPress={handleSelectAll}
 									style={[
 										styles.selectionButton,
-										{ backgroundColor: colors.card },
+										{ backgroundColor: colors.muted },
 									]}
 								>
 									<Text
@@ -829,7 +1125,7 @@ export default function GitScreen() {
 									onPress={handleSelectNone}
 									style={[
 										styles.selectionButton,
-										{ backgroundColor: colors.card },
+										{ backgroundColor: colors.muted },
 									]}
 								>
 									<Text
@@ -841,24 +1137,6 @@ export default function GitScreen() {
 										None
 									</Text>
 								</Pressable>
-								{selectedFiles.size > 0 && (
-									<Pressable
-										onPress={handleStageSelected}
-										style={[
-											styles.stageAllButton,
-											{ backgroundColor: colors.primary },
-										]}
-									>
-										<Text
-											style={[
-												typography.micro,
-												{ color: colors.primaryForeground },
-											]}
-										>
-											Stage ({selectedFiles.size})
-										</Text>
-									</Pressable>
-								)}
 							</View>
 						</View>
 
@@ -869,16 +1147,26 @@ export default function GitScreen() {
 								showCheckbox
 								isSelected={selectedFiles.has(file.path)}
 								onToggleSelect={() => handleToggleSelect(file.path)}
-								onLongPress={() =>
-									getFileStatus(file) === "modified"
-										? handleRevertFile(file.path)
-										: undefined
-								}
+								onRevert={() => handleRevertFile(file.path)}
+								isReverting={revertingFiles.has(file.path)}
 								diffStats={status?.diffStats?.[file.path]}
 							/>
 						))}
 					</View>
 				)}
+
+				{/* Inline Commit Section */}
+				<CommitSection
+					selectedCount={selectedFiles.size}
+					commitMessage={commitMessage}
+					onCommitMessageChange={setCommitMessage}
+					onGenerateMessage={handleGenerateMessage}
+					isGeneratingMessage={isGeneratingMessage}
+					onCommit={handleCommit}
+					onCommitAndPush={handleCommitAndPush}
+					isCommitting={isCommitting}
+					isPushing={isPushing}
+				/>
 
 				{/* History Section */}
 				<HistorySection
@@ -894,137 +1182,18 @@ export default function GitScreen() {
 
 	return (
 		<View style={[styles.container, { backgroundColor: colors.background }]}>
-			{status && (
-				<View style={[styles.branchBar, { borderBottomColor: colors.border }]}>
-					<View style={styles.branchInfo}>
-						<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-							<Path
-								d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-								stroke={colors.primary}
-								strokeWidth={2}
-								strokeLinecap="round"
-							/>
-							<Path
-								d="M18 9a9 9 0 0 1-9 9"
-								stroke={colors.primary}
-								strokeWidth={2}
-								strokeLinecap="round"
-							/>
-						</Svg>
-						<Text
-							style={[
-								typography.uiLabel,
-								{ color: colors.foreground, fontWeight: "500" },
-							]}
-						>
-							{status.current}
-						</Text>
-					</View>
-					<View style={styles.syncStatus}>
-						{status.ahead > 0 && (
-							<Text style={[typography.meta, { color: colors.success }]}>
-								↑{status.ahead}
-							</Text>
-						)}
-						{status.behind > 0 && (
-							<Text style={[typography.meta, { color: colors.destructive }]}>
-								↓{status.behind}
-							</Text>
-						)}
-					</View>
-				</View>
-			)}
+			{/* New GitHeader with branch, sync status, action buttons */}
+			<GitHeader
+				status={status}
+				onRefresh={handleRefresh}
+				onPull={handlePull}
+				onPush={handlePush}
+				isPulling={isPulling}
+				isPushing={isPushing}
+				isRefreshing={isRefreshing}
+			/>
 
 			{renderContent()}
-
-			<View
-				style={[
-					styles.footer,
-					{ borderTopColor: colors.border, paddingBottom: insets.bottom + 16 },
-				]}
-			>
-				<Pressable
-					onPress={handlePull}
-					disabled={isPulling || !status}
-					style={[
-						styles.footerButton,
-						{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							opacity: isPulling || !status ? 0.5 : 1,
-						},
-					]}
-				>
-					{isPulling ? (
-						<ActivityIndicator size="small" color={colors.foreground} />
-					) : (
-						<Text
-							style={[
-								typography.uiLabel,
-								{ color: colors.foreground, fontWeight: "500" },
-							]}
-						>
-							Pull
-						</Text>
-					)}
-				</Pressable>
-				<Pressable
-					onPress={() => setShowCommitSheet(true)}
-					disabled={stagedFiles.length === 0 && modifiedFiles.length === 0}
-					style={[
-						styles.footerButton,
-						{
-							backgroundColor: colors.primary,
-							opacity:
-								stagedFiles.length === 0 && modifiedFiles.length === 0
-									? 0.5
-									: 1,
-						},
-					]}
-				>
-					<Text
-						style={[
-							typography.uiLabel,
-							{ color: colors.primaryForeground, fontWeight: "500" },
-						]}
-					>
-						Commit
-					</Text>
-				</Pressable>
-				<Pressable
-					onPress={handlePush}
-					disabled={isPushing || !status || status.ahead === 0}
-					style={[
-						styles.footerButton,
-						{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							opacity: isPushing || !status || status.ahead === 0 ? 0.5 : 1,
-						},
-					]}
-				>
-					{isPushing ? (
-						<ActivityIndicator size="small" color={colors.foreground} />
-					) : (
-						<Text
-							style={[
-								typography.uiLabel,
-								{ color: colors.foreground, fontWeight: "500" },
-							]}
-						>
-							Push
-						</Text>
-					)}
-				</Pressable>
-			</View>
-
-			<CommitSheet
-				visible={showCommitSheet}
-				onClose={() => setShowCommitSheet(false)}
-				onCommit={handleCommit}
-				isCommitting={isCommitting}
-				stagedFiles={stagedFiles}
-			/>
 		</View>
 	);
 }
@@ -1033,135 +1202,63 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 	},
-	branchBar: {
+	// GitHeader styles
+	gitHeader: {
 		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "space-between",
+		gap: 8,
 		borderBottomWidth: 1,
-		paddingHorizontal: 16,
-		paddingVertical: 16,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
 	},
-	branchInfo: {
+	branchSelector: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
+		gap: 6,
+		paddingHorizontal: 10,
+		paddingVertical: 6,
+		borderRadius: 8,
 	},
-	syncStatus: {
+	syncIndicators: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
+		gap: 6,
 	},
-	loadingContainer: {
-		flex: 1,
+	headerActions: {
+		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "center",
+		gap: 2,
+		marginLeft: "auto",
 	},
-	scrollView: {
-		flex: 1,
+	headerIconButton: {
+		padding: 8,
+		borderRadius: 8,
 	},
+	branchDropdown: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		paddingHorizontal: 8,
+		paddingVertical: 6,
+		borderRadius: 8,
+	},
+	// FileItem styles
 	fileItem: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
 		paddingHorizontal: 16,
-		paddingVertical: 10, // Compact spacing like PWA
+		paddingVertical: 10,
 	},
 	statusIcon: {
 		width: 24,
 		alignItems: "center",
 	},
-	actionButton: {
-		borderRadius: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
+	revertButton: {
+		padding: 6,
+		marginLeft: 4,
 	},
-	sectionHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 8,
-	},
-	countBadge: {
-		borderRadius: 12,
-		paddingHorizontal: 8,
-		paddingVertical: 2,
-	},
-	changesHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 8,
-	},
-	stageAllButton: {
-		borderRadius: 6,
-		paddingHorizontal: 10,
-		paddingVertical: 5,
-	},
-	emptyState: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		paddingHorizontal: 32,
-		paddingVertical: 64,
-	},
-	footer: {
-		flexDirection: "row",
-		gap: 12,
-		borderTopWidth: 1,
-		paddingHorizontal: 16,
-		paddingTop: 16,
-	},
-	footerButton: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 8,
-		borderWidth: 1,
-		paddingVertical: 8, // py-2 to match PWA button height
-	},
-	sheetOverlay: {
-		...StyleSheet.absoluteFillObject,
-		backgroundColor: "rgba(0,0,0,0.5)",
-		zIndex: 500, // Below SessionSheet (1000) but above other content
-		elevation: 500,
-	},
-	sheetBackdrop: {
-		flex: 1,
-	},
-	sheetContent: {
-		borderTopLeftRadius: 24,
-		borderTopRightRadius: 24,
-		padding: 16,
-	},
-	sheetHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		marginBottom: 16,
-	},
-	messageInput: {
-		minHeight: 100,
-		borderRadius: 8,
-		borderWidth: 1,
-		padding: 12,
-		textAlignVertical: "top",
-		marginBottom: 16,
-	},
-	sheetActions: {
-		flexDirection: "row",
-		gap: 12,
-	},
-	sheetButton: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: "transparent",
-		paddingVertical: 8, // py-2 to match PWA
-	},
+	// Checkbox
 	checkbox: {
 		width: 20,
 		height: 20,
@@ -1175,16 +1272,109 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 4,
 	},
-	selectionButtons: {
+	// Changes section styles
+	changesSection: {
+		marginHorizontal: 12,
+		marginTop: 12,
+		borderRadius: 12,
+		borderWidth: 1,
+		overflow: "hidden",
+	},
+	changesHeader: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6,
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+	},
+	changesCountAndButtons: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
 	},
 	selectionButton: {
 		borderRadius: 6,
-		paddingHorizontal: 10, // More comfortable touch target
+		paddingHorizontal: 10,
 		paddingVertical: 5,
 	},
+	// Commit section styles
+	commitSection: {
+		marginHorizontal: 12,
+		marginTop: 12,
+		borderRadius: 12,
+		borderWidth: 1,
+		padding: 12,
+	},
+	commitSectionHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginBottom: 10,
+	},
+	commitInput: {
+		minHeight: 60,
+		borderRadius: 8,
+		borderWidth: 1,
+		padding: 10,
+		textAlignVertical: "top",
+		marginBottom: 10,
+	},
+	commitActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	aiButton: {
+		padding: 10,
+		borderRadius: 8,
+	},
+	commitButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
+		borderWidth: 1,
+	},
+	commitPushButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
+	},
+	// Staged section / section header
+	sectionHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	countBadge: {
+		borderRadius: 12,
+		paddingHorizontal: 8,
+		paddingVertical: 2,
+	},
+	// Loading & empty state
+	loadingContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	scrollView: {
+		flex: 1,
+	},
+	emptyState: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 32,
+		paddingVertical: 64,
+	},
+	// History section
 	historySection: {
 		borderTopWidth: 1,
 		marginTop: 16,

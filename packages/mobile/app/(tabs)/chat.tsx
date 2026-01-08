@@ -336,7 +336,8 @@ export default function ChatScreen() {
 					(info?.time?.completed && typeof info.time.completed === "number");
 
 				// Extract tokens from info if available
-				const messageTokens = (info as { tokens?: number | TokenBreakdown })?.tokens;
+				const messageTokens = (info as { tokens?: number | TokenBreakdown })
+					?.tokens;
 
 				const assistantId = currentAssistantMessageIdRef.current;
 				if (assistantId) {
@@ -348,7 +349,9 @@ export default function ChatScreen() {
 										parts: partsArray,
 										content: textContent,
 										isStreaming: !isComplete,
-										...(messageTokens !== undefined && { tokens: messageTokens }),
+										...(messageTokens !== undefined && {
+											tokens: messageTokens,
+										}),
 									}
 								: msg,
 						),
@@ -373,14 +376,14 @@ export default function ChatScreen() {
 	useEventStream(sessionId, handleStreamEvent);
 
 	// Sync streaming state with layout context
-	// Note: _updateStreamingSessions excluded from deps - it's a stable ref
+	// biome-ignore lint/correctness/useExhaustiveDependencies: _updateStreamingSessions is intentionally excluded - it's recreated each render but we only want to run when isLoading/sessionId change
 	useEffect(() => {
 		if (_updateStreamingSessions) {
 			_updateStreamingSessions(
 				isLoading && sessionId ? new Set([sessionId]) : new Set(),
 			);
 		}
-	}, [isLoading, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [isLoading, sessionId]);
 
 	// Sync with context's currentSessionId - defined after loadSessionMessages
 	const prevContextSessionIdRef = useRef<string | null>(null);
@@ -424,7 +427,7 @@ export default function ChatScreen() {
 				// Use listConnected to get only authenticated providers
 				const data = await providersApi.listConnected();
 				// Mark connected providers as enabled for ModelPicker
-				const enabledProviders = data.map(p => ({ ...p, enabled: true }));
+				const enabledProviders = data.map((p) => ({ ...p, enabled: true }));
 				setProviders(enabledProviders);
 			} catch (err) {
 				console.error("Failed to fetch providers:", err);
@@ -1153,22 +1156,28 @@ export default function ChatScreen() {
 					},
 				]}
 			>
-			<ChatInput
-				onSend={handleSend}
-				isLoading={isLoading}
-				placeholder={
-					isConnected
-						? "# for agents; @ for files; / for commands"
-						: "Connect to server first"
-				}
-				agents={agents.map((a) => ({ name: a.name, description: a.description }))}
-				commands={commands.map((c) => ({ name: c.name, description: c.description }))}
-				onFileSearch={handleFileSearch}
-				modelInfo={modelInfo}
-				activeAgent={activeAgent}
-				onModelPress={() => setShowModelPicker(true)}
-				onAgentPress={() => setShowAgentPicker(true)}
-			/>
+				<ChatInput
+					onSend={handleSend}
+					isLoading={isLoading}
+					placeholder={
+						isConnected
+							? "# for agents; @ for files; / for commands"
+							: "Connect to server first"
+					}
+					agents={agents.map((a) => ({
+						name: a.name,
+						description: a.description,
+					}))}
+					commands={commands.map((c) => ({
+						name: c.name,
+						description: c.description,
+					}))}
+					onFileSearch={handleFileSearch}
+					modelInfo={modelInfo}
+					activeAgent={activeAgent}
+					onModelPress={() => setShowModelPicker(true)}
+					onAgentPress={() => setShowAgentPicker(true)}
+				/>
 			</View>
 
 			<AgentPicker

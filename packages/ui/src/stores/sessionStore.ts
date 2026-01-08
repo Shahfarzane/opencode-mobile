@@ -882,9 +882,37 @@ export const useSessionStore = create<SessionStore>()(
                     set({ error: null });
                 },
 
-                getSessionsByDirectory: () => {
-                    const { sessions } = get();
-                    return sessions;
+                getSessionsByDirectory: (directory: string) => {
+                    const { sessions, worktreeMetadata } = get();
+                    const normalizedDirectory = normalizePath(directory);
+
+                    if (!normalizedDirectory) {
+                        return sessions;
+                    }
+
+                    return sessions.filter((session) => {
+                        // Check worktree metadata first
+                        const metadata = worktreeMetadata.get(session.id);
+                        if (metadata?.projectDirectory) {
+                            const metaProjectDir = normalizePath(metadata.projectDirectory);
+                            if (metaProjectDir === normalizedDirectory) {
+                                return true;
+                            }
+                        }
+
+                        // Check session directory
+                        const sessionDir = normalizePath((session as { directory?: string }).directory);
+                        if (sessionDir === normalizedDirectory) {
+                            return true;
+                        }
+
+                        // Check if session directory is a subdirectory (worktree path)
+                        if (sessionDir && sessionDir.startsWith(normalizedDirectory + "/")) {
+                            return true;
+                        }
+
+                        return false;
+                    });
                 },
 
                 applySessionMetadata: (sessionId, metadata) => {
