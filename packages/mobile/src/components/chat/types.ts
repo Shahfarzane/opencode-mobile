@@ -45,6 +45,13 @@ export type MessagePart = {
 	size?: number;
 };
 
+export type TokenBreakdown = {
+	input?: number;
+	output?: number;
+	reasoning?: number;
+	cache?: { read?: number; write?: number };
+};
+
 export type Message = {
 	id: string;
 	role: "user" | "assistant";
@@ -55,6 +62,8 @@ export type Message = {
 	// Model/agent info for assistant messages
 	modelName?: string;
 	agentName?: string;
+	// Token usage info
+	tokens?: number | TokenBreakdown;
 };
 
 export function convertStreamingPart(part: StreamingPart): MessagePart {
