@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { type GitStatus, type GitStatusFile, gitApi, serverApi } from "../../src/api";
+import { type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 
@@ -409,14 +409,10 @@ const SideBySideColumn = memo(function SideBySideColumn({
 	line,
 	side,
 	width,
-	isFirst,
-	isLast,
 }: {
 	line: SideBySideLine["left"] | SideBySideLine["right"];
 	side: "left" | "right";
 	width: number;
-	isFirst?: boolean;
-	isLast?: boolean;
 }) {
 	const { colors, isDark } = useTheme();
 	const lineNumberWidth = 32;
@@ -460,13 +456,7 @@ const SideBySideColumn = memo(function SideBySideColumn({
 		}
 	};
 
-	const borderRadiusStyle = {
-		borderTopLeftRadius: isFirst && side === "left" ? 8 : 0,
-		borderTopRightRadius: isFirst && side === "right" ? 8 : 0,
-		borderBottomLeftRadius: isLast && side === "left" ? 8 : 0,
-		borderBottomRightRadius: isLast && side === "right" ? 8 : 0,
-	};
-
+	// Border between left and right columns
 	const borderStyle = side === "left" ? { borderRightWidth: 1, borderRightColor: colors.border } : {};
 
 	if (line.type === "header" || line.type === "chunk") {
@@ -475,7 +465,6 @@ const SideBySideColumn = memo(function SideBySideColumn({
 				style={[
 					styles.sideBySideColumn,
 					{ width, backgroundColor: getBackgroundColor() },
-					borderRadiusStyle,
 					borderStyle,
 				]}
 			>
@@ -496,7 +485,6 @@ const SideBySideColumn = memo(function SideBySideColumn({
 				style={[
 					styles.sideBySideColumn,
 					{ width, backgroundColor: getBackgroundColor() },
-					borderRadiusStyle,
 					borderStyle,
 				]}
 			>
@@ -511,7 +499,6 @@ const SideBySideColumn = memo(function SideBySideColumn({
 			style={[
 				styles.sideBySideColumn,
 				{ width, backgroundColor: getBackgroundColor() },
-				borderRadiusStyle,
 				borderStyle,
 			]}
 		>
@@ -521,7 +508,12 @@ const SideBySideColumn = memo(function SideBySideColumn({
 				</Text>
 			</View>
 			<Text style={[styles.lineSign, { color: getSignColor() }]}>{getSign()}</Text>
-			<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+			<ScrollView
+				horizontal
+				showsHorizontalScrollIndicator={false}
+				nestedScrollEnabled={true}
+				style={{ flex: 1 }}
+			>
 				<Text style={[typography.code, { color: colors.foreground, fontSize: 11 }]}>
 					{highlightCode(line.content)}
 				</Text>
@@ -539,28 +531,37 @@ function SideBySideDiffView({
 	const { colors } = useTheme();
 	const { width } = useWindowDimensions();
 	const insets = useSafeAreaInsets();
-	const columnWidth = (width - 24) / 2;
+	// Fix: account for margin (24px total) and border between columns (1px)
+	const horizontalMargin = 24; // 12px each side from styles.diffList
+	const borderWidth = 1; // border between left and right columns
+	const availableWidth = width - horizontalMargin;
+	const columnWidth = Math.floor((availableWidth - borderWidth) / 2);
 
 	const renderItem = useCallback(
 		({ item, index }: { item: SideBySideLine; index: number }) => {
 			const isFirst = index === 0;
 			const isLast = index === pairs.length - 1;
 
+			// Apply border radius to row container for cleaner corners
+			const rowBorderRadius = {
+				borderTopLeftRadius: isFirst ? 8 : 0,
+				borderTopRightRadius: isFirst ? 8 : 0,
+				borderBottomLeftRadius: isLast ? 8 : 0,
+				borderBottomRightRadius: isLast ? 8 : 0,
+				overflow: "hidden" as const,
+			};
+
 			return (
-				<View style={styles.sideBySideRow}>
+				<View style={[styles.sideBySideRow, rowBorderRadius]}>
 					<SideBySideColumn
 						line={item.left}
 						side="left"
 						width={columnWidth}
-						isFirst={isFirst}
-						isLast={isLast}
 					/>
 					<SideBySideColumn
 						line={item.right}
 						side="right"
 						width={columnWidth}
-						isFirst={isFirst}
-						isLast={isLast}
 					/>
 				</View>
 			);
@@ -568,16 +569,25 @@ function SideBySideDiffView({
 		[columnWidth, pairs.length]
 	);
 
+	// Fixed row height for getItemLayout optimization
+	const ROW_HEIGHT = 22; // matches minHeight in styles.sideBySideColumn
+
 	return (
 		<FlatList
 			data={pairs}
 			keyExtractor={(_, index) => index.toString()}
 			renderItem={renderItem}
+			getItemLayout={(_, index) => ({
+				length: ROW_HEIGHT,
+				offset: ROW_HEIGHT * index,
+				index,
+			})}
 			style={[styles.diffList, { backgroundColor: colors.card }]}
 			contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
 			initialNumToRender={30}
 			maxToRenderPerBatch={20}
 			windowSize={10}
+			removeClippedSubviews={true}
 		/>
 	);
 }
@@ -835,7 +845,6 @@ export default function DiffScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [viewMode, setViewMode] = useState<DiffViewMode>("unified");
 
-	const { setDirectory } = useConnectionStore();
 
 	const isNarrow = screenWidth < SIDE_BY_SIDE_MIN_WIDTH;
 	const effectiveViewMode: DiffViewMode = isNarrow ? "unified" : viewMode;
@@ -849,13 +858,8 @@ export default function DiffScreen() {
 
 		try {
 			setError(null);
-			
-			const serverDir = await serverApi.getServerDirectory();
-			if (serverDir && serverDir !== directory) {
-				await setDirectory(serverDir);
-			}
-			
-			if (!serverDir && !directory) {
+
+			if (!directory) {
 				setError("No directory selected");
 				setIsLoading(false);
 				return;
@@ -880,7 +884,7 @@ export default function DiffScreen() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [isConnected, directory, selectedFile, setDirectory]);
+	}, [isConnected, directory, selectedFile]);
 
 	const loadDiff = useCallback(async (path: string) => {
 		setIsLoadingDiff(true);

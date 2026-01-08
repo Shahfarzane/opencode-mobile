@@ -52,6 +52,13 @@ export default function TabsLayout() {
 		initializeSessionSync().catch(console.error);
 	}, []);
 
+	// Redirect to directory selection if connected but no directory set
+	useEffect(() => {
+		if (isConnected && !directory) {
+			router.replace("/onboarding/directory");
+		}
+	}, [isConnected, directory]);
+
 	// Callbacks for chat screen to sync streaming state
 	// Use refs that get updated each render to avoid stale closures
 	const updateStreamingSessionsRef = useRef<(ids: Set<string>) => void>(

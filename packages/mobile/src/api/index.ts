@@ -32,7 +32,7 @@ export type {
 	StartAccessingResult,
 } from "./permissions";
 export { permissionsApi } from "./permissions";
-export type { Model, Provider } from "./providers";
+export type { Model, Provider, AuthMethod, OAuthStartResult } from "./providers";
 export { providersApi } from "./providers";
 export type {
 	MessageInfo,

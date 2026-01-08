@@ -34,7 +34,8 @@ export function ProvidersList({
       setIsLoading(true);
     }
     try {
-      const data = await providersApi.list();
+      // Use listConnected() to get only authenticated providers
+      const data = await providersApi.listConnected();
       setProviders(data);
     } catch (error) {
       console.error("Failed to load providers:", error);
@@ -96,7 +97,7 @@ export function ProvidersList({
       {providers.length === 0 && (
         <View className={listStyles.emptyContainer({})}>
           <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
-            No providers available
+            No providers connected
           </Text>
           <Text
             style={[
@@ -104,7 +105,7 @@ export function ProvidersList({
               { color: colors.mutedForeground, textAlign: "center" },
             ]}
           >
-            Configure providers in your OpenCode settings
+            Configure API keys in your OpenCode settings to connect providers
           </Text>
         </View>
       )}

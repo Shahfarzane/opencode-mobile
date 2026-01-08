@@ -33,6 +33,26 @@ interface FileSearchResponse {
 const normalizePath = (path: string): string => path.replace(/\\/g, "/");
 
 export const filesApi = {
+	/**
+	 * Get the server's current working directory.
+	 * This returns the directory where OpenCode is running.
+	 */
+	async getServerCwd(): Promise<{ cwd: string; home: string }> {
+		const response = await apiGet<{ cwd: string; home: string }>("/api/fs/cwd");
+		return {
+			cwd: normalizePath(response.cwd),
+			home: normalizePath(response.home),
+		};
+	},
+
+	/**
+	 * Get the user's home directory on the server.
+	 */
+	async getHome(): Promise<string> {
+		const response = await apiGet<{ home: string }>("/api/fs/home");
+		return normalizePath(response.home);
+	},
+
 	async listDirectory(dirPath: string): Promise<DirectoryListResult> {
 		const response = await apiGet<DirectoryListResult | { error?: string }>(
 			"/api/fs/list",
