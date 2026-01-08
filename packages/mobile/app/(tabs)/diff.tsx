@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
+import { type GitStatus, type GitStatusFile, gitApi, serverApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 
@@ -477,8 +477,10 @@ export default function DiffScreen() {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	const { setDirectory } = useConnectionStore();
+
 	const loadStatus = useCallback(async () => {
-		if (!isConnected || !directory) {
+		if (!isConnected) {
 			setError("Not connected");
 			setIsLoading(false);
 			return;
@@ -486,6 +488,18 @@ export default function DiffScreen() {
 
 		try {
 			setError(null);
+			
+			const serverDir = await serverApi.getServerDirectory();
+			if (serverDir && serverDir !== directory) {
+				await setDirectory(serverDir);
+			}
+			
+			if (!serverDir && !directory) {
+				setError("No directory selected");
+				setIsLoading(false);
+				return;
+			}
+
 			const isGit = await gitApi.checkIsGitRepository();
 			if (!isGit) {
 				setError("Not a git repository");
@@ -496,7 +510,6 @@ export default function DiffScreen() {
 			const gitStatus = await gitApi.getStatus();
 			setStatus(gitStatus);
 
-			// Auto-select first changed file if none selected
 			if (!selectedFile && gitStatus.files.length > 0) {
 				setSelectedFile(gitStatus.files[0].path);
 			}
@@ -506,7 +519,7 @@ export default function DiffScreen() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [isConnected, directory, selectedFile]);
+	}, [isConnected, directory, selectedFile, setDirectory]);
 
 	const loadDiff = useCallback(async (path: string) => {
 		setIsLoadingDiff(true);

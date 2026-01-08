@@ -1,7 +1,7 @@
 import { tv, combineStyles } from "@/lib/styles";
 
 const overlay = tv({
-  base: "flex-1 justify-center items-center",
+  base: "flex-1",
   variants: {},
 });
 

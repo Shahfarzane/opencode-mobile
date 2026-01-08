@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Dimensions, Modal, Pressable, Text, View } from "react-native";
 import {
 	CopyIcon,
 	LinkOffIcon,
@@ -21,7 +21,11 @@ interface SessionActionsMenuProps {
 	onDelete: () => void;
 	isShared?: boolean;
 	shareUrl?: string;
+	anchorPosition?: { x: number; y: number } | null;
 }
+
+const MENU_WIDTH = 180;
+const MENU_MARGIN = 8;
 
 export function SessionActionsMenu({
 	visible,
@@ -33,8 +37,17 @@ export function SessionActionsMenu({
 	onDelete,
 	isShared = false,
 	shareUrl,
+	anchorPosition,
 }: SessionActionsMenuProps) {
 	const { colors, isDark } = useTheme();
+	const screenWidth = Dimensions.get("window").width;
+	
+	const menuPosition = anchorPosition
+		? {
+				top: anchorPosition.y + MENU_MARGIN,
+				right: screenWidth - anchorPosition.x,
+			}
+		: null;
 
 	const handleRename = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -83,16 +96,24 @@ export function SessionActionsMenu({
 			>
 				<View
 					className={sessionActionsMenuStyles.menu({})}
-					style={{
-						backgroundColor: colors.card,
-						borderColor: colors.border,
-						borderWidth: 1,
-						shadowColor: isDark ? "#000" : "#666",
-						shadowOffset: { width: 0, height: 4 },
-						shadowOpacity: 0.15,
-						shadowRadius: 12,
-						elevation: 8,
-					}}
+					style={[
+						{
+							backgroundColor: colors.card,
+							borderColor: colors.border,
+							borderWidth: 1,
+							shadowColor: isDark ? "#000" : "#666",
+							shadowOffset: { width: 0, height: 4 },
+							shadowOpacity: 0.15,
+							shadowRadius: 12,
+							elevation: 8,
+							minWidth: MENU_WIDTH,
+						},
+						menuPosition && {
+							position: "absolute",
+							top: menuPosition.top,
+							right: menuPosition.right,
+						},
+					]}
 				>
 					{/* Rename */}
 					<Pressable

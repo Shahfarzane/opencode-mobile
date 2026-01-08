@@ -6,6 +6,7 @@ import {
 	Text,
 	TextInput,
 	View,
+	type LayoutChangeEvent,
 } from "react-native";
 import type { Session } from "@/api/sessions";
 import {
@@ -97,7 +98,9 @@ export function SessionListItem({
 	const [showMenu, setShowMenu] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 	const [editTitle, setEditTitle] = useState("");
+	const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | null>(null);
 	const animatedOpacity = useRef(new Animated.Value(1)).current;
+	const menuButtonRef = useRef<View>(null);
 
 	useEffect(() => {
 		if (isStreaming) {
@@ -129,7 +132,10 @@ export function SessionListItem({
 
 	const handleOpenMenu = useCallback(async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-		setShowMenu(true);
+		menuButtonRef.current?.measureInWindow((x, y, width, height) => {
+			setMenuAnchor({ x: x + width, y: y + height });
+			setShowMenu(true);
+		});
 	}, []);
 
 	const handleStartEdit = useCallback(() => {
@@ -314,9 +320,9 @@ export function SessionListItem({
 					</View>
 				</View>
 
-				<Pressable onPress={handleOpenMenu} className="p-1.5 ml-1" hitSlop={8}>
-					<MoreVerticalIcon color={colors.mutedForeground} size={18} />
-				</Pressable>
+			<Pressable ref={menuButtonRef} onPress={handleOpenMenu} className="p-1.5 ml-1" hitSlop={8}>
+				<MoreVerticalIcon color={colors.mutedForeground} size={18} />
+			</Pressable>
 
 				{isSelected && (
 					<View
@@ -326,17 +332,18 @@ export function SessionListItem({
 				)}
 			</Pressable>
 
-			<SessionActionsMenu
-				visible={showMenu}
-				onClose={() => setShowMenu(false)}
-				onRename={handleStartEdit}
-				onShare={onShare}
-				onCopyLink={onCopyLink}
-				onUnshare={onUnshare}
-				onDelete={onDelete}
-				isShared={isShared}
-				shareUrl={session.share?.url}
-			/>
+		<SessionActionsMenu
+			visible={showMenu}
+			onClose={() => setShowMenu(false)}
+			onRename={handleStartEdit}
+			onShare={onShare}
+			onCopyLink={onCopyLink}
+			onUnshare={onUnshare}
+			onDelete={onDelete}
+			isShared={isShared}
+			shareUrl={session.share?.url}
+			anchorPosition={menuAnchor}
+		/>
 		</>
 	);
 }

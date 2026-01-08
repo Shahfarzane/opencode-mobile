@@ -1,165 +1,165 @@
 # OpenChamber - AI Agent & Contributor Reference
 
-Technical reference for AI coding agents and human contributors working on this project.
+**Generated:** 2026-01-08 | **Commit:** 6e613bc | **Branch:** main
 
-## Core Purpose
+## Overview
 
-Web and desktop interface for OpenCode AI coding agent. Provides cross-device continuity, remote accessibility, and a unified chat interface using the OpenCode API backend.
+Web, desktop, and mobile interface for [OpenCode](https://opencode.ai) AI coding agent. Monorepo with 6 packages targeting 4 runtimes (web, desktop, VS Code, mobile).
 
 ## Tech Stack
 
-- **React 19.1.1**: Modern React with concurrent features
-- **TypeScript 5.8.3**: Full type safety
-- **Vite 7.1.2**: Build tool with HMR and proxy
-- **Tailwind CSS v4.0.0**: Latest `@import` syntax
-- **Zustand 5.0.8**: State management with persistence
-- **@opencode-ai/sdk**: Official OpenCode SDK with typed endpoints and SSE
-- **@remixicon/react**: Icon system
-- **@radix-ui primitives**: Accessible component foundations
+| Layer | Technology |
+|-------|------------|
+| **UI** | React 19.1.1, Tailwind CSS v4, Radix UI, Zustand 5.0.8 |
+| **Web** | Vite 7.1.2, Express 5.1.0, node-pty |
+| **Desktop** | Tauri 2.9.4, Rust, portable-pty |
+| **Mobile** | Expo 54, React Native 0.81, Expo Router |
+| **VS Code** | Extension API, esbuild, Vite webview |
+| **SDK** | @opencode-ai/sdk with SSE streaming |
 
-## Architecture Overview (Monorepo)
+## Structure
 
-Workspaces:
-- `packages/ui` - Shared UI components and stores
-- `packages/web` - Web runtime, Express server, CLI
-- `packages/desktop` - Tauri desktop app with native APIs
-- `packages/vscode` - VS Code extension with webview UI
-
-### Core Components (UI)
-In `packages/ui/src/components/chat/`: ChatContainer, ChatEmptyState, ChatErrorBoundary, ChatInput, ChatMessage, FileAttachment, MarkdownRenderer, MessageList, ModelControls, PermissionCard, PermissionRequest, ServerFilePicker, StreamingTextDiff, AgentMentionAutocomplete, CommandAutocomplete, FileMentionAutocomplete.
-In `packages/ui/src/components/chat/message/`: MessageBody, MessageHeader, ToolOutputDialog, DiffViewToggle, FadeInOnReveal; parts/ (AssistantTextPart, ReasoningPart, ToolPart, UserTextPart, etc.)
-In `packages/ui/src/components/layout/`: MainLayout, Header, Sidebar, SidebarContextSummary, VSCodeLayout.
-In `packages/ui/src/components/views/`: ChatView, GitView, DiffView, TerminalView, SettingsView.
-In `packages/ui/src/components/sections/`: subsections agents/, commands/, git-identities/, openchamber/, providers/, shared/.
-In `packages/ui/src/components/session/`: DirectoryTree, DirectoryExplorerDialog, SessionDialogs, SessionSidebar.
-In `packages/ui/src/components/ui/`: CommandPalette, HelpDialog, ConfigUpdateOverlay, ContextUsageDisplay, ErrorBoundary, MemoryDebugPanel, MobileOverlayPanel, FireworksAnimation, OpenChamberLogo, OpenCodeIcon, ProviderLogo, ScrollShadow, OverlayScrollbar, plus Radix-based primitives (button, dialog, input, select, etc.)
-
-In `packages/ui/src/components/terminal/`: TerminalViewport
-In `packages/ui/src/components/onboarding/`: OnboardingScreen
-In `packages/ui/src/components/providers/`: ThemeProvider
-
-### State Management (UI)
-In `packages/ui/src/stores/`: contextStore, fileStore, messageStore, permissionStore, sessionStore, useAgentsStore, useCommandsStore, useConfigStore, useDirectoryStore, useFileSearchStore, useGitIdentitiesStore, useGitStore, useSessionStore, useTerminalStore, useUIStore
-
-### OpenCode SDK Integration (UI)
-In `packages/ui/src/lib/opencode/`: client.ts wrapper around `@opencode-ai/sdk` with directory-aware API calls, SDK methods (session.*, message.*, agent.*, provider.*, config.*, project.*, path.*), AsyncGenerator SSE streaming (2 retry attempts, 500ms->8s backoff), automatic directory parameter injection.
-
-In `packages/ui/src/hooks/`: useEventStream.ts for real-time SSE connection management.
-
-### Web Runtime (server/CLI)
-Express server and CLI in `packages/web`: API adapters in `packages/web/src/api`, server in `packages/web/server/index.js` (git/terminal/config), UI bundle imported from `@openchamber/ui`.
-
-### Desktop Runtime (Tauri)
-Native desktop app in `packages/desktop`: Tauri backend in `src-tauri/` (Rust), frontend API adapters in `src/api/` (settings, permissions, diagnostics, files, git, terminal, notifications, tools, updater), bridge layer in `src/lib/` for Tauri IPC communication.
-
-### VS Code Extension Runtime
-Extension in `packages/vscode`: Extension entry in `src/` (ChatViewProvider, bridge, theme), webview API adapters in `webview/api/` (bridge, editor, files, permissions, settings, tools), bootstrap script in `webview/main.tsx` that loads shared UI.
-
-## Development Commands
-
-### Code Validation
-Always validate changes:
-
-```bash
-bun run type-check   # TypeScript validation
-bun run lint         # ESLint checks
-bun run build        # Production build
+```
+packages/
+├── ui/          # Shared React components, stores, hooks (273 files)
+├── web/         # Express server + CLI (27 files)
+├── desktop/     # Tauri app with Rust backend (34 files)
+├── vscode/      # VS Code extension (24 files)
+├── mobile/      # Expo/React Native iOS app (209 files)
+└── shared/      # Themes, typography, spacing (13 files)
+heroui-native/   # Embedded React Native UI library (external)
 ```
 
-### Building
-```bash
-bun run build                 # Build all packages
-bun run desktop:build         # Build desktop app
-bun run vscode:build          # Build VS Code extension
+## Where to Look
+
+| Task | Location | Notes |
+|------|----------|-------|
+| Add UI component | `packages/ui/src/components/` | Auto-available to all runtimes |
+| Add Zustand store | `packages/ui/src/stores/` | Use `persist()` middleware if needed |
+| Add custom hook | `packages/ui/src/hooks/` | Prefix with `use*` |
+| Modify themes | `packages/shared/src/themes/` | CSS vars generated automatically |
+| Add API endpoint | `packages/web/server/index.js` | Express routes (84 total) |
+| Add Tauri command | `packages/desktop/src-tauri/src/commands/` | Rust → TS adapter in `src/api/` |
+| Add VS Code command | `packages/vscode/src/extension.ts` | Register in `package.json` |
+| Add mobile screen | `packages/mobile/app/` | Expo Router file-based routing |
+
+## Architecture
+
+### Runtime Adapter Pattern
+
+Each runtime implements `RuntimeAPIs` interface from `packages/ui/src/lib/api/types.ts`:
+
+```
+packages/web/src/api/       → HTTP fetch to Express
+packages/desktop/src/api/   → Tauri IPC commands
+packages/vscode/webview/api/→ Extension bridge messages
+packages/mobile/src/api/    → HTTP fetch to remote server
 ```
 
-## Communication & Output Discipline (MANDATORY)
-- Default to brevity. Responses must be as short as possible (until you suggesting plan) while remaining correct.
-- Do not narrate internal reasoning, step-by-step thinking, or deliberation.
+UI components access via `useRuntimeAPIs()` hook - platform-agnostic.
 
-## Key Patterns
+### State Management
 
-### Settings View Architecture
-Full-screen settings view (`SettingsView.tsx`) with tabbed navigation. Desktop: sidebar + page side-by-side with resizable sidebar. Mobile: drill-down pattern (sidebar → page with back button). Tabs: OpenChamber, Agents, Commands, Providers, Git Identities.
-
-Each settings section has a sidebar (`*Sidebar.tsx`) and page (`*Page.tsx`) in `packages/ui/src/components/sections/`.
-
-**Shared boilerplate components** in `packages/ui/src/components/sections/shared/`:
-- `SettingsSidebarLayout` - wrapper with bg, scroll, header/footer slots
-- `SettingsSidebarHeader` - "Total X" + add button
-- `SettingsSidebarItem` - list item with title, metadata, selection, optional actions dropdown
-- `SettingsPageLayout` - centered max-w-3xl scrollable container
-- `SettingsSection` - section with optional title, description, divider
-
-Use these as reference when adding new settings sections. See `index.ts` for usage examples.
-
-### File Attachments
-Drag-and-drop upload with 10MB limit (`FileAttachment.tsx`), Data URL encoding, type validation with fallbacks, integrated via `useFileStore.addAttachedFile()`.
-
-### Theme System
-In `packages/ui/src/lib/theme/`: TypeScript-based themes (Flexoki Light and Dark), CSS variable generation, component-specific theming, Tailwind CSS v4 integration.
-
-### Typography System
-In `packages/ui/src/lib/`: Semantic typography with 6 CSS variables, theme-independent scales. **CRITICAL**: Always use semantic typography classes, never hardcoded font sizes.
+30+ Zustand stores in `packages/ui/src/stores/`:
+- **Persisted**: contextStore, sessionStore, messageStore, useConfigStore, useAgentsStore
+- **Global access**: `window.__zustand_*_store__` for cross-component access
+- **Circular dep avoidance**: Dynamic imports or window globals
 
 ### Streaming Architecture
-SDK-managed SSE with AsyncGenerator, temp->real session ID swap (optimistic UI), pendingAssistantParts buffering, empty-response detection via `window.__opencodeDebug`.
 
-## Development Guidelines
+SDK-managed SSE with AsyncGenerator:
+- 2 retry attempts, 500ms→8s exponential backoff
+- Temp→real session ID swap (optimistic UI)
+- `pendingAssistantParts` buffering
+- Memory management: LRU eviction, viewport windowing
 
-### Lint & Type Safety
+## Commands
 
-- Never land code that introduces new ESLint or TypeScript errors
-- Run `bun run lint` and `bun run type-check` before finalizing changes
-- Adding `eslint-disable` requires justification in a comment explaining why typing is impossible
-- Do **not** use `any` or `unknown` casts as escape hatches; build narrow adapter interfaces instead
-- Refactors or new features must keep existing lint/type baselines green
+```bash
+bun run dev:web              # Web dev server
+bun run desktop:dev          # Desktop with OpenCode CLI
+bun run vscode:dev           # VS Code extension watch
+bun run mobile:start         # Expo dev server
 
-### Theme Integration
+bun run build                # Build all packages
+bun run type-check           # TypeScript validation
+bun run lint                 # ESLint checks
+```
 
-- Check theme definitions before adding colors or font sizes to new components
-- Always use theme-defined typography classes, never hardcoded font sizes
-- Reference existing theme colors instead of adding new ones
-- Ensure new components support both light and dark themes
-- Use theme-generated CSS variables for dynamic styling
+## Anti-Patterns (FORBIDDEN)
 
-### Code Standards
+| Pattern | Why |
+|---------|-----|
+| `as any`, `@ts-ignore`, `@ts-expect-error` | Type safety is mandatory |
+| Hardcoded font sizes | Use semantic typography classes |
+| Empty catch blocks | Always handle or log errors |
+| Direct store imports causing circular deps | Use `window.__zustand_*` or dynamic imports |
+| Config updates with directory param | Config is global scope |
+| Awaiting model execution in multi-run | Blocks UI - only await infrastructure |
 
-- **Functional components**: Exclusive use of function components with hooks
-- **Custom hooks**: Extract logic for reusability
-- **Type-first development**: Comprehensive TypeScript usage
-- **Component composition**: Prefer composition over inheritance
+## Conventions
 
-## Feature Implementation Map
+### Typography (CRITICAL)
+Always use semantic classes - never hardcoded sizes:
+- `typography-markdown`, `typography-code`, `typography-ui-label`
+- CSS vars: `--text-markdown`, `--text-code`, `--text-meta`, `--text-micro`
 
-### Directory & File System
-`packages/ui/src/components/session/`: DirectoryTree, DirectoryExplorerDialog
-`packages/ui/src/stores/`: DirectoryStore
-Backend: `packages/web/server/index.js` with `listLocalDirectory()`, `getFilesystemHome()`
+### Tailwind CSS v4
+Use `@import "tailwindcss"` syntax (not `@tailwind` directives).
 
-### Session Switcher
-`SessionSwitcherDialog.tsx`: Collapsible date groups, mobile parity with MobileOverlayPanel, Git worktree and shared session chips, streaming indicators.
+### TypeScript
+- `verbatimModuleSyntax: true` - explicit `import type` required
+- `moduleResolution: "bundler"`
+- Strict mode enabled
 
-### Settings & Configuration
-`packages/ui/src/components/sections/`: AgentsPage, CommandsPage, GitIdentitiesPage, ProvidersPage, SessionsPage, OpenChamberPage
-`packages/ui/src/components/sections/shared/`: Boilerplate components for new sections
-Related stores: useAgentsStore, useCommandsStore, useConfigStore, useGitIdentitiesStore
+### Component Patterns
+- Functional components only (no classes)
+- `React.memo` for performance-critical components
+- `cn()` utility for className composition (clsx + tailwind-merge)
+- Settings sections use shared boilerplate in `packages/ui/src/components/sections/shared/`
 
-### Git Operations
-`packages/ui/src/components/views/`: GitView, DiffView
-`packages/ui/src/stores/`: useGitIdentitiesStore
-Backend: `packages/ui/src/lib/gitApi.ts` + `packages/web/server/index.js` (simple-git wrapper)
+## Complexity Hotspots
 
-### Terminal
-`packages/ui/src/components/views/`: TerminalView
-`packages/ui/src/components/terminal/`: TerminalViewport (Xterm.js with FitAddon)
-`packages/ui/src/stores/`: useTerminalStore
-Backend: `packages/web/server/index.js` (node-pty wrapper with SSE)
+| File | Lines | Purpose |
+|------|-------|---------|
+| `ui/stores/messageStore.ts` | 2542 | Streaming, memory management, deduplication |
+| `ui/components/chat/ModelControls.tsx` | 2338 | Model/agent selection with permissions |
+| `ui/hooks/useEventStream.ts` | 1821 | SSE handling, reconnection, status tracking |
+| `vscode/src/bridge.ts` | 1353 | API proxy, file/git operations |
+| `ui/components/chat/ChatInput.tsx` | 1344 | Autocomplete, attachments, queue mode |
+| `ui/lib/opencode/client.ts` | 1341 | OpenCode SDK wrapper |
 
-### Theme System
-`packages/ui/src/lib/theme/`: themes (2 definitions), cssGenerator, syntaxThemeGenerator
-`packages/ui/src/components/providers/`: ThemeProvider
+## Dev Guidelines
 
-### Mobile & UX
-`packages/ui/src/components/ui/`: MobileOverlayPanel
-`packages/ui/src/hooks/`: useEdgeSwipe, useChatScrollManager
+### Before Committing
+```bash
+bun run type-check && bun run lint
+```
+
+### Adding Runtime-Specific Features
+1. Extend `RuntimeAPIs` interface in `packages/ui/src/lib/api/types.ts`
+2. Implement in each runtime's `api/` directory
+3. Access via `useRuntimeAPIs()` hook
+
+### Theme Changes
+1. Modify `packages/shared/src/themes/`
+2. CSS vars generated automatically by `cssGenerator.ts`
+3. Test both light and dark themes
+
+### Testing
+No test infrastructure exists. Quality gates:
+- TypeScript type checking
+- ESLint rules
+- Build-time compilation
+
+## Notes
+
+- **heroui-native/**: External React Native UI library embedded at root (not in packages/)
+- **Web server is JavaScript**: `packages/web/server/index.js` is 4273 lines of JS (not TS)
+- **Mobile doesn't share UI**: Separate implementation, uses @openchamber/shared for themes only
+- **No CI/CD**: All builds are manual, see `scripts/` for release workflows
+
+See package-specific AGENTS.md files for detailed documentation:
+- `packages/ui/AGENTS.md` - Components, stores, hooks
+- `packages/desktop/AGENTS.md` - Tauri/Rust patterns
+- `packages/mobile/AGENTS.md` - Expo/React Native patterns
