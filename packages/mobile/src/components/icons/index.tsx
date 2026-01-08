@@ -801,3 +801,29 @@ export function AiAgentIcon({
 		</Svg>
 	);
 }
+
+export function PushpinIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: pushpin-line
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M13.8273 1.69L22.3132 10.1759L20.8989 11.5901L20.1918 10.8831L15.9495 15.1253L16.6566 19.3676L15.2424 20.7819L10.2929 15.8323L5.6361 20.4891L4.22189 19.0749L8.87864 14.4181L3.92908 9.46855L5.34329 8.05434L9.58555 8.76144L13.8278 4.51911L13.1207 3.81201L14.5349 2.39779L13.8273 1.69ZM14.5765 5.15701L9.82321 9.91037L6.44541 9.32799L14.3749 17.2575L13.7925 13.8797L18.5765 9.09566L14.5765 5.15701Z" />
+		</Svg>
+	);
+}
+
+export function PushpinFillIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: pushpin-fill
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M13.8273 1.69L22.3132 10.1759L20.8989 11.5901L20.1918 10.8831L15.9495 15.1253L16.6566 19.3676L15.2424 20.7819L10.2929 15.8323L5.6361 20.4891L4.22189 19.0749L8.87864 14.4181L3.92908 9.46855L5.34329 8.05434L9.58555 8.76144L13.8278 4.51911L13.1207 3.81201L14.5349 2.39779L13.8273 1.69Z" />
+		</Svg>
+	);
+}
