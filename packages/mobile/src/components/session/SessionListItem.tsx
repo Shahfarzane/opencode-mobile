@@ -39,6 +39,7 @@ interface SessionListItemProps {
 	isMissingDirectory?: boolean;
 	cacheInfo?: SessionCacheInfo;
 	isOffline?: boolean;
+	worktreePath?: string;
 	onSelect: () => void;
 	onToggleExpand?: () => void;
 	onRename: (title: string) => Promise<void>;
@@ -86,6 +87,7 @@ export function SessionListItem({
 	isMissingDirectory = false,
 	cacheInfo,
 	isOffline = false,
+	worktreePath,
 	onSelect,
 	onToggleExpand,
 	onRename,
@@ -342,6 +344,7 @@ export function SessionListItem({
 			onDelete={onDelete}
 			isShared={isShared}
 			shareUrl={session.share?.url}
+			worktreePath={worktreePath}
 			anchorPosition={menuAnchor}
 		/>
 		</>

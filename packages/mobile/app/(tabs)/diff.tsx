@@ -6,8 +6,9 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
-	View,
+	TouchableOpacity,
 	useWindowDimensions,
+	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -40,7 +41,12 @@ interface SideBySideLine {
 	};
 	isChunk?: boolean;
 	isHeader?: boolean;
-	chunkInfo?: { oldStart: number; newStart: number; oldCount: number; newCount: number };
+	chunkInfo?: {
+		oldStart: number;
+		newStart: number;
+		oldCount: number;
+		newCount: number;
+	};
 }
 
 function parseDiff(diffText: string): DiffLine[] {
@@ -109,12 +115,14 @@ function createSideBySidePairs(lines: DiffLine[]): SideBySideLine[] {
 				left: { type: "chunk", content: line.content, lineNumber: null },
 				right: { type: "chunk", content: line.content, lineNumber: null },
 				isChunk: true,
-				chunkInfo: match ? {
-					oldStart: parseInt(match[1], 10),
-					newStart: parseInt(match[3], 10),
-					oldCount: match[2] ? parseInt(match[2], 10) : 1,
-					newCount: match[4] ? parseInt(match[4], 10) : 1,
-				} : undefined,
+				chunkInfo: match
+					? {
+							oldStart: parseInt(match[1], 10),
+							newStart: parseInt(match[3], 10),
+							oldCount: match[2] ? parseInt(match[2], 10) : 1,
+							newCount: match[4] ? parseInt(match[4], 10) : 1,
+						}
+					: undefined,
 			});
 			i++;
 			continue;
@@ -122,8 +130,16 @@ function createSideBySidePairs(lines: DiffLine[]): SideBySideLine[] {
 
 		if (line.type === "context") {
 			result.push({
-				left: { type: "context", content: line.content, lineNumber: line.lineNumber?.old ?? null },
-				right: { type: "context", content: line.content, lineNumber: line.lineNumber?.new ?? null },
+				left: {
+					type: "context",
+					content: line.content,
+					lineNumber: line.lineNumber?.old ?? null,
+				},
+				right: {
+					type: "context",
+					content: line.content,
+					lineNumber: line.lineNumber?.new ?? null,
+				},
 			});
 			i++;
 			continue;
@@ -149,10 +165,18 @@ function createSideBySidePairs(lines: DiffLine[]): SideBySideLine[] {
 
 				result.push({
 					left: removed
-						? { type: "remove", content: removed.content, lineNumber: removed.lineNumber?.old ?? null }
+						? {
+								type: "remove",
+								content: removed.content,
+								lineNumber: removed.lineNumber?.old ?? null,
+							}
 						: { type: "empty", content: "", lineNumber: null },
 					right: added
-						? { type: "add", content: added.content, lineNumber: added.lineNumber?.new ?? null }
+						? {
+								type: "add",
+								content: added.content,
+								lineNumber: added.lineNumber?.new ?? null,
+							}
 						: { type: "empty", content: "", lineNumber: null },
 				});
 			}
@@ -162,7 +186,11 @@ function createSideBySidePairs(lines: DiffLine[]): SideBySideLine[] {
 		if (line.type === "add") {
 			result.push({
 				left: { type: "empty", content: "", lineNumber: null },
-				right: { type: "add", content: line.content, lineNumber: line.lineNumber?.new ?? null },
+				right: {
+					type: "add",
+					content: line.content,
+					lineNumber: line.lineNumber?.new ?? null,
+				},
 			});
 			i++;
 			continue;
@@ -223,7 +251,7 @@ function highlightCode(code: string): React.ReactNode[] {
 			parts.push(
 				<Text key={key++} style={styles.syntaxString}>
 					{stringMatch[0]}
-				</Text>
+				</Text>,
 			);
 			remaining = remaining.slice(stringMatch[0].length);
 			continue;
@@ -235,7 +263,7 @@ function highlightCode(code: string): React.ReactNode[] {
 			parts.push(
 				<Text key={key++} style={styles.syntaxComment}>
 					{commentMatch[0]}
-				</Text>
+				</Text>,
 			);
 			remaining = remaining.slice(commentMatch[0].length);
 			continue;
@@ -247,7 +275,7 @@ function highlightCode(code: string): React.ReactNode[] {
 			parts.push(
 				<Text key={key++} style={styles.syntaxNumber}>
 					{numberMatch[0]}
-				</Text>
+				</Text>,
 			);
 			remaining = remaining.slice(numberMatch[0].length);
 			continue;
@@ -261,7 +289,7 @@ function highlightCode(code: string): React.ReactNode[] {
 				parts.push(
 					<Text key={key++} style={styles.syntaxKeyword}>
 						{word}
-					</Text>
+					</Text>,
 				);
 			} else {
 				parts.push(<Text key={key++}>{word}</Text>);
@@ -359,7 +387,13 @@ function DiffLineComponent({
 
 	if (line.type === "header" || line.type === "chunk") {
 		return (
-			<View style={[styles.diffLine, { backgroundColor: style.bg }, borderRadiusStyle]}>
+			<View
+				style={[
+					styles.diffLine,
+					{ backgroundColor: style.bg },
+					borderRadiusStyle,
+				]}
+			>
 				<View style={styles.headerPadding} />
 				<Text
 					style={[typography.code, { color: style.sign, fontSize: 11 }]}
@@ -372,8 +406,19 @@ function DiffLineComponent({
 	}
 
 	return (
-		<View style={[styles.diffLine, { backgroundColor: style.bg }, borderRadiusStyle]}>
-			<View style={[styles.lineNumberContainer, { borderRightColor: colors.border }]}>
+		<View
+			style={[
+				styles.diffLine,
+				{ backgroundColor: style.bg },
+				borderRadiusStyle,
+			]}
+		>
+			<View
+				style={[
+					styles.lineNumberContainer,
+					{ borderRightColor: colors.border },
+				]}
+			>
 				<View style={[styles.lineNumberOld, { width: lineNumberWidth }]}>
 					<Text
 						style={[
@@ -397,7 +442,9 @@ function DiffLineComponent({
 			</View>
 			<Text style={[styles.lineSign, { color: style.sign }]}>{getSign()}</Text>
 			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-				<Text style={[typography.code, { color: colors.foreground, fontSize: 12 }]}>
+				<Text
+					style={[typography.code, { color: colors.foreground, fontSize: 12 }]}
+				>
 					{highlightCode(line.content)}
 				</Text>
 			</ScrollView>
@@ -424,7 +471,9 @@ const SideBySideColumn = memo(function SideBySideColumn({
 			case "remove":
 				return isDark ? "rgba(248, 113, 113, 0.15)" : "rgba(239, 68, 68, 0.1)";
 			case "empty":
-				return isDark ? "rgba(128, 128, 128, 0.05)" : "rgba(128, 128, 128, 0.03)";
+				return isDark
+					? "rgba(128, 128, 128, 0.05)"
+					: "rgba(128, 128, 128, 0.03)";
 			case "chunk":
 				return isDark ? "rgba(96, 165, 250, 0.1)" : "rgba(59, 130, 246, 0.05)";
 			case "header":
@@ -457,7 +506,10 @@ const SideBySideColumn = memo(function SideBySideColumn({
 	};
 
 	// Border between left and right columns
-	const borderStyle = side === "left" ? { borderRightWidth: 1, borderRightColor: colors.border } : {};
+	const borderStyle =
+		side === "left"
+			? { borderRightWidth: 1, borderRightColor: colors.border }
+			: {};
 
 	if (line.type === "header" || line.type === "chunk") {
 		return (
@@ -468,7 +520,9 @@ const SideBySideColumn = memo(function SideBySideColumn({
 					borderStyle,
 				]}
 			>
-				<View style={[styles.sideBySideLineNumber, { width: lineNumberWidth }]} />
+				<View
+					style={[styles.sideBySideLineNumber, { width: lineNumberWidth }]}
+				/>
 				<Text
 					style={[typography.code, { color: colors.info, fontSize: 10 }]}
 					numberOfLines={1}
@@ -488,8 +542,12 @@ const SideBySideColumn = memo(function SideBySideColumn({
 					borderStyle,
 				]}
 			>
-				<View style={[styles.sideBySideLineNumber, { width: lineNumberWidth }]} />
-				<Text style={[styles.lineSign, { color: colors.mutedForeground }]}> </Text>
+				<View
+					style={[styles.sideBySideLineNumber, { width: lineNumberWidth }]}
+				/>
+				<Text style={[styles.lineSign, { color: colors.mutedForeground }]}>
+					{" "}
+				</Text>
 			</View>
 		);
 	}
@@ -502,19 +560,33 @@ const SideBySideColumn = memo(function SideBySideColumn({
 				borderStyle,
 			]}
 		>
-			<View style={[styles.sideBySideLineNumber, { width: lineNumberWidth, borderRightColor: colors.border }]}>
-				<Text style={[typography.code, { color: colors.mutedForeground, fontSize: 10 }]}>
+			<View
+				style={[
+					styles.sideBySideLineNumber,
+					{ width: lineNumberWidth, borderRightColor: colors.border },
+				]}
+			>
+				<Text
+					style={[
+						typography.code,
+						{ color: colors.mutedForeground, fontSize: 10 },
+					]}
+				>
 					{line.lineNumber ?? ""}
 				</Text>
 			</View>
-			<Text style={[styles.lineSign, { color: getSignColor() }]}>{getSign()}</Text>
+			<Text style={[styles.lineSign, { color: getSignColor() }]}>
+				{getSign()}
+			</Text>
 			<ScrollView
 				horizontal
 				showsHorizontalScrollIndicator={false}
 				nestedScrollEnabled={true}
 				style={{ flex: 1 }}
 			>
-				<Text style={[typography.code, { color: colors.foreground, fontSize: 11 }]}>
+				<Text
+					style={[typography.code, { color: colors.foreground, fontSize: 11 }]}
+				>
 					{highlightCode(line.content)}
 				</Text>
 			</ScrollView>
@@ -522,11 +594,7 @@ const SideBySideColumn = memo(function SideBySideColumn({
 	);
 });
 
-function SideBySideDiffView({
-	lines,
-}: {
-	lines: DiffLine[];
-}) {
+function SideBySideDiffView({ lines }: { lines: DiffLine[] }) {
 	const pairs = useMemo(() => createSideBySidePairs(lines), [lines]);
 	const { colors } = useTheme();
 	const { width } = useWindowDimensions();
@@ -553,11 +621,7 @@ function SideBySideDiffView({
 
 			return (
 				<View style={[styles.sideBySideRow, rowBorderRadius]}>
-					<SideBySideColumn
-						line={item.left}
-						side="left"
-						width={columnWidth}
-					/>
+					<SideBySideColumn line={item.left} side="left" width={columnWidth} />
 					<SideBySideColumn
 						line={item.right}
 						side="right"
@@ -566,7 +630,7 @@ function SideBySideDiffView({
 				</View>
 			);
 		},
-		[columnWidth, pairs.length]
+		[columnWidth, pairs.length],
 	);
 
 	// Fixed row height for getItemLayout optimization
@@ -592,7 +656,7 @@ function SideBySideDiffView({
 	);
 }
 
-function DiffViewToggleButton({
+function DiffViewToggle({
 	mode,
 	onModeChange,
 }: {
@@ -601,31 +665,42 @@ function DiffViewToggleButton({
 }) {
 	const { colors } = useTheme();
 
+	// Toggle to the opposite mode when pressed
+	const handlePress = () => {
+		onModeChange(mode === "side-by-side" ? "unified" : "side-by-side");
+	};
+
+	// Show the icon of the mode you'll switch TO (opposite of current)
+	// When in side-by-side, show unified icon (3 lines)
+	// When in unified, show side-by-side icon (columns)
 	return (
-		<Pressable
-			onPress={() => onModeChange(mode === "unified" ? "side-by-side" : "unified")}
-			style={[styles.viewToggleButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+		<TouchableOpacity
+			onPress={handlePress}
+			activeOpacity={0.6}
+			style={styles.viewToggleButton}
 		>
-			{mode === "unified" ? (
-				<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+			{mode === "side-by-side" ? (
+				// Show unified icon (3 horizontal lines) - RiAlignJustify equivalent
+				<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
 					<Path
-						d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4m6-18h4a2 2 0 012 2v14a2 2 0 01-2 2h-4m-6-9h6"
-						stroke={colors.foreground}
+						d="M4 6h16M4 12h16M4 18h16"
+						stroke={colors.mutedForeground}
 						strokeWidth={2}
 						strokeLinecap="round"
 					/>
 				</Svg>
 			) : (
-				<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+				// Show side-by-side icon (two columns) - RiLayoutColumnLine equivalent
+				<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
 					<Path
-						d="M4 6h16M4 12h16M4 18h16"
-						stroke={colors.foreground}
+						d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4m6-18h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"
+						stroke={colors.mutedForeground}
 						strokeWidth={2}
 						strokeLinecap="round"
 					/>
 				</Svg>
 			)}
-		</Pressable>
+		</TouchableOpacity>
 	);
 }
 
@@ -667,11 +742,7 @@ function FileSelector({
 						stroke={colors.foreground}
 						strokeWidth={2}
 					/>
-					<Path
-						d="M14 2v6h6"
-						stroke={colors.foreground}
-						strokeWidth={2}
-					/>
+					<Path d="M14 2v6h6" stroke={colors.foreground} strokeWidth={2} />
 				</Svg>
 				<Text
 					style={[typography.meta, { color: colors.foreground, flex: 1 }]}
@@ -791,13 +862,7 @@ function FileSelector({
 	);
 }
 
-function EmptyState({
-	title,
-	message,
-}: {
-	title: string;
-	message: string;
-}) {
+function EmptyState({ title, message }: { title: string; message: string }) {
 	const { colors } = useTheme();
 
 	return (
@@ -845,9 +910,7 @@ export default function DiffScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [viewMode, setViewMode] = useState<DiffViewMode>("unified");
 
-
 	const isNarrow = screenWidth < SIDE_BY_SIDE_MIN_WIDTH;
-	const effectiveViewMode: DiffViewMode = isNarrow ? "unified" : viewMode;
 
 	const loadStatus = useCallback(async () => {
 		if (!isConnected) {
@@ -886,42 +949,47 @@ export default function DiffScreen() {
 		}
 	}, [isConnected, directory, selectedFile]);
 
-	const loadDiff = useCallback(async (path: string) => {
-		setIsLoadingDiff(true);
-		try {
-			// Find the file to check if changes are staged or unstaged
-			const file = status?.files.find((f) => f.path === path);
-			const hasUnstagedChanges = file?.working_dir && file.working_dir !== " ";
-			const hasStagedChanges = file?.index && file.index !== " " && file.index !== "?";
+	const loadDiff = useCallback(
+		async (path: string) => {
+			setIsLoadingDiff(true);
+			try {
+				// Find the file to check if changes are staged or unstaged
+				const file = status?.files.find((f) => f.path === path);
+				const hasUnstagedChanges =
+					file?.working_dir && file.working_dir !== " ";
+				const hasStagedChanges =
+					file?.index && file.index !== " " && file.index !== "?";
 
-			let diffText = "";
+				let diffText = "";
 
-			// Try unstaged changes first
-			if (hasUnstagedChanges) {
-				const result = await gitApi.getDiff(path, false);
-				diffText = result.diff || "";
+				// Try unstaged changes first
+				if (hasUnstagedChanges) {
+					const result = await gitApi.getDiff(path, false);
+					diffText = result.diff || "";
+				}
+
+				// If no unstaged diff, try staged changes
+				if (!diffText && hasStagedChanges) {
+					const result = await gitApi.getDiff(path, true);
+					diffText = result.diff || "";
+				}
+
+				// If still no diff (for untracked files), try to get file content
+				if (!diffText && file?.index === "?") {
+					// Untracked file - no diff available yet
+					diffText = `New untracked file: ${path}\n(Add to staging to see diff)`;
+				}
+
+				setDiffContent(diffText || null);
+			} catch (err) {
+				console.error("Failed to load diff:", err);
+				setDiffContent(null);
+			} finally {
+				setIsLoadingDiff(false);
 			}
-
-			// If no unstaged diff, try staged changes
-			if (!diffText && hasStagedChanges) {
-				const result = await gitApi.getDiff(path, true);
-				diffText = result.diff || "";
-			}
-
-			// If still no diff (for untracked files), try to get file content
-			if (!diffText && file?.index === "?") {
-				// Untracked file - no diff available yet
-				diffText = `New untracked file: ${path}\n(Add to staging to see diff)`;
-			}
-
-			setDiffContent(diffText || null);
-		} catch (err) {
-			console.error("Failed to load diff:", err);
-			setDiffContent(null);
-		} finally {
-			setIsLoadingDiff(false);
-		}
-	}, [status?.files]);
+		},
+		[status?.files],
+	);
 
 	useEffect(() => {
 		loadStatus();
@@ -936,7 +1004,7 @@ export default function DiffScreen() {
 	const changedFiles = useMemo(() => status?.files ?? [], [status?.files]);
 	const parsedDiff = useMemo(
 		() => (diffContent ? parseDiff(diffContent) : []),
-		[diffContent]
+		[diffContent],
 	);
 
 	if (isLoading) {
@@ -955,12 +1023,7 @@ export default function DiffScreen() {
 
 	if (error) {
 		return (
-			<View
-				style={[
-					styles.container,
-					{ backgroundColor: colors.background },
-				]}
-			>
+			<View style={[styles.container, { backgroundColor: colors.background }]}>
 				<EmptyState title="Unable to load" message={error} />
 			</View>
 		);
@@ -968,12 +1031,7 @@ export default function DiffScreen() {
 
 	if (changedFiles.length === 0) {
 		return (
-			<View
-				style={[
-					styles.container,
-					{ backgroundColor: colors.background },
-				]}
-			>
+			<View style={[styles.container, { backgroundColor: colors.background }]}>
 				<EmptyState
 					title="No changes"
 					message="Working tree is clean. Make some changes to see diffs."
@@ -983,13 +1041,10 @@ export default function DiffScreen() {
 	}
 
 	return (
-		<View
-			style={[
-				styles.container,
-				{ backgroundColor: colors.background },
-			]}
-		>
-			<View style={[styles.selectorWrapper, { borderBottomColor: colors.border }]}>
+		<View style={[styles.container, { backgroundColor: colors.background }]}>
+			<View
+				style={[styles.selectorWrapper, { borderBottomColor: colors.border }]}
+			>
 				<View style={styles.headerRow}>
 					<FileSelector
 						files={changedFiles}
@@ -999,12 +1054,10 @@ export default function DiffScreen() {
 						isOpen={isDropdownOpen}
 						onToggle={() => setIsDropdownOpen(!isDropdownOpen)}
 					/>
-					{!isNarrow && (
-						<DiffViewToggleButton
-							mode={effectiveViewMode}
-							onModeChange={setViewMode}
-						/>
-					)}
+					<DiffViewToggle
+						mode={viewMode}
+						onModeChange={setViewMode}
+					/>
 				</View>
 			</View>
 
@@ -1013,7 +1066,7 @@ export default function DiffScreen() {
 					<ActivityIndicator size="small" color={colors.primary} />
 				</View>
 			) : parsedDiff.length > 0 ? (
-				effectiveViewMode === "side-by-side" ? (
+				viewMode === "side-by-side" ? (
 					<SideBySideDiffView lines={parsedDiff} />
 				) : (
 					<FlatList
@@ -1074,12 +1127,11 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 	},
 	viewToggleButton: {
-		width: 36,
-		height: 36,
-		borderRadius: 8,
-		borderWidth: 1,
+		width: 28,
+		height: 28,
 		alignItems: "center",
 		justifyContent: "center",
+		opacity: 0.6,
 	},
 	statsInline: {
 		flexDirection: "row",

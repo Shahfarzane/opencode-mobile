@@ -415,6 +415,17 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
       });
   }, []);
 
+  const handleCopyWorktreePath = React.useCallback((path: string) => {
+    navigator.clipboard
+      .writeText(path)
+      .then(() => {
+        toast.success('Worktree path copied');
+      })
+      .catch(() => {
+        toast.error('Failed to copy path');
+      });
+  }, []);
+
   const handleUnshareSession = React.useCallback(
     async (sessionId: string) => {
       const result = await unshareSession(sessionId);
@@ -949,6 +960,15 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
                         </DropdownMenuItem>
                       </>
                     )}
+                    {worktreeMetadata.get(session.id)?.path && (
+                      <DropdownMenuItem
+                        onClick={() => handleCopyWorktreePath(worktreeMetadata.get(session.id)!.path)}
+                        className="[&>svg]:mr-1"
+                      >
+                        <RiFileCopyLine className="mr-1 h-4 w-4" />
+                        Copy worktree path
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive [&>svg]:mr-1"
                       onClick={() => handleDeleteSession(session)}
@@ -983,9 +1003,11 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
       handleSessionSelect,
       handleShareSession,
       handleCopyShareUrl,
+      handleCopyWorktreePath,
       handleUnshareSession,
       handleDeleteSession,
       copiedSessionId,
+      worktreeMetadata,
       mobileVariant,
     ],
   );

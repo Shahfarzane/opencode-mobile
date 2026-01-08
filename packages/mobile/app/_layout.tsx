@@ -2,7 +2,7 @@ import "../src/styles/index.css";
 
 // Initialize Reactotron in development mode
 if (__DEV__) {
-	require("../src/config/ReactotronConfig");
+	import("../src/config/ReactotronConfig");
 }
 
 import { useFonts } from "expo-font";
@@ -49,6 +49,7 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
+	/* eslint-disable @typescript-eslint/no-require-imports -- Metro bundler requires static require() for assets */
 	const [fontsLoaded, fontError] = useFonts({
 		// Sans fonts - for UI text (headers, labels, buttons, settings)
 		"IBMPlexSans-Regular": require("../assets/fonts/IBMPlexSans-Regular.ttf"),
@@ -61,6 +62,7 @@ export default function RootLayout() {
 		"IBMPlexMono-SemiBold": require("../assets/fonts/IBMPlexMono-SemiBold.ttf"),
 		"IBMPlexMono-Bold": require("../assets/fonts/IBMPlexMono-Bold.ttf"),
 	});
+	/* eslint-enable @typescript-eslint/no-require-imports */
 
 	useEffect(() => {
 		if (fontError) {

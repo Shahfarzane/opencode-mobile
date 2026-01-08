@@ -274,6 +274,16 @@ const fetchModelsDevMetadata = async (): Promise<Map<string, ModelMetadata>> => 
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Directory-scoped configuration for multi-project support.
+ * Stores preferences like model/agent per project directory.
+ */
+interface DirectoryScopedConfig {
+    providerId?: string;
+    modelId?: string;
+    agentName?: string;
+}
+
 interface ConfigStore {
 
     providers: ProviderWithModelList[];
@@ -290,6 +300,9 @@ interface ConfigStore {
     // OpenChamber settings-based defaults (take precedence over agent preferences)
     settingsDefaultModel: string | undefined; // format: "provider/model"
     settingsDefaultAgent: string | undefined;
+    // Directory-scoped configuration for multi-project support
+    activeDirectoryKey: string | null;
+    directoryScopedConfig: Record<string, DirectoryScopedConfig>;
 
     loadProviders: () => Promise<void>;
     loadAgents: () => Promise<boolean>;
@@ -309,6 +322,10 @@ interface ConfigStore {
     getModelMetadata: (providerId: string, modelId: string) => ModelMetadata | undefined;
     // Returns only visible agents (excludes hidden internal agents like title, compaction, summary)
     getVisibleAgents: () => Agent[];
+    // Directory-scoped configuration methods
+    activateDirectory: (directory: string | null) => void;
+    getDirectoryConfig: (directory: string) => DirectoryScopedConfig | undefined;
+    saveDirectoryConfig: (directory: string, config: Partial<DirectoryScopedConfig>) => void;
 }
 
 declare global {
@@ -336,6 +353,8 @@ export const useConfigStore = create<ConfigStore>()(
                 modelsMetadata: new Map<string, ModelMetadata>(),
                 settingsDefaultModel: undefined,
                 settingsDefaultAgent: undefined,
+                activeDirectoryKey: null,
+                directoryScopedConfig: {},
 
                 loadProviders: async () => {
                     const previousProviders = get().providers;
@@ -752,12 +771,71 @@ export const useConfigStore = create<ConfigStore>()(
                     const { agents } = get();
                     return filterVisibleAgents(agents);
                 },
+
+                activateDirectory: (directory: string | null) => {
+                    if (!directory) {
+                        set({ activeDirectoryKey: null });
+                        return;
+                    }
+
+                    // Normalize directory path
+                    const normalizedDir = directory.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+                    set({ activeDirectoryKey: normalizedDir });
+
+                    // Apply directory-scoped config if it exists
+                    const { directoryScopedConfig, providers, agents } = get();
+                    const config = directoryScopedConfig[normalizedDir];
+                    if (config) {
+                        const updates: Partial<ConfigStore> = {};
+
+                        if (config.providerId && config.modelId) {
+                            // Verify provider/model still exists
+                            const provider = providers.find((p) => p.id === config.providerId);
+                            if (provider && provider.models.some((m) => m.id === config.modelId)) {
+                                updates.currentProviderId = config.providerId;
+                                updates.currentModelId = config.modelId;
+                            }
+                        }
+
+                        if (config.agentName) {
+                            // Verify agent still exists
+                            const agent = agents.find((a) => a.name === config.agentName);
+                            if (agent) {
+                                updates.currentAgentName = config.agentName;
+                            }
+                        }
+
+                        if (Object.keys(updates).length > 0) {
+                            set(updates);
+                        }
+                    }
+                },
+
+                getDirectoryConfig: (directory: string) => {
+                    const normalizedDir = directory.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+                    const { directoryScopedConfig } = get();
+                    return directoryScopedConfig[normalizedDir];
+                },
+
+                saveDirectoryConfig: (directory: string, config: Partial<DirectoryScopedConfig>) => {
+                    const normalizedDir = directory.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+                    set((state) => ({
+                        directoryScopedConfig: {
+                            ...state.directoryScopedConfig,
+                            [normalizedDir]: {
+                                ...state.directoryScopedConfig[normalizedDir],
+                                ...config,
+                            },
+                        },
+                    }));
+                },
             }),
             {
                 name: "config-store",
                 storage: createJSONStorage(() => getSafeStorage()),
-                partialize: () => ({
-
+                partialize: (state) => ({
+                    directoryScopedConfig: state.directoryScopedConfig,
+                    activeDirectoryKey: state.activeDirectoryKey,
                 }),
             },
         ),

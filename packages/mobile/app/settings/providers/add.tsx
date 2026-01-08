@@ -14,11 +14,7 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-	type AuthMethod,
-	type Provider,
-	providersApi,
-} from "@/api";
+import { type AuthMethod, type Provider, providersApi } from "@/api";
 import { ChevronLeft, ChevronRightIcon, SearchIcon } from "@/components/icons";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
@@ -43,13 +39,20 @@ export default function AddProviderScreen() {
 	// State
 	const [allProviders, setAllProviders] = useState<Provider[]>([]);
 	const [connectedProviders, setConnectedProviders] = useState<Provider[]>([]);
-	const [authMethods, setAuthMethods] = useState<Record<string, AuthMethod[]>>({});
+	const [authMethods, setAuthMethods] = useState<Record<string, AuthMethod[]>>(
+		{},
+	);
 	const [isLoading, setIsLoading] = useState(true);
-	const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+	const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
+		null,
+	);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [apiKey, setApiKey] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
-	const [oauthPending, setOauthPending] = useState<{ providerId: string; methodIndex: number } | null>(null);
+	const [oauthPending, setOauthPending] = useState<{
+		providerId: string;
+		methodIndex: number;
+	} | null>(null);
 	const [oauthDetails, setOauthDetails] = useState<{
 		url?: string;
 		instructions?: string;
@@ -83,12 +86,11 @@ export default function AddProviderScreen() {
 	// Get unconnected providers
 	const connectedIds = useMemo(
 		() => new Set(connectedProviders.map((p) => p.id)),
-		[connectedProviders]
+		[connectedProviders],
 	);
 
-	const unconnectedProviders = useMemo(() => {
+	const unconnectedProviders = useMemo((): ProviderOption[] => {
 		const providers = allProviders.filter((p) => !connectedIds.has(p.id));
-		// Convert to ProviderOption format
 		return providers.map((p) => ({ id: p.id, name: p.name }));
 	}, [allProviders, connectedIds]);
 
@@ -99,7 +101,7 @@ export default function AddProviderScreen() {
 		return unconnectedProviders.filter(
 			(p) =>
 				p.id.toLowerCase().includes(query) ||
-				(p.name?.toLowerCase().includes(query) ?? false)
+				(p.name?.toLowerCase().includes(query) ?? false),
 		);
 	}, [unconnectedProviders, searchQuery]);
 
@@ -130,7 +132,10 @@ export default function AddProviderScreen() {
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
 		try {
-			const result = await providersApi.saveApiKey(selectedProviderId, apiKey.trim());
+			const result = await providersApi.saveApiKey(
+				selectedProviderId,
+				apiKey.trim(),
+			);
 			if (result.success) {
 				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 				Alert.alert("Success", "API key saved successfully", [
@@ -143,7 +148,7 @@ export default function AddProviderScreen() {
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert(
 				"Error",
-				error instanceof Error ? error.message : "Failed to save API key"
+				error instanceof Error ? error.message : "Failed to save API key",
 			);
 		} finally {
 			setIsSaving(false);
@@ -158,7 +163,10 @@ export default function AddProviderScreen() {
 			setIsSaving(true);
 
 			try {
-				const result = await providersApi.startOAuth(selectedProviderId, methodIndex);
+				const result = await providersApi.startOAuth(
+					selectedProviderId,
+					methodIndex,
+				);
 				if (!result.success) {
 					throw new Error(result.error || "Failed to start OAuth flow");
 				}
@@ -176,19 +184,19 @@ export default function AddProviderScreen() {
 
 				Alert.alert(
 					"OAuth Started",
-					"Complete the authentication in your browser, then return here to finish."
+					"Complete the authentication in your browser, then return here to finish.",
 				);
 			} catch (error) {
 				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 				Alert.alert(
 					"Error",
-					error instanceof Error ? error.message : "Failed to start OAuth flow"
+					error instanceof Error ? error.message : "Failed to start OAuth flow",
 				);
 			} finally {
 				setIsSaving(false);
 			}
 		},
-		[selectedProviderId]
+		[selectedProviderId],
 	);
 
 	const handleCompleteOAuth = useCallback(async () => {
@@ -201,7 +209,7 @@ export default function AddProviderScreen() {
 			const result = await providersApi.completeOAuth(
 				oauthPending.providerId,
 				oauthPending.methodIndex,
-				oauthCode.trim() || undefined
+				oauthCode.trim() || undefined,
 			);
 
 			if (result.success) {
@@ -216,18 +224,23 @@ export default function AddProviderScreen() {
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert(
 				"Error",
-				error instanceof Error ? error.message : "Failed to complete OAuth flow"
+				error instanceof Error
+					? error.message
+					: "Failed to complete OAuth flow",
 			);
 		} finally {
 			setIsSaving(false);
 		}
 	}, [oauthPending, oauthCode]);
 
-	const handleCopyToClipboard = useCallback(async (text: string, label: string) => {
-		await Clipboard.setStringAsync(text);
-		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-		Alert.alert("Copied", `${label} copied to clipboard`);
-	}, []);
+	const handleCopyToClipboard = useCallback(
+		async (text: string, label: string) => {
+			await Clipboard.setStringAsync(text);
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+			Alert.alert("Copied", `${label} copied to clipboard`);
+		},
+		[],
+	);
 
 	// Render provider list
 	const renderProviderList = () => (
@@ -235,7 +248,12 @@ export default function AddProviderScreen() {
 			<Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
 				SELECT PROVIDER
 			</Text>
-			<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 12 }]}>
+			<Text
+				style={[
+					typography.meta,
+					{ color: colors.mutedForeground, marginBottom: 12 },
+				]}
+			>
 				Choose a provider to connect
 			</Text>
 
@@ -262,7 +280,9 @@ export default function AddProviderScreen() {
 			{filteredProviders.length === 0 ? (
 				<View style={styles.emptyContainer}>
 					<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-						{searchQuery ? "No providers match your search" : "All providers are already connected"}
+						{searchQuery
+							? "No providers match your search"
+							: "All providers are already connected"}
 					</Text>
 				</View>
 			) : (
@@ -275,12 +295,20 @@ export default function AddProviderScreen() {
 								styles.providerRow,
 								{
 									borderBottomColor: colors.border,
-									borderBottomWidth: index < filteredProviders.length - 1 ? StyleSheet.hairlineWidth : 0,
+									borderBottomWidth:
+										index < filteredProviders.length - 1
+											? StyleSheet.hairlineWidth
+											: 0,
 								},
 								pressed && { opacity: 0.7 },
 							]}
 						>
-							<Text style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]}>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.foreground, flex: 1 },
+								]}
+							>
 								{provider.name || provider.id}
 							</Text>
 							<ChevronRightIcon size={18} color={colors.mutedForeground} />
@@ -293,7 +321,9 @@ export default function AddProviderScreen() {
 
 	// Render auth form for selected provider
 	const renderAuthForm = () => {
-		const provider = unconnectedProviders.find((p) => p.id === selectedProviderId);
+		const provider = unconnectedProviders.find(
+			(p) => p.id === selectedProviderId,
+		);
 		if (!provider) return null;
 
 		return (
@@ -312,13 +342,23 @@ export default function AddProviderScreen() {
 					</Text>
 				</Pressable>
 
-				<Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginTop: 16 }]}>
+				<Text
+					style={[
+						styles.sectionTitle,
+						{ color: colors.mutedForeground, marginTop: 16 },
+					]}
+				>
 					CONNECT {(provider.name || provider.id).toUpperCase()}
 				</Text>
 
 				{/* API Key Section */}
 				<View style={styles.authSection}>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
 						API Key
 					</Text>
 					<TextInput
@@ -348,11 +388,21 @@ export default function AddProviderScreen() {
 							pressed && { opacity: 0.8 },
 						]}
 					>
-						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.primaryForeground, fontWeight: "600" },
+							]}
+						>
 							{isSaving ? "Saving..." : "Save API Key"}
 						</Text>
 					</Pressable>
-					<Text style={[typography.micro, { color: colors.mutedForeground, marginTop: 8 }]}>
+					<Text
+						style={[
+							typography.micro,
+							{ color: colors.mutedForeground, marginTop: 8 },
+						]}
+					>
 						Keys are sent directly to OpenCode and never stored by OpenChamber.
 					</Text>
 				</View>
@@ -360,25 +410,48 @@ export default function AddProviderScreen() {
 				{/* OAuth Methods */}
 				{selectedOAuthMethods.length > 0 && (
 					<View style={[styles.authSection, { marginTop: 24 }]}>
-						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", marginBottom: 12 }]}>
+						<Text
+							style={[
+								typography.uiLabel,
+								{
+									color: colors.foreground,
+									fontWeight: "600",
+									marginBottom: 12,
+								},
+							]}
+						>
 							Or connect with OAuth
 						</Text>
 
 						{selectedOAuthMethods.map((method, index) => {
-							const methodLabel = method.label || method.name || `OAuth ${index + 1}`;
+							const methodLabel =
+								method.label || method.name || `OAuth ${index + 1}`;
 							const isPending =
 								oauthPending?.providerId === selectedProviderId &&
 								oauthPending?.methodIndex === index;
 
 							return (
-								<View key={`${selectedProviderId}-oauth-${index}`} style={styles.oauthMethod}>
+								<View
+									key={`${selectedProviderId}-oauth-${index}`}
+									style={styles.oauthMethod}
+								>
 									<View style={styles.oauthHeader}>
 										<View style={{ flex: 1 }}>
-											<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+											<Text
+												style={[
+													typography.uiLabel,
+													{ color: colors.foreground },
+												]}
+											>
 												{methodLabel}
 											</Text>
 											{(method.description || method.help) && (
-												<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+												<Text
+													style={[
+														typography.micro,
+														{ color: colors.mutedForeground },
+													]}
+												>
 													{method.description || method.help}
 												</Text>
 											)}
@@ -392,7 +465,9 @@ export default function AddProviderScreen() {
 												pressed && { opacity: 0.7 },
 											]}
 										>
-											<Text style={[typography.meta, { color: colors.foreground }]}>
+											<Text
+												style={[typography.meta, { color: colors.foreground }]}
+											>
 												Connect
 											</Text>
 										</Pressable>
@@ -400,27 +475,52 @@ export default function AddProviderScreen() {
 
 									{/* OAuth Details when pending */}
 									{isPending && oauthDetails && (
-										<View style={[styles.oauthDetails, { backgroundColor: colors.muted }]}>
+										<View
+											style={[
+												styles.oauthDetails,
+												{ backgroundColor: colors.muted },
+											]}
+										>
 											{oauthDetails.instructions && (
-												<Text style={[typography.meta, { color: colors.mutedForeground, marginBottom: 8 }]}>
+												<Text
+													style={[
+														typography.meta,
+														{ color: colors.mutedForeground, marginBottom: 8 },
+													]}
+												>
 													{oauthDetails.instructions}
 												</Text>
 											)}
 
 											{oauthDetails.userCode && (
 												<View style={styles.oauthCodeRow}>
-													<Text style={[typography.code, { color: colors.foreground, flex: 1 }]}>
+													<Text
+														style={[
+															typography.code,
+															{ color: colors.foreground, flex: 1 },
+														]}
+													>
 														{oauthDetails.userCode}
 													</Text>
 													<Pressable
-														onPress={() => handleCopyToClipboard(oauthDetails.userCode!, "Code")}
+														onPress={() =>
+															handleCopyToClipboard(
+																oauthDetails.userCode!,
+																"Code",
+															)
+														}
 														style={({ pressed }) => [
 															styles.copyButton,
 															{ borderColor: colors.border },
 															pressed && { opacity: 0.7 },
 														]}
 													>
-														<Text style={[typography.micro, { color: colors.foreground }]}>
+														<Text
+															style={[
+																typography.micro,
+																{ color: colors.foreground },
+															]}
+														>
 															Copy
 														</Text>
 													</Pressable>
@@ -437,19 +537,31 @@ export default function AddProviderScreen() {
 															pressed && { opacity: 0.7 },
 														]}
 													>
-														<Text style={[typography.meta, { color: colors.primary }]}>
+														<Text
+															style={[
+																typography.meta,
+																{ color: colors.primary },
+															]}
+														>
 															Open Link
 														</Text>
 													</Pressable>
 													<Pressable
-														onPress={() => handleCopyToClipboard(oauthDetails.url!, "Link")}
+														onPress={() =>
+															handleCopyToClipboard(oauthDetails.url!, "Link")
+														}
 														style={({ pressed }) => [
 															styles.copyButton,
 															{ borderColor: colors.border },
 															pressed && { opacity: 0.7 },
 														]}
 													>
-														<Text style={[typography.micro, { color: colors.foreground }]}>
+														<Text
+															style={[
+																typography.micro,
+																{ color: colors.foreground },
+															]}
+														>
 															Copy
 														</Text>
 													</Pressable>
@@ -485,7 +597,15 @@ export default function AddProviderScreen() {
 													pressed && { opacity: 0.8 },
 												]}
 											>
-												<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
+												<Text
+													style={[
+														typography.uiLabel,
+														{
+															color: colors.primaryForeground,
+															fontWeight: "600",
+														},
+													]}
+												>
 													{isSaving ? "Completing..." : "Complete OAuth"}
 												</Text>
 											</Pressable>
