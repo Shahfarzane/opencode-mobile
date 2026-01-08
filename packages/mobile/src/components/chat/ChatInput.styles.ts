@@ -77,7 +77,8 @@ const triggerIcon = tv({
 });
 
 const autocompleteOverlay = tv({
-  base: "absolute bottom-full left-0 right-0 mb-2 max-h-[280px] rounded-xl",
+  // Match PWA: rounded-xl (12px), mb-2 (8px margin), border border-border
+  base: "absolute bottom-full left-0 right-0 mb-2 rounded-xl overflow-hidden",
   variants: {},
 });
 
@@ -87,12 +88,19 @@ const autocompleteHeader = tv({
 });
 
 const autocompleteItem = tv({
-  base: "flex-row items-center gap-2.5 px-3 py-2.5",
+  // Match PWA: flex items-start gap-2 px-3 py-2 (gap 8px, padding 12px/8px)
+  base: "flex-row items-start gap-2 px-3 py-2",
   variants: {},
 });
 
 const autocompleteItemContent = tv({
-  base: "flex-1",
+  base: "flex-1 min-w-0",
+  variants: {},
+});
+
+const autocompleteFooter = tv({
+  // Match PWA: px-3 pt-1 pb-1.5 (12px horizontal, 4px top, 6px bottom)
+  base: "px-3 pt-1 pb-1.5",
   variants: {},
 });
 
@@ -113,4 +121,5 @@ export const chatInputStyles = combineStyles({
   autocompleteHeader,
   autocompleteItem,
   autocompleteItemContent,
+  autocompleteFooter,
 });

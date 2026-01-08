@@ -219,23 +219,33 @@ function AutocompleteOverlay({
 					Haptics.selectionAsync();
 					onSelect(item);
 				}}
-				className={chatInputStyles.autocompleteItem({})}
-				style={({ pressed }) =>
-					pressed ? { backgroundColor: `${colors.foreground}08` } : undefined
-				}
+				// Match PWA: flex items-start gap-2 px-3 py-2
+				style={({ pressed }) => ({
+					flexDirection: "row",
+					alignItems: "flex-start",
+					gap: 8, // gap-2 = 8px
+					paddingHorizontal: 12, // px-3 = 12px
+					paddingVertical: 8, // py-2 = 8px
+					backgroundColor: pressed ? colors.muted : undefined,
+				})}
 			>
-				{item.type === "agent" && <AgentIcon />}
-				{item.type === "command" && <CommandIcon />}
-				{item.type === "file" && <FileIcon extension={item.extension} />}
-				<View className={chatInputStyles.autocompleteItemContent({})}>
-					<Text style={[typography.code, { color: colors.foreground }]}>
+				{/* Match PWA: mt-0.5 for icon */}
+				<View style={{ marginTop: 2 }}>
+					{item.type === "agent" && <AgentIcon />}
+					{item.type === "command" && <CommandIcon />}
+					{item.type === "file" && <FileIcon extension={item.extension} />}
+				</View>
+				<View style={{ flex: 1, minWidth: 0 }}>
+					{/* Match PWA: typography-ui-label font-medium */}
+					<Text style={[typography.uiLabel, fontStyle("500"), { color: colors.foreground }]}>
 						{item.type === "agent" && `#${item.name}`}
 						{item.type === "command" && `/${item.name}`}
 						{item.type === "file" && `@${item.name}`}
 					</Text>
+					{/* Match PWA: typography-meta text-muted-foreground mt-0.5 truncate */}
 					{"description" in item && item.description && (
 						<Text
-							style={[typography.micro, { color: colors.mutedForeground }]}
+							style={[typography.micro, { color: colors.mutedForeground, marginTop: 2 }]}
 							numberOfLines={1}
 						>
 							{item.description}
@@ -243,7 +253,7 @@ function AutocompleteOverlay({
 					)}
 					{item.type === "file" && (
 						<Text
-							style={[typography.micro, { color: colors.mutedForeground }]}
+							style={[typography.micro, { color: colors.mutedForeground, marginTop: 2 }]}
 							numberOfLines={1}
 						>
 							{item.path}
@@ -252,65 +262,82 @@ function AutocompleteOverlay({
 				</View>
 			</Pressable>
 		),
-		[onSelect, colors.foreground, colors.mutedForeground],
+		[onSelect, colors.foreground, colors.mutedForeground, colors.muted],
 	);
-
-	const getTitle = () => {
-		switch (type) {
-			case "agent":
-				return "Agents";
-			case "command":
-				return "Commands";
-			case "file":
-				return "Files";
-			default:
-				return "";
-		}
-	};
 
 	if (items.length === 0) {
 		return null;
 	}
 
+	// Match PWA styling exactly:
+	// Items: py-2 (8px*2) + content (~24px) = ~40px each
+	// Footer: pt-1 (4px) + pb-1.5 (6px) + text (~14px) = ~24px
+	const itemHeight = 40;
+	const footerHeight = 24;
+	const maxItems = 5; // Match PWA max-h-64 (~256px / ~40px per item)
+	const contentHeight = Math.min(items.length, maxItems) * itemHeight + footerHeight;
+
 	return (
 		<Animated.View
-			className={chatInputStyles.autocompleteOverlay({})}
 			style={{
-				opacity: fadeAnim,
-				transform: [{ translateY: slideAnim }],
+				// Position above input
+				position: "absolute",
+				bottom: "100%",
+				left: 0,
+				right: 0,
+				// Match PWA: mb-2 = 8px margin
+				marginBottom: 8,
+				// Match PWA: rounded-xl = 12px (same as chat input)
+				borderRadius: 12,
+				overflow: "hidden",
+				// Match PWA: border border-border
 				borderColor: colors.border,
 				borderWidth: 1,
 				backgroundColor: colors.background,
+				// Subtle shadow (PWA uses shadow-none but we need some depth on mobile)
 				shadowColor: colors.foreground,
-				shadowOffset: { width: 0, height: -2 },
-				shadowOpacity: 0.08,
-				shadowRadius: 12,
-				elevation: 8,
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.05,
+				shadowRadius: 6,
+				elevation: 3,
+				zIndex: 100,
+				// Animation
+				opacity: fadeAnim,
+				transform: [{ translateY: slideAnim }],
+				// Fixed height based on content
+				height: contentHeight,
+				maxHeight: 256, // Match PWA: max-h-64 = 256px
 			}}
 		>
+			<View style={{ flex: 1 }}>
+				<FlashList
+					data={items}
+					renderItem={renderItem}
+					keyExtractor={(item) =>
+						item.type === "file" ? item.path : `${item.type}-${item.name}`
+					}
+					keyboardShouldPersistTaps="handled"
+				/>
+			</View>
+			{/* Match PWA footer: px-3 pt-1 pb-1.5 border-t */}
 			<View
-				className={chatInputStyles.autocompleteHeader({})}
-				style={{ borderBottomColor: colors.border, borderBottomWidth: 1 }}
+				style={{
+					borderTopColor: colors.border,
+					borderTopWidth: 1,
+					paddingHorizontal: 12, // px-3 = 12px
+					paddingTop: 4, // pt-1 = 4px
+					paddingBottom: 6, // pb-1.5 = 6px
+				}}
 			>
 				<Text
 					style={[
 						typography.micro,
-						fontStyle("600"),
 						{ color: colors.mutedForeground },
 					]}
 				>
-					{getTitle()}
+					↑↓ navigate • Enter select • Esc close
 				</Text>
 			</View>
-			<FlashList
-				data={items}
-				renderItem={renderItem}
-				keyExtractor={(item) =>
-					item.type === "file" ? item.path : `${item.type}-${item.name}`
-				}
-				keyboardShouldPersistTaps="handled"
-				ListFooterComponent={() => <View style={{ height: 56 }} />}
-			/>
 		</Animated.View>
 	);
 }

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
-import { ChevronLeft } from "@/components/icons";
+import { ChevronLeft, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
@@ -31,7 +31,8 @@ export default function ProvidersListScreen() {
 			setIsLoading(true);
 		}
 		try {
-			const data = await providersApi.list();
+			// Use listConnected() to get only authenticated providers
+			const data = await providersApi.listConnected();
 			setProviders(data);
 		} catch (error) {
 			console.error("Failed to load providers:", error);
@@ -51,6 +52,11 @@ export default function ProvidersListScreen() {
 
 	const handleSelectProvider = (providerId: string) => {
 		router.push(`/settings/providers/${encodeURIComponent(providerId)}`);
+	};
+
+	const handleAddProvider = () => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		router.push("/settings/providers/add");
 	};
 
 	return (
@@ -75,7 +81,13 @@ export default function ProvidersListScreen() {
 				<Text style={[styles.title, { color: colors.foreground }]}>
 					Providers
 				</Text>
-				<View style={styles.headerButton} />
+				<Pressable
+					onPress={handleAddProvider}
+					style={styles.headerButton}
+					hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+				>
+					<PlusIcon size={24} color={colors.primary} />
+				</Pressable>
 			</View>
 
 			{isLoading ? (
@@ -120,8 +132,34 @@ export default function ProvidersListScreen() {
 							<Text
 								style={[typography.uiLabel, { color: colors.mutedForeground }]}
 							>
-								No providers configured
+								No providers connected
 							</Text>
+							<Text
+								style={[
+									typography.meta,
+									{ color: colors.mutedForeground, textAlign: "center", marginTop: 8 },
+								]}
+							>
+								Add a provider to start using AI models
+							</Text>
+							<Pressable
+								onPress={handleAddProvider}
+								style={({ pressed }) => [
+									styles.addButton,
+									{ backgroundColor: colors.primary },
+									pressed && { opacity: 0.8 },
+								]}
+							>
+								<PlusIcon size={18} color={colors.primaryForeground} />
+								<Text
+									style={[
+										typography.uiLabel,
+										{ color: colors.primaryForeground, fontWeight: "600" },
+									]}
+								>
+									Add Provider
+								</Text>
+							</Pressable>
 						</View>
 					)}
 				</ScrollView>
@@ -180,5 +218,14 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingVertical: 48,
 		gap: 12,
+	},
+	addButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: 20,
+		paddingVertical: 12,
+		borderRadius: 8,
+		marginTop: 16,
 	},
 });

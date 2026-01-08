@@ -88,7 +88,7 @@ function DirectoryRow({ item, onPress }: { item: FileListEntry; onPress: () => v
 export default function DirectoryScreen() {
 	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
-	const { setDirectory, serverUrl } = useConnectionStore();
+	const { setDirectory, serverUrl, directory: savedDirectory, authToken } = useConnectionStore();
 
 	const [currentPath, setCurrentPath] = useState<string>("/");
 	const [homePath, setHomePath] = useState<string | null>(null);
@@ -121,9 +121,28 @@ export default function DirectoryScreen() {
 		}
 	}, []);
 
-	const loadHomePath = useCallback(async () => {
+	const loadServerCwd = useCallback(async () => {
 		try {
-			const response = await fetch(`${serverUrl}/api/fs/home`);
+			const response = await fetch(`${serverUrl}/api/fs/cwd`, {
+				headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+			});
+			if (response.ok) {
+				const data = await response.json();
+				if (data.home) {
+					setHomePath(data.home);
+				}
+				// Return the server's current working directory
+				return data.cwd || data.home || null;
+			}
+		} catch {
+			// Fall back to home directory
+		}
+
+		// Fallback: try to get just the home directory
+		try {
+			const response = await fetch(`${serverUrl}/api/fs/home`, {
+				headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+			});
 			if (response.ok) {
 				const data = await response.json();
 				if (data.home) {
@@ -135,15 +154,20 @@ export default function DirectoryScreen() {
 			// Ignore
 		}
 		return null;
-	}, [serverUrl]);
+	}, [serverUrl, authToken]);
 
 	useEffect(() => {
 		async function init() {
-			const home = await loadHomePath();
-			loadDirectory(home || "/");
+			// Priority: saved directory > server's CWD > home > root
+			if (savedDirectory) {
+				loadDirectory(savedDirectory);
+			} else {
+				const serverCwd = await loadServerCwd();
+				loadDirectory(serverCwd || "/");
+			}
 		}
 		init();
-	}, [loadDirectory, loadHomePath]);
+	}, [loadDirectory, loadServerCwd, savedDirectory]);
 
 	const handleNavigate = useCallback(
 		(path: string) => {

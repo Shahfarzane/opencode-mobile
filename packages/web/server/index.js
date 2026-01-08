@@ -3022,15 +3022,30 @@ async function main(options = {}) {
   });
 
   app.get('/api/git/status', async (req, res) => {
-    const { getStatus } = await getGitLibraries();
+    const { getStatus, isGitRepository } = await getGitLibraries();
     try {
       const directory = req.query.directory;
       if (!directory) {
         return res.status(400).json({ error: 'directory parameter is required' });
       }
 
+      // Check if directory is a git repository first to avoid errors
+      const isRepo = await isGitRepository(directory);
+      if (!isRepo) {
+        return res.json({
+          current: null,
+          tracking: null,
+          ahead: 0,
+          behind: 0,
+          files: [],
+          isClean: true,
+          diffStats: {},
+          isGitRepo: false
+        });
+      }
+
       const status = await getStatus(directory);
-      res.json(status);
+      res.json({ ...status, isGitRepo: true });
     } catch (error) {
       console.error('Failed to get git status:', error);
       res.status(500).json({ error: error.message || 'Failed to get git status' });
@@ -3561,6 +3576,19 @@ async function main(options = {}) {
     } catch (error) {
       console.error('Failed to resolve home directory:', error);
       res.status(500).json({ error: (error && error.message) || 'Failed to resolve home directory' });
+    }
+  });
+
+  // Get the server's current working directory (OpenCode working directory)
+  app.get('/api/fs/cwd', (req, res) => {
+    try {
+      res.json({
+        cwd: openCodeWorkingDirectory,
+        home: os.homedir()
+      });
+    } catch (error) {
+      console.error('Failed to get working directory:', error);
+      res.status(500).json({ error: (error && error.message) || 'Failed to get working directory' });
     }
   });
 

@@ -18,7 +18,6 @@ import {
 	type GitStatus,
 	type GitStatusFile,
 	gitApi,
-	serverApi,
 } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
@@ -538,8 +537,6 @@ export default function GitScreen() {
 	const [history, setHistory] = useState<GitLog | null>(null);
 	const [historyExpanded, setHistoryExpanded] = useState(false);
 	const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-	
-	const { setDirectory } = useConnectionStore();
 
 	const loadStatus = useCallback(async () => {
 		if (!isConnected) {
@@ -550,13 +547,8 @@ export default function GitScreen() {
 
 		try {
 			setError(null);
-			
-			const serverDir = await serverApi.getServerDirectory();
-			if (serverDir && serverDir !== directory) {
-				await setDirectory(serverDir);
-			}
-			
-			if (!serverDir && !directory) {
+
+			if (!directory) {
 				setError("No directory selected");
 				setIsLoading(false);
 				return;
@@ -580,7 +572,7 @@ export default function GitScreen() {
 			setIsLoading(false);
 			setIsRefreshing(false);
 		}
-	}, [isConnected, directory, setDirectory]);
+	}, [isConnected, directory]);
 
 	useEffect(() => {
 		loadStatus();
