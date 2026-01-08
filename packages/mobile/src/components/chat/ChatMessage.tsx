@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
 import { FontSizes, FontFamilySans, fontStyle, typography, useTheme } from "@/theme";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
-import { MessageActionsMenu, useMessageActions } from "./MessageActionsMenu";
+import { MessageActionsMenu } from "./MessageActionsMenu";
+import { useMessageActions } from "./useMessageActions";
 import { ReasoningPart, ToolPart } from "./parts";
 import type { Message, MessagePart } from "./types";
 

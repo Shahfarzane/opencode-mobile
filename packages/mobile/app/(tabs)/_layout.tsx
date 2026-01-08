@@ -145,6 +145,7 @@ export default function TabsLayout() {
 		// ChatScreen will handle loading messages via its own effect
 	}, []);
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const createNewSession = useCallback((_newDirectory?: string | null) => {
 		setCurrentSessionIdRef.current(null);
 		sheetRef.current?.close();

@@ -159,6 +159,9 @@ export const providersApi = {
 				{ type: "api", key: apiKey },
 				true,
 			);
+			if (response?.error) {
+				return { success: false, error: response.error };
+			}
 			return { success: true };
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to save API key";
