@@ -18,15 +18,17 @@ import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { useTerminalStore } from "../../src/stores/useTerminalStore";
 import { typography, useTheme } from "../../src/theme";
 
+// PWA-style special keys
 const SPECIAL_KEYS = [
-	{ label: "Ctrl", key: "ctrl" },
-	{ label: "Tab", key: "\t" },
 	{ label: "Esc", key: "\x1b" },
-	{ label: "Up", key: "\x1b[A" },
-	{ label: "Down", key: "\x1b[B" },
-	{ label: "C-c", key: "\x03" },
-	{ label: "C-d", key: "\x04" },
-	{ label: "C-z", key: "\x1a" },
+	{ label: "→", key: "\t" }, // Tab
+	{ label: "Ctrl", key: "ctrl" },
+	{ label: "⌘", key: "cmd" }, // Cmd modifier
+	{ label: "↑", key: "\x1b[A" },
+	{ label: "←", key: "\x1b[D" },
+	{ label: "↓", key: "\x1b[B" },
+	{ label: "→", key: "\x1b[C" },
+	{ label: "↩", key: "\n" }, // Enter
 ];
 
 export default function TerminalScreen() {
@@ -38,6 +40,7 @@ export default function TerminalScreen() {
 
 	const [inputValue, setInputValue] = useState("");
 	const [ctrlMode, setCtrlMode] = useState(false);
+	const [cmdMode, setCmdMode] = useState(false);
 	const [isCreatingSession, setIsCreatingSession] = useState(false);
 	const [createAttempted, setCreateAttempted] = useState(false);
 
@@ -60,6 +63,11 @@ export default function TerminalScreen() {
 
 	const terminalBg = isDark ? "#0D0D0D" : "#1C1B1A";
 	const terminalText = "#CECDC3";
+
+	// Truncate directory path like PWA (replace home with ~)
+	const truncatedPath = directory
+		? directory.replace(/^\/Users\/[^/]+/, "~").replace(/^\/home\/[^/]+/, "~")
+		: "";
 
 	const handleData = useCallback(
 		(data: string) => {
@@ -125,7 +133,7 @@ export default function TerminalScreen() {
 				rows: 24,
 			});
 			setSessionId(session.sessionId);
-			appendOutput(`Terminal session started in ${directory}\n\r`);
+			// Don't add startup message - PWA style shows clean terminal
 		} catch (err) {
 			const message =
 				err instanceof Error
@@ -183,6 +191,13 @@ export default function TerminalScreen() {
 		(key: string) => {
 			if (key === "ctrl") {
 				setCtrlMode(!ctrlMode);
+				setCmdMode(false);
+				return;
+			}
+
+			if (key === "cmd") {
+				setCmdMode(!cmdMode);
+				setCtrlMode(false);
 				return;
 			}
 
@@ -195,8 +210,9 @@ export default function TerminalScreen() {
 			} else {
 				sendInput(key);
 			}
+			setCmdMode(false);
 		},
-		[ctrlMode, sendInput],
+		[ctrlMode, cmdMode, sendInput],
 	);
 
 	const handleCharInput = useCallback(
@@ -365,7 +381,126 @@ export default function TerminalScreen() {
 			);
 		}
 
+		return null; // Terminal content rendered separately with header
+	};
+
+	// Show non-terminal states (not connected, no directory, loading, error)
+	const nonTerminalContent = renderContent();
+	if (nonTerminalContent) {
 		return (
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				style={[styles.container, { backgroundColor: colors.background }]}
+				keyboardVerticalOffset={keyboardOffset}
+			>
+				{nonTerminalContent}
+			</KeyboardAvoidingView>
+		);
+	}
+
+	// PWA-style terminal layout
+	return (
+		<KeyboardAvoidingView
+			behavior={Platform.OS === "ios" ? "padding" : "height"}
+			style={[styles.container, { backgroundColor: colors.background }]}
+			keyboardVerticalOffset={keyboardOffset}
+		>
+			{/* Header Bar - PWA style */}
+			<View
+				style={[
+					styles.headerBar,
+					{ backgroundColor: colors.card, borderBottomColor: colors.border },
+				]}
+			>
+				<View style={styles.headerLeft}>
+					<Text
+						style={[typography.code, { color: colors.foreground }]}
+						numberOfLines={1}
+						ellipsizeMode="middle"
+					>
+						{truncatedPath}
+					</Text>
+					{isConnected && !hasExited && (
+						<View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+					)}
+					{hasExited && (
+						<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+							exited
+						</Text>
+					)}
+				</View>
+				<View style={styles.headerActions}>
+					<Pressable
+						onPress={clearOutput}
+						style={[styles.headerButton, { backgroundColor: "#f97316" }]}
+					>
+						<Text style={[typography.micro, { color: "#fff", fontWeight: "600" }]}>
+							Clear
+						</Text>
+					</Pressable>
+					<Pressable
+						onPress={restartSession}
+						style={[styles.headerButton, { backgroundColor: "#f97316" }]}
+					>
+						<Text style={[typography.micro, { color: "#fff", fontWeight: "600" }]}>
+							Restart
+						</Text>
+					</Pressable>
+				</View>
+			</View>
+
+			{/* Special Keys Row - PWA style, above terminal */}
+			<View
+				style={[
+					styles.specialKeysRow,
+					{ backgroundColor: colors.card, borderBottomColor: colors.border },
+				]}
+			>
+				<ScrollView
+					horizontal
+					showsHorizontalScrollIndicator={false}
+					contentContainerStyle={styles.specialKeysContent}
+				>
+					{SPECIAL_KEYS.map((item, index) => {
+						const isActive =
+							(item.key === "ctrl" && ctrlMode) ||
+							(item.key === "cmd" && cmdMode);
+						return (
+							<Pressable
+								key={`${item.label}-${index}`}
+								onPress={() => handleSpecialKey(item.key)}
+								style={[
+									styles.specialKey,
+									{
+										backgroundColor: isActive
+											? colors.primary
+											: colors.muted,
+										borderColor: isActive
+											? colors.primary
+											: colors.border,
+									},
+								]}
+							>
+								<Text
+									style={[
+										typography.micro,
+										{
+											color: isActive
+												? colors.primaryForeground
+												: colors.foreground,
+											fontWeight: "500",
+										},
+									]}
+								>
+									{item.label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</ScrollView>
+			</View>
+
+			{/* Terminal Output */}
 			<View style={styles.terminalContainer}>
 				<ScrollView
 					ref={scrollViewRef}
@@ -395,184 +530,66 @@ export default function TerminalScreen() {
 					</View>
 				)}
 			</View>
-		);
-	};
 
-	return (
-		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			style={[styles.container, { backgroundColor: colors.background }]}
-			keyboardVerticalOffset={keyboardOffset}
-		>
-			{renderContent()}
-
-			{sessionId && (
+			{/* Input Bar - simplified for mobile */}
+			<View
+				style={[
+					styles.inputArea,
+					{
+						borderTopColor: colors.border,
+						backgroundColor: colors.background,
+						paddingBottom: Math.max(insets.bottom, 8),
+					},
+				]}
+			>
 				<View
 					style={[
-						styles.inputArea,
+						styles.inputWrapper,
+						{ backgroundColor: terminalBg, borderColor: colors.border },
+					]}
+				>
+					<Text style={[typography.uiLabel, { color: colors.success }]}>$</Text>
+					<TextInput
+						ref={inputRef}
+						value={inputValue}
+						onChangeText={(text) => {
+							setInputValue(text);
+							if (text.length > inputValue.length) {
+								handleCharInput(text.slice(-1));
+							}
+						}}
+						onSubmitEditing={handleSubmit}
+						placeholder={hasExited ? "Session ended" : "Enter command..."}
+						placeholderTextColor={colors.mutedForeground}
+						editable={!hasExited && isConnected}
+						autoCapitalize="none"
+						autoCorrect={false}
+						returnKeyType="send"
+						blurOnSubmit={false}
+						style={[styles.textInput, typography.body, { color: terminalText }]}
+					/>
+				</View>
+				<Pressable
+					onPress={handleSubmit}
+					disabled={hasExited || !isConnected}
+					style={[
+						styles.sendButton,
 						{
-							borderTopColor: colors.border,
-							backgroundColor: colors.background,
+							backgroundColor:
+								hasExited || !isConnected ? colors.muted : colors.primary,
 						},
 					]}
 				>
-					<ScrollView
-						horizontal
-						showsHorizontalScrollIndicator={false}
-						contentContainerStyle={styles.specialKeys}
-					>
-						{SPECIAL_KEYS.map((item) => (
-							<Pressable
-								key={item.label}
-								onPress={() => handleSpecialKey(item.key)}
-								style={[
-									styles.specialKey,
-									{
-										backgroundColor:
-											item.key === "ctrl" && ctrlMode
-												? colors.primary
-												: colors.muted,
-										borderColor:
-											item.key === "ctrl" && ctrlMode
-												? colors.primary
-												: colors.border,
-									},
-								]}
-							>
-								<Text
-									style={[
-										typography.micro,
-										{
-											color:
-												item.key === "ctrl" && ctrlMode
-													? colors.primaryForeground
-													: colors.foreground,
-											fontWeight: "500",
-										},
-									]}
-								>
-									{item.label}
-								</Text>
-							</Pressable>
-						))}
-
-						<View
-							style={[styles.keyDivider, { backgroundColor: colors.border }]}
-						/>
-
-						<Pressable
-							onPress={clearOutput}
-							style={[
-								styles.specialKey,
-								{ backgroundColor: colors.muted, borderColor: colors.border },
-							]}
-						>
-							<Text
-								style={[
-									typography.micro,
-									{ color: colors.foreground, fontWeight: "500" },
-								]}
-							>
-								Clear
-							</Text>
-						</Pressable>
-
-						{hasExited ? (
-							<Pressable
-								onPress={restartSession}
-								style={[styles.specialKey, { backgroundColor: colors.success }]}
-							>
-								<Text
-									style={[
-										typography.micro,
-										{ color: colors.primaryForeground, fontWeight: "500" },
-									]}
-								>
-									Restart
-								</Text>
-							</Pressable>
-						) : (
-							<Pressable
-								onPress={closeSession}
-								style={[
-									styles.specialKey,
-									{ backgroundColor: colors.destructive },
-								]}
-							>
-								<Text
-									style={[
-										typography.micro,
-										{ color: colors.primaryForeground, fontWeight: "500" },
-									]}
-								>
-									Kill
-								</Text>
-							</Pressable>
-						)}
-					</ScrollView>
-
-					<View
+					<Text
 						style={[
-							styles.inputRow,
-							{ paddingBottom: Math.max(insets.bottom, 8) },
+							typography.uiLabel,
+							{ color: colors.primaryForeground, fontWeight: "700" },
 						]}
 					>
-						<View
-							style={[
-								styles.inputWrapper,
-								{ backgroundColor: terminalBg, borderColor: colors.border },
-							]}
-						>
-							<Text style={[typography.uiLabel, { color: colors.success }]}>
-								$
-							</Text>
-							<TextInput
-								ref={inputRef}
-								value={inputValue}
-								onChangeText={(text) => {
-									setInputValue(text);
-									if (text.length > inputValue.length) {
-										handleCharInput(text.slice(-1));
-									}
-								}}
-								onSubmitEditing={handleSubmit}
-								placeholder={hasExited ? "Session ended" : "Enter command..."}
-								placeholderTextColor={colors.mutedForeground}
-								editable={!hasExited && isConnected}
-								autoCapitalize="none"
-								autoCorrect={false}
-								returnKeyType="send"
-								blurOnSubmit={false}
-								style={[
-									styles.textInput,
-									typography.body,
-									{ color: terminalText },
-								]}
-							/>
-						</View>
-						<Pressable
-							onPress={handleSubmit}
-							disabled={hasExited || !isConnected}
-							style={[
-								styles.sendButton,
-								{
-									backgroundColor:
-										hasExited || !isConnected ? colors.muted : colors.primary,
-								},
-							]}
-						>
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: colors.primaryForeground, fontWeight: "700" },
-								]}
-							>
-								{">"}
-							</Text>
-						</Pressable>
-					</View>
-				</View>
-			)}
+						{">"}
+					</Text>
+				</Pressable>
+			</View>
 		</KeyboardAvoidingView>
 	);
 }
@@ -592,6 +609,55 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 		borderRadius: 8,
 	},
+	// PWA-style header bar
+	headerBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderBottomWidth: 1,
+	},
+	headerLeft: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	headerActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	headerButton: {
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderRadius: 6,
+	},
+	statusDot: {
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+	},
+	// Special keys row - PWA style
+	specialKeysRow: {
+		borderBottomWidth: 1,
+	},
+	specialKeysContent: {
+		paddingHorizontal: 8,
+		paddingVertical: 8,
+		gap: 6,
+		flexDirection: "row",
+	},
+	specialKey: {
+		paddingHorizontal: 10,
+		paddingVertical: 6,
+		borderRadius: 6,
+		borderWidth: 1,
+		minWidth: 32,
+		alignItems: "center",
+	},
+	// Terminal content
 	terminalContainer: {
 		flex: 1,
 	},
@@ -609,30 +675,14 @@ const styles = StyleSheet.create({
 		padding: 8,
 		borderTopWidth: 1,
 	},
+	// Input area
 	inputArea: {
-		borderTopWidth: 1,
-	},
-	specialKeys: {
-		paddingHorizontal: 8,
-		paddingVertical: 8,
-		gap: 6,
-		flexDirection: "row",
-	},
-	specialKey: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 6,
-		borderWidth: 1,
-	},
-	keyDivider: {
-		width: 1,
-		marginHorizontal: 4,
-	},
-	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: 8,
+		paddingTop: 8,
 		gap: 8,
+		borderTopWidth: 1,
 	},
 	inputWrapper: {
 		flex: 1,
