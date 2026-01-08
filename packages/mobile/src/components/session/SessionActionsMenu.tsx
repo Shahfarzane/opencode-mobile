@@ -1,6 +1,15 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
+import { useEffect, useState } from "react";
 import { Dimensions, Modal, Pressable, Text, View } from "react-native";
+import Animated, {
+	runOnJS,
+	useAnimatedStyle,
+	useSharedValue,
+	withSpring,
+	withTiming,
+	interpolate,
+} from "react-native-reanimated";
 import {
 	CopyIcon,
 	LinkOffIcon,
@@ -25,7 +34,18 @@ interface SessionActionsMenuProps {
 }
 
 const MENU_WIDTH = 180;
+const MENU_HEIGHT = 180;
 const MENU_MARGIN = 8;
+
+const SPRING_CONFIG = {
+	damping: 22,
+	mass: 1,
+	stiffness: 380,
+};
+
+const CLOSE_DURATION = 150;
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function SessionActionsMenu({
 	visible,
@@ -41,13 +61,49 @@ export function SessionActionsMenu({
 }: SessionActionsMenuProps) {
 	const { colors, isDark } = useTheme();
 	const screenWidth = Dimensions.get("window").width;
+	const [modalVisible, setModalVisible] = useState(false);
 	
+	const progress = useSharedValue(0);
+
 	const menuPosition = anchorPosition
 		? {
 				top: anchorPosition.y + MENU_MARGIN,
 				right: screenWidth - anchorPosition.x,
 			}
 		: null;
+
+	useEffect(() => {
+		if (visible) {
+			setModalVisible(true);
+			progress.value = withSpring(1, SPRING_CONFIG);
+		} else {
+			progress.value = withTiming(0, { duration: CLOSE_DURATION }, (finished) => {
+				if (finished) {
+					runOnJS(setModalVisible)(false);
+				}
+			});
+		}
+	}, [visible, progress]);
+
+	const backdropStyle = useAnimatedStyle(() => ({
+		opacity: interpolate(progress.value, [0, 1], [0, 0.4]),
+	}));
+
+	const menuStyle = useAnimatedStyle(() => {
+		const halfWidth = MENU_WIDTH / 2;
+		const halfHeight = MENU_HEIGHT / 2;
+
+		return {
+			opacity: interpolate(progress.value, [0, 0.3, 1], [0, 0.8, 1]),
+			transform: [
+				{ translateX: halfWidth },
+				{ translateY: -halfHeight },
+				{ scale: interpolate(progress.value, [0, 1], [0.85, 1]) },
+				{ translateX: -halfWidth },
+				{ translateY: halfHeight },
+			],
+		};
+	});
 
 	const handleRename = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -84,17 +140,27 @@ export function SessionActionsMenu({
 
 	return (
 		<Modal
-			visible={visible}
+			visible={modalVisible}
 			transparent
-			animationType="fade"
+			animationType="none"
 			onRequestClose={onClose}
 		>
-			<Pressable
-				className={sessionActionsMenuStyles.overlay({})}
-				style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
-				onPress={onClose}
-			>
-				<View
+			<View className={sessionActionsMenuStyles.overlay({})}>
+				<AnimatedPressable
+					style={[
+						{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							backgroundColor: "#000",
+						},
+						backdropStyle,
+					]}
+					onPress={onClose}
+				/>
+				<Animated.View
 					className={sessionActionsMenuStyles.menu({})}
 					style={[
 						{
@@ -113,9 +179,9 @@ export function SessionActionsMenu({
 							top: menuPosition.top,
 							right: menuPosition.right,
 						},
+						menuStyle,
 					]}
 				>
-					{/* Rename */}
 					<Pressable
 						onPress={handleRename}
 						className={sessionActionsMenuStyles.menuItem({})}
@@ -134,7 +200,6 @@ export function SessionActionsMenu({
 						style={{ backgroundColor: colors.border }}
 					/>
 
-					{/* Share section */}
 					{!isShared ? (
 						<Pressable
 							onPress={handleShare}
@@ -187,7 +252,6 @@ export function SessionActionsMenu({
 						style={{ backgroundColor: colors.border }}
 					/>
 
-					{/* Delete */}
 					<Pressable
 						onPress={handleDelete}
 						className={sessionActionsMenuStyles.menuItem({})}
@@ -200,8 +264,8 @@ export function SessionActionsMenu({
 							Delete
 						</Text>
 					</Pressable>
-				</View>
-			</Pressable>
+				</Animated.View>
+			</View>
 		</Modal>
 	);
 }
