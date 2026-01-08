@@ -13,6 +13,8 @@ import Svg, { Path } from "react-native-svg";
 import {
 	type Agent,
 	agentsApi,
+	type Command,
+	commandsApi,
 	filesApi,
 	type Provider,
 	providersApi,
@@ -110,6 +112,7 @@ export default function ChatScreen() {
 	const [currentModelId, setCurrentModelId] = useState<string | undefined>();
 
 	const [agents, setAgents] = useState<Agent[]>([]);
+	const [commands, setCommands] = useState<Command[]>([]);
 	const [currentAgentName, setCurrentAgentName] = useState<
 		string | undefined
 	>();
@@ -413,6 +416,23 @@ export default function ChatScreen() {
 		};
 
 		fetchProviders();
+	}, [isConnected]);
+
+	// Fetch commands (for autocomplete)
+	useEffect(() => {
+		if (!isConnected) return;
+
+		const fetchCommands = async () => {
+			try {
+				const data = await commandsApi.list();
+				// Filter out hidden commands
+				setCommands(data.filter((cmd) => !cmd.hidden));
+			} catch (err) {
+				console.error("Failed to fetch commands:", err);
+			}
+		};
+
+		fetchCommands();
 	}, [isConnected]);
 
 	// Fetch agents (depends on settings for default agent selection)
@@ -1116,22 +1136,22 @@ export default function ChatScreen() {
 					},
 				]}
 			>
-				<ChatInput
-					onSend={handleSend}
-					isLoading={isLoading}
-					placeholder={
-						isConnected
-							? "# for agents; @ for files; / for commands"
-							: "Connect to server first"
-					}
-					onFileSearch={handleFileSearch}
-					modelInfo={modelInfo}
-					activeAgent={activeAgent}
-					onModelPress={() => {
-						// Model picker is now handled by ModelControls above
-					}}
-					onAgentPress={() => setShowAgentPicker(true)}
-				/>
+			<ChatInput
+				onSend={handleSend}
+				isLoading={isLoading}
+				placeholder={
+					isConnected
+						? "# for agents; @ for files; / for commands"
+						: "Connect to server first"
+				}
+				agents={agents.map((a) => ({ name: a.name, description: a.description }))}
+				commands={commands.map((c) => ({ name: c.name, description: c.description }))}
+				onFileSearch={handleFileSearch}
+				modelInfo={modelInfo}
+				activeAgent={activeAgent}
+				onModelPress={() => {}}
+				onAgentPress={() => setShowAgentPicker(true)}
+			/>
 			</View>
 
 			<AgentPicker

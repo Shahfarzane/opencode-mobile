@@ -38,12 +38,22 @@ export interface StepFinishPart {
 	id?: string;
 }
 
+export interface FilePart {
+	type: "file";
+	id?: string;
+	filename?: string;
+	mime?: string;
+	url?: string;
+	size?: number;
+}
+
 export type MessagePart =
 	| TextPart
 	| ToolPart
 	| ReasoningPart
 	| StepStartPart
-	| StepFinishPart;
+	| StepFinishPart
+	| FilePart;
 
 export interface StreamEvent {
 	type: string;

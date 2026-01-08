@@ -15,7 +15,8 @@ export type MessagePart = {
 		| "tool-result"
 		| "reasoning"
 		| "step-start"
-		| "step-finish";
+		| "step-finish"
+		| "file";
 	id?: string;
 	content?: string;
 	text?: string;
@@ -38,6 +39,10 @@ export type MessagePart = {
 	isCollapsed?: boolean;
 	time?: { start?: number; end?: number };
 	sessionId?: string;
+	filename?: string;
+	mime?: string;
+	url?: string;
+	size?: number;
 };
 
 export type Message = {
@@ -83,6 +88,24 @@ export function convertStreamingPart(part: StreamingPart): MessagePart {
 			content: reasoningPart.text || reasoningPart.content,
 			text: reasoningPart.text || reasoningPart.content,
 			time: reasoningPart.time,
+		};
+	}
+
+	if (part.type === "file") {
+		const filePart = part as StreamingPart & {
+			type: "file";
+			filename?: string;
+			mime?: string;
+			url?: string;
+			size?: number;
+		};
+		return {
+			type: "file",
+			id: filePart.id,
+			filename: filePart.filename,
+			mime: filePart.mime,
+			url: filePart.url,
+			size: filePart.size,
 		};
 	}
 

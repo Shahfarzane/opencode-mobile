@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -7,6 +7,7 @@ import {
 	StyleSheet,
 	Text,
 	View,
+	useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -14,10 +15,32 @@ import { type GitStatus, type GitStatusFile, gitApi, serverApi } from "../../src
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 
+type DiffViewMode = "unified" | "side-by-side";
+
+// Minimum width for side-by-side mode (narrower threshold for mobile)
+const SIDE_BY_SIDE_MIN_WIDTH = 500;
+
 interface DiffLine {
 	type: "add" | "remove" | "context" | "header" | "chunk";
 	content: string;
 	lineNumber?: { old?: number; new?: number };
+}
+
+// Side-by-side view types
+interface SideBySideLine {
+	left: {
+		type: "context" | "remove" | "empty" | "chunk" | "header";
+		content: string;
+		lineNumber: number | null;
+	};
+	right: {
+		type: "context" | "add" | "empty" | "chunk" | "header";
+		content: string;
+		lineNumber: number | null;
+	};
+	isChunk?: boolean;
+	isHeader?: boolean;
+	chunkInfo?: { oldStart: number; newStart: number; oldCount: number; newCount: number };
 }
 
 function parseDiff(diffText: string): DiffLine[] {
@@ -63,8 +86,95 @@ function parseDiff(diffText: string): DiffLine[] {
 	return result;
 }
 
-// Simple syntax highlighting for code
-function highlightCode(code: string, extension?: string): React.ReactNode[] {
+function createSideBySidePairs(lines: DiffLine[]): SideBySideLine[] {
+	const result: SideBySideLine[] = [];
+	let i = 0;
+
+	while (i < lines.length) {
+		const line = lines[i];
+
+		if (line.type === "header") {
+			result.push({
+				left: { type: "header", content: line.content, lineNumber: null },
+				right: { type: "header", content: line.content, lineNumber: null },
+				isHeader: true,
+			});
+			i++;
+			continue;
+		}
+
+		if (line.type === "chunk") {
+			const match = line.content.match(/@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/);
+			result.push({
+				left: { type: "chunk", content: line.content, lineNumber: null },
+				right: { type: "chunk", content: line.content, lineNumber: null },
+				isChunk: true,
+				chunkInfo: match ? {
+					oldStart: parseInt(match[1], 10),
+					newStart: parseInt(match[3], 10),
+					oldCount: match[2] ? parseInt(match[2], 10) : 1,
+					newCount: match[4] ? parseInt(match[4], 10) : 1,
+				} : undefined,
+			});
+			i++;
+			continue;
+		}
+
+		if (line.type === "context") {
+			result.push({
+				left: { type: "context", content: line.content, lineNumber: line.lineNumber?.old ?? null },
+				right: { type: "context", content: line.content, lineNumber: line.lineNumber?.new ?? null },
+			});
+			i++;
+			continue;
+		}
+
+		if (line.type === "remove") {
+			const removedLines: DiffLine[] = [];
+			while (i < lines.length && lines[i].type === "remove") {
+				removedLines.push(lines[i]);
+				i++;
+			}
+
+			const addedLines: DiffLine[] = [];
+			while (i < lines.length && lines[i].type === "add") {
+				addedLines.push(lines[i]);
+				i++;
+			}
+
+			const maxLen = Math.max(removedLines.length, addedLines.length);
+			for (let j = 0; j < maxLen; j++) {
+				const removed = removedLines[j];
+				const added = addedLines[j];
+
+				result.push({
+					left: removed
+						? { type: "remove", content: removed.content, lineNumber: removed.lineNumber?.old ?? null }
+						: { type: "empty", content: "", lineNumber: null },
+					right: added
+						? { type: "add", content: added.content, lineNumber: added.lineNumber?.new ?? null }
+						: { type: "empty", content: "", lineNumber: null },
+				});
+			}
+			continue;
+		}
+
+		if (line.type === "add") {
+			result.push({
+				left: { type: "empty", content: "", lineNumber: null },
+				right: { type: "add", content: line.content, lineNumber: line.lineNumber?.new ?? null },
+			});
+			i++;
+			continue;
+		}
+
+		i++;
+	}
+
+	return result;
+}
+
+function highlightCode(code: string): React.ReactNode[] {
 	const keywords = [
 		"import",
 		"export",
@@ -170,12 +280,18 @@ function highlightCode(code: string, extension?: string): React.ReactNode[] {
 
 function DiffLineComponent({
 	line,
-	extension,
+	isFirst,
+	isLast,
+	isNarrow,
 }: {
 	line: DiffLine;
-	extension?: string;
+	isFirst?: boolean;
+	isLast?: boolean;
+	isNarrow?: boolean;
 }) {
 	const { colors, isDark } = useTheme();
+
+	const lineNumberWidth = isNarrow ? 32 : 36;
 
 	const getLineStyle = () => {
 		switch (line.type) {
@@ -220,17 +336,31 @@ function DiffLineComponent({
 		}
 	};
 
-	const getLineNum = () => {
-		if (line.type === "add") return line.lineNumber?.new?.toString() ?? "";
-		if (line.type === "remove") return line.lineNumber?.old?.toString() ?? "";
-		if (line.type === "context")
-			return line.lineNumber?.new?.toString() ?? "";
+	const getOldLineNum = () => {
+		if (line.type === "remove" || line.type === "context") {
+			return line.lineNumber?.old?.toString() ?? "";
+		}
 		return "";
+	};
+
+	const getNewLineNum = () => {
+		if (line.type === "add" || line.type === "context") {
+			return line.lineNumber?.new?.toString() ?? "";
+		}
+		return "";
+	};
+
+	const borderRadiusStyle = {
+		borderTopLeftRadius: isFirst ? 8 : 0,
+		borderTopRightRadius: isFirst ? 8 : 0,
+		borderBottomLeftRadius: isLast ? 8 : 0,
+		borderBottomRightRadius: isLast ? 8 : 0,
 	};
 
 	if (line.type === "header" || line.type === "chunk") {
 		return (
-			<View style={[styles.diffLine, { backgroundColor: style.bg }]}>
+			<View style={[styles.diffLine, { backgroundColor: style.bg }, borderRadiusStyle]}>
+				<View style={styles.headerPadding} />
 				<Text
 					style={[typography.code, { color: style.sign, fontSize: 11 }]}
 					numberOfLines={1}
@@ -242,24 +372,250 @@ function DiffLineComponent({
 	}
 
 	return (
-		<View style={[styles.diffLine, { backgroundColor: style.bg }]}>
-			<View style={[styles.lineNumber, { borderRightColor: colors.border }]}>
-				<Text
-					style={[
-						typography.code,
-						{ color: colors.mutedForeground, fontSize: 10 },
-					]}
-				>
-					{getLineNum()}
-				</Text>
+		<View style={[styles.diffLine, { backgroundColor: style.bg }, borderRadiusStyle]}>
+			<View style={[styles.lineNumberContainer, { borderRightColor: colors.border }]}>
+				<View style={[styles.lineNumberOld, { width: lineNumberWidth }]}>
+					<Text
+						style={[
+							typography.code,
+							{ color: colors.mutedForeground, fontSize: 10 },
+						]}
+					>
+						{getOldLineNum()}
+					</Text>
+				</View>
+				<View style={[styles.lineNumberNew, { width: lineNumberWidth }]}>
+					<Text
+						style={[
+							typography.code,
+							{ color: colors.mutedForeground, fontSize: 10 },
+						]}
+					>
+						{getNewLineNum()}
+					</Text>
+				</View>
 			</View>
 			<Text style={[styles.lineSign, { color: style.sign }]}>{getSign()}</Text>
 			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 				<Text style={[typography.code, { color: colors.foreground, fontSize: 12 }]}>
-					{highlightCode(line.content, extension)}
+					{highlightCode(line.content)}
 				</Text>
 			</ScrollView>
 		</View>
+	);
+}
+
+const SideBySideColumn = memo(function SideBySideColumn({
+	line,
+	side,
+	width,
+	isFirst,
+	isLast,
+}: {
+	line: SideBySideLine["left"] | SideBySideLine["right"];
+	side: "left" | "right";
+	width: number;
+	isFirst?: boolean;
+	isLast?: boolean;
+}) {
+	const { colors, isDark } = useTheme();
+	const lineNumberWidth = 32;
+
+	const getBackgroundColor = () => {
+		switch (line.type) {
+			case "add":
+				return isDark ? "rgba(74, 222, 128, 0.15)" : "rgba(34, 197, 94, 0.1)";
+			case "remove":
+				return isDark ? "rgba(248, 113, 113, 0.15)" : "rgba(239, 68, 68, 0.1)";
+			case "empty":
+				return isDark ? "rgba(128, 128, 128, 0.05)" : "rgba(128, 128, 128, 0.03)";
+			case "chunk":
+				return isDark ? "rgba(96, 165, 250, 0.1)" : "rgba(59, 130, 246, 0.05)";
+			case "header":
+				return colors.muted;
+			default:
+				return "transparent";
+		}
+	};
+
+	const getSign = () => {
+		switch (line.type) {
+			case "add":
+				return "+";
+			case "remove":
+				return "-";
+			default:
+				return " ";
+		}
+	};
+
+	const getSignColor = () => {
+		switch (line.type) {
+			case "add":
+				return colors.success;
+			case "remove":
+				return colors.destructive;
+			default:
+				return colors.mutedForeground;
+		}
+	};
+
+	const borderRadiusStyle = {
+		borderTopLeftRadius: isFirst && side === "left" ? 8 : 0,
+		borderTopRightRadius: isFirst && side === "right" ? 8 : 0,
+		borderBottomLeftRadius: isLast && side === "left" ? 8 : 0,
+		borderBottomRightRadius: isLast && side === "right" ? 8 : 0,
+	};
+
+	const borderStyle = side === "left" ? { borderRightWidth: 1, borderRightColor: colors.border } : {};
+
+	if (line.type === "header" || line.type === "chunk") {
+		return (
+			<View
+				style={[
+					styles.sideBySideColumn,
+					{ width, backgroundColor: getBackgroundColor() },
+					borderRadiusStyle,
+					borderStyle,
+				]}
+			>
+				<View style={[styles.sideBySideLineNumber, { width: lineNumberWidth }]} />
+				<Text
+					style={[typography.code, { color: colors.info, fontSize: 10 }]}
+					numberOfLines={1}
+				>
+					{side === "left" ? line.content : ""}
+				</Text>
+			</View>
+		);
+	}
+
+	if (line.type === "empty") {
+		return (
+			<View
+				style={[
+					styles.sideBySideColumn,
+					{ width, backgroundColor: getBackgroundColor() },
+					borderRadiusStyle,
+					borderStyle,
+				]}
+			>
+				<View style={[styles.sideBySideLineNumber, { width: lineNumberWidth }]} />
+				<Text style={[styles.lineSign, { color: colors.mutedForeground }]}> </Text>
+			</View>
+		);
+	}
+
+	return (
+		<View
+			style={[
+				styles.sideBySideColumn,
+				{ width, backgroundColor: getBackgroundColor() },
+				borderRadiusStyle,
+				borderStyle,
+			]}
+		>
+			<View style={[styles.sideBySideLineNumber, { width: lineNumberWidth, borderRightColor: colors.border }]}>
+				<Text style={[typography.code, { color: colors.mutedForeground, fontSize: 10 }]}>
+					{line.lineNumber ?? ""}
+				</Text>
+			</View>
+			<Text style={[styles.lineSign, { color: getSignColor() }]}>{getSign()}</Text>
+			<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+				<Text style={[typography.code, { color: colors.foreground, fontSize: 11 }]}>
+					{highlightCode(line.content)}
+				</Text>
+			</ScrollView>
+		</View>
+	);
+});
+
+function SideBySideDiffView({
+	lines,
+}: {
+	lines: DiffLine[];
+}) {
+	const pairs = useMemo(() => createSideBySidePairs(lines), [lines]);
+	const { colors } = useTheme();
+	const { width } = useWindowDimensions();
+	const insets = useSafeAreaInsets();
+	const columnWidth = (width - 24) / 2;
+
+	const renderItem = useCallback(
+		({ item, index }: { item: SideBySideLine; index: number }) => {
+			const isFirst = index === 0;
+			const isLast = index === pairs.length - 1;
+
+			return (
+				<View style={styles.sideBySideRow}>
+					<SideBySideColumn
+						line={item.left}
+						side="left"
+						width={columnWidth}
+						isFirst={isFirst}
+						isLast={isLast}
+					/>
+					<SideBySideColumn
+						line={item.right}
+						side="right"
+						width={columnWidth}
+						isFirst={isFirst}
+						isLast={isLast}
+					/>
+				</View>
+			);
+		},
+		[columnWidth, pairs.length]
+	);
+
+	return (
+		<FlatList
+			data={pairs}
+			keyExtractor={(_, index) => index.toString()}
+			renderItem={renderItem}
+			style={[styles.diffList, { backgroundColor: colors.card }]}
+			contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+			initialNumToRender={30}
+			maxToRenderPerBatch={20}
+			windowSize={10}
+		/>
+	);
+}
+
+function DiffViewToggleButton({
+	mode,
+	onModeChange,
+}: {
+	mode: DiffViewMode;
+	onModeChange: (mode: DiffViewMode) => void;
+}) {
+	const { colors } = useTheme();
+
+	return (
+		<Pressable
+			onPress={() => onModeChange(mode === "unified" ? "side-by-side" : "unified")}
+			style={[styles.viewToggleButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+		>
+			{mode === "unified" ? (
+				<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+					<Path
+						d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4m6-18h4a2 2 0 012 2v14a2 2 0 01-2 2h-4m-6-9h6"
+						stroke={colors.foreground}
+						strokeWidth={2}
+						strokeLinecap="round"
+					/>
+				</Svg>
+			) : (
+				<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+					<Path
+						d="M4 6h16M4 12h16M4 18h16"
+						stroke={colors.foreground}
+						strokeWidth={2}
+						strokeLinecap="round"
+					/>
+				</Svg>
+			)}
+		</Pressable>
 	);
 }
 
@@ -468,6 +824,7 @@ export default function DiffScreen() {
 	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
 	const { isConnected, directory } = useConnectionStore();
+	const { width: screenWidth } = useWindowDimensions();
 
 	const [status, setStatus] = useState<GitStatus | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -476,8 +833,12 @@ export default function DiffScreen() {
 	const [isLoadingDiff, setIsLoadingDiff] = useState(false);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [viewMode, setViewMode] = useState<DiffViewMode>("unified");
 
 	const { setDirectory } = useConnectionStore();
+
+	const isNarrow = screenWidth < SIDE_BY_SIDE_MIN_WIDTH;
+	const effectiveViewMode: DiffViewMode = isNarrow ? "unified" : viewMode;
 
 	const loadStatus = useCallback(async () => {
 		if (!isConnected) {
@@ -568,9 +929,11 @@ export default function DiffScreen() {
 		}
 	}, [selectedFile, loadDiff]);
 
-	const changedFiles = status?.files ?? [];
-	const parsedDiff = diffContent ? parseDiff(diffContent) : [];
-	const fileExtension = selectedFile?.split(".").pop();
+	const changedFiles = useMemo(() => status?.files ?? [], [status?.files]);
+	const parsedDiff = useMemo(
+		() => (diffContent ? parseDiff(diffContent) : []),
+		[diffContent]
+	);
 
 	if (isLoading) {
 		return (
@@ -622,33 +985,48 @@ export default function DiffScreen() {
 				{ backgroundColor: colors.background },
 			]}
 		>
-			{/* File Selector */}
 			<View style={[styles.selectorWrapper, { borderBottomColor: colors.border }]}>
-				<FileSelector
-					files={changedFiles}
-					selectedPath={selectedFile}
-					onSelect={setSelectedFile}
-					diffStats={status?.diffStats}
-					isOpen={isDropdownOpen}
-					onToggle={() => setIsDropdownOpen(!isDropdownOpen)}
-				/>
+				<View style={styles.headerRow}>
+					<FileSelector
+						files={changedFiles}
+						selectedPath={selectedFile}
+						onSelect={setSelectedFile}
+						diffStats={status?.diffStats}
+						isOpen={isDropdownOpen}
+						onToggle={() => setIsDropdownOpen(!isDropdownOpen)}
+					/>
+					{!isNarrow && (
+						<DiffViewToggleButton
+							mode={effectiveViewMode}
+							onModeChange={setViewMode}
+						/>
+					)}
+				</View>
 			</View>
 
-			{/* Diff Content */}
 			{isLoadingDiff ? (
 				<View style={[styles.centered, { flex: 1 }]}>
 					<ActivityIndicator size="small" color={colors.primary} />
 				</View>
 			) : parsedDiff.length > 0 ? (
-				<FlatList
-					data={parsedDiff}
-					keyExtractor={(_, index) => index.toString()}
-					renderItem={({ item }) => (
-						<DiffLineComponent line={item} extension={fileExtension} />
-					)}
-					style={styles.diffList}
-					contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
-				/>
+				effectiveViewMode === "side-by-side" ? (
+					<SideBySideDiffView lines={parsedDiff} />
+				) : (
+					<FlatList
+						data={parsedDiff}
+						keyExtractor={(_, index) => index.toString()}
+						renderItem={({ item, index }) => (
+							<DiffLineComponent
+								line={item}
+								isFirst={index === 0}
+								isLast={index === parsedDiff.length - 1}
+								isNarrow={isNarrow}
+							/>
+						)}
+						style={[styles.diffList, { backgroundColor: colors.card }]}
+						contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+					/>
+				)
 			) : (
 				<View style={[styles.centered, { flex: 1 }]}>
 					<Text style={[typography.meta, { color: colors.mutedForeground }]}>
@@ -673,8 +1051,14 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		zIndex: 10,
 	},
+	headerRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
 	fileSelectorContainer: {
 		position: "relative",
+		flex: 1,
 	},
 	fileSelectorButton: {
 		flexDirection: "row",
@@ -684,6 +1068,14 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
+	},
+	viewToggleButton: {
+		width: 36,
+		height: 36,
+		borderRadius: 8,
+		borderWidth: 1,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	statsInline: {
 		flexDirection: "row",
@@ -700,7 +1092,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		maxHeight: 250,
 		overflow: "hidden",
-		zIndex: 100, // Below SessionSheet (1000) but above other content
+		zIndex: 100,
 		elevation: 100,
 	},
 	fileList: {
@@ -714,6 +1106,9 @@ const styles = StyleSheet.create({
 	},
 	diffList: {
 		flex: 1,
+		overflow: "hidden",
+		borderRadius: 8,
+		margin: 12,
 	},
 	diffLine: {
 		flexDirection: "row",
@@ -721,12 +1116,22 @@ const styles = StyleSheet.create({
 		minHeight: 22,
 		paddingRight: 8,
 	},
-	lineNumber: {
-		width: 40,
-		paddingHorizontal: 4,
+	headerPadding: {
+		width: 92,
+	},
+	lineNumberContainer: {
+		flexDirection: "row",
 		borderRightWidth: 1,
+	},
+	lineNumberOld: {
 		alignItems: "flex-end",
 		justifyContent: "center",
+		paddingHorizontal: 4,
+	},
+	lineNumberNew: {
+		alignItems: "flex-end",
+		justifyContent: "center",
+		paddingHorizontal: 4,
 	},
 	lineSign: {
 		width: 20,
@@ -752,5 +1157,20 @@ const styles = StyleSheet.create({
 	},
 	syntaxNumber: {
 		color: "#B5CEA8",
+	},
+	sideBySideRow: {
+		flexDirection: "row",
+	},
+	sideBySideColumn: {
+		flexDirection: "row",
+		alignItems: "stretch",
+		minHeight: 22,
+		paddingRight: 4,
+	},
+	sideBySideLineNumber: {
+		alignItems: "flex-end",
+		justifyContent: "center",
+		paddingHorizontal: 4,
+		borderRightWidth: 1,
 	},
 });
