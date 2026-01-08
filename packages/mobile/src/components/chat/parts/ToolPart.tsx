@@ -162,6 +162,53 @@ function tryParseSessionId(output: string): string | undefined {
 	return undefined;
 }
 
+function formatGlobOutput(input: Record<string, unknown>, output?: string): string {
+	const pattern = input.pattern as string | undefined;
+	const path = input.path as string | undefined;
+	
+	let displayPath = pattern || path || "";
+	
+	if (displayPath.includes("**")) {
+		displayPath = displayPath.split("**")[0];
+	} else if (displayPath.includes("*")) {
+		displayPath = displayPath.split("*")[0];
+	}
+	
+	if (displayPath && !displayPath.endsWith("/") && !displayPath.includes(".")) {
+		displayPath = `${displayPath}/`;
+	}
+	
+	if (output && output.trim().length > 0) {
+		const lines = output.trim().split("\n").filter(line => line.trim().length > 0);
+		const fileCount = lines.length;
+		if (fileCount > 0) {
+			return `${displayPath || "."} - ${fileCount} file${fileCount !== 1 ? "s" : ""}`;
+		}
+	}
+	
+	return displayPath || "";
+}
+
+function formatGlobExpandedOutput(output: string, maxFiles: number = 5): string {
+	const lines = output.trim().split("\n").filter(line => line.trim().length > 0);
+	const fileCount = lines.length;
+	
+	if (fileCount === 0) {
+		return "No files found";
+	}
+	
+	if (fileCount <= maxFiles) {
+		return lines.map(line => line.split("/").pop() || line).join("\n");
+	}
+	
+	const preview = lines
+		.slice(0, maxFiles)
+		.map(line => line.split("/").pop() || line)
+		.join("\n");
+	const remaining = fileCount - maxFiles;
+	return `${preview}\n...and ${remaining} more file${remaining !== 1 ? "s" : ""}`;
+}
+
 function formatToolDescription(part: ToolPartData): string {
 	const input = part.input;
 	if (!input) return "";
@@ -186,6 +233,10 @@ function formatToolDescription(part: ToolPartData): string {
 		return input.description.length > 40
 			? `${input.description.slice(0, 40)}...`
 			: input.description;
+	}
+
+	if (part.toolName === "glob") {
+		return formatGlobOutput(input, part.output);
 	}
 
 	return "";
@@ -295,8 +346,9 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 								Output:
 							</Text>
 							<Text style={[typography.code, { color: colors.foreground }]}>
-								{part.output?.slice(0, 1000)}
-								{(part.output?.length ?? 0) > 1000 && "..."}
+								{toolName.toLowerCase() === "glob" && part.output
+									? formatGlobExpandedOutput(part.output)
+									: (part.output?.slice(0, 1000) ?? "") + ((part.output?.length ?? 0) > 1000 ? "..." : "")}
 							</Text>
 						</View>
 					)}

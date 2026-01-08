@@ -26,3 +26,8 @@ local-dev*
 *.njsproj
 *.sln
 *.sw?
+
+
+.screenshots/*
+.playwright/*
+packages/mobile/.maestro/*
