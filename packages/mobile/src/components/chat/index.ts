@@ -14,6 +14,6 @@ export type { Permission, PermissionResponse } from "./PermissionCard";
 export { PermissionCard } from "./PermissionCard";
 export { StatusRow } from "./StatusRow";
 export { TimelineSheet } from "./TimelineSheet";
-export type { Message, MessagePart, ToolPartState } from "./types";
+export type { Message, MessagePart, TokenBreakdown, ToolPartState } from "./types";
 export { convertStreamingPart } from "./types";
 export { useMessageActions } from "./useMessageActions";

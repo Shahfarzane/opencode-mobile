@@ -24,6 +24,13 @@ export interface Session {
 	path?: string;
 }
 
+export interface TokenBreakdown {
+	input?: number;
+	output?: number;
+	reasoning?: number;
+	cache?: { read?: number; write?: number };
+}
+
 export interface MessageInfo {
 	id: string;
 	role: "user" | "assistant";
@@ -32,6 +39,8 @@ export interface MessageInfo {
 	providerID?: string;
 	modelID?: string;
 	mode?: string; // agent name
+	// Token usage info
+	tokens?: number | TokenBreakdown;
 }
 
 export interface MessagePart {

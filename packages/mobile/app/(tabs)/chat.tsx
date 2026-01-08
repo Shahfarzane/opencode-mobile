@@ -29,6 +29,7 @@ import type {
 	ModelInfo,
 	Permission,
 	PermissionResponse,
+	TokenBreakdown,
 } from "../../src/components/chat";
 import {
 	AgentPicker,
@@ -60,26 +61,32 @@ import { typography, useTheme } from "../../src/theme";
 const DEFAULT_CONTEXT_LIMIT = 200000;
 const DEFAULT_OUTPUT_LIMIT = 8192;
 
-type TokenBreakdown = {
-	input?: number;
-	output?: number;
-	reasoning?: number;
-	cache?: { read?: number; write?: number };
-};
+function sumTokenBreakdown(breakdown: TokenBreakdown): number {
+	const input = breakdown.input ?? 0;
+	const output = breakdown.output ?? 0;
+	const reasoning = breakdown.reasoning ?? 0;
+	const cacheRead = breakdown.cache?.read ?? 0;
+	const cacheWrite = breakdown.cache?.write ?? 0;
+	return input + output + reasoning + cacheRead + cacheWrite;
+}
 
-function extractTokensFromParts(parts?: MessagePart[]): number {
-	if (!parts || parts.length === 0) return 0;
+function extractTokensFromMessage(message: Message): number {
+	// First check if tokens are directly on the message (from msg.info.tokens)
+	if (typeof message.tokens === "number") {
+		return message.tokens;
+	}
+	if (message.tokens && typeof message.tokens === "object") {
+		return sumTokenBreakdown(message.tokens);
+	}
 
-	for (const part of parts) {
+	// Fallback: check parts for tokens
+	if (!message.parts || message.parts.length === 0) return 0;
+
+	for (const part of message.parts) {
 		const tokens = (part as { tokens?: number | TokenBreakdown }).tokens;
 		if (typeof tokens === "number") return tokens;
 		if (tokens && typeof tokens === "object") {
-			const input = tokens.input ?? 0;
-			const output = tokens.output ?? 0;
-			const reasoning = tokens.reasoning ?? 0;
-			const cacheRead = tokens.cache?.read ?? 0;
-			const cacheWrite = tokens.cache?.write ?? 0;
-			return input + output + reasoning + cacheRead + cacheWrite;
+			return sumTokenBreakdown(tokens);
 		}
 	}
 
@@ -328,6 +335,9 @@ export default function ChatScreen() {
 					info?.finish === "error" ||
 					(info?.time?.completed && typeof info.time.completed === "number");
 
+				// Extract tokens from info if available
+				const messageTokens = (info as { tokens?: number | TokenBreakdown })?.tokens;
+
 				const assistantId = currentAssistantMessageIdRef.current;
 				if (assistantId) {
 					setMessages((prev) =>
@@ -338,6 +348,7 @@ export default function ChatScreen() {
 										parts: partsArray,
 										content: textContent,
 										isStreaming: !isComplete,
+										...(messageTokens !== undefined && { tokens: messageTokens }),
 									}
 								: msg,
 						),
@@ -576,7 +587,7 @@ export default function ChatScreen() {
 		}
 
 		const lastMessage = assistantMessages[assistantMessages.length - 1];
-		const tokens = extractTokensFromParts(lastMessage.parts);
+		const tokens = extractTokensFromMessage(lastMessage);
 
 		if (tokens > 0) {
 			const contextLimit = DEFAULT_CONTEXT_LIMIT;
@@ -698,6 +709,7 @@ export default function ChatScreen() {
 							createdAt: msg.info.createdAt || Date.now(),
 							modelName: messageModelName,
 							agentName: messageAgentName,
+							tokens: msg.info.tokens,
 						});
 					}
 				}
