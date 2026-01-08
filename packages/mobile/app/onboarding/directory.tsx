@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { type FileListEntry, filesApi } from "../../src/api";
+import { PushpinFillIcon, PushpinIcon } from "../../src/components/icons";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { Spacing, typography, useTheme } from "../../src/theme";
 
@@ -43,10 +44,22 @@ function BackButton() {
 	);
 }
 
-function DirectoryRow({ item, onPress }: { item: FileListEntry; onPress: () => void }) {
+interface DirectoryRowProps {
+	item: FileListEntry;
+	onPress: () => void;
+	isPinned: boolean;
+	onTogglePin: () => void;
+}
+
+function DirectoryRow({ item, onPress, isPinned, onTogglePin }: DirectoryRowProps) {
 	const { colors } = useTheme();
 
 	if (!item.isDirectory) return null;
+
+	const handlePinPress = () => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		onTogglePin();
+	};
 
 	return (
 		<Pressable
@@ -72,6 +85,20 @@ function DirectoryRow({ item, onPress }: { item: FileListEntry; onPress: () => v
 			<Text style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
 				{item.name}
 			</Text>
+			<Pressable
+				onPress={handlePinPress}
+				hitSlop={8}
+				style={({ pressed }) => [
+					styles.pinButton,
+					pressed && { opacity: 0.7 },
+				]}
+			>
+				{isPinned ? (
+					<PushpinFillIcon size={16} color={colors.primary} />
+				) : (
+					<PushpinIcon size={16} color={colors.mutedForeground} />
+				)}
+			</Pressable>
 			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
 				<Path
 					d="M9 18l6-6-6-6"
@@ -85,10 +112,72 @@ function DirectoryRow({ item, onPress }: { item: FileListEntry; onPress: () => v
 	);
 }
 
+interface PinnedDirectoryRowProps {
+	path: string;
+	homePath: string | null;
+	onPress: () => void;
+	onUnpin: () => void;
+}
+
+function PinnedDirectoryRow({ path, homePath, onPress, onUnpin }: PinnedDirectoryRowProps) {
+	const { colors } = useTheme();
+
+	const displayPath = homePath && path.startsWith(homePath)
+		? "~" + path.slice(homePath.length)
+		: path;
+
+	const name = path.split("/").pop() || path;
+
+	return (
+		<Pressable
+			onPress={() => {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+				onPress();
+			}}
+			style={({ pressed }) => [
+				styles.pinnedRow,
+				{ borderColor: colors.border + "66", backgroundColor: colors.card },
+				pressed && { opacity: 0.7 },
+			]}
+		>
+			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+				<Path
+					d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+					stroke={colors.primary}
+					strokeWidth={1.5}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				/>
+			</Svg>
+			<View style={{ flex: 1 }}>
+				<Text style={[typography.uiLabel, { color: colors.foreground }]} numberOfLines={1}>
+					{name}
+				</Text>
+				<Text style={[typography.micro, { color: colors.mutedForeground }]} numberOfLines={1}>
+					{displayPath}
+				</Text>
+			</View>
+			<Pressable
+				onPress={() => {
+					Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+					onUnpin();
+				}}
+				hitSlop={8}
+				style={({ pressed }) => [
+					styles.pinButton,
+					pressed && { opacity: 0.7 },
+				]}
+			>
+				<PushpinFillIcon size={16} color={colors.primary} />
+			</Pressable>
+		</Pressable>
+	);
+}
+
 export default function DirectoryScreen() {
 	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
-	const { setDirectory, serverUrl, directory: savedDirectory, authToken } = useConnectionStore();
+	const { setDirectory, serverUrl, directory: savedDirectory, authToken, pinnedDirectories, loadPinnedDirectories, togglePinnedDirectory } = useConnectionStore();
 
 	const [currentPath, setCurrentPath] = useState<string>("/");
 	const [homePath, setHomePath] = useState<string | null>(null);
@@ -168,6 +257,11 @@ export default function DirectoryScreen() {
 		}
 		init();
 	}, [loadDirectory, loadServerCwd, savedDirectory]);
+
+	// Load pinned directories on mount
+	useEffect(() => {
+		loadPinnedDirectories();
+	}, [loadPinnedDirectories]);
 
 	const handleNavigate = useCallback(
 		(path: string) => {
@@ -253,6 +347,26 @@ export default function DirectoryScreen() {
 				/>
 			</View>
 
+			{/* Pinned directories section */}
+			{pinnedDirectories.length > 0 && (
+				<View style={styles.pinnedSection}>
+					<Text style={[typography.micro, { color: colors.mutedForeground, marginBottom: 8 }]}>
+						PINNED
+					</Text>
+					{pinnedDirectories.map((path) => (
+						<PinnedDirectoryRow
+							key={path}
+							path={path}
+							homePath={homePath}
+							onPress={() => {
+								loadDirectory(path);
+							}}
+							onUnpin={() => togglePinnedDirectory(path)}
+						/>
+					))}
+				</View>
+			)}
+
 			{/* Go up button */}
 			{canGoUp && (
 				<Pressable
@@ -304,7 +418,12 @@ export default function DirectoryScreen() {
 					data={entries}
 					keyExtractor={(item) => item.path}
 					renderItem={({ item }) => (
-						<DirectoryRow item={item} onPress={() => handleNavigate(item.path)} />
+						<DirectoryRow
+							item={item}
+							onPress={() => handleNavigate(item.path)}
+							isPinned={pinnedDirectories.includes(item.path)}
+							onTogglePin={() => togglePinnedDirectory(item.path)}
+						/>
 					)}
 					contentContainerStyle={{ paddingTop: 8, paddingBottom: 16 }}
 					ListEmptyComponent={
@@ -409,6 +528,22 @@ const styles = StyleSheet.create({
 	empty: {
 		alignItems: "center",
 		paddingVertical: 48,
+	},
+	pinnedSection: {
+		paddingHorizontal: 16,
+		marginTop: 16,
+	},
+	pinnedRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		marginBottom: 8,
+		padding: 14,
+		borderWidth: 1,
+		borderRadius: 8,
+	},
+	pinButton: {
+		padding: 4,
 	},
 	bottomBar: {
 		borderTopWidth: 1,

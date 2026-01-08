@@ -36,6 +36,7 @@ import {
 	ChatInput,
 	convertStreamingPart,
 	MessageList,
+	ModelPicker,
 	PermissionCard,
 	TimelineSheet,
 } from "../../src/components/chat";
@@ -117,6 +118,7 @@ export default function ChatScreen() {
 		string | undefined
 	>();
 	const [showAgentPicker, setShowAgentPicker] = useState(false);
+	const [showModelPicker, setShowModelPicker] = useState(false);
 	const [openChamberSettings, setOpenChamberSettings] =
 		useState<SettingsPayload | null>(null);
 
@@ -402,14 +404,17 @@ export default function ChatScreen() {
 		fetchSettings();
 	}, [isConnected]);
 
-	// Fetch providers (model selection is handled by dedicated effect below)
+	// Fetch connected providers (only authenticated ones with models)
 	useEffect(() => {
 		if (!isConnected) return;
 
 		const fetchProviders = async () => {
 			try {
-				const data = await providersApi.list();
-				setProviders(data);
+				// Use listConnected to get only authenticated providers
+				const data = await providersApi.listConnected();
+				// Mark connected providers as enabled for ModelPicker
+				const enabledProviders = data.map(p => ({ ...p, enabled: true }));
+				setProviders(enabledProviders);
 			} catch (err) {
 				console.error("Failed to fetch providers:", err);
 			}
@@ -1149,7 +1154,7 @@ export default function ChatScreen() {
 				onFileSearch={handleFileSearch}
 				modelInfo={modelInfo}
 				activeAgent={activeAgent}
-				onModelPress={() => {}}
+				onModelPress={() => setShowModelPicker(true)}
 				onAgentPress={() => setShowAgentPicker(true)}
 			/>
 			</View>
@@ -1160,6 +1165,18 @@ export default function ChatScreen() {
 				onAgentChange={handleAgentChange}
 				visible={showAgentPicker}
 				onClose={() => setShowAgentPicker(false)}
+			/>
+
+			<ModelPicker
+				providers={providers}
+				currentProviderId={currentProviderId}
+				currentModelId={currentModelId}
+				onModelChange={(providerId, modelId) => {
+					setCurrentProviderId(providerId);
+					setCurrentModelId(modelId);
+				}}
+				visible={showModelPicker}
+				onClose={() => setShowModelPicker(false)}
 			/>
 
 			<TimelineSheet
