@@ -432,7 +432,7 @@ export default function AddProviderScreen() {
 
 							return (
 								<View
-									key={`${selectedProviderId}-oauth-${index}`}
+									key={`${selectedProviderId}-oauth-${method.label}`}
 									style={styles.oauthMethod}
 								>
 									<View style={styles.oauthHeader}>

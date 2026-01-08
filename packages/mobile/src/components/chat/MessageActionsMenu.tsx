@@ -1,36 +1,7 @@
-import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { useCallback, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
-
-/**
- * Hook to manage message actions menu state and copy functionality
- */
-export function useMessageActions() {
-	const [showMenu, setShowMenu] = useState(false);
-
-	const openMenu = useCallback(async () => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-		setShowMenu(true);
-	}, []);
-
-	const closeMenu = useCallback(() => {
-		setShowMenu(false);
-	}, []);
-
-	const copyMessageContent = useCallback(async (content: string) => {
-		await Clipboard.setStringAsync(content);
-	}, []);
-
-	return {
-		showMenu,
-		openMenu,
-		closeMenu,
-		copyMessageContent,
-	};
-}
 
 interface MessageActionsMenuProps {
 	visible: boolean;
