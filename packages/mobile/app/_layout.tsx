@@ -38,7 +38,7 @@ function RootLayoutContent() {
 				<Stack.Screen
 					name="settings"
 					options={{
-						presentation: "modal",
+						presentation: "fullScreenModal",
 						animation: "slide_from_bottom",
 					}}
 				/>

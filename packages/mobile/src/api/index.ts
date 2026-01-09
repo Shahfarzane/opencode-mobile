@@ -53,3 +53,5 @@ export type { ToolsAPI } from "./tools";
 export { toolsApi } from "./tools";
 export type { ProjectInfo, ServerPathInfo } from "./server";
 export { serverApi } from "./server";
+export type { Skill, SkillConfig } from "./skills";
+export { skillsApi, isSkillBuiltIn, isSkillHidden } from "./skills";

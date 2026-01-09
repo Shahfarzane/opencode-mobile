@@ -12,10 +12,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type GitIdentityProfile, gitApi } from "@/api";
-import { ChevronLeft, PlusIcon } from "@/components/icons";
+import { ChevronLeft, GitBranchIcon, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
-import { Button, IconButton } from "@/components/ui";
-import { Fonts, Spacing, typography, useTheme } from "@/theme";
+import { IconButton } from "@/components/ui";
+import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
 
 export default function GitIdentitiesListScreen() {
 	const { colors } = useTheme();
@@ -77,8 +77,8 @@ export default function GitIdentitiesListScreen() {
 					Git Identities
 				</Text>
 				<IconButton
-					icon={<PlusIcon size={14} color={colors.primaryForeground} />}
-					variant="primary"
+					icon={<PlusIcon size={16} color={colors.mutedForeground} />}
+					variant="ghost"
 					size="icon-sm"
 					accessibilityLabel="Add new git identity"
 					onPress={() => handleSelectProfile("__new__")}
@@ -104,13 +104,20 @@ export default function GitIdentitiesListScreen() {
 						/>
 					}
 				>
+					{/* Total count header - matches desktop */}
+					<View
+						style={[
+							styles.countHeader,
+							{ borderBottomColor: colors.border },
+						]}
+					>
+						<Text style={[styles.countText, { color: colors.mutedForeground }]}>
+							Total {profiles.length}
+						</Text>
+					</View>
+
 					{profiles.length > 0 && (
 						<View style={styles.section}>
-							<Text
-								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
-							>
-								{profiles.length} IDENTIT{profiles.length !== 1 ? "IES" : "Y"}
-							</Text>
 							{profiles.map((profile) => (
 								<SettingsListItem
 									key={profile.id}
@@ -124,19 +131,13 @@ export default function GitIdentitiesListScreen() {
 
 					{profiles.length === 0 && (
 						<View style={styles.emptyContainer}>
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								No git identities yet
+							<GitBranchIcon size={40} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+							<Text style={[styles.emptyTitle, { color: colors.mutedForeground }]}>
+								No git identities configured
 							</Text>
-							<Button
-								variant="primary"
-								size="sm"
-								onPress={() => handleSelectProfile("__new__")}
-							>
-								<PlusIcon size={16} color={colors.primaryForeground} />
-								<Button.Label>Create your first identity</Button.Label>
-							</Button>
+							<Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+								Use the + button above to create one
+							</Text>
 						</View>
 					)}
 				</ScrollView>
@@ -177,23 +178,37 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	scrollContent: {
-		paddingTop: Spacing[4],
+		paddingTop: 0,
+	},
+	countHeader: {
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[3],
+		borderBottomWidth: StyleSheet.hairlineWidth,
+	},
+	countText: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
 	},
 	section: {
-		marginBottom: Spacing[5],
-	},
-	sectionTitle: {
-		fontSize: 13,
-		fontFamily: Fonts.medium,
-		letterSpacing: 0.5,
-		marginBottom: Spacing[1],
-		paddingHorizontal: Spacing[4],
+		paddingTop: Spacing[2],
+		paddingBottom: Spacing[1],
 	},
 	emptyContainer: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingVertical: 48,
-		gap: 12,
+		paddingHorizontal: Spacing[4],
+		gap: 8,
+	},
+	emptyTitle: {
+		fontSize: FontSizes.uiLabel,
+		fontFamily: Fonts.medium,
+		marginTop: Spacing[3],
+	},
+	emptySubtitle: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
+		opacity: 0.75,
 	},
 });

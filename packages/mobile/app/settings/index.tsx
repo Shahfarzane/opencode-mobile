@@ -49,6 +49,10 @@ export default function SettingsIndexScreen() {
 					onPress={() => router.push("/settings/commands")}
 				/>
 				<SettingsRow
+					title="Skills"
+					onPress={() => router.push("/settings/skills")}
+				/>
+				<SettingsRow
 					title="Providers"
 					onPress={() => router.push("/settings/providers")}
 				/>

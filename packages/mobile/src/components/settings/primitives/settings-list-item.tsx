@@ -1,14 +1,14 @@
 import * as Haptics from "expo-haptics";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
 import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
 import type { SettingsListItemProps } from "./settings-list-item.types";
 
 const DISPLAY_NAME = "SettingsListItem";
 
 /**
- * Native iOS-style settings list item component for displaying selectable items.
+ * Settings list item component matching desktop design.
+ * Uses rounded card style with press states.
  */
 export function SettingsListItem({
   title,
@@ -16,10 +16,12 @@ export function SettingsListItem({
   badge,
   icon,
   modeIcon,
+  leftIcon,
+  rightContent,
   onPress,
-  showChevron = true,
 }: SettingsListItemProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const [isPressed, setIsPressed] = useState(false);
 
   const handlePress = useCallback(() => {
     if (onPress) {
@@ -28,30 +30,51 @@ export function SettingsListItem({
     }
   }, [onPress]);
 
+  // Match desktop selection states: dark:bg-accent/80 bg-primary/12
+  const pressedBgColor = isDark
+    ? `${colors.accent}CC` // 80% opacity
+    : `${colors.primary}1F`; // 12% opacity (~0.12 * 255 = 31 = 0x1F)
+
   return (
     <Pressable
       onPress={handlePress}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
       disabled={!onPress}
-      style={({ pressed }) => ({
-        opacity: pressed ? 0.6 : 1,
-      })}
+      style={{
+        marginHorizontal: Spacing[3],
+        marginVertical: Spacing[0.5],
+      }}
     >
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "space-between",
-          minHeight: 44,
-          paddingHorizontal: Spacing[4],
+          paddingHorizontal: Spacing[1.5],
+          paddingVertical: Spacing[1],
+          borderRadius: 6,
+          backgroundColor: isPressed && onPress ? pressedBgColor : "transparent",
+          minHeight: 36,
         }}
       >
+        {/* Left icon (e.g., provider logo) */}
+        {leftIcon && (
+          <View style={{ marginRight: Spacing[2], flexShrink: 0 }}>
+            {leftIcon}
+          </View>
+        )}
+
+        {/* Main content */}
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {icon && <View style={{ marginRight: 2 }}>{icon}</View>}
+            {/* Small icon before title (e.g., lock icon) */}
+            {icon && <View style={{ flexShrink: 0 }}>{icon}</View>}
+
+            {/* Title */}
             <Text
               style={{
                 color: colors.foreground,
-                fontSize: 17,
+                fontSize: FontSizes.uiLabel,
                 fontFamily: Fonts.regular,
                 flexShrink: 1,
               }}
@@ -59,14 +82,19 @@ export function SettingsListItem({
             >
               {title}
             </Text>
+
+            {/* Mode icon (e.g., agent mode indicator) */}
+            {modeIcon && <View style={{ flexShrink: 0 }}>{modeIcon}</View>}
+
+            {/* Badge (e.g., "system", "user", "project") */}
             {badge && (
               <View
                 style={{
                   backgroundColor: colors.muted,
-                  borderColor: colors.border + "80", // 50% opacity like desktop
+                  borderColor: `${colors.border}80`,
                   borderWidth: 1,
-                  paddingHorizontal: 4, // px-1 like desktop
-                  paddingBottom: 1, // pb-px like desktop
+                  paddingHorizontal: 4,
+                  paddingBottom: 1,
                   borderRadius: 4,
                   flexShrink: 0,
                 }}
@@ -76,22 +104,24 @@ export function SettingsListItem({
                     color: colors.mutedForeground,
                     fontSize: FontSizes.micro,
                     fontFamily: Fonts.regular,
-                    lineHeight: FontSizes.micro, // leading-none like desktop
+                    lineHeight: FontSizes.micro,
                   }}
                 >
                   {badge}
                 </Text>
               </View>
             )}
-            {modeIcon && <View style={{ marginLeft: 2, flexShrink: 0 }}>{modeIcon}</View>}
           </View>
+
+          {/* Subtitle/description */}
           {subtitle && (
             <Text
               style={{
-                color: colors.mutedForeground,
-                fontSize: 15,
+                color: `${colors.mutedForeground}99`, // 60% opacity like desktop
+                fontSize: FontSizes.micro,
                 fontFamily: Fonts.regular,
-                marginTop: 2,
+                marginTop: 1,
+                lineHeight: FontSizes.micro * 1.3,
               }}
               numberOfLines={1}
             >
@@ -99,16 +129,12 @@ export function SettingsListItem({
             </Text>
           )}
         </View>
-        {showChevron && onPress && (
-          <Svg width={7} height={12} viewBox="0 0 7 12" fill="none">
-            <Path
-              d="M1 1l5 5-5 5"
-              stroke={colors.mutedForeground}
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
+
+        {/* Right content (e.g., model count) */}
+        {rightContent && (
+          <View style={{ marginLeft: Spacing[2], flexShrink: 0 }}>
+            {rightContent}
+          </View>
         )}
       </View>
     </Pressable>

@@ -12,10 +12,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
-import { ChevronLeft, PlusIcon } from "@/components/icons";
+import { ChevronLeft, LayersIcon, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
-import { Button, IconButton } from "@/components/ui";
-import { Fonts, Spacing, typography, useTheme } from "@/theme";
+import { IconButton, ProviderLogo } from "@/components/ui";
+import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
 
 export default function ProvidersListScreen() {
 	const { colors } = useTheme();
@@ -83,8 +83,8 @@ export default function ProvidersListScreen() {
 					Providers
 				</Text>
 				<IconButton
-					icon={<PlusIcon size={14} color={colors.primaryForeground} />}
-					variant="primary"
+					icon={<PlusIcon size={16} color={colors.mutedForeground} />}
+					variant="ghost"
 					size="icon-sm"
 					accessibilityLabel="Add new provider"
 					onPress={handleAddProvider}
@@ -110,47 +110,53 @@ export default function ProvidersListScreen() {
 						/>
 					}
 				>
+					{/* Total count header - matches desktop */}
+					<View
+						style={[
+							styles.countHeader,
+							{ borderBottomColor: colors.border },
+						]}
+					>
+						<Text style={[styles.countText, { color: colors.mutedForeground }]}>
+							Total {providers.length}
+						</Text>
+					</View>
+
 					{providers.length > 0 && (
 						<View style={styles.section}>
-							<Text
-								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
-							>
-								{providers.length} PROVIDER{providers.length !== 1 ? "S" : ""}
-							</Text>
-							{providers.map((provider) => (
-								<SettingsListItem
-									key={provider.id}
-									title={provider.name}
-									subtitle={`${provider.models?.length || 0} models`}
-									onPress={() => handleSelectProvider(provider.id)}
-								/>
-							))}
+							{providers.map((provider) => {
+								const modelCount = provider.models?.length || 0;
+								return (
+									<SettingsListItem
+										key={provider.id}
+										title={provider.name || provider.id}
+										leftIcon={<ProviderLogo providerId={provider.id} size={16} />}
+										rightContent={
+											<Text
+												style={[
+													styles.modelCount,
+													{ color: `${colors.mutedForeground}99` },
+												]}
+											>
+												{modelCount}
+											</Text>
+										}
+										onPress={() => handleSelectProvider(provider.id)}
+									/>
+								);
+							})}
 						</View>
 					)}
 
 					{providers.length === 0 && (
 						<View style={styles.emptyContainer}>
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								No providers connected
+							<LayersIcon size={40} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+							<Text style={[styles.emptyTitle, { color: colors.mutedForeground }]}>
+								No providers found
 							</Text>
-							<Text
-								style={[
-									typography.meta,
-									{ color: colors.mutedForeground, textAlign: "center", marginTop: 8 },
-								]}
-							>
-								Add a provider to start using AI models
+							<Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+								Check your OpenCode configuration
 							</Text>
-							<Button
-								variant="primary"
-								size="sm"
-								onPress={handleAddProvider}
-							>
-								<PlusIcon size={16} color={colors.primaryForeground} />
-								<Button.Label>Add Provider</Button.Label>
-							</Button>
 						</View>
 					)}
 				</ScrollView>
@@ -191,23 +197,41 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	scrollContent: {
-		paddingTop: Spacing[4],
+		paddingTop: 0,
+	},
+	countHeader: {
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[3],
+		borderBottomWidth: StyleSheet.hairlineWidth,
+	},
+	countText: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
 	},
 	section: {
-		marginBottom: Spacing[5],
+		paddingTop: Spacing[2],
+		paddingBottom: Spacing[1],
 	},
-	sectionTitle: {
-		fontSize: 13,
-		fontFamily: Fonts.medium,
-		letterSpacing: 0.5,
-		marginBottom: Spacing[1],
-		paddingHorizontal: Spacing[4],
+	modelCount: {
+		fontSize: FontSizes.micro,
+		fontFamily: Fonts.regular,
 	},
 	emptyContainer: {
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingVertical: 48,
-		gap: 12,
+		paddingHorizontal: Spacing[4],
+		gap: 8,
+	},
+	emptyTitle: {
+		fontSize: FontSizes.uiLabel,
+		fontFamily: Fonts.medium,
+		marginTop: Spacing[3],
+	},
+	emptySubtitle: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
+		opacity: 0.75,
 	},
 });
