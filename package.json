@@ -58,7 +58,9 @@
     "release:prepare": "bun run build && bun run type-check && bun run lint",
     "release:test": "./scripts/test-release-build.sh",
     "release:test:intel": "./scripts/test-release-build.sh x86_64",
-    "release:test:arm": "./scripts/test-release-build.sh aarch64"
+    "release:test:arm": "./scripts/test-release-build.sh aarch64",
+    "knip": "knip",
+    "knip:fix": "knip --fix"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.2.7",
@@ -129,6 +131,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "knip": "^5.80.2",
     "nodemon": "^3.1.7",
     "react-native-worklets-core": "^1.6.2",
     "tailwindcss": "^4.0.0",

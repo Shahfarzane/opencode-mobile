@@ -1,15 +1,9 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import {
-	Modal,
-	Pressable,
-	ScrollView,
-	Text,
-	View,
-} from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { fontStyle, typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
+import { OPACITY, withOpacity } from "@/utils/colors";
 import type { ToolPartData } from "./ToolPart";
 
 interface ToolOutputDialogProps {
@@ -162,7 +156,7 @@ export function ToolOutputDialog({
 	onClose,
 	part,
 }: ToolOutputDialogProps) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 	const toolName = part.toolName || "Tool";
 
 	const handleCopyOutput = async () => {
@@ -299,8 +293,14 @@ export function ToolOutputDialog({
 								<View
 									className="rounded-xl border p-3"
 									style={{
-										backgroundColor: withOpacity(colors.destructive, OPACITY.hover),
-										borderColor: withOpacity(colors.destructive, OPACITY.emphasized),
+										backgroundColor: withOpacity(
+											colors.destructive,
+											OPACITY.hover,
+										),
+										borderColor: withOpacity(
+											colors.destructive,
+											OPACITY.emphasized,
+										),
 									}}
 								>
 									<Text
@@ -333,5 +333,3 @@ export function ToolOutputDialog({
 		</Modal>
 	);
 }
-
-
