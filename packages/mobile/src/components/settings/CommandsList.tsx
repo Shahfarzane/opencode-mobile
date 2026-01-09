@@ -8,7 +8,6 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 import { type Command, commandsApi, isCommandBuiltIn } from "@/api";
 import { PlusIcon } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { listStyles } from "./list.styles";
 import { SettingsListItem } from "./SettingsListItem";
@@ -99,22 +99,14 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
           <Text style={[typography.meta, { color: colors.mutedForeground }]}>
             Total {commands.length}
           </Text>
-          <Pressable
+          <Button
+            variant="primary"
+            size="xs"
             onPress={() => onSelectCommand("__new__")}
-            className={listStyles.addButton({})}
-            style={{ backgroundColor: colors.primary }}
           >
             <PlusIcon size={14} color={colors.primaryForeground} />
-            <Text
-              style={[
-                typography.micro,
-                fontStyle("600"),
-                { color: colors.primaryForeground },
-              ]}
-            >
-              Add
-            </Text>
-          </Pressable>
+            <Button.Label>Add</Button.Label>
+          </Button>
         </View>
 
         {builtInCommands.length > 0 && (
@@ -172,19 +164,14 @@ export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
             >
               No custom commands yet
             </Text>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelectCommand("__new__");
-              }}
-              className={listStyles.createButton({})}
-              style={{ backgroundColor: colors.primary }}
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={() => onSelectCommand("__new__")}
             >
               <PlusIcon size={16} color={colors.primaryForeground} />
-              <Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>
-                Create your first command
-              </Text>
-            </Pressable>
+              <Button.Label>Create your first command</Button.Label>
+            </Button>
           </View>
         )}
       </ScrollView>

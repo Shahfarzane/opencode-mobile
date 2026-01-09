@@ -53,7 +53,7 @@ export const PermissionRequest: React.FC<PermissionRequestProps> = ({
 				</div>
 			</div>
 
-			<div className="flex items-center gap-1.5 flex-shrink-0 ml-4">
+			<div className="flex items-center gap-1.5 shrink-0 ml-4">
 				<button
 					onClick={() => handleResponse("once")}
 					disabled={isResponding}

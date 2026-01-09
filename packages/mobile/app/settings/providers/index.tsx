@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
+import { Button, IconButton } from "@/components/ui";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
 export default function ProvidersListScreen() {
@@ -81,13 +82,13 @@ export default function ProvidersListScreen() {
 				<Text style={[styles.title, { color: colors.foreground }]}>
 					Providers
 				</Text>
-				<Pressable
+				<IconButton
+					icon={<PlusIcon size={14} color={colors.primaryForeground} />}
+					variant="primary"
+					size="icon-sm"
+					accessibilityLabel="Add new provider"
 					onPress={handleAddProvider}
-					style={styles.headerButton}
-					hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-				>
-					<PlusIcon size={24} color={colors.primary} />
-				</Pressable>
+				/>
 			</View>
 
 			{isLoading ? (
@@ -142,24 +143,14 @@ export default function ProvidersListScreen() {
 							>
 								Add a provider to start using AI models
 							</Text>
-							<Pressable
+							<Button
+								variant="primary"
+								size="sm"
 								onPress={handleAddProvider}
-								style={({ pressed }) => [
-									styles.addButton,
-									{ backgroundColor: colors.primary },
-									pressed && { opacity: 0.8 },
-								]}
 							>
-								<PlusIcon size={18} color={colors.primaryForeground} />
-								<Text
-									style={[
-										typography.uiLabel,
-										{ color: colors.primaryForeground, fontWeight: "600" },
-									]}
-								>
-									Add Provider
-								</Text>
-							</Pressable>
+								<PlusIcon size={16} color={colors.primaryForeground} />
+								<Button.Label>Add Provider</Button.Label>
+							</Button>
 						</View>
 					)}
 				</ScrollView>
@@ -218,14 +209,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingVertical: 48,
 		gap: 12,
-	},
-	addButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 20,
-		paddingVertical: 12,
-		borderRadius: 8,
-		marginTop: 16,
 	},
 });

@@ -5,9 +5,10 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { Button } from "@/components/ui";
 import { Fonts, FontSizes, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { timelineSheetStyles } from "./TimelineSheet.styles";
@@ -100,12 +101,10 @@ function TimelineTurnItem({
 	const { colors, isDark } = useTheme();
 
 	const handleNavigate = useCallback(() => {
-		Haptics.selectionAsync();
 		onNavigate(turn.userMessage.id);
 	}, [onNavigate, turn.userMessage.id]);
 
 	const handleFork = useCallback(() => {
-		Haptics.selectionAsync();
 		onFork(turn.userMessage.id);
 	}, [onFork, turn.userMessage.id]);
 
@@ -212,32 +211,26 @@ function TimelineTurnItem({
 
 					{/* Action buttons */}
 					<View className={timelineSheetStyles.turnActions({})}>
-						<Pressable
+						<Button
+							variant="ghost"
+							size="xs"
 							onPress={handleNavigate}
 							className={timelineSheetStyles.actionButton({})}
-							style={({ pressed }) => ({
-								backgroundColor: withOpacity(colors.primary, OPACITY.active),
-								opacity: pressed ? 0.7 : 1,
-							})}
+							style={{ backgroundColor: withOpacity(colors.primary, OPACITY.active) }}
 						>
 							<ArrowRightIcon color={colors.primary} size={12} />
-							<Text style={[typography.micro, { color: colors.primary }]}>
-								Go to
-							</Text>
-						</Pressable>
-						<Pressable
+							<Button.Label style={{ color: colors.primary }}>Go to</Button.Label>
+						</Button>
+						<Button
+							variant="ghost"
+							size="xs"
 							onPress={handleFork}
 							className={timelineSheetStyles.actionButton({})}
-							style={({ pressed }) => ({
-								backgroundColor: withOpacity(colors.info, OPACITY.active),
-								opacity: pressed ? 0.7 : 1,
-							})}
+							style={{ backgroundColor: withOpacity(colors.info, OPACITY.active) }}
 						>
 							<GitBranchIcon color={colors.info} size={12} />
-							<Text style={[typography.micro, { color: colors.info }]}>
-								Fork
-							</Text>
-						</Pressable>
+							<Button.Label style={{ color: colors.info }}>Fork</Button.Label>
+						</Button>
 					</View>
 				</View>
 			</View>

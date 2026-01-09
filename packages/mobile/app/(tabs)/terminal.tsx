@@ -13,6 +13,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { terminalApi } from "../../src/api";
 import { AnsiText } from "../../src/components/terminal/AnsiText";
+import { Button, IconButton } from "../../src/components/ui";
+import { ChevronRightIcon } from "../../src/components/icons";
 import { useTerminalStream } from "../../src/hooks/useTerminalStream";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { useTerminalStore } from "../../src/stores/useTerminalStore";
@@ -364,19 +366,16 @@ export default function TerminalScreen() {
 					>
 						{error}
 					</Text>
-					<Pressable
+					<Button
+						variant="primary"
+						size="sm"
 						onPress={() => {
 							setCreateAttempted(false);
 							setError(null);
 						}}
-						style={[styles.retryButton, { backgroundColor: colors.primary }]}
 					>
-						<Text
-							style={[typography.uiLabel, { color: colors.primaryForeground }]}
-						>
-							Retry
-						</Text>
-					</Pressable>
+						<Button.Label>Retry</Button.Label>
+					</Button>
 				</View>
 			);
 		}
@@ -430,22 +429,20 @@ export default function TerminalScreen() {
 					)}
 				</View>
 				<View style={styles.headerActions}>
-					<Pressable
+					<Button
+						variant="primary"
+						size="xs"
 						onPress={clearOutput}
-						style={[styles.headerButton, { backgroundColor: "#f97316" }]}
 					>
-						<Text style={[typography.micro, { color: "#fff", fontWeight: "600" }]}>
-							Clear
-						</Text>
-					</Pressable>
-					<Pressable
+						<Button.Label>Clear</Button.Label>
+					</Button>
+					<Button
+						variant="primary"
+						size="xs"
 						onPress={restartSession}
-						style={[styles.headerButton, { backgroundColor: "#f97316" }]}
 					>
-						<Text style={[typography.micro, { color: "#fff", fontWeight: "600" }]}>
-							Restart
-						</Text>
-					</Pressable>
+						<Button.Label>Restart</Button.Label>
+					</Button>
 				</View>
 			</View>
 
@@ -569,26 +566,14 @@ export default function TerminalScreen() {
 						style={[styles.textInput, typography.body, { color: terminalText }]}
 					/>
 				</View>
-				<Pressable
+				<IconButton
+					icon={<ChevronRightIcon size={20} color={colors.primaryForeground} />}
+					variant={hasExited || !isConnected ? "muted" : "primary"}
+					size="icon-md"
+					accessibilityLabel="Send command"
 					onPress={handleSubmit}
 					disabled={hasExited || !isConnected}
-					style={[
-						styles.sendButton,
-						{
-							backgroundColor:
-								hasExited || !isConnected ? colors.muted : colors.primary,
-						},
-					]}
-				>
-					<Text
-						style={[
-							typography.uiLabel,
-							{ color: colors.primaryForeground, fontWeight: "700" },
-						]}
-					>
-						{">"}
-					</Text>
-				</Pressable>
+				/>
 			</View>
 		</KeyboardAvoidingView>
 	);
@@ -603,11 +588,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		padding: 20,
-	},
-	retryButton: {
-		paddingHorizontal: 24,
-		paddingVertical: 12,
-		borderRadius: 8,
 	},
 	// PWA-style header bar
 	headerBar: {
@@ -628,11 +608,6 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-	},
-	headerButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		borderRadius: 6,
 	},
 	statusDot: {
 		width: 8,
@@ -696,12 +671,5 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingVertical: 12,
 		paddingHorizontal: 8,
-	},
-	sendButton: {
-		width: 44,
-		height: 44,
-		borderRadius: 8,
-		alignItems: "center",
-		justifyContent: "center",
 	},
 });

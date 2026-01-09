@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Command, commandsApi, isCommandBuiltIn } from "@/api";
 import { ChevronLeft, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
+import { Button, IconButton } from "@/components/ui";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
 
 export default function CommandsListScreen() {
@@ -78,12 +79,13 @@ export default function CommandsListScreen() {
 				<Text style={[styles.title, { color: colors.foreground }]}>
 					Commands
 				</Text>
-				<Pressable
+				<IconButton
+					icon={<PlusIcon size={14} color={colors.primaryForeground} />}
+					variant="primary"
+					size="icon-sm"
+					accessibilityLabel="Add new command"
 					onPress={() => handleSelectCommand("__new__")}
-					style={[styles.addButton, { backgroundColor: colors.primary }]}
-				>
-					<PlusIcon size={14} color={colors.background} />
-				</Pressable>
+				/>
 			</View>
 
 			{isLoading ? (
@@ -148,23 +150,14 @@ export default function CommandsListScreen() {
 							>
 								No commands yet
 							</Text>
-							<Pressable
-								onPress={() => {
-									Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-									handleSelectCommand("__new__");
-								}}
-								style={[
-									styles.createButton,
-									{ backgroundColor: colors.primary },
-								]}
+							<Button
+								variant="primary"
+								size="sm"
+								onPress={() => handleSelectCommand("__new__")}
 							>
-								<PlusIcon size={16} color={colors.background} />
-								<Text
-									style={[typography.uiLabel, { color: colors.background }]}
-								>
-									Create your first command
-								</Text>
-							</Pressable>
+								<PlusIcon size={16} color={colors.primaryForeground} />
+								<Button.Label>Create your first command</Button.Label>
+							</Button>
 						</View>
 					)}
 				</ScrollView>
@@ -196,13 +189,6 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.semiBold,
 		textAlign: "center",
 	},
-	addButton: {
-		width: 32,
-		height: 32,
-		borderRadius: 8,
-		alignItems: "center",
-		justifyContent: "center",
-	},
 	loadingContainer: {
 		flex: 1,
 		alignItems: "center",
@@ -230,14 +216,5 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		paddingVertical: 48,
 		gap: 12,
-	},
-	createButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderRadius: 8,
-		marginTop: 8,
 	},
 });

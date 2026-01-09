@@ -18,6 +18,7 @@ import {
   providersApi,
 } from "@/api";
 import { ChevronLeft } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { agentDetailViewStyles } from "./AgentDetailView.styles";
@@ -194,26 +195,15 @@ export function AgentDetailView({
           </Text>
         </Pressable>
         {!isBuiltIn && (
-          <Pressable
+          <Button
+            variant="primary"
+            size="sm"
             onPress={handleSave}
-            disabled={isSaving}
-            className={agentDetailViewStyles.saveButton({ disabled: isSaving })}
-            style={{ backgroundColor: colors.primary }}
+            isDisabled={isSaving}
+            isLoading={isSaving}
           >
-            {isSaving ? (
-              <ActivityIndicator size="small" color={colors.primaryForeground} />
-            ) : (
-              <Text
-                style={[
-                  typography.meta,
-                  fontStyle("500"),
-                  { color: colors.primaryForeground },
-                ]}
-              >
-                Save
-              </Text>
-            )}
-          </Pressable>
+            <Button.Label>Save</Button.Label>
+          </Button>
         )}
       </View>
 

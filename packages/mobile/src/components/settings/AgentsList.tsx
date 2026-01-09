@@ -8,7 +8,6 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 import { type Agent, agentsApi, isAgentBuiltIn, isAgentHidden } from "@/api";
 import { PlusIcon } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { listStyles } from "./list.styles";
 import { SettingsListItem } from "./SettingsListItem";
@@ -99,22 +99,14 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
           <Text style={[typography.meta, { color: colors.mutedForeground }]}>
             Total {agents.length}
           </Text>
-          <Pressable
+          <Button
+            variant="primary"
+            size="xs"
             onPress={() => onSelectAgent("__new__")}
-            className={listStyles.addButton({})}
-            style={{ backgroundColor: colors.primary }}
           >
             <PlusIcon size={14} color={colors.primaryForeground} />
-            <Text
-              style={[
-                typography.micro,
-                fontStyle("600"),
-                { color: colors.primaryForeground },
-              ]}
-            >
-              Add
-            </Text>
-          </Pressable>
+            <Button.Label>Add</Button.Label>
+          </Button>
         </View>
 
         {builtInAgents.length > 0 && (
@@ -174,19 +166,14 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
             >
               No agents yet
             </Text>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelectAgent("__new__");
-              }}
-              className={listStyles.createButton({})}
-              style={{ backgroundColor: colors.primary }}
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={() => onSelectAgent("__new__")}
             >
               <PlusIcon size={16} color={colors.primaryForeground} />
-              <Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>
-                Create your first agent
-              </Text>
-            </Pressable>
+              <Button.Label>Create your first agent</Button.Label>
+            </Button>
           </View>
         )}
       </ScrollView>

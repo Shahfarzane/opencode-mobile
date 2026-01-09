@@ -97,6 +97,12 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
           return colors.secondaryForeground;
         case "destructive":
           return colors.destructiveForeground;
+        case "warning":
+          return colors.warningForeground;
+        case "muted":
+          return colors.mutedForeground;
+        case "info":
+          return colors.infoForeground;
         default:
           return colors.foreground;
       }
@@ -178,6 +184,12 @@ function ButtonLabel({
         return colors.secondaryForeground;
       case "destructive":
         return colors.destructiveForeground;
+      case "warning":
+        return colors.warningForeground;
+      case "muted":
+        return colors.mutedForeground;
+      case "info":
+        return colors.infoForeground;
       default:
         return colors.foreground;
     }
@@ -207,5 +219,44 @@ ButtonLabel.displayName = BUTTON_LABEL_DISPLAY_NAME;
 export const Button = Object.assign(ButtonRoot, {
   Label: ButtonLabel,
 });
+
+/**
+ * Props for IconButton component
+ */
+export interface IconButtonProps extends Omit<ButtonProps, "children" | "size"> {
+  /** Icon to render */
+  icon: React.ReactNode;
+  /** Size of the icon button */
+  size?: "icon-sm" | "icon-md" | "icon-lg";
+  /** Accessible label for the button */
+  accessibilityLabel: string;
+}
+
+/**
+ * Icon-only button component
+ *
+ * @example
+ * <IconButton
+ *   icon={<CloseIcon color={colors.foreground} size={18} />}
+ *   variant="ghost"
+ *   size="icon-sm"
+ *   accessibilityLabel="Close"
+ *   onPress={handleClose}
+ * />
+ */
+export function IconButton({
+  icon,
+  size = "icon-md",
+  accessibilityLabel,
+  ...props
+}: IconButtonProps) {
+  return (
+    <Button size={size} accessibilityLabel={accessibilityLabel} {...props}>
+      {icon}
+    </Button>
+  );
+}
+
+IconButton.displayName = "IconButton";
 
 export type { ButtonProps, ButtonLabelProps, ButtonVariant, ButtonSize };
