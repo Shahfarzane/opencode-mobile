@@ -103,4 +103,21 @@ export const SemanticSpacing = {
 	toolbarPaddingH: 10,
 	toolbarPaddingV: 6,
 	toolbarGap: 6,
+
+	// Inline code (for MarkdownRenderer)
+	inlineCodePaddingH: 6, // Spacing[1.5]
+	inlineCodePaddingV: 2, // Spacing[0.5]
+
+	// Code blocks
+	codeBlockPaddingH: 12, // Spacing[3]
+	codeBlockPaddingV: 8, // Spacing[2]
+
+	// Markdown elements
+	paragraphMarginB: 8, // Spacing[2]
+	listItemMarginB: 4, // Spacing[1]
+	blockquotePaddingL: 12, // Spacing[3]
+	hrMarginV: 16, // Spacing[4]
+
+	// Message parts
+	messagePartMarginB: 4, // Spacing[1]
 } as const;

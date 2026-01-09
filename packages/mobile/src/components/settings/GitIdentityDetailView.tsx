@@ -6,13 +6,12 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { CheckIcon, ChevronLeft } from "@/components/icons";
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 
@@ -205,33 +204,13 @@ export function GitIdentityDetailView({
       >
         {/* Profile Name */}
         <View className="mb-5">
-          <Text
-            className="mb-1.5"
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            Profile Name
-          </Text>
-          <TextInput
-            className="px-3 py-2.5 rounded-lg border"
-            style={[
-              typography.uiLabel,
-              { color: colors.foreground, borderColor: colors.border },
-            ]}
+          <Input
+            label="Profile Name"
             value={name}
             onChangeText={setName}
             placeholder="Work, Personal, etc."
-            placeholderTextColor={colors.mutedForeground}
+            helperText="A friendly name to identify this profile"
           />
-          <Text
-            className="mt-1"
-            style={[typography.micro, { color: colors.mutedForeground }]}
-          >
-            A friendly name to identify this profile
-          </Text>
         </View>
 
         {/* Color */}
@@ -290,68 +269,28 @@ export function GitIdentityDetailView({
 
           {/* User Name */}
           <View className="mb-4">
-            <Text
-              className="mb-1.5"
-              style={[
-                typography.meta,
-                fontStyle("500"),
-                { color: colors.foreground },
-              ]}
-            >
-              User Name <Text style={{ color: colors.destructive }}>*</Text>
-            </Text>
-            <TextInput
-              className="px-3 py-2.5 rounded-lg border"
-              style={[
-                typography.uiLabel,
-                { color: colors.foreground, borderColor: colors.border },
-              ]}
+            <Input
+              label={<Text>User Name <Text style={{ color: colors.destructive }}>*</Text></Text>}
               value={userName}
               onChangeText={setUserName}
               placeholder="John Doe"
-              placeholderTextColor={colors.mutedForeground}
               autoCapitalize="words"
+              helperText="The name that appears in commit messages"
             />
-            <Text
-              className="mt-1"
-              style={[typography.micro, { color: colors.mutedForeground }]}
-            >
-              The name that appears in commit messages
-            </Text>
           </View>
 
           {/* Email */}
           <View>
-            <Text
-              className="mb-1.5"
-              style={[
-                typography.meta,
-                fontStyle("500"),
-                { color: colors.foreground },
-              ]}
-            >
-              Email <Text style={{ color: colors.destructive }}>*</Text>
-            </Text>
-            <TextInput
-              className="px-3 py-2.5 rounded-lg border"
-              style={[
-                typography.uiLabel,
-                { color: colors.foreground, borderColor: colors.border },
-              ]}
+            <Input
+              label={<Text>Email <Text style={{ color: colors.destructive }}>*</Text></Text>}
               value={userEmail}
               onChangeText={setUserEmail}
               placeholder="john@example.com"
-              placeholderTextColor={colors.mutedForeground}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              helperText="The email that appears in commit messages"
             />
-            <Text
-              className="mt-1"
-              style={[typography.micro, { color: colors.mutedForeground }]}
-            >
-              The email that appears in commit messages
-            </Text>
           </View>
         </View>
 
@@ -360,34 +299,14 @@ export function GitIdentityDetailView({
           className="pt-5 border-t mb-5"
           style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
-          <Text
-            className="mb-1"
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            SSH Key Path
-          </Text>
-          <Text
-            className="mb-2"
-            style={[typography.micro, { color: colors.mutedForeground }]}
-          >
-            Optional path to SSH key for this identity
-          </Text>
-          <TextInput
-            className="px-3 py-2.5 rounded-lg border"
-            style={[
-              typography.uiLabel,
-              { color: colors.foreground, borderColor: colors.border },
-            ]}
+          <Input
+            label="SSH Key Path"
             value={sshKey}
             onChangeText={setSshKey}
             placeholder="~/.ssh/id_ed25519"
-            placeholderTextColor={colors.mutedForeground}
             autoCapitalize="none"
             autoCorrect={false}
+            helperText="Optional path to SSH key for this identity"
           />
         </View>
 

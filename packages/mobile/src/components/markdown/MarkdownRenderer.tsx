@@ -1,7 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
 import { Text, type TextStyle, type ViewStyle } from "react-native";
-import { FixedLineHeights, FontFamilyMono, FontFamilySans, FontSizes, Radius, useTheme } from "@/theme";
+import { FixedLineHeights, FontFamilyMono, FontFamilySans, FontSizes, Radius, SemanticSpacing, Spacing, useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -73,8 +73,8 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 					lineHeight: FixedLineHeights.code,
 					backgroundColor: colors.muted,
 					color: colors.foreground,
-					paddingHorizontal: 6,
-					paddingVertical: 2,
+					paddingHorizontal: SemanticSpacing.inlineCodePaddingH,
+					paddingVertical: SemanticSpacing.inlineCodePaddingV,
 					borderRadius: Radius.DEFAULT,
 					overflow: "hidden",
 				}}
@@ -144,7 +144,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		},
 		paragraph: {
 			marginTop: 0,
-			marginBottom: 8,
+			marginBottom: SemanticSpacing.paragraphMarginB,
 			flexDirection: "row" as const,
 			flexWrap: "wrap" as const,
 		},
@@ -159,21 +159,21 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		blockquote: {
 			borderLeftColor: colors.border,
 			borderLeftWidth: 4,
-			paddingLeft: 12,
+			paddingLeft: SemanticSpacing.blockquotePaddingL,
 			marginLeft: 0,
 			backgroundColor: colors.muted,
 			borderRadius: Radius.DEFAULT,
 		},
 		list_item: {
-			marginBottom: 4,
+			marginBottom: SemanticSpacing.listItemMarginB,
 			flexDirection: "row" as const,
 			flexWrap: "wrap" as const,
 		},
 		bullet_list: {
-			marginBottom: 8,
+			marginBottom: SemanticSpacing.paragraphMarginB,
 		},
 		ordered_list: {
-			marginBottom: 8,
+			marginBottom: SemanticSpacing.paragraphMarginB,
 		},
 		// Code blocks - minimal style since CodeBlock component handles rendering
 		code_block: {
@@ -189,13 +189,13 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		hr: {
 			backgroundColor: colors.border,
 			height: 1,
-			marginVertical: 16,
+			marginVertical: SemanticSpacing.hrMarginV,
 		},
 		table: {
 			borderWidth: 1,
 			borderColor: colors.border,
 			borderRadius: Radius.lg,
-			marginVertical: 8,
+			marginVertical: Spacing[2],
 			overflow: "hidden",
 		},
 		thead: {
@@ -208,7 +208,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			flexDirection: "row" as const,
 		},
 		th: {
-			padding: 10,
+			padding: Spacing[2.5],
 			fontFamily: FontFamilySans.semiBold,
 			fontSize: FontSizes.uiLabel,
 			color: colors.foreground,
@@ -217,7 +217,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			borderRightColor: colors.border,
 		},
 		td: {
-			padding: 10,
+			padding: Spacing[2.5],
 			fontSize: FontSizes.uiLabel,
 			color: colors.foreground,
 			flex: 1,

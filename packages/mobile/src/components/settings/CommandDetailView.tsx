@@ -7,7 +7,6 @@ import {
   ScrollView,
   Switch,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +21,7 @@ import {
   providersApi,
 } from "@/api";
 import { CheckIcon, ChevronLeft, FolderIcon, GlobeIcon } from "@/components/icons";
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { ModelSelector } from "./ModelSelector";
@@ -249,40 +248,16 @@ export function CommandDetailView({
 
         {/* Name Field */}
         <View className="mb-5">
-          <Text
-            className="mb-1.5"
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            Name
-          </Text>
-          <View
-            className="flex-row items-center rounded-lg border overflow-hidden"
-            style={{ borderColor: colors.border }}
-          >
-            <View
-              className="px-3 py-2.5"
-              style={{ backgroundColor: withOpacity(colors.muted, OPACITY.scrim) }}
-            >
-              <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
-                /
-              </Text>
-            </View>
-            <TextInput
-              className="flex-1 px-3 py-2.5"
-              style={[typography.uiLabel, { color: colors.foreground }]}
-              value={name}
-              onChangeText={setName}
-              placeholder="command-name"
-              placeholderTextColor={colors.mutedForeground}
-              editable={!isBuiltIn && isNewCommand}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
+          <Input
+            label="Name"
+            prefix="/"
+            value={name}
+            onChangeText={setName}
+            placeholder="command-name"
+            editable={!isBuiltIn && isNewCommand}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         </View>
 
         {/* Scope - only for new commands */}
@@ -357,26 +332,11 @@ export function CommandDetailView({
 
         {/* Description Field */}
         <View className="mb-5">
-          <Text
-            className="mb-1.5"
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            Description
-          </Text>
-          <TextInput
-            className="px-3 py-2.5 rounded-lg border"
-            style={[
-              typography.uiLabel,
-              { color: colors.foreground, borderColor: colors.border },
-            ]}
+          <Input
+            label="Description"
             value={description}
             onChangeText={setDescription}
             placeholder="What this command does..."
-            placeholderTextColor={colors.mutedForeground}
             editable={!isBuiltIn}
           />
         </View>
@@ -386,39 +346,15 @@ export function CommandDetailView({
           className="pt-5 border-t mb-5"
           style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
-          <Text
-            className="mb-1"
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            Template
-          </Text>
-          <Text
-            className="mb-2"
-            style={[typography.micro, { color: colors.mutedForeground }]}
-          >
-            Use $ARGUMENTS for user input
-          </Text>
-          <TextInput
-            className="px-3 py-3 rounded-lg border"
-            style={[
-              typography.meta,
-              {
-                color: colors.foreground,
-                borderColor: colors.border,
-                minHeight: 120,
-                textAlignVertical: "top",
-              },
-            ]}
+          <Input
+            label="Template"
             value={template}
             onChangeText={setTemplate}
             placeholder="Do something with $ARGUMENTS..."
-            placeholderTextColor={colors.mutedForeground}
             editable={!isBuiltIn}
             multiline
+            numberOfLines={5}
+            helperText="Use $ARGUMENTS for user input"
           />
         </View>
 

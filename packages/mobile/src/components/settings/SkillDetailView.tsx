@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,7 +16,7 @@ import {
   isSkillBuiltIn,
 } from "@/api";
 import { ChevronLeft, FolderIcon, GlobeIcon } from "@/components/icons";
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { skillDetailViewStyles } from "./SkillDetailView.styles";
@@ -230,33 +229,15 @@ export function SkillDetailView({
 
         {/* Name */}
         <View className={skillDetailViewStyles.field({})}>
-          <Text
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            Name
-          </Text>
-          <TextInput
-            className={skillDetailViewStyles.input({})}
-            style={[
-              typography.uiLabel,
-              { color: colors.foreground, borderColor: colors.border },
-            ]}
+          <Input
+            label="Name"
             value={name}
             onChangeText={setName}
             placeholder="skill-name"
-            placeholderTextColor={colors.mutedForeground}
             editable={!isBuiltIn && isNewSkill}
             autoCapitalize="none"
+            helperText="Lowercase letters, numbers, and hyphens only"
           />
-          <Text
-            style={[typography.micro, { color: colors.mutedForeground }]}
-          >
-            Lowercase letters, numbers, and hyphens only
-          </Text>
         </View>
 
         {/* Scope - only for new skills */}
@@ -330,34 +311,16 @@ export function SkillDetailView({
 
         {/* Description */}
         <View className={skillDetailViewStyles.field({})}>
-          <Text
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            Description <Text style={{ color: colors.destructive }}>*</Text>
-          </Text>
-          <TextInput
-            className={skillDetailViewStyles.textarea({})}
-            style={[
-              typography.uiLabel,
-              { color: colors.foreground, borderColor: colors.border },
-            ]}
+          <Input
+            label={<Text>Description <Text style={{ color: colors.destructive }}>*</Text></Text>}
             value={description}
             onChangeText={setDescription}
             placeholder="Brief description of what this skill does..."
-            placeholderTextColor={colors.mutedForeground}
             editable={!isBuiltIn}
             multiline
-            textAlignVertical="top"
+            numberOfLines={4}
+            helperText="The agent uses this to decide when to load the skill"
           />
-          <Text
-            style={[typography.micro, { color: colors.mutedForeground }]}
-          >
-            The agent uses this to decide when to load the skill
-          </Text>
         </View>
 
         {/* Instructions / Template */}
@@ -365,35 +328,15 @@ export function SkillDetailView({
           className={skillDetailViewStyles.section({})}
           style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
-          <Text
-            className="mb-1"
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            Instructions
-          </Text>
-          <Text
-            className="mb-2"
-            style={[typography.micro, { color: colors.mutedForeground }]}
-          >
-            Detailed instructions for the agent when this skill is loaded
-          </Text>
-          <TextInput
-            className={skillDetailViewStyles.instructionsTextarea({})}
-            style={[
-              typography.meta,
-              { color: colors.foreground, borderColor: colors.border },
-            ]}
+          <Input
+            label="Instructions"
             value={template}
             onChangeText={setTemplate}
             placeholder="Step-by-step instructions, guidelines, or reference content..."
-            placeholderTextColor={colors.mutedForeground}
             editable={!isBuiltIn}
             multiline
-            textAlignVertical="top"
+            numberOfLines={8}
+            helperText="Detailed instructions for the agent when this skill is loaded"
           />
         </View>
 

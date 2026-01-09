@@ -19,6 +19,7 @@ import {
 	SearchIcon,
 	XIcon,
 } from "@/components/icons";
+import { SearchInput } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { filesApi, type FileListEntry } from "@/api/files";
