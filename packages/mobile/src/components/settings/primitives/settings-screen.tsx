@@ -42,7 +42,6 @@ export function SettingsScreen({
   const containerClassName = settingsScreenStyles.container({ className });
   const headerClassName = settingsScreenStyles.header({});
   const headerButtonClassName = settingsScreenStyles.headerButton({});
-  const closeButtonClassName = settingsScreenStyles.closeButton({});
   const titleClassName = settingsScreenStyles.title({});
   const scrollViewClassName = settingsScreenStyles.scrollView({});
   const scrollContentClassName = settingsScreenStyles.scrollContent({});

@@ -6,7 +6,6 @@ import {
 	Text,
 	TextInput,
 	View,
-	type LayoutChangeEvent,
 } from "react-native";
 import type { Session } from "@/api/sessions";
 import {

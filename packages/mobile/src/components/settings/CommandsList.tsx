@@ -30,7 +30,7 @@ interface CommandsListProps {
 }
 
 export const CommandsList = forwardRef<CommandsListRef, CommandsListProps>(
-  function CommandsList({ selectedCommand, onSelectCommand }, ref) {
+  function CommandsList({ selectedCommand: _selectedCommand, onSelectCommand }, ref) {
     const { colors } = useTheme();
     const [commands, setCommands] = useState<Command[]>([]);
     const [isLoading, setIsLoading] = useState(true);

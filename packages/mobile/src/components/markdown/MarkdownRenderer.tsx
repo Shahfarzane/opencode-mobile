@@ -1,6 +1,6 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
-import { Text, View, type TextStyle, type ViewStyle } from "react-native";
+import { Text, type TextStyle, type ViewStyle } from "react-native";
 import { FontSizes, FixedLineHeights, FontFamilySans, FontFamilyMono, useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 

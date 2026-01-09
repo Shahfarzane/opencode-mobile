@@ -32,7 +32,7 @@ interface GitIdentitiesListProps {
 export const GitIdentitiesList = forwardRef<
   GitIdentitiesListRef,
   GitIdentitiesListProps
->(function GitIdentitiesList({ selectedProfile, onSelectProfile }, ref) {
+>(function GitIdentitiesList({ selectedProfile: _selectedProfile, onSelectProfile }, ref) {
   const { colors } = useTheme();
   const [profiles, setProfiles] = useState<GitIdentityProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);

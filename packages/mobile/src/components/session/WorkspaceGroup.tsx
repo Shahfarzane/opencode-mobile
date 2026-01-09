@@ -30,7 +30,7 @@ export function WorkspaceGroup({
 	children,
 	showMoreButton,
 }: WorkspaceGroupProps) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 
 	const handleToggleCollapse = useCallback(async () => {
 		await Haptics.selectionAsync();

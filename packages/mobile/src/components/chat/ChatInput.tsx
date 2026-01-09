@@ -185,7 +185,7 @@ function FileIcon({ extension }: { extension?: string }) {
 }
 
 function AutocompleteOverlay({
-	type,
+	type: _type,
 	items,
 	onSelect,
 }: {
