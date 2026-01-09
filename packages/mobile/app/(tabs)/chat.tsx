@@ -166,6 +166,7 @@ export default function ChatScreen() {
 	const partsMapRef = useRef<Map<string, MessagePart>>(new Map());
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
 	const lastEventTimeRef = useRef<number>(0);
+	const lastUserMessageContentRef = useRef<string>("");
 
 	// Get the current streaming message's parts for status display
 	const streamingMessageParts = useMemo(() => {
@@ -237,6 +238,7 @@ export default function ChatScreen() {
 				const serverMessageId = props.info?.id || props.messageID;
 
 				// Only process parts for assistant messages - ignore user message events
+				// Check both explicit role AND if role is not explicitly "assistant" when it should be
 				if (props.info?.role === "user") {
 					return;
 				}
@@ -247,12 +249,14 @@ export default function ChatScreen() {
 				}
 
 				// Skip events for non-assistant messages based on server message ID pattern
+				// Also skip if we can detect this is a user message by other means
 				if (serverMessageId && typeof serverMessageId === "string") {
 					const looksLikeServerMessageId =
 						serverMessageId.startsWith("msg_") ||
 						(serverMessageId.length > 20 &&
 							/^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
-					if (looksLikeServerMessageId && props.info?.role === undefined) {
+					// Skip if role is explicitly not assistant, or if it looks like a server message and role is undefined
+					if (props.info?.role !== "assistant" && looksLikeServerMessageId) {
 						return;
 					}
 				}
@@ -261,6 +265,14 @@ export default function ChatScreen() {
 				const partId = streamPart.id || `part-${Date.now()}-${Math.random()}`;
 				const converted = convertStreamingPart(streamPart);
 				converted.id = partId;
+
+				// Skip text parts that echo the user's message (server sometimes includes user input in response)
+				if (converted.type === "text") {
+					const partText = (converted.content || converted.text || "").trim();
+					if (partText && partText === lastUserMessageContentRef.current) {
+						return;
+					}
+				}
 
 				partsMapRef.current.set(partId, converted);
 
@@ -300,12 +312,14 @@ export default function ChatScreen() {
 				}
 
 				// Skip events for non-assistant messages based on server message ID pattern
+				// Also skip if we can detect this is a user message by other means
 				if (serverMessageId && typeof serverMessageId === "string") {
 					const looksLikeServerMessageId =
 						serverMessageId.startsWith("msg_") ||
 						(serverMessageId.length > 20 &&
 							/^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
-					if (looksLikeServerMessageId && info?.role === undefined) {
+					// Skip if role is explicitly not assistant, or if it looks like a server message and role is undefined
+					if (info?.role !== "assistant" && looksLikeServerMessageId) {
 						return;
 					}
 				}
@@ -317,6 +331,19 @@ export default function ChatScreen() {
 							streamPart.id || `part-${Date.now()}-${Math.random()}`;
 						const converted = convertStreamingPart(streamPart);
 						converted.id = partId;
+
+						// Skip text parts that echo the user's message (server sometimes includes user input in response)
+						if (converted.type === "text") {
+							const partText = (
+								converted.content ||
+								converted.text ||
+								""
+							).trim();
+							if (partText && partText === lastUserMessageContentRef.current) {
+								continue;
+							}
+						}
+
 						partsMapRef.current.set(partId, converted);
 					}
 				}
@@ -825,6 +852,7 @@ export default function ChatScreen() {
 				const assistantMessageId = `assistant-${Date.now()}`;
 				currentAssistantMessageIdRef.current = assistantMessageId;
 				partsMapRef.current.clear();
+				lastUserMessageContentRef.current = content.trim();
 
 				const assistantMessage: Message = {
 					id: assistantMessageId,

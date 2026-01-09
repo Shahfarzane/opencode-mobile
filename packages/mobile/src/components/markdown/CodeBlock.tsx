@@ -1,8 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useCallback, useMemo, useState } from "react";
-import { Animated, Pressable, Text, View } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
 import { MAX_CODE_BLOCK_HEIGHT } from "./CodeBlock.styles";
