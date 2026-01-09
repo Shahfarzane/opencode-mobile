@@ -3,7 +3,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { Fonts, FontSizes, LineHeights, typography, useTheme } from "@/theme";
+import { Fonts, FontSizes, LineHeights, Radius, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -45,7 +45,7 @@ function ReasoningMarkdown({
 			backgroundColor: colors.muted,
 			color: colors.foreground,
 			paddingHorizontal: 4,
-			borderRadius: 2,
+			borderRadius: Radius.sm,
 			fontStyle: "normal" as const,
 		},
 		link: {

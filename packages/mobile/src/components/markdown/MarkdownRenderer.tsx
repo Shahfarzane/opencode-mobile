@@ -1,7 +1,7 @@
 import MarkdownLib from "@ronradtke/react-native-markdown-display";
 import type { ComponentType, ReactNode } from "react";
 import { Text, type TextStyle, type ViewStyle } from "react-native";
-import { FontSizes, FixedLineHeights, FontFamilySans, FontFamilyMono, useTheme } from "@/theme";
+import { FixedLineHeights, FontFamilyMono, FontFamilySans, FontSizes, Radius, useTheme } from "@/theme";
 import { CodeBlock } from "./CodeBlock";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -69,13 +69,13 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 				key={node.key}
 				style={{
 					fontFamily: FontFamilyMono.regular,
-					fontSize: 14,
-					lineHeight: 20,
+					fontSize: FontSizes.code,
+					lineHeight: FixedLineHeights.code,
 					backgroundColor: colors.muted,
 					color: colors.foreground,
 					paddingHorizontal: 6,
 					paddingVertical: 2,
-					borderRadius: 4,
+					borderRadius: Radius.DEFAULT,
 					overflow: "hidden",
 				}}
 			>
@@ -162,7 +162,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 			paddingLeft: 12,
 			marginLeft: 0,
 			backgroundColor: colors.muted,
-			borderRadius: 4,
+			borderRadius: Radius.DEFAULT,
 		},
 		list_item: {
 			marginBottom: 4,
@@ -194,7 +194,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 		table: {
 			borderWidth: 1,
 			borderColor: colors.border,
-			borderRadius: 8,
+			borderRadius: Radius.lg,
 			marginVertical: 8,
 			overflow: "hidden",
 		},

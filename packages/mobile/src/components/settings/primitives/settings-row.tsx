@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { Fonts, Spacing, useTheme } from "@/theme";
+import { FontSizes, Fonts, Spacing, useTheme } from "@/theme";
 import type { SettingsRowProps } from "./settings-row.types";
 
 const DISPLAY_NAME = "SettingsRow";
@@ -49,7 +49,7 @@ export function SettingsRow(props: SettingsRowProps) {
       <Text
         style={{
           color: textColor,
-          fontSize: 17,
+          fontSize: FontSizes.markdown, // 16px - close to iOS HIG 17pt
           fontFamily: Fonts.regular,
         }}
         numberOfLines={1}
@@ -61,7 +61,7 @@ export function SettingsRow(props: SettingsRowProps) {
           <Text
             style={{
               color: colors.mutedForeground,
-              fontSize: 17,
+              fontSize: FontSizes.markdown, // 16px - close to iOS HIG 17pt
               fontFamily: Fonts.regular,
             }}
             numberOfLines={1}

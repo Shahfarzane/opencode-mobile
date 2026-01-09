@@ -11,9 +11,9 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { AiAgentIcon } from "@/components/icons";
-import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { FontSizes, Fonts, fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
-import { chatInputStyles } from "./ChatInput.styles";
+import { chatInputStyles, MOBILE_SPACING } from "./ChatInput.styles";
 import {
 	type AttachedFile,
 	AttachedFilesList,
@@ -224,14 +224,14 @@ function AutocompleteOverlay({
 				style={({ pressed }) => ({
 					flexDirection: "row",
 					alignItems: "flex-start",
-					gap: 8, // gap-2 = 8px
-					paddingHorizontal: 12, // px-3 = 12px
-					paddingVertical: 8, // py-2 = 8px
+					gap: Spacing[2], // gap-2 = 8px
+					paddingHorizontal: Spacing[3], // px-3 = 12px
+					paddingVertical: Spacing[2], // py-2 = 8px
 					backgroundColor: pressed ? colors.muted : undefined,
 				})}
 			>
 				{/* Match PWA: mt-0.5 for icon */}
-				<View style={{ marginTop: 2 }}>
+				<View style={{ marginTop: Spacing[0.5] }}>
 					{item.type === "agent" && <AgentIcon />}
 					{item.type === "command" && <CommandIcon />}
 					{item.type === "file" && <FileIcon extension={item.extension} />}
@@ -246,7 +246,7 @@ function AutocompleteOverlay({
 					{/* Match PWA: typography-meta text-muted-foreground mt-0.5 truncate */}
 					{"description" in item && item.description && (
 						<Text
-							style={[typography.micro, { color: colors.mutedForeground, marginTop: 2 }]}
+							style={[typography.micro, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
 							numberOfLines={1}
 						>
 							{item.description}
@@ -254,7 +254,7 @@ function AutocompleteOverlay({
 					)}
 					{item.type === "file" && (
 						<Text
-							style={[typography.micro, { color: colors.mutedForeground, marginTop: 2 }]}
+							style={[typography.micro, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
 							numberOfLines={1}
 						>
 							{item.path}
@@ -273,10 +273,11 @@ function AutocompleteOverlay({
 	// Match PWA styling exactly:
 	// Items: py-2 (8px*2) + content (~24px) = ~40px each
 	// Footer: pt-1 (4px) + pb-1.5 (6px) + text (~14px) = ~24px
-	const itemHeight = 40;
-	const footerHeight = 24;
-	const maxItems = 5; // Match PWA max-h-64 (~256px / ~40px per item)
-	const contentHeight = Math.min(items.length, maxItems) * itemHeight + footerHeight;
+	const AUTOCOMPLETE_ITEM_HEIGHT = 40;
+	const AUTOCOMPLETE_FOOTER_HEIGHT = 24;
+	const AUTOCOMPLETE_MAX_ITEMS = 5; // Match PWA max-h-64 (~256px / ~40px per item)
+	const AUTOCOMPLETE_MAX_HEIGHT = 256; // PWA max-h-64 = 256px
+	const contentHeight = Math.min(items.length, AUTOCOMPLETE_MAX_ITEMS) * AUTOCOMPLETE_ITEM_HEIGHT + AUTOCOMPLETE_FOOTER_HEIGHT;
 
 	return (
 		<Animated.View
@@ -287,9 +288,9 @@ function AutocompleteOverlay({
 				left: 0,
 				right: 0,
 				// Match PWA: mb-2 = 8px margin
-				marginBottom: 8,
+				marginBottom: Spacing[2],
 				// Match PWA: rounded-xl = 12px (same as chat input)
-				borderRadius: 12,
+				borderRadius: MOBILE_SPACING.bubbleRadius,
 				overflow: "hidden",
 				// Match PWA: border border-border
 				borderColor: colors.border,
@@ -307,7 +308,7 @@ function AutocompleteOverlay({
 				transform: [{ translateY: slideAnim }],
 				// Fixed height based on content
 				height: contentHeight,
-				maxHeight: 256, // Match PWA: max-h-64 = 256px
+				maxHeight: AUTOCOMPLETE_MAX_HEIGHT,
 			}}
 		>
 			<View style={{ flex: 1 }}>
@@ -325,9 +326,9 @@ function AutocompleteOverlay({
 				style={{
 					borderTopColor: colors.border,
 					borderTopWidth: 1,
-					paddingHorizontal: 12, // px-3 = 12px
-					paddingTop: 4, // pt-1 = 4px
-					paddingBottom: 6, // pb-1.5 = 6px
+					paddingHorizontal: Spacing[3], // px-3 = 12px
+					paddingTop: Spacing[1], // pt-1 = 4px
+					paddingBottom: Spacing[1.5], // pb-1.5 = 6px
 				}}
 			>
 				<Text

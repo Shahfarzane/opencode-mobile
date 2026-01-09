@@ -1,5 +1,5 @@
 import { ScrollView, Text, View } from "react-native";
-import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { FixedLineHeights, FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import type { Permission } from "./types";
 
@@ -47,7 +47,7 @@ function BashDetails({ permission }: { permission: Permission }) {
 				<Text
 					style={[
 						typography.meta,
-						{ color: colors.mutedForeground, lineHeight: 20 },
+						{ color: colors.mutedForeground, lineHeight: FixedLineHeights.heading },
 					]}
 				>
 					{description}
@@ -111,7 +111,7 @@ function EditDetails({ permission }: { permission: Permission }) {
 				<Text
 					style={[
 						typography.meta,
-						{ color: colors.mutedForeground, lineHeight: 20 },
+						{ color: colors.mutedForeground, lineHeight: FixedLineHeights.heading },
 					]}
 				>
 					{description}
@@ -157,7 +157,7 @@ function WriteDetails({ permission }: { permission: Permission }) {
 				<Text
 					style={[
 						typography.meta,
-						{ color: colors.mutedForeground, lineHeight: 20 },
+						{ color: colors.mutedForeground, lineHeight: FixedLineHeights.heading },
 					]}
 				>
 					{description}
@@ -222,7 +222,7 @@ function WebFetchDetails({ permission }: { permission: Permission }) {
 				<Text
 					style={[
 						typography.meta,
-						{ color: colors.mutedForeground, lineHeight: 20 },
+						{ color: colors.mutedForeground, lineHeight: FixedLineHeights.heading },
 					]}
 				>
 					{description}
@@ -272,7 +272,7 @@ function GenericDetails({ permission }: { permission: Permission }) {
 				<Text
 					style={[
 						typography.meta,
-						{ color: colors.mutedForeground, lineHeight: 20 },
+						{ color: colors.mutedForeground, lineHeight: FixedLineHeights.heading },
 					]}
 				>
 					{description}

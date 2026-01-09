@@ -44,6 +44,7 @@ export const Spacing = {
 export const Radius = {
 	none: remToPixels(RADII.none),
 	sm: remToPixels(RADII.sm),
+	DEFAULT: remToPixels(RADII.DEFAULT), // 4px - standard border radius
 	md: remToPixels(RADII.md),
 	lg: remToPixels(RADII.lg),
 	xl: remToPixels(RADII.xl),

@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { FixedLineHeights, FontSizes, Radius, typography, useTheme } from "@/theme";
 import { MAX_CODE_BLOCK_HEIGHT } from "./CodeBlock.styles";
 
 // Chevron icon component
@@ -368,7 +368,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 		<View
 			style={{
 				marginVertical: 8,
-				borderRadius: 8,
+				borderRadius: Radius.lg,
 				borderColor: colors.border,
 				borderWidth: 1,
 				overflow: "hidden",
@@ -392,7 +392,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 						style={{
 							width: 10,
 							height: 10,
-							borderRadius: 5,
+							borderRadius: Radius.full,
 							backgroundColor: languageColor,
 						}}
 					/>
@@ -442,8 +442,8 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 									key={`num-${lineNum + 1}`}
 									style={{
 										fontFamily: typography.code.fontFamily,
-										fontSize: 14,
-										lineHeight: 20,
+										fontSize: FontSizes.code,
+										lineHeight: FixedLineHeights.code,
 										color: colors.mutedForeground,
 										opacity: 0.5,
 									}}
@@ -464,8 +464,8 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 												key={`token-${lineNum + 1}-${tokenIdx + 1}`}
 												style={{
 													fontFamily: typography.code.fontFamily,
-													fontSize: 14,
-													lineHeight: 20,
+													fontSize: FontSizes.code,
+													lineHeight: FixedLineHeights.code,
 													color: getTokenColor(token.type, isDark),
 												}}
 											>
@@ -476,8 +476,8 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 										<Text
 											style={{
 												fontFamily: typography.code.fontFamily,
-												fontSize: 14,
-												lineHeight: 20,
+												fontSize: FontSizes.code,
+												lineHeight: FixedLineHeights.code,
 												color: colors.foreground,
 											}}
 										>

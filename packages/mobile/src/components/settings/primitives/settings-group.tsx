@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, View } from "react-native";
-import { useTheme, Fonts } from "@/theme";
+import { FixedLineHeights, FontSizes, Fonts, useTheme } from "@/theme";
 import { settingsGroupStyles } from "./settings-group.styles";
 import type { SettingsGroupProps } from "./settings-group.types";
 
@@ -36,9 +36,9 @@ export function SettingsGroup({
           className={settingsGroupStyles.footer({})}
           style={{
             color: colors.mutedForeground,
-            fontSize: 13,
+            fontSize: FontSizes.uiLabel, // 14px - aligned with PWA
             fontFamily: Fonts.regular,
-            lineHeight: 18,
+            lineHeight: FixedLineHeights.ui, // 16px
           }}
         >
           {footer}
