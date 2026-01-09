@@ -35,7 +35,7 @@ export function AnsiText({
 	return (
 		<Text style={style} selectable>
 			{segments.map((segment, index) => (
-				<Text key={index} style={segment.style}>
+				<Text key={`${segment.text}-${index}`} style={segment.style}>
 					{segment.text}
 				</Text>
 			))}

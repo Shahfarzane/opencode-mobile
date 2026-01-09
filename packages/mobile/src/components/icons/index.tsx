@@ -1,4 +1,4 @@
-import Svg, { Circle, Path, Rect, type SvgProps } from "react-native-svg";
+import Svg, { Path, type SvgProps } from "react-native-svg";
 
 interface IconProps extends Omit<SvgProps, "width" | "height"> {
 	size?: number;

@@ -53,7 +53,7 @@ interface AgentsListProps {
 }
 
 export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
-  function AgentsList({ selectedAgent, onSelectAgent }, ref) {
+  function AgentsList({ selectedAgent: _selectedAgent, onSelectAgent }, ref) {
     const { colors } = useTheme();
     const [agents, setAgents] = useState<Agent[]>([]);
     const [isLoading, setIsLoading] = useState(true);

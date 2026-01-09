@@ -30,7 +30,7 @@ export function DirectoryRow({
 	onOpenWorktreeManager,
 	onOpenMultiRunLauncher,
 }: DirectoryRowProps) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 
 	const handleChangeDirectory = useCallback(async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

@@ -18,7 +18,7 @@ interface ProvidersListProps {
 }
 
 export function ProvidersList({
-  selectedProvider,
+  selectedProvider: _selectedProvider,
   onSelectProvider,
 }: ProvidersListProps) {
   const { colors } = useTheme();

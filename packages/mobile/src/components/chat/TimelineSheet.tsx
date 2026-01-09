@@ -3,7 +3,6 @@ import BottomSheet, {
 	type BottomSheetBackdropProps,
 	BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
-import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
 import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
