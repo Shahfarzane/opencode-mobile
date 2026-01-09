@@ -12,6 +12,7 @@ import {
 import Svg, { Path } from "react-native-svg";
 import { AiAgentIcon } from "@/components/icons";
 import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { chatInputStyles } from "./ChatInput.styles";
 import {
 	type AttachedFile,
@@ -104,7 +105,7 @@ function AgentIcon() {
 	return (
 		<View
 			className={chatInputStyles.triggerIcon({})}
-			style={{ backgroundColor: `${colors.info}15` }}
+			style={{ backgroundColor: withOpacity(colors.info, OPACITY.light) }}
 		>
 			<Text
 				style={{
@@ -124,7 +125,7 @@ function CommandIcon() {
 	return (
 		<View
 			className={chatInputStyles.triggerIcon({})}
-			style={{ backgroundColor: `${colors.warning}15` }}
+			style={{ backgroundColor: withOpacity(colors.warning, OPACITY.light) }}
 		>
 			<Text
 				style={{
@@ -168,7 +169,7 @@ function FileIcon({ extension }: { extension?: string }) {
 	return (
 		<View
 			className={chatInputStyles.triggerIcon({})}
-			style={{ backgroundColor: `${colors.mutedForeground}15` }}
+			style={{ backgroundColor: withOpacity(colors.mutedForeground, OPACITY.light) }}
 		>
 			<Text
 				style={{
@@ -649,7 +650,7 @@ export function ChatInput({
 		(text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
 	// Match desktop's semi-transparent input background
-	const inputBackground = colors.input + "1A"; // ~10% opacity like bg-input/10
+	const inputBackground = withOpacity(colors.input, OPACITY.selected); // ~10% opacity like bg-input/10
 
 	return (
 		<View className={chatInputStyles.container({})}>
@@ -682,7 +683,7 @@ export function ChatInput({
 						setCursorPosition(e.nativeEvent.selection.start)
 					}
 					placeholder={placeholder}
-					placeholderTextColor={`${colors.mutedForeground}80`}
+					placeholderTextColor={withOpacity(colors.mutedForeground, OPACITY.half)}
 					multiline
 					maxLength={10000}
 					editable={!isLoading}

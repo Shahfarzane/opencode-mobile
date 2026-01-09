@@ -1,7 +1,9 @@
 import type React from "react";
 import { useMemo } from "react";
-import { useColorScheme, View } from "react-native";
+import { View } from "react-native";
 import Svg, { G, Path } from "react-native-svg";
+import { withOpacity, OPACITY } from "@/utils/colors";
+import { useTheme } from "@/theme";
 
 interface OpenChamberLogoProps {
 	width?: number;
@@ -78,15 +80,12 @@ export const OpenChamberLogo: React.FC<OpenChamberLogoProps> = ({
 	isAnimated = false,
 	opacity = 1,
 }) => {
-	const colorScheme = useColorScheme();
-	const isDark = colorScheme === "dark";
+	const { colors, isDark } = useTheme();
 
-	const strokeColor = isDark ? "white" : "black";
-	const fillColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)";
-	const logoFillColor = isDark ? "white" : "black";
-	const cellHighlightColor = isDark
-		? "rgba(255,255,255,0.35)"
-		: "rgba(0,0,0,0.4)";
+	const strokeColor = colors.foreground;
+	const fillColor = withOpacity(colors.foreground, OPACITY.active);
+	const logoFillColor = colors.foreground;
+	const cellHighlightColor = withOpacity(colors.foreground, isDark ? OPACITY.overlay : OPACITY.scrim);
 
 	// Isometric cube geometry (mathematically correct)
 	// For true isometric: horizontal edges at +/-30deg from horizontal

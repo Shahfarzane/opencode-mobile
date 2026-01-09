@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Image, Text, View } from "react-native";
 import { FileIcon, ImageIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import type { FilePart } from "@/lib/streaming";
 
 interface MessageFilesDisplayProps {
@@ -39,8 +40,8 @@ export function MessageFilesDisplay({ files }: MessageFilesDisplayProps) {
 							key={`file-${file.id || index}`}
 							className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-xl border"
 							style={{
-								backgroundColor: `${colors.muted}30`,
-								borderColor: `${colors.border}30`,
+								backgroundColor: withOpacity(colors.muted, OPACITY.emphasized),
+								borderColor: withOpacity(colors.border, OPACITY.emphasized),
 							}}
 						>
 							<FileIcon size={14} color={colors.mutedForeground} />
@@ -65,8 +66,8 @@ export function MessageFilesDisplay({ files }: MessageFilesDisplayProps) {
 								key={`img-${file.id || index}`}
 								className="w-16 h-16 rounded-xl border overflow-hidden"
 								style={{
-									borderColor: `${colors.border}40`,
-									backgroundColor: `${colors.muted}10`,
+									borderColor: withOpacity(colors.border, OPACITY.border),
+									backgroundColor: withOpacity(colors.muted, OPACITY.hover),
 								}}
 							>
 								{file.url ? (

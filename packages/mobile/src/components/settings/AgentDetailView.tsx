@@ -19,6 +19,7 @@ import {
 } from "@/api";
 import { ChevronLeft } from "@/components/icons";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { agentDetailViewStyles } from "./AgentDetailView.styles";
 
 interface AgentDetailViewProps {
@@ -284,7 +285,7 @@ export function AgentDetailView({
         {/* Model */}
         <View
           className={agentDetailViewStyles.section({})}
-          style={{ borderTopColor: colors.border + "66" }}
+          style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
             className="mb-2"
@@ -306,7 +307,7 @@ export function AgentDetailView({
           {/* Provider selector */}
           <View
             className={agentDetailViewStyles.selectList({})}
-            style={{ borderColor: colors.border + "66" }}
+            style={{ borderColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             {providers.map((provider, index) => (
               <Pressable
@@ -321,9 +322,9 @@ export function AgentDetailView({
                   hasTopBorder: index > 0,
                 })}
                 style={[
-                  index > 0 && { borderTopColor: colors.border + "66" },
+                  index > 0 && { borderTopColor: withOpacity(colors.border, OPACITY.scrim) },
                   providerId === provider.id && {
-                    backgroundColor: colors.primary + "15",
+                    backgroundColor: withOpacity(colors.primary, OPACITY.active),
                   },
                 ]}
               >
@@ -358,7 +359,7 @@ export function AgentDetailView({
                 </Text>
                 <View
                   className={agentDetailViewStyles.selectList({})}
-                  style={{ borderColor: colors.border + "66" }}
+                  style={{ borderColor: withOpacity(colors.border, OPACITY.scrim) }}
                 >
                   {selectedProvider.models.slice(0, 10).map((model, index) => (
                     <Pressable
@@ -368,9 +369,9 @@ export function AgentDetailView({
                         hasTopBorder: index > 0,
                       })}
                       style={[
-                        index > 0 && { borderTopColor: colors.border + "66" },
+                        index > 0 && { borderTopColor: withOpacity(colors.border, OPACITY.scrim) },
                         modelId === model.id && {
-                          backgroundColor: colors.primary + "15",
+                          backgroundColor: withOpacity(colors.primary, OPACITY.active),
                         },
                       ]}
                     >
@@ -399,7 +400,7 @@ export function AgentDetailView({
         {/* System Prompt */}
         <View
           className={agentDetailViewStyles.section({})}
-          style={{ borderTopColor: colors.border + "66" }}
+          style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
             className="mb-2"
@@ -431,7 +432,7 @@ export function AgentDetailView({
         {!isBuiltIn && !isNewAgent && (
           <View
             className={agentDetailViewStyles.section({})}
-            style={{ borderTopColor: colors.border + "66" }}
+            style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             <Pressable onPress={handleDelete}>
               <Text style={[typography.meta, { color: colors.destructive }]}>

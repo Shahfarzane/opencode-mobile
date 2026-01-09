@@ -419,12 +419,12 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 						className="flex-row items-center justify-center gap-1.5 py-1.5 mx-3 mb-2 rounded-md"
 						style={{ backgroundColor: colors.warning }}
 					>
-						<WifiOffIcon color={colors.background} size={14} />
+						<WifiOffIcon color={colors.warningForeground} size={14} />
 						<Text
 							style={[
 								typography.micro,
 								fontStyle("600"),
-								{ color: colors.background },
+								{ color: colors.warningForeground },
 							]}
 						>
 							Offline Mode

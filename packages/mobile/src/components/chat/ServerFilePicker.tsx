@@ -20,6 +20,7 @@ import {
 	XIcon,
 } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { filesApi, type FileListEntry } from "@/api/files";
 
 interface FileInfo {
@@ -260,7 +261,7 @@ export function ServerFilePicker({
 						className="flex-row items-center py-2 px-3"
 						style={[
 							{ paddingLeft: 12 + level * 16 },
-							!isDirectory && isSelected && { backgroundColor: `${colors.primary}15` },
+							!isDirectory && isSelected && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
 						]}
 					>
 						{isDirectory ? (

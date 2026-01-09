@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import type { ToolPartData } from "./ToolPart";
 
 interface ToolOutputDialogProps {
@@ -208,10 +209,8 @@ export function ToolOutputDialog({
 				<View
 					className="flex-1 mx-4 mb-4 rounded-xl border overflow-hidden"
 					style={{
-						backgroundColor: isDark
-							? "rgba(28, 27, 26, 0.3)"
-							: "rgba(242, 240, 229, 0.3)",
-						borderColor: `${colors.border}4D`,
+						backgroundColor: withOpacity(colors.card, OPACITY.overlay),
+						borderColor: withOpacity(colors.border, OPACITY.overlay),
 					}}
 				>
 					<ScrollView
@@ -238,7 +237,7 @@ export function ToolOutputDialog({
 									className="rounded-xl border p-3"
 									style={{
 										backgroundColor: "transparent",
-										borderColor: `${colors.border}33`,
+										borderColor: withOpacity(colors.border, OPACITY.emphasized),
 									}}
 								>
 									<Text style={[typography.code, { color: colors.foreground }]}>
@@ -268,7 +267,7 @@ export function ToolOutputDialog({
 									className="rounded-xl border p-3"
 									style={{
 										backgroundColor: "transparent",
-										borderColor: `${colors.border}33`,
+										borderColor: withOpacity(colors.border, OPACITY.emphasized),
 									}}
 								>
 									<Text
@@ -300,8 +299,8 @@ export function ToolOutputDialog({
 								<View
 									className="rounded-xl border p-3"
 									style={{
-										backgroundColor: `${colors.destructive}10`,
-										borderColor: `${colors.destructive}33`,
+										backgroundColor: withOpacity(colors.destructive, OPACITY.hover),
+										borderColor: withOpacity(colors.destructive, OPACITY.emphasized),
 									}}
 								>
 									<Text

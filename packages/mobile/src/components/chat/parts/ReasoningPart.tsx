@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Fonts, FontSizes, LineHeights, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
 	style?: Record<string, unknown>;
@@ -199,7 +200,7 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 						<Text
 							style={[
 								typography.meta,
-								{ color: `${colors.mutedForeground}B0` },
+								{ color: withOpacity(colors.mutedForeground, OPACITY.secondary) },
 							]}
 							numberOfLines={1}
 						>
@@ -212,11 +213,11 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 			{isExpanded && (
 				<View
 					className="ml-1.5 pl-4 py-1 border-l"
-					style={{ borderLeftColor: `${colors.border}CC` }}
+					style={{ borderLeftColor: withOpacity(colors.border, OPACITY.strong) }}
 				>
 					<ReasoningMarkdown
 						content={textContent + (part.isStreaming ? " ▊" : "")}
-						color={`${colors.mutedForeground}B0`}
+						color={withOpacity(colors.mutedForeground, OPACITY.secondary)}
 					/>
 				</View>
 			)}

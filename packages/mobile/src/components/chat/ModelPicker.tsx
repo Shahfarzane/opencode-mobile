@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { FontSizes, fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 
 interface Model {
 	id: string;
@@ -287,7 +288,7 @@ export function ModelPicker({
 											className="flex-row items-center justify-between px-3 py-2.5"
 											style={{
 												backgroundColor: isSelected
-													? `${colors.primary}15`
+													? withOpacity(colors.primary, OPACITY.active)
 													: "transparent",
 											}}
 										>
@@ -337,7 +338,7 @@ export function ModelPicker({
 										className="flex-row items-center justify-between p-3 rounded-xl border"
 										style={{
 											backgroundColor: isCurrentProvider
-												? `${colors.primary}10`
+												? withOpacity(colors.primary, OPACITY.selected)
 												: colors.card,
 											borderColor: isCurrentProvider
 												? colors.primary
@@ -394,7 +395,7 @@ export function ModelPicker({
 														className="flex-row items-center justify-between px-3 py-2.5"
 														style={{
 															backgroundColor: isSelected
-																? `${colors.primary}15`
+																? withOpacity(colors.primary, OPACITY.active)
 																: "transparent",
 														}}
 													>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { ToolOutputDialog } from "./ToolOutputDialog";
 
 function ChevronDownIcon({
@@ -294,7 +295,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					{description && (
 						<Text
 							className="flex-1"
-							style={[typography.micro, { color: `${colors.mutedForeground}B3` }]}
+							style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.secondary) }]}
 							numberOfLines={1}
 						>
 							{description}
@@ -312,7 +313,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 				<View
 					className="mt-2 ml-5 pl-3 border-l gap-2"
 					style={{
-						borderColor: `${colors.border}80`,
+						borderColor: withOpacity(colors.border, OPACITY.half),
 						backgroundColor: colors.background,
 					}}
 				>
@@ -376,7 +377,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 						<Pressable
 							onPress={() => setShowDialog(true)}
 							className="mt-2 py-2 px-3 rounded-lg items-center"
-							style={{ backgroundColor: `${colors.primary}15` }}
+							style={{ backgroundColor: withOpacity(colors.primary, OPACITY.active) }}
 						>
 							<Text style={[typography.micro, { color: colors.primary }]}>
 								View Full Output
@@ -388,7 +389,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 						<Pressable
 							onPress={() => onSelectSession(subAgentSessionId)}
 							className="mt-2 py-2 px-3 rounded-lg flex-row items-center justify-center gap-1.5"
-							style={{ backgroundColor: `${colors.info}15` }}
+							style={{ backgroundColor: withOpacity(colors.info, OPACITY.active) }}
 						>
 							{getToolIcon("external_link", colors.info)}
 							<Text style={[typography.micro, { color: colors.info }]}>

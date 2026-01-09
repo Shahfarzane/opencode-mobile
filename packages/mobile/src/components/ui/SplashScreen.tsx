@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { G, Path } from "react-native-svg";
 import { useTheme } from "../../theme";
+import { withOpacity, OPACITY } from "../../utils/colors";
 import { splashScreenStyles } from "./SplashScreen.styles";
 
 // Note: preventAutoHideAsync() is called in app/_layout.tsx at module level
@@ -81,12 +82,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 	const [isAnimating, setIsAnimating] = useState(true);
 	const logoOpacity = useSharedValue(1);
 
-	const strokeColor = isDark ? "white" : "black";
-	const fillColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)";
-	const logoFillColor = isDark ? "white" : "black";
-	const cellHighlightColor = isDark
-		? "rgba(255,255,255,0.35)"
-		: "rgba(0,0,0,0.4)";
+	const strokeColor = colors.foreground;
+	const fillColor = withOpacity(colors.foreground, OPACITY.active);
+	const logoFillColor = colors.foreground;
+	const cellHighlightColor = withOpacity(colors.foreground, isDark ? OPACITY.overlay : OPACITY.scrim);
 
 	useEffect(() => {
 		// Match desktop's 3s pulse animation

@@ -7,6 +7,7 @@ import {
 	GitBranchIcon,
 } from "@/components/icons";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 
 interface DirectoryRowProps {
 	directory: string | null;
@@ -50,9 +51,7 @@ export function DirectoryRow({
 
 	const getPressedBg = (pressed: boolean) =>
 		pressed
-			? isDark
-				? "rgba(255,255,255,0.08)"
-				: "rgba(0,0,0,0.05)"
+			? withOpacity(colors.foreground, OPACITY.hover)
 			: "transparent";
 
 	return (
@@ -67,9 +66,7 @@ export function DirectoryRow({
 						<View
 							className="w-8 h-8 rounded-md items-center justify-center"
 							style={{
-								backgroundColor: isDark
-									? "rgba(255,255,255,0.1)"
-									: "rgba(0,0,0,0.05)",
+								backgroundColor: withOpacity(colors.foreground, OPACITY.hover),
 							}}
 						>
 							<FolderIcon

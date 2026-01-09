@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileIcon, FolderIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
 import { typography, useTheme } from "@/theme";
+import { OVERLAYS } from "@/utils/colors";
 import { useConnectionStore } from "@/stores/useConnectionStore";
 import { ServerFilePicker } from "./ServerFilePicker";
 
@@ -195,7 +196,7 @@ export function FileAttachmentButton({
 			>
 				<Pressable
 					className="flex-1"
-					style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+					style={{ backgroundColor: OVERLAYS.scrimLight }}
 					onPress={() => setIsPickerOpen(false)}
 				>
 					<View

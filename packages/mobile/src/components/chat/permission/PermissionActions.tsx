@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { CheckIcon, ClockIcon, XIcon } from "@/components/icons";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 
 export type PermissionResponse = "once" | "always" | "reject";
 
@@ -78,13 +79,13 @@ export function PermissionActions({
 				disabled={isResponding}
 				className="flex-row items-center gap-1 px-2 py-1.5 rounded-md"
 				style={({ pressed }) => ({
-					backgroundColor: colors.errorBackground,
+					backgroundColor: withOpacity(colors.destructive, OPACITY.active),
 					opacity: pressed ? 0.8 : isResponding ? 0.5 : 1,
 				})}
 			>
-				<XIcon size={14} color={colors.error} />
+				<XIcon size={14} color={colors.destructive} />
 				<Text
-					style={[typography.meta, fontStyle("500"), { color: colors.error }]}
+					style={[typography.meta, fontStyle("500"), { color: colors.destructive }]}
 				>
 					Deny
 				</Text>

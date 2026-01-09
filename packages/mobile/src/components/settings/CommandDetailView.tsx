@@ -20,6 +20,7 @@ import {
 } from "@/api";
 import { ChevronLeft } from "@/components/icons";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { commandDetailViewStyles } from "./CommandDetailView.styles";
 
 interface CommandDetailViewProps {
@@ -284,7 +285,7 @@ export function CommandDetailView({
         {/* Template */}
         <View
           className={commandDetailViewStyles.section({})}
-          style={{ borderTopColor: colors.border + "66" }}
+          style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
             className="mb-1"
@@ -321,7 +322,7 @@ export function CommandDetailView({
         {/* Agent */}
         <View
           className={commandDetailViewStyles.section({})}
-          style={{ borderTopColor: colors.border + "66" }}
+          style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
             className="mb-2"
@@ -335,12 +336,12 @@ export function CommandDetailView({
           </Text>
           <View
             className={commandDetailViewStyles.selectList({})}
-            style={{ borderColor: colors.border + "66" }}
+            style={{ borderColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             <Pressable
               onPress={() => !isBuiltIn && setAgentName("")}
               className={commandDetailViewStyles.selectItem({})}
-              style={!agentName ? { backgroundColor: colors.primary + "15" } : undefined}
+              style={!agentName ? { backgroundColor: withOpacity(colors.primary, OPACITY.active) } : undefined}
             >
               <Text
                 style={[
@@ -359,9 +360,9 @@ export function CommandDetailView({
                 onPress={() => !isBuiltIn && setAgentName(agent.name)}
                 className={commandDetailViewStyles.selectItem({ hasTopBorder: true })}
                 style={[
-                  { borderTopColor: `${colors.border}66` },
+                  { borderTopColor: withOpacity(colors.border, OPACITY.scrim) },
                   agentName === agent.name && {
-                    backgroundColor: `${colors.primary}15`,
+                    backgroundColor: withOpacity(colors.primary, OPACITY.active),
                   },
                 ]}
               >
@@ -387,7 +388,7 @@ export function CommandDetailView({
         {/* Subtask toggle */}
         <View
           className={commandDetailViewStyles.section({})}
-          style={{ borderTopColor: colors.border + "66" }}
+          style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <View className={commandDetailViewStyles.switchRow({})}>
             <View className="flex-1">
@@ -411,7 +412,7 @@ export function CommandDetailView({
               onValueChange={setSubtask}
               disabled={isBuiltIn}
               trackColor={{ false: colors.muted, true: colors.primary }}
-              thumbColor={colors.background}
+              thumbColor={colors.card}
             />
           </View>
         </View>
@@ -420,7 +421,7 @@ export function CommandDetailView({
         {!isBuiltIn && !isNewCommand && (
           <View
             className={commandDetailViewStyles.section({})}
-            style={{ borderTopColor: colors.border + "66" }}
+            style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             <Pressable onPress={handleDelete}>
               <Text style={[typography.meta, { color: colors.destructive }]}>
