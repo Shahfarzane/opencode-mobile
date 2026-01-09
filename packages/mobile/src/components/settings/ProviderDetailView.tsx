@@ -6,13 +6,12 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft } from "@/components/icons";
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { providerDetailViewStyles } from "./ProviderDetailView.styles";
@@ -156,34 +155,17 @@ export function ProviderDetailView({
 
         {/* API Key Section */}
         <View className={providerDetailViewStyles.section({})}>
-          <Text
-            className={providerDetailViewStyles.sectionTitle({})}
-            style={[
-              typography.uiLabel,
-              fontStyle("600"),
-              { color: colors.foreground },
-            ]}
-          >
-            API key
-          </Text>
-          <View className={providerDetailViewStyles.inputRow({})}>
-            <TextInput
-              className={providerDetailViewStyles.input({})}
-              style={[
-                typography.uiLabel,
-                {
-                  color: colors.foreground,
-                  borderColor: colors.border,
-                },
-              ]}
-              value={apiKey}
-              onChangeText={setApiKey}
-              placeholder="sk-..."
-              placeholderTextColor={colors.mutedForeground}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+          <Input
+            label="API key"
+            value={apiKey}
+            onChangeText={setApiKey}
+            placeholder="sk-..."
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            helperText="Keys are sent directly to the server and never stored locally."
+          />
+          <View className="mt-3">
             <Button
               variant={apiKey.trim() ? "primary" : "muted"}
               size="sm"
@@ -194,12 +176,6 @@ export function ProviderDetailView({
               <Button.Label>Save</Button.Label>
             </Button>
           </View>
-          <Text
-            className="mt-1.5"
-            style={[typography.micro, { color: colors.mutedForeground }]}
-          >
-            Keys are sent directly to the server and never stored locally.
-          </Text>
         </View>
 
         {/* Models Section */}

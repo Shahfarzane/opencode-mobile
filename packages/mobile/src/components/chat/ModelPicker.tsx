@@ -5,12 +5,12 @@ import {
 	Pressable,
 	ScrollView,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { FontSizes, fontStyle, typography, useTheme } from "@/theme";
+import { SearchInput } from "@/components/ui";
+import { fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 
 interface Model {
@@ -62,33 +62,6 @@ function CheckIcon({ color, size = 16 }: { color: string; size?: number }) {
 	);
 }
 
-function SearchIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function ClearIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M18 6L6 18M6 6l12 12"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
 
 // Provider logo component matching desktop UI
 function ProviderLogo({ providerId }: { providerId: string }) {
@@ -233,27 +206,11 @@ export function ModelPicker({
 					className="px-4 py-3 border-b"
 					style={{ borderBottomColor: colors.border }}
 				>
-					<View
-						className="flex-row items-center rounded-xl px-3 py-2.5 gap-2"
-						style={{ backgroundColor: colors.muted }}
-					>
-						<SearchIcon color={colors.mutedForeground} size={16} />
-						<TextInput
-							className="flex-1 p-0"
-							style={{ color: colors.foreground, fontSize: FontSizes.uiLabel }}
-							placeholder="Search models..."
-							placeholderTextColor={colors.mutedForeground}
-							value={searchQuery}
-							onChangeText={setSearchQuery}
-							autoCapitalize="none"
-							autoCorrect={false}
-						/>
-						{searchQuery.length > 0 && (
-							<Pressable onPress={() => setSearchQuery("")}>
-								<ClearIcon color={colors.mutedForeground} size={16} />
-							</Pressable>
-						)}
-					</View>
+					<SearchInput
+						value={searchQuery}
+						onChangeText={setSearchQuery}
+						placeholder="Search models..."
+					/>
 				</View>
 
 				<ScrollView
