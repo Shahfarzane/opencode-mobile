@@ -17,10 +17,18 @@ const centered = tv({
 });
 
 /**
+ * Header styles
+ */
+const header = tv({
+  base: "flex-row items-center px-4 py-2",
+  variants: {},
+});
+
+/**
  * Back button styles
  */
 const backButton = tv({
-  base: "flex-row items-center gap-2 px-4 py-2",
+  base: "flex-row items-center gap-2",
   variants: {},
 });
 
@@ -115,6 +123,7 @@ const modelItem = tv({
 export const providerDetailViewStyles = combineStyles({
   container,
   centered,
+  header,
   backButton,
   scroll,
   content,

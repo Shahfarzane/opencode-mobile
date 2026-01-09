@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { fontStyle, typography, useTheme } from "@/theme";
+import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { providerDetailViewStyles } from "./ProviderDetailView.styles";
 
@@ -93,17 +93,21 @@ export function ProviderDetailView({
   if (!provider) {
     return (
       <View className={providerDetailViewStyles.container({})}>
-        <Pressable
-          onPress={onBack}
-          className={providerDetailViewStyles.backButton({})}
-          style={{ paddingTop: insets.top + 8 }}
-          hitSlop={8}
+        <View
+          className={providerDetailViewStyles.header({})}
+          style={{ paddingTop: insets.top + Spacing.sm }}
         >
-          <ChevronLeft size={18} color={colors.foreground} />
-          <Text style={[typography.uiLabel, { color: colors.foreground }]}>
-            Provider
-          </Text>
-        </Pressable>
+          <Pressable
+            onPress={onBack}
+            className={providerDetailViewStyles.backButton({})}
+            hitSlop={8}
+          >
+            <ChevronLeft size={18} color={colors.foreground} />
+            <Text style={[typography.uiLabel, { color: colors.foreground }]}>
+              Provider
+            </Text>
+          </Pressable>
+        </View>
         <View className={providerDetailViewStyles.centered({})}>
           <Text style={[typography.meta, { color: colors.mutedForeground }]}>
             Provider not found
@@ -118,23 +122,27 @@ export function ProviderDetailView({
   return (
     <View className={providerDetailViewStyles.container({})}>
       {/* Header */}
-      <Pressable
-        onPress={onBack}
-        className={providerDetailViewStyles.backButton({})}
-        style={{ paddingTop: insets.top + 8 }}
-        hitSlop={8}
+      <View
+        className={providerDetailViewStyles.header({})}
+        style={{ paddingTop: insets.top + Spacing.sm }}
       >
-        <ChevronLeft size={18} color={colors.foreground} />
-        <Text
-          style={[
-            typography.uiLabel,
-            fontStyle("600"),
-            { color: colors.foreground },
-          ]}
+        <Pressable
+          onPress={onBack}
+          className={providerDetailViewStyles.backButton({})}
+          hitSlop={8}
         >
-          {provider.name || provider.id}
-        </Text>
-      </Pressable>
+          <ChevronLeft size={18} color={colors.foreground} />
+          <Text
+            style={[
+              typography.uiLabel,
+              fontStyle("600"),
+              { color: colors.foreground },
+            ]}
+          >
+            {provider.name || provider.id}
+          </Text>
+        </Pressable>
+      </View>
 
       <ScrollView
         className={providerDetailViewStyles.scroll({})}

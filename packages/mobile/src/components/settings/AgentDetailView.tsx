@@ -20,7 +20,7 @@ import {
 } from "@/api";
 import { AiAgentIcon, ChevronLeft, FolderIcon, GlobeIcon, RobotIcon, AiAgentFillIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { fontStyle, typography, useTheme } from "@/theme";
+import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { ModelSelector } from "./ModelSelector";
 
@@ -187,7 +187,7 @@ export function AgentDetailView({
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-4 py-2"
-        style={{ paddingTop: insets.top + 8 }}
+        style={{ paddingTop: insets.top + Spacing.sm }}
       >
         <Pressable
           onPress={onBack}

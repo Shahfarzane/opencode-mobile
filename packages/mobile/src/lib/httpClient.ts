@@ -375,39 +375,3 @@ export async function apiPatch<T>(
 	return apiRequest<T>(path, { method: "PATCH", body, includeDirectory });
 }
 
-export async function testServerConnectivity(
-	serverUrl: string,
-	timeoutMs = 10000,
-): Promise<{ reachable: boolean; error?: string }> {
-	const normalizedUrl = normalizeServerUrl(serverUrl);
-	
-	if (!isValidUrl(normalizedUrl)) {
-		return { reachable: false, error: "Invalid URL format" };
-	}
-
-	const healthUrl = `${normalizedUrl}/health`;
-
-	try {
-		const response = await xhrRequest(
-			"GET",
-			healthUrl,
-			{ Accept: "application/json" },
-			null,
-			timeoutMs
-		);
-
-		if (response.status >= 200 && response.status < 300) {
-			return { reachable: true };
-		}
-
-		return { 
-			reachable: false, 
-			error: `Server returned ${response.status}` 
-		};
-	} catch (error) {
-		if (error instanceof ApiError) {
-			return { reachable: false, error: error.message };
-		}
-		return { reachable: false, error: "Unknown error" };
-	}
-}

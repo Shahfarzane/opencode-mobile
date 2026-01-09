@@ -279,14 +279,6 @@ export function getCachedSessionById(
 	return sessions.find((s) => s.id === sessionId);
 }
 
-export function isSessionCached(
-	sessions: CachedSession[],
-	sessionId: string,
-): boolean {
-	const session = getCachedSessionById(sessions, sessionId);
-	return session?.isFullCache ?? false;
-}
-
 export function getSessionCacheInfo(session: CachedSession): {
 	isCached: boolean;
 	messageCount: number;
