@@ -103,7 +103,7 @@ function UserMessage({
 		<View className="mb-2 px-3">
 			<Pressable onLongPress={openMenu} className="flex-row justify-end items-start gap-2">
 				<View
-					className="px-3.5 pt-2.5 pb-1.5"
+					className="px-3 py-2"
 					style={{
 						maxWidth: "85%",
 						backgroundColor: bubbleBackground,
