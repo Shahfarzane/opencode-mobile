@@ -6,7 +6,6 @@ import {
 	Modal,
 	Pressable,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,7 +15,6 @@ import {
 	ChevronRightIcon,
 	FileIcon,
 	FolderIcon,
-	SearchIcon,
 	XIcon,
 } from "@/components/icons";
 import { SearchInput } from "@/components/ui";
@@ -347,27 +345,11 @@ export function ServerFilePicker({
 
 				{/* Search */}
 				<View className="px-4 py-2 border-b" style={{ borderBottomColor: colors.border }}>
-					<View
-						className="flex-row items-center px-3 py-2 rounded-lg"
-						style={{ backgroundColor: colors.muted }}
-					>
-						<SearchIcon size={16} color={colors.mutedForeground} />
-						<TextInput
-							value={searchQuery}
-							onChangeText={setSearchQuery}
-							placeholder="Search files..."
-							placeholderTextColor={colors.mutedForeground}
-							className="flex-1 ml-2"
-							style={[typography.uiLabel, { color: colors.foreground }]}
-							autoCapitalize="none"
-							autoCorrect={false}
-						/>
-						{searchQuery.length > 0 && (
-							<Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
-								<XIcon size={16} color={colors.mutedForeground} />
-							</Pressable>
-						)}
-					</View>
+					<SearchInput
+						value={searchQuery}
+						onChangeText={setSearchQuery}
+						placeholder="Search files..."
+					/>
 				</View>
 
 				{/* File List */}
