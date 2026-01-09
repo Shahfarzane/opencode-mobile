@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
-import { FontSizes, FontFamilySans, fontStyle, typography, useTheme } from "@/theme";
+import { FontFamilySans, FontSizes, fontStyle, Radius, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu } from "./MessageActionsMenu";
@@ -106,8 +106,8 @@ function UserMessage({
 					style={{
 						maxWidth: "85%",
 						backgroundColor: bubbleBackground,
-						borderRadius: 12,
-						borderBottomRightRadius: 2,
+						borderRadius: Radius.xl,
+						borderBottomRightRadius: Radius.sm,
 					}}
 				>
 					<Text style={[typography.body, { color: colors.foreground }]}>

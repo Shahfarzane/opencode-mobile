@@ -25,9 +25,11 @@ export const FontSize = {
 	uiHeader: remToPixels(MOBILE_TYPOGRAPHY.uiHeader),
 	markdown: remToPixels(MOBILE_TYPOGRAPHY.markdown),
 	code: remToPixels(MOBILE_TYPOGRAPHY.code),
-	h1: 24,
-	h2: 20,
-	h3: 18,
+	// Headings use em-based scaling relative to markdown (16px base)
+	// Matches PWA: h1 = 1.125em, h2 = 1.0625em, h3 = 1em
+	h1: Math.round(remToPixels(MOBILE_TYPOGRAPHY.markdown) * 1.125), // 18px
+	h2: Math.round(remToPixels(MOBILE_TYPOGRAPHY.markdown) * 1.0625), // 17px
+	h3: remToPixels(MOBILE_TYPOGRAPHY.markdown), // 16px
 } as const;
 
 export const LineHeight = {

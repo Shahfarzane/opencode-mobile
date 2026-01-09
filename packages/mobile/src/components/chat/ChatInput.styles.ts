@@ -1,19 +1,20 @@
 import { tv, combineStyles } from "@/lib/styles";
+import { Radius, SemanticSpacing, Spacing } from "@/theme";
 
-// Mobile-optimized spacing constants (matches PWA mobile CSS)
+// Mobile-optimized spacing constants using theme tokens (matches PWA mobile CSS)
 export const MOBILE_SPACING = {
-  inputBorderRadius: 12, // rounded-xl
-  inputPaddingH: 12, // px-3
-  inputPaddingV: 10, // py-2.5 - PWA mobile uses symmetric padding
-  toolbarPaddingH: 6, // px-1.5 - tighter for mobile
-  toolbarPaddingV: 6, // py-1.5
-  toolbarButtonSize: 36, // h-9 w-9 - touch-friendly
-  toolbarButtonRadius: 8,
-  toolbarGap: 6, // gap-x-1.5
-  bubbleRadius: 12, // rounded-xl
-  agentBadgePaddingH: 6, // px-1.5
+  inputBorderRadius: Radius.xl, // 12px - rounded-xl
+  inputPaddingH: Spacing[3], // 12px - px-3
+  inputPaddingV: Spacing[2.5], // 10px - py-2.5
+  toolbarPaddingH: Spacing[1.5], // 6px - px-1.5
+  toolbarPaddingV: Spacing[1.5], // 6px - py-1.5
+  toolbarButtonSize: SemanticSpacing.buttonHeightSm, // 36px - h-9 w-9
+  toolbarButtonRadius: Radius.lg, // 8px
+  toolbarGap: Spacing[1.5], // 6px - gap-x-1.5
+  bubbleRadius: Radius.xl, // 12px - rounded-xl
+  agentBadgePaddingH: Spacing[1.5], // 6px - px-1.5
   agentBadgePaddingV: 0, // py-0
-  agentBadgeRadius: 4, // rounded
+  agentBadgeRadius: Radius.DEFAULT, // 4px - rounded
 };
 
 const container = tv({

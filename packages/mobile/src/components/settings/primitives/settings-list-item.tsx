@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
+import { Fonts, FontSizes, Radius, Spacing, useTheme } from "@/theme";
 import type { SettingsListItemProps } from "./settings-list-item.types";
 
 const DISPLAY_NAME = "SettingsListItem";
@@ -52,7 +52,7 @@ export function SettingsListItem({
           alignItems: "center",
           paddingHorizontal: Spacing[1.5],
           paddingVertical: Spacing[1],
-          borderRadius: 6,
+          borderRadius: Radius.md,
           backgroundColor: isPressed && onPress ? pressedBgColor : "transparent",
           minHeight: 36,
         }}
@@ -95,7 +95,7 @@ export function SettingsListItem({
                   borderWidth: 1,
                   paddingHorizontal: 4,
                   paddingBottom: 1,
-                  borderRadius: 4,
+                  borderRadius: Radius.DEFAULT,
                   flexShrink: 0,
                 }}
               >
