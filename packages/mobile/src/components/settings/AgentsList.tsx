@@ -14,11 +14,34 @@ import {
   View,
 } from "react-native";
 import { type Agent, agentsApi, isAgentBuiltIn, isAgentHidden } from "@/api";
-import { PlusIcon } from "@/components/icons";
+import {
+  AiAgentFillIcon,
+  AiAgentIcon,
+  LockIcon,
+  PlusIcon,
+  RobotIcon,
+} from "@/components/icons";
 import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { listStyles } from "./list.styles";
 import { SettingsListItem } from "./SettingsListItem";
+
+/**
+ * Returns the appropriate mode icon for an agent based on its mode
+ * Matches desktop AgentsSidebar.tsx:getAgentModeIcon
+ */
+function getAgentModeIcon(mode: string | undefined, primaryColor: string) {
+  switch (mode) {
+    case "primary":
+      return <AiAgentIcon size={12} color={primaryColor} />;
+    case "all":
+      return <AiAgentFillIcon size={12} color={primaryColor} />;
+    case "subagent":
+      return <RobotIcon size={12} color={primaryColor} />;
+    default:
+      return null;
+  }
+}
 
 export interface AgentsListRef {
   refresh: () => Promise<void>;
@@ -100,12 +123,11 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
             Total {agents.length}
           </Text>
           <Button
-            variant="primary"
+            variant="ghost"
             size="xs"
             onPress={() => onSelectAgent("__new__")}
           >
-            <PlusIcon size={14} color={colors.primaryForeground} />
-            <Button.Label>Add</Button.Label>
+            <PlusIcon size={16} color={colors.mutedForeground} />
           </Button>
         </View>
 
@@ -126,8 +148,9 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
                 key={agent.name}
                 title={agent.name}
                 subtitle={agent.description}
-                badge={agent.mode}
-                
+                badge="system"
+                icon={<LockIcon size={12} color={colors.mutedForeground} />}
+                modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
                 onPress={() => onSelectAgent(agent.name)}
               />
             ))}
@@ -151,8 +174,8 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
                 key={agent.name}
                 title={agent.name}
                 subtitle={agent.description}
-                badge={agent.mode}
-                
+                badge={(agent as { scope?: string }).scope}
+                modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
                 onPress={() => onSelectAgent(agent.name)}
               />
             ))}
@@ -167,11 +190,11 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
               No agents yet
             </Text>
             <Button
-              variant="primary"
+              variant="secondary"
               size="sm"
               onPress={() => onSelectAgent("__new__")}
             >
-              <PlusIcon size={16} color={colors.primaryForeground} />
+              <PlusIcon size={16} color={colors.foreground} />
               <Button.Label>Create your first agent</Button.Label>
             </Button>
           </View>

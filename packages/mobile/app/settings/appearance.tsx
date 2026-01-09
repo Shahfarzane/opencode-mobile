@@ -33,7 +33,7 @@ function ThemeModeSelector() {
 							style={[
 								styles.segmentLabel,
 								{
-									color: isSelected ? colors.background : colors.foreground,
+									color: isSelected ? colors.primaryForeground : colors.foreground,
 								},
 							]}
 						>

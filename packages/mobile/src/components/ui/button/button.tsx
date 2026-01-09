@@ -88,6 +88,29 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
       className,
     });
 
+    // Get background color based on variant - use JS theme colors for consistency
+    const getBackgroundColor = () => {
+      switch (variant) {
+        case "primary":
+          return colors.primary;
+        case "secondary":
+          return colors.secondary;
+        case "destructive":
+          return colors.destructive;
+        case "warning":
+          return colors.warning;
+        case "muted":
+          return colors.muted;
+        case "info":
+          return colors.info;
+        case "outline":
+        case "ghost":
+          return "transparent";
+        default:
+          return colors.primary;
+      }
+    };
+
     // Get spinner color based on variant
     const getSpinnerColor = () => {
       switch (variant) {
@@ -132,6 +155,14 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
       isDisabled: disabled,
     };
 
+    // Get border color for outline variant
+    const getBorderColor = () => {
+      if (variant === "outline") {
+        return colors.border;
+      }
+      return undefined;
+    };
+
     return (
       <ButtonContext.Provider value={contextValue}>
         <Pressable
@@ -139,7 +170,11 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
           disabled={disabled}
           onPress={handlePress}
           className={rootClassName}
-          style={style}
+          style={[
+            { backgroundColor: getBackgroundColor() },
+            variant === "outline" && { borderColor: getBorderColor() },
+            style,
+          ]}
           accessibilityRole="button"
           accessibilityState={{ disabled }}
           {...props}
