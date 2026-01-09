@@ -5,10 +5,12 @@ export interface Command {
 	description?: string;
 	template?: string;
 	agent?: string;
+	model?: string;
 	subtask?: boolean;
 	builtIn?: boolean;
 	native?: boolean;
 	hidden?: boolean;
+	scope?: "user" | "project";
 }
 
 export interface CommandConfig {
@@ -16,6 +18,7 @@ export interface CommandConfig {
 	description?: string;
 	template?: string;
 	agent?: string;
+	model?: string | null;
 	subtask?: boolean;
 	scope?: "user" | "project";
 }

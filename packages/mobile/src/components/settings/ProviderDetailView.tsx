@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft } from "@/components/icons";
 import { Button } from "@/components/ui";
@@ -26,6 +27,7 @@ export function ProviderDetailView({
   onBack,
 }: ProviderDetailViewProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -94,6 +96,7 @@ export function ProviderDetailView({
         <Pressable
           onPress={onBack}
           className={providerDetailViewStyles.backButton({})}
+          style={{ paddingTop: insets.top + 8 }}
           hitSlop={8}
         >
           <ChevronLeft size={18} color={colors.foreground} />
@@ -118,6 +121,7 @@ export function ProviderDetailView({
       <Pressable
         onPress={onBack}
         className={providerDetailViewStyles.backButton({})}
+        style={{ paddingTop: insets.top + 8 }}
         hitSlop={8}
       >
         <ChevronLeft size={18} color={colors.foreground} />

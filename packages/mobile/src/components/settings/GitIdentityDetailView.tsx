@@ -9,12 +9,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { CheckIcon, ChevronLeft } from "@/components/icons";
 import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
-import { gitIdentityDetailViewStyles } from "./GitIdentityDetailView.styles";
 
 interface GitIdentityDetailViewProps {
   profileId: string;
@@ -39,6 +39,7 @@ export function GitIdentityDetailView({
   onDeleted,
 }: GitIdentityDetailViewProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -156,19 +157,22 @@ export function GitIdentityDetailView({
 
   if (isLoading) {
     return (
-      <View className={gitIdentityDetailViewStyles.centered({})}>
+      <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View className={gitIdentityDetailViewStyles.container({})}>
+    <View className="flex-1">
       {/* Header */}
-      <View className={gitIdentityDetailViewStyles.header({})}>
+      <View
+        className="flex-row items-center justify-between px-4 py-2"
+        style={{ paddingTop: insets.top + 8 }}
+      >
         <Pressable
           onPress={onBack}
-          className={gitIdentityDetailViewStyles.backButton({})}
+          className="flex-row items-center gap-2"
           hitSlop={8}
         >
           <ChevronLeft size={18} color={colors.foreground} />
@@ -194,24 +198,25 @@ export function GitIdentityDetailView({
       </View>
 
       <ScrollView
-        className={gitIdentityDetailViewStyles.scroll({})}
-        contentContainerClassName={gitIdentityDetailViewStyles.content({})}
+        className="flex-1"
+        contentContainerClassName="px-4 pb-8"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {/* Profile Name */}
-        <View className={gitIdentityDetailViewStyles.field({})}>
+        <View className="mb-5">
           <Text
+            className="mb-1.5"
             style={[
               typography.uiLabel,
               fontStyle("600"),
               { color: colors.foreground },
             ]}
           >
-            Profile name
+            Profile Name
           </Text>
           <TextInput
-            className={gitIdentityDetailViewStyles.input({})}
+            className="px-3 py-2.5 rounded-lg border"
             style={[
               typography.uiLabel,
               { color: colors.foreground, borderColor: colors.border },
@@ -221,12 +226,18 @@ export function GitIdentityDetailView({
             placeholder="Work, Personal, etc."
             placeholderTextColor={colors.mutedForeground}
           />
+          <Text
+            className="mt-1"
+            style={[typography.micro, { color: colors.mutedForeground }]}
+          >
+            A friendly name to identify this profile
+          </Text>
         </View>
 
         {/* Color */}
-        <View className={gitIdentityDetailViewStyles.field({})}>
+        <View className="mb-5">
           <Text
-            className="mb-2"
+            className="mb-1.5"
             style={[
               typography.uiLabel,
               fontStyle("600"),
@@ -235,23 +246,35 @@ export function GitIdentityDetailView({
           >
             Color
           </Text>
-          <View className={gitIdentityDetailViewStyles.colorRow({})}>
+          <Text
+            className="mb-2"
+            style={[typography.micro, { color: colors.mutedForeground }]}
+          >
+            Visual indicator for this profile
+          </Text>
+          <View className="flex-row gap-3 flex-wrap">
             {COLORS.map((c) => (
               <Pressable
                 key={c}
                 onPress={() => setColor(c === color ? null : c)}
-                className={gitIdentityDetailViewStyles.colorDot({})}
-                style={{ backgroundColor: c }}
+                className="w-9 h-9 rounded-full items-center justify-center"
+                style={[
+                  { backgroundColor: c },
+                  color === c && {
+                    borderWidth: 3,
+                    borderColor: colors.foreground,
+                  },
+                ]}
               >
-                {color === c && <CheckIcon size={14} color="#fff" />}
+                {color === c && <CheckIcon size={16} color="#fff" />}
               </Pressable>
             ))}
           </View>
         </View>
 
-        {/* Git Config */}
+        {/* Git Configuration Section */}
         <View
-          className={gitIdentityDetailViewStyles.section({})}
+          className="pt-5 border-t mb-5"
           style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
@@ -262,15 +285,23 @@ export function GitIdentityDetailView({
               { color: colors.foreground },
             ]}
           >
-            Git configuration
+            Git Configuration
           </Text>
 
-          <View className={gitIdentityDetailViewStyles.field({})}>
-            <Text style={[typography.meta, { color: colors.mutedForeground }]}>
-              User name
+          {/* User Name */}
+          <View className="mb-4">
+            <Text
+              className="mb-1.5"
+              style={[
+                typography.meta,
+                fontStyle("500"),
+                { color: colors.foreground },
+              ]}
+            >
+              User Name <Text style={{ color: colors.destructive }}>*</Text>
             </Text>
             <TextInput
-              className={gitIdentityDetailViewStyles.input({})}
+              className="px-3 py-2.5 rounded-lg border"
               style={[
                 typography.uiLabel,
                 { color: colors.foreground, borderColor: colors.border },
@@ -281,14 +312,28 @@ export function GitIdentityDetailView({
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="words"
             />
+            <Text
+              className="mt-1"
+              style={[typography.micro, { color: colors.mutedForeground }]}
+            >
+              The name that appears in commit messages
+            </Text>
           </View>
 
-          <View className={gitIdentityDetailViewStyles.field({})}>
-            <Text style={[typography.meta, { color: colors.mutedForeground }]}>
-              Email
+          {/* Email */}
+          <View>
+            <Text
+              className="mb-1.5"
+              style={[
+                typography.meta,
+                fontStyle("500"),
+                { color: colors.foreground },
+              ]}
+            >
+              Email <Text style={{ color: colors.destructive }}>*</Text>
             </Text>
             <TextInput
-              className={gitIdentityDetailViewStyles.input({})}
+              className="px-3 py-2.5 rounded-lg border"
               style={[
                 typography.uiLabel,
                 { color: colors.foreground, borderColor: colors.border },
@@ -301,12 +346,18 @@ export function GitIdentityDetailView({
               autoCapitalize="none"
               autoCorrect={false}
             />
+            <Text
+              className="mt-1"
+              style={[typography.micro, { color: colors.mutedForeground }]}
+            >
+              The email that appears in commit messages
+            </Text>
           </View>
         </View>
 
-        {/* SSH Key */}
+        {/* SSH Key Section */}
         <View
-          className={gitIdentityDetailViewStyles.section({})}
+          className="pt-5 border-t mb-5"
           style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
@@ -317,7 +368,7 @@ export function GitIdentityDetailView({
               { color: colors.foreground },
             ]}
           >
-            SSH key path
+            SSH Key Path
           </Text>
           <Text
             className="mb-2"
@@ -326,7 +377,7 @@ export function GitIdentityDetailView({
             Optional path to SSH key for this identity
           </Text>
           <TextInput
-            className={gitIdentityDetailViewStyles.input({})}
+            className="px-3 py-2.5 rounded-lg border"
             style={[
               typography.uiLabel,
               { color: colors.foreground, borderColor: colors.border },
@@ -343,7 +394,7 @@ export function GitIdentityDetailView({
         {/* Delete */}
         {!isNewProfile && (
           <View
-            className={gitIdentityDetailViewStyles.section({})}
+            className="pt-5 border-t"
             style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             <Pressable onPress={handleDelete}>

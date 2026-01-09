@@ -15,8 +15,16 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type AuthMethod, type Provider, providersApi } from "@/api";
-import { ChevronLeft, ChevronRightIcon, SearchIcon } from "@/components/icons";
-import { Fonts, Spacing, typography, useTheme } from "@/theme";
+import {
+	CheckIcon,
+	ChevronDownIcon,
+	ChevronLeft,
+	ChevronUpIcon,
+	SearchIcon,
+} from "@/components/icons";
+import { Button, ProviderLogo } from "@/components/ui";
+import { Fonts, FontSizes, Spacing, typography, useTheme } from "@/theme";
+import { OPACITY, withOpacity } from "@/utils/colors";
 
 interface ProviderOption {
 	id: string;
@@ -43,9 +51,11 @@ export default function AddProviderScreen() {
 		{},
 	);
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadError, setLoadError] = useState<string | null>(null);
 	const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
 		null,
 	);
+	const [selectorExpanded, setSelectorExpanded] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [apiKey, setApiKey] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
@@ -64,18 +74,32 @@ export default function AddProviderScreen() {
 	useEffect(() => {
 		async function loadData() {
 			setIsLoading(true);
+			setLoadError(null);
 			try {
 				const [all, connected, auth] = await Promise.all([
 					providersApi.list(),
 					providersApi.listConnected(),
 					providersApi.getAuthMethods(),
 				]);
+
+				if (__DEV__) {
+					console.log("[AddProvider] Loaded data:", {
+						allProviders: all.length,
+						connectedProviders: connected.length,
+						authMethodsKeys: Object.keys(auth),
+					});
+				}
+
 				setAllProviders(all);
 				setConnectedProviders(connected);
 				setAuthMethods(auth);
+
+				if (all.length === 0) {
+					setLoadError("No providers available");
+				}
 			} catch (error) {
 				console.error("Failed to load providers:", error);
-				Alert.alert("Error", "Failed to load providers");
+				setLoadError("Failed to load providers");
 			} finally {
 				setIsLoading(false);
 			}
@@ -105,6 +129,12 @@ export default function AddProviderScreen() {
 		);
 	}, [unconnectedProviders, searchQuery]);
 
+	// Get selected provider details
+	const selectedProvider = useMemo(() => {
+		if (!selectedProviderId) return null;
+		return unconnectedProviders.find((p) => p.id === selectedProviderId);
+	}, [selectedProviderId, unconnectedProviders]);
+
 	// Get OAuth methods for selected provider
 	const selectedOAuthMethods = useMemo(() => {
 		if (!selectedProviderId) return [];
@@ -116,11 +146,21 @@ export default function AddProviderScreen() {
 	const handleSelectProvider = useCallback((providerId: string) => {
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		setSelectedProviderId(providerId);
+		setSelectorExpanded(false);
+		setSearchQuery("");
 		setApiKey("");
 		setOauthPending(null);
 		setOauthDetails(null);
 		setOauthCode("");
 	}, []);
+
+	const handleToggleSelector = useCallback(() => {
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		setSelectorExpanded((prev) => !prev);
+		if (!selectorExpanded) {
+			setSearchQuery("");
+		}
+	}, [selectorExpanded]);
 
 	const handleSaveApiKey = useCallback(async () => {
 		if (!selectedProviderId || !apiKey.trim()) {
@@ -242,378 +282,133 @@ export default function AddProviderScreen() {
 		[],
 	);
 
-	// Render provider list
-	const renderProviderList = () => (
-		<View style={styles.section}>
-			<Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
-				SELECT PROVIDER
-			</Text>
-			<Text
-				style={[
-					typography.meta,
-					{ color: colors.mutedForeground, marginBottom: 12 },
-				]}
-			>
-				Choose a provider to connect
-			</Text>
-
-			{/* Search */}
-			<View
-				style={[
-					styles.searchContainer,
-					{ backgroundColor: colors.muted, borderColor: colors.border },
-				]}
-			>
-				<SearchIcon size={18} color={colors.mutedForeground} />
-				<TextInput
-					style={[styles.searchInput, { color: colors.foreground }]}
-					placeholder="Search providers..."
-					placeholderTextColor={colors.mutedForeground}
-					value={searchQuery}
-					onChangeText={setSearchQuery}
-					autoCapitalize="none"
-					autoCorrect={false}
-				/>
-			</View>
-
-			{/* Provider list */}
-			{filteredProviders.length === 0 ? (
-				<View style={styles.emptyContainer}>
-					<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-						{searchQuery
-							? "No providers match your search"
-							: "All providers are already connected"}
-					</Text>
-				</View>
-			) : (
-				<View style={[styles.listContainer, { borderColor: colors.border }]}>
-					{filteredProviders.map((provider, index) => (
-						<Pressable
-							key={provider.id}
-							onPress={() => handleSelectProvider(provider.id)}
-							style={({ pressed }) => [
-								styles.providerRow,
-								{
-									borderBottomColor: colors.border,
-									borderBottomWidth:
-										index < filteredProviders.length - 1
-											? StyleSheet.hairlineWidth
-											: 0,
-								},
-								pressed && { opacity: 0.7 },
-							]}
-						>
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: colors.foreground, flex: 1 },
-								]}
-							>
-								{provider.name || provider.id}
-							</Text>
-							<ChevronRightIcon size={18} color={colors.mutedForeground} />
-						</Pressable>
-					))}
-				</View>
-			)}
-		</View>
-	);
-
-	// Render auth form for selected provider
-	const renderAuthForm = () => {
-		const provider = unconnectedProviders.find(
-			(p) => p.id === selectedProviderId,
-		);
-		if (!provider) return null;
+	// Render inline provider selector with search
+	const renderProviderSelector = () => {
+		if (unconnectedProviders.length === 0) {
+			return (
+				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+					All available providers are already connected.
+				</Text>
+			);
+		}
 
 		return (
-			<View style={styles.section}>
-				{/* Header */}
+			<View
+				style={[
+					styles.selectorContainer,
+					{
+						backgroundColor: colors.muted,
+						borderColor: colors.border,
+					},
+				]}
+			>
+				{/* Selector Header/Trigger */}
 				<Pressable
-					onPress={() => {
-						Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-						setSelectedProviderId(null);
-					}}
-					style={styles.backToList}
+					onPress={handleToggleSelector}
+					style={styles.selectorTrigger}
 				>
-					<ChevronLeft size={18} color={colors.primary} />
-					<Text style={[typography.meta, { color: colors.primary }]}>
-						Back to providers
-					</Text>
-				</Pressable>
-
-				<Text
-					style={[
-						styles.sectionTitle,
-						{ color: colors.mutedForeground, marginTop: 16 },
-					]}
-				>
-					CONNECT {(provider.name || provider.id).toUpperCase()}
-				</Text>
-
-				{/* API Key Section */}
-				<View style={styles.authSection}>
+					{selectedProvider && (
+						<ProviderLogo providerId={selectedProvider.id} size={16} />
+					)}
 					<Text
 						style={[
 							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
-						]}
-					>
-						API Key
-					</Text>
-					<TextInput
-						style={[
-							styles.input,
 							{
-								color: colors.foreground,
-								backgroundColor: colors.muted,
-								borderColor: colors.border,
+								flex: 1,
+								color: selectedProvider
+									? colors.foreground
+									: colors.mutedForeground,
 							},
 						]}
-						placeholder="sk-..."
-						placeholderTextColor={colors.mutedForeground}
-						value={apiKey}
-						onChangeText={setApiKey}
-						secureTextEntry
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					<Pressable
-						onPress={handleSaveApiKey}
-						disabled={isSaving || !apiKey.trim()}
-						style={({ pressed }) => [
-							styles.button,
-							{ backgroundColor: colors.primary },
-							(isSaving || !apiKey.trim()) && { opacity: 0.5 },
-							pressed && { opacity: 0.8 },
-						]}
+						numberOfLines={1}
 					>
-						<Text
-							style={[
-								typography.uiLabel,
-								{ color: colors.primaryForeground, fontWeight: "600" },
-							]}
-						>
-							{isSaving ? "Saving..." : "Save API Key"}
-						</Text>
-					</Pressable>
-					<Text
-						style={[
-							typography.micro,
-							{ color: colors.mutedForeground, marginTop: 8 },
-						]}
-					>
-						Keys are sent directly to OpenCode and never stored by OpenChamber.
+						{selectedProvider
+							? selectedProvider.name || selectedProvider.id
+							: "Select provider"}
 					</Text>
-				</View>
+					{selectorExpanded ? (
+						<ChevronUpIcon size={16} color={colors.mutedForeground} />
+					) : (
+						<ChevronDownIcon size={16} color={colors.mutedForeground} />
+					)}
+				</Pressable>
 
-				{/* OAuth Methods */}
-				{selectedOAuthMethods.length > 0 && (
-					<View style={[styles.authSection, { marginTop: 24 }]}>
-						<Text
+				{/* Expanded content with search and list */}
+				{selectorExpanded && (
+					<View style={[styles.selectorExpanded, { borderTopColor: colors.border }]}>
+						{/* Search input */}
+						<View
 							style={[
-								typography.uiLabel,
-								{
-									color: colors.foreground,
-									fontWeight: "600",
-									marginBottom: 12,
-								},
+								styles.searchContainer,
+								{ borderBottomColor: colors.border },
 							]}
 						>
-							Or connect with OAuth
-						</Text>
+							<SearchIcon size={16} color={colors.mutedForeground} />
+							<TextInput
+								style={[styles.searchInput, { color: colors.foreground }]}
+								placeholder="Search providers..."
+								placeholderTextColor={colors.mutedForeground}
+								value={searchQuery}
+								onChangeText={setSearchQuery}
+								autoCapitalize="none"
+								autoCorrect={false}
+							/>
+						</View>
 
-						{selectedOAuthMethods.map((method, index) => {
-							const methodLabel =
-								method.label || method.name || `OAuth ${index + 1}`;
-							const isPending =
-								oauthPending?.providerId === selectedProviderId &&
-								oauthPending?.methodIndex === index;
-
-							return (
-								<View
-									key={`${selectedProviderId}-oauth-${method.label}`}
-									style={styles.oauthMethod}
-								>
-									<View style={styles.oauthHeader}>
-										<View style={{ flex: 1 }}>
+						{/* Provider list */}
+						<ScrollView
+							style={styles.providerList}
+							nestedScrollEnabled
+							keyboardShouldPersistTaps="handled"
+						>
+							{filteredProviders.length === 0 ? (
+								<View style={styles.emptyState}>
+									<Text
+										style={[typography.meta, { color: colors.mutedForeground }]}
+									>
+										No providers found
+									</Text>
+								</View>
+							) : (
+								filteredProviders.map((provider) => {
+									const isSelected = provider.id === selectedProviderId;
+									return (
+										<Pressable
+											key={provider.id}
+											onPress={() => handleSelectProvider(provider.id)}
+											style={({ pressed }) => [
+												styles.providerOption,
+												pressed && { backgroundColor: withOpacity(colors.foreground, 0.05) },
+												isSelected && {
+													backgroundColor: withOpacity(
+														colors.primary,
+														OPACITY.active,
+													),
+												},
+											]}
+										>
+											<ProviderLogo providerId={provider.id} size={16} />
 											<Text
 												style={[
 													typography.uiLabel,
-													{ color: colors.foreground },
-												]}
-											>
-												{methodLabel}
-											</Text>
-											{(method.description || method.help) && (
-												<Text
-													style={[
-														typography.micro,
-														{ color: colors.mutedForeground },
-													]}
-												>
-													{method.description || method.help}
-												</Text>
-											)}
-										</View>
-										<Pressable
-											onPress={() => handleStartOAuth(index)}
-											disabled={isSaving}
-											style={({ pressed }) => [
-												styles.oauthButton,
-												{ borderColor: colors.border },
-												pressed && { opacity: 0.7 },
-											]}
-										>
-											<Text
-												style={[typography.meta, { color: colors.foreground }]}
-											>
-												Connect
-											</Text>
-										</Pressable>
-									</View>
-
-									{/* OAuth Details when pending */}
-									{isPending && oauthDetails && (
-										<View
-											style={[
-												styles.oauthDetails,
-												{ backgroundColor: colors.muted },
-											]}
-										>
-											{oauthDetails.instructions && (
-												<Text
-													style={[
-														typography.meta,
-														{ color: colors.mutedForeground, marginBottom: 8 },
-													]}
-												>
-													{oauthDetails.instructions}
-												</Text>
-											)}
-
-											{oauthDetails.userCode && (
-												<View style={styles.oauthCodeRow}>
-													<Text
-														style={[
-															typography.code,
-															{ color: colors.foreground, flex: 1 },
-														]}
-													>
-														{oauthDetails.userCode}
-													</Text>
-													<Pressable
-														onPress={() =>
-															handleCopyToClipboard(
-																oauthDetails.userCode!,
-																"Code",
-															)
-														}
-														style={({ pressed }) => [
-															styles.copyButton,
-															{ borderColor: colors.border },
-															pressed && { opacity: 0.7 },
-														]}
-													>
-														<Text
-															style={[
-																typography.micro,
-																{ color: colors.foreground },
-															]}
-														>
-															Copy
-														</Text>
-													</Pressable>
-												</View>
-											)}
-
-											{oauthDetails.url && (
-												<View style={styles.oauthCodeRow}>
-													<Pressable
-														onPress={() => Linking.openURL(oauthDetails.url!)}
-														style={({ pressed }) => [
-															styles.linkButton,
-															{ borderColor: colors.border },
-															pressed && { opacity: 0.7 },
-														]}
-													>
-														<Text
-															style={[
-																typography.meta,
-																{ color: colors.primary },
-															]}
-														>
-															Open Link
-														</Text>
-													</Pressable>
-													<Pressable
-														onPress={() =>
-															handleCopyToClipboard(oauthDetails.url!, "Link")
-														}
-														style={({ pressed }) => [
-															styles.copyButton,
-															{ borderColor: colors.border },
-															pressed && { opacity: 0.7 },
-														]}
-													>
-														<Text
-															style={[
-																typography.micro,
-																{ color: colors.foreground },
-															]}
-														>
-															Copy
-														</Text>
-													</Pressable>
-												</View>
-											)}
-
-											{/* Authorization code input */}
-											<TextInput
-												style={[
-													styles.input,
 													{
-														color: colors.foreground,
-														backgroundColor: colors.background,
-														borderColor: colors.border,
-														marginTop: 12,
+														flex: 1,
+														color: isSelected
+															? colors.primary
+															: colors.foreground,
 													},
 												]}
-												placeholder="Authorization code (if required)"
-												placeholderTextColor={colors.mutedForeground}
-												value={oauthCode}
-												onChangeText={setOauthCode}
-												autoCapitalize="none"
-												autoCorrect={false}
-											/>
-
-											<Pressable
-												onPress={handleCompleteOAuth}
-												disabled={isSaving}
-												style={({ pressed }) => [
-													styles.button,
-													{ backgroundColor: colors.primary, marginTop: 12 },
-													isSaving && { opacity: 0.5 },
-													pressed && { opacity: 0.8 },
-												]}
 											>
-												<Text
-													style={[
-														typography.uiLabel,
-														{
-															color: colors.primaryForeground,
-															fontWeight: "600",
-														},
-													]}
-												>
-													{isSaving ? "Completing..." : "Complete OAuth"}
-												</Text>
-											</Pressable>
-										</View>
-									)}
-								</View>
-							);
-						})}
+												{provider.name || provider.id}
+											</Text>
+											{isSelected && (
+												<CheckIcon size={16} color={colors.primary} />
+											)}
+										</Pressable>
+									);
+								})
+							)}
+						</ScrollView>
 					</View>
 				)}
 			</View>
@@ -639,8 +434,8 @@ export default function AddProviderScreen() {
 				>
 					<ChevronLeft size={24} color={colors.foreground} />
 				</Pressable>
-				<Text style={[styles.title, { color: colors.foreground }]}>
-					Add Provider
+				<Text style={[styles.headerTitle, { color: colors.foreground }]}>
+					Connect provider
 				</Text>
 				<View style={styles.headerButton} />
 			</View>
@@ -648,6 +443,33 @@ export default function AddProviderScreen() {
 			{isLoading ? (
 				<View style={styles.loadingContainer}>
 					<ActivityIndicator size="large" color={colors.primary} />
+					<Text
+						style={[
+							typography.meta,
+							{ color: colors.mutedForeground, marginTop: Spacing[3] },
+						]}
+					>
+						Loading providers...
+					</Text>
+				</View>
+			) : loadError && allProviders.length === 0 ? (
+				<View style={styles.loadingContainer}>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.mutedForeground, textAlign: "center" },
+						]}
+					>
+						{loadError}
+					</Text>
+					<Button
+						variant="outline"
+						size="sm"
+						onPress={() => router.back()}
+						style={{ marginTop: Spacing[4] }}
+					>
+						Go back
+					</Button>
 				</View>
 			) : (
 				<ScrollView
@@ -658,7 +480,257 @@ export default function AddProviderScreen() {
 					]}
 					keyboardShouldPersistTaps="handled"
 				>
-					{selectedProviderId ? renderAuthForm() : renderProviderList()}
+					{/* Page Title Section */}
+					<View style={styles.titleSection}>
+						<Text style={[styles.pageTitle, { color: colors.foreground }]}>
+							Connect provider
+						</Text>
+						<Text
+							style={[styles.pageDescription, { color: colors.mutedForeground }]}
+						>
+							Choose a provider to connect and set up its authentication.
+						</Text>
+					</View>
+
+					{/* Provider Selection Section */}
+					<View style={styles.section}>
+						<Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+							Provider
+						</Text>
+						<Text
+							style={[
+								styles.sectionDescription,
+								{ color: colors.mutedForeground },
+							]}
+						>
+							Select a provider that is not connected yet.
+						</Text>
+
+						{renderProviderSelector()}
+					</View>
+
+					{/* Authentication Section - only show when provider selected */}
+					{selectedProvider && (
+						<View style={styles.section}>
+							<Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+								Authentication
+							</Text>
+
+							{/* API Key Input */}
+							<View style={styles.authBlock}>
+								<Text
+									style={[styles.fieldLabel, { color: colors.foreground }]}
+								>
+									API key
+								</Text>
+								<View style={styles.apiKeyRow}>
+									<View style={{ flex: 1 }}>
+										<TextInput
+											style={[
+												styles.input,
+												{
+													color: colors.foreground,
+													backgroundColor: colors.muted,
+													borderColor: colors.border,
+												},
+											]}
+											placeholder="sk-..."
+											placeholderTextColor={colors.mutedForeground}
+											value={apiKey}
+											onChangeText={setApiKey}
+											secureTextEntry
+											autoCapitalize="none"
+											autoCorrect={false}
+										/>
+									</View>
+									<Button
+										variant="primary"
+										size="sm"
+										onPress={handleSaveApiKey}
+										isDisabled={isSaving || !apiKey.trim()}
+										isLoading={isSaving}
+									>
+										Save key
+									</Button>
+								</View>
+								<Text
+									style={[styles.helperText, { color: colors.mutedForeground }]}
+								>
+									Keys are sent directly to OpenCode and never stored by
+									OpenChamber.
+								</Text>
+							</View>
+
+							{/* OAuth Methods */}
+							{selectedOAuthMethods.length > 0 && (
+								<View
+									style={[
+										styles.oauthSection,
+										{ borderTopColor: colors.border },
+									]}
+								>
+									{selectedOAuthMethods.map((method, index) => {
+										const methodLabel =
+											method.label || method.name || `OAuth ${index + 1}`;
+										const isPending =
+											oauthPending?.providerId === selectedProviderId &&
+											oauthPending?.methodIndex === index;
+
+										return (
+											<View
+												key={`${selectedProviderId}-oauth-${method.label}`}
+												style={styles.oauthMethod}
+											>
+												<View style={styles.oauthHeader}>
+													<View style={{ flex: 1 }}>
+														<Text
+															style={[
+																styles.fieldLabel,
+																{ color: colors.foreground },
+															]}
+														>
+															{methodLabel}
+														</Text>
+														{(method.description || method.help) && (
+															<Text
+																style={[
+																	typography.meta,
+																	{ color: colors.mutedForeground },
+																]}
+															>
+																{method.description || method.help}
+															</Text>
+														)}
+													</View>
+													<Button
+														variant="outline"
+														size="sm"
+														onPress={() => handleStartOAuth(index)}
+														isDisabled={isSaving}
+													>
+														Connect
+													</Button>
+												</View>
+
+												{/* OAuth Details when pending */}
+												{isPending && oauthDetails && (
+													<View
+														style={[
+															styles.oauthDetails,
+															{ backgroundColor: colors.muted },
+														]}
+													>
+														{oauthDetails.instructions && (
+															<Text
+																style={[
+																	typography.meta,
+																	{
+																		color: colors.mutedForeground,
+																		marginBottom: Spacing[2],
+																	},
+																]}
+															>
+																{oauthDetails.instructions}
+															</Text>
+														)}
+
+														{oauthDetails.userCode && (
+															<View style={styles.oauthCodeRow}>
+																<View style={{ flex: 1 }}>
+																	<TextInput
+																		style={[
+																			styles.input,
+																			{
+																				color: colors.foreground,
+																				backgroundColor: colors.background,
+																				borderColor: colors.border,
+																			},
+																		]}
+																		value={oauthDetails.userCode}
+																		editable={false}
+																	/>
+																</View>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onPress={() =>
+																		handleCopyToClipboard(
+																			oauthDetails.userCode!,
+																			"Code",
+																		)
+																	}
+																>
+																	Copy code
+																</Button>
+															</View>
+														)}
+
+														{oauthDetails.url && (
+															<View style={styles.oauthCodeRow}>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onPress={() =>
+																		Linking.openURL(oauthDetails.url!)
+																	}
+																	style={{ flex: 1 }}
+																>
+																	Open link
+																</Button>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onPress={() =>
+																		handleCopyToClipboard(
+																			oauthDetails.url!,
+																			"Link",
+																		)
+																	}
+																>
+																	Copy link
+																</Button>
+															</View>
+														)}
+
+														{/* Authorization code input */}
+														<View style={{ marginTop: Spacing[3] }}>
+															<TextInput
+																style={[
+																	styles.input,
+																	{
+																		color: colors.foreground,
+																		backgroundColor: colors.background,
+																		borderColor: colors.border,
+																	},
+																]}
+																placeholder="Authorization code (if required)"
+																placeholderTextColor={colors.mutedForeground}
+																value={oauthCode}
+																onChangeText={setOauthCode}
+																autoCapitalize="none"
+																autoCorrect={false}
+															/>
+														</View>
+
+														<Button
+															variant="primary"
+															size="sm"
+															onPress={handleCompleteOAuth}
+															isDisabled={isSaving}
+															isLoading={isSaving}
+															style={{ marginTop: Spacing[3] }}
+														>
+															Complete
+														</Button>
+													</View>
+												)}
+											</View>
+										);
+									})}
+								</View>
+							)}
+						</View>
+					)}
 				</ScrollView>
 			)}
 		</View>
@@ -683,7 +755,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	title: {
+	headerTitle: {
 		fontSize: 17,
 		fontFamily: Fonts.semiBold,
 		textAlign: "center",
@@ -692,113 +764,131 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
+		padding: Spacing[4],
 	},
 	scrollView: {
 		flex: 1,
 	},
 	scrollContent: {
-		paddingTop: Spacing[4],
-	},
-	section: {
+		paddingTop: Spacing[6],
 		paddingHorizontal: Spacing[4],
 	},
-	sectionTitle: {
-		fontSize: 13,
-		fontFamily: Fonts.medium,
-		letterSpacing: 0.5,
+	titleSection: {
+		marginBottom: Spacing[6],
+	},
+	pageTitle: {
+		fontSize: 18,
+		fontFamily: Fonts.semiBold,
 		marginBottom: Spacing[1],
 	},
-	searchContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		borderRadius: 8,
-		borderWidth: 1,
-		marginBottom: 16,
-	},
-	searchInput: {
-		flex: 1,
-		fontSize: 15,
+	pageDescription: {
+		fontSize: FontSizes.uiLabel,
 		fontFamily: Fonts.regular,
-		padding: 0,
 	},
-	listContainer: {
+	section: {
+		marginBottom: Spacing[6],
+	},
+	sectionTitle: {
+		fontSize: FontSizes.uiLabel,
+		fontFamily: Fonts.semiBold,
+		marginBottom: Spacing[1],
+	},
+	sectionDescription: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
+		marginBottom: Spacing[3],
+	},
+	// Inline selector styles
+	selectorContainer: {
 		borderRadius: 8,
 		borderWidth: 1,
 		overflow: "hidden",
 	},
-	providerRow: {
+	selectorTrigger: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 14,
+		gap: Spacing[2],
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
 	},
-	emptyContainer: {
-		alignItems: "center",
-		paddingVertical: 32,
+	selectorExpanded: {
+		borderTopWidth: StyleSheet.hairlineWidth,
 	},
-	backToList: {
+	searchContainer: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 4,
+		gap: Spacing[2],
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2],
+		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	authSection: {
-		marginTop: 16,
+	searchInput: {
+		flex: 1,
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
+		padding: 0,
+	},
+	providerList: {
+		maxHeight: 200,
+	},
+	providerOption: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: Spacing[2],
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
+	},
+	emptyState: {
+		padding: Spacing[4],
+		alignItems: "center",
+	},
+	authBlock: {
+		marginBottom: Spacing[4],
+	},
+	fieldLabel: {
+		fontSize: FontSizes.uiLabel,
+		fontFamily: Fonts.medium,
+		marginBottom: Spacing[2],
+	},
+	apiKeyRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: Spacing[2],
 	},
 	input: {
 		borderWidth: 1,
 		borderRadius: 8,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
-		fontSize: 15,
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
+		fontSize: FontSizes.uiLabel,
 		fontFamily: Fonts.regular,
-		marginTop: 8,
 	},
-	button: {
-		borderRadius: 8,
-		paddingVertical: 12,
-		alignItems: "center",
-		marginTop: 12,
+	helperText: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
+		marginTop: Spacing[2],
+	},
+	oauthSection: {
+		borderTopWidth: StyleSheet.hairlineWidth,
+		paddingTop: Spacing[4],
 	},
 	oauthMethod: {
-		marginBottom: 16,
+		marginBottom: Spacing[4],
 	},
 	oauthHeader: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 12,
-	},
-	oauthButton: {
-		borderWidth: 1,
-		borderRadius: 6,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
+		gap: Spacing[3],
 	},
 	oauthDetails: {
-		marginTop: 12,
-		padding: 12,
+		marginTop: Spacing[3],
+		padding: Spacing[3],
 		borderRadius: 8,
 	},
 	oauthCodeRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
-		marginTop: 8,
-	},
-	copyButton: {
-		borderWidth: 1,
-		borderRadius: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-	},
-	linkButton: {
-		borderWidth: 1,
-		borderRadius: 4,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		flex: 1,
-		alignItems: "center",
+		gap: Spacing[2],
+		marginTop: Spacing[2],
 	},
 });

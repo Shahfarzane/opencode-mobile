@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   type Agent,
   type AgentConfig,
@@ -17,11 +18,14 @@ import {
   type Provider,
   providersApi,
 } from "@/api";
-import { ChevronLeft } from "@/components/icons";
+import { AiAgentIcon, ChevronLeft, FolderIcon, GlobeIcon, RobotIcon, AiAgentFillIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
-import { agentDetailViewStyles } from "./AgentDetailView.styles";
+import { ModelSelector } from "./ModelSelector";
+
+type AgentScope = "user" | "project";
+type AgentMode = "primary" | "subagent" | "all";
 
 interface AgentDetailViewProps {
   agentName: string;
@@ -35,6 +39,7 @@ export function AgentDetailView({
   onDeleted,
 }: AgentDetailViewProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +50,8 @@ export function AgentDetailView({
   const [prompt, setPrompt] = useState("");
   const [providerId, setProviderId] = useState<string>("");
   const [modelId, setModelId] = useState<string>("");
+  const [scope, setScope] = useState<AgentScope>("user");
+  const [mode, setMode] = useState<AgentMode>("subagent");
 
   const isBuiltIn = agent ? isAgentBuiltIn(agent) : false;
   const isNewAgent = agentName === "__new__";
@@ -68,6 +75,7 @@ export function AgentDetailView({
           setPrompt(foundAgent.prompt ?? "");
           setProviderId(foundAgent.model?.providerID ?? "");
           setModelId(foundAgent.model?.modelID ?? "");
+          setMode(foundAgent.mode ?? "subagent");
         }
       }
     } catch (error) {
@@ -96,6 +104,8 @@ export function AgentDetailView({
         description: description.trim() || undefined,
         prompt: prompt.trim() || undefined,
         model: providerId && modelId ? `${providerId}/${modelId}` : undefined,
+        mode,
+        scope: isNewAgent ? scope : undefined,
       };
 
       let success: boolean;
@@ -166,21 +176,22 @@ export function AgentDetailView({
 
   if (isLoading) {
     return (
-      <View className={agentDetailViewStyles.centered({})}>
+      <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   }
 
-  const selectedProvider = providers.find((p) => p.id === providerId);
-
   return (
-    <View className={agentDetailViewStyles.container({})}>
+    <View className="flex-1">
       {/* Header */}
-      <View className={agentDetailViewStyles.header({})}>
+      <View
+        className="flex-row items-center justify-between px-4 py-2"
+        style={{ paddingTop: insets.top + 8 }}
+      >
         <Pressable
           onPress={onBack}
-          className={agentDetailViewStyles.backButton({})}
+          className="flex-row items-center gap-2"
           hitSlop={8}
         >
           <ChevronLeft size={18} color={colors.foreground} />
@@ -208,8 +219,8 @@ export function AgentDetailView({
       </View>
 
       <ScrollView
-        className={agentDetailViewStyles.scroll({})}
-        contentContainerClassName={agentDetailViewStyles.content({})}
+        className="flex-1"
+        contentContainerClassName="px-4 pb-8"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -222,9 +233,10 @@ export function AgentDetailView({
           </Text>
         )}
 
-        {/* Name */}
-        <View className={agentDetailViewStyles.field({})}>
+        {/* Name Field */}
+        <View className="mb-5">
           <Text
+            className="mb-1.5"
             style={[
               typography.uiLabel,
               fontStyle("600"),
@@ -233,23 +245,194 @@ export function AgentDetailView({
           >
             Name
           </Text>
-          <TextInput
-            className={agentDetailViewStyles.input({})}
+          <View
+            className="flex-row items-center rounded-lg border overflow-hidden"
+            style={{ borderColor: colors.border }}
+          >
+            <View
+              className="px-3 py-2.5"
+              style={{ backgroundColor: withOpacity(colors.muted, OPACITY.scrim) }}
+            >
+              <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+                @
+              </Text>
+            </View>
+            <TextInput
+              className="flex-1 px-3 py-2.5"
+              style={[typography.uiLabel, { color: colors.foreground }]}
+              value={name}
+              onChangeText={setName}
+              placeholder="agent-name"
+              placeholderTextColor={colors.mutedForeground}
+              editable={!isBuiltIn && isNewAgent}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        </View>
+
+        {/* Scope - only for new agents */}
+        {isNewAgent && (
+          <View className="mb-5">
+            <Text
+              className="mb-1.5"
+              style={[
+                typography.uiLabel,
+                fontStyle("600"),
+                { color: colors.foreground },
+              ]}
+            >
+              Scope
+            </Text>
+            <Text
+              className="mb-2"
+              style={[typography.micro, { color: colors.mutedForeground }]}
+            >
+              Where to save this agent
+            </Text>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => setScope("user")}
+                className="flex-row items-center px-3 py-2 rounded-lg border"
+                style={[
+                  { borderColor: scope === "user" ? colors.primary : colors.border },
+                  scope === "user" && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
+                ]}
+              >
+                <GlobeIcon size={16} color={scope === "user" ? colors.primary : colors.mutedForeground} />
+                <Text
+                  style={[
+                    typography.meta,
+                    { marginLeft: 6 },
+                    { color: scope === "user" ? colors.primary : colors.foreground },
+                    fontStyle(scope === "user" ? "600" : "400"),
+                  ]}
+                >
+                  User
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setScope("project")}
+                className="flex-row items-center px-3 py-2 rounded-lg border"
+                style={[
+                  { borderColor: scope === "project" ? colors.primary : colors.border },
+                  scope === "project" && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
+                ]}
+              >
+                <FolderIcon size={16} color={scope === "project" ? colors.primary : colors.mutedForeground} />
+                <Text
+                  style={[
+                    typography.meta,
+                    { marginLeft: 6 },
+                    { color: scope === "project" ? colors.primary : colors.foreground },
+                    fontStyle(scope === "project" ? "600" : "400"),
+                  ]}
+                >
+                  Project
+                </Text>
+              </Pressable>
+            </View>
+            <Text
+              className="mt-1"
+              style={[typography.micro, { color: colors.mutedForeground }]}
+            >
+              {scope === "user" ? "Available in all projects" : "Only in current project"}
+            </Text>
+          </View>
+        )}
+
+        {/* Mode */}
+        <View className="mb-5">
+          <Text
+            className="mb-1.5"
             style={[
               typography.uiLabel,
-              { color: colors.foreground, borderColor: colors.border },
+              fontStyle("600"),
+              { color: colors.foreground },
             ]}
-            value={name}
-            onChangeText={setName}
-            placeholder="my-agent"
-            placeholderTextColor={colors.mutedForeground}
-            editable={!isBuiltIn && isNewAgent}
-          />
+          >
+            Mode
+          </Text>
+          <Text
+            className="mb-2"
+            style={[typography.micro, { color: colors.mutedForeground }]}
+          >
+            How this agent can be used
+          </Text>
+          <View className="flex-row gap-2 flex-wrap">
+            <Pressable
+              onPress={() => !isBuiltIn && setMode("primary")}
+              className="flex-row items-center px-3 py-2 rounded-lg border"
+              style={[
+                { borderColor: mode === "primary" ? colors.primary : colors.border },
+                mode === "primary" && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
+              ]}
+            >
+              <AiAgentIcon size={16} color={mode === "primary" ? colors.primary : colors.mutedForeground} />
+              <Text
+                style={[
+                  typography.meta,
+                  { marginLeft: 6 },
+                  { color: mode === "primary" ? colors.primary : colors.foreground },
+                  fontStyle(mode === "primary" ? "600" : "400"),
+                ]}
+              >
+                Primary
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => !isBuiltIn && setMode("subagent")}
+              className="flex-row items-center px-3 py-2 rounded-lg border"
+              style={[
+                { borderColor: mode === "subagent" ? colors.primary : colors.border },
+                mode === "subagent" && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
+              ]}
+            >
+              <RobotIcon size={16} color={mode === "subagent" ? colors.primary : colors.mutedForeground} />
+              <Text
+                style={[
+                  typography.meta,
+                  { marginLeft: 6 },
+                  { color: mode === "subagent" ? colors.primary : colors.foreground },
+                  fontStyle(mode === "subagent" ? "600" : "400"),
+                ]}
+              >
+                Subagent
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => !isBuiltIn && setMode("all")}
+              className="flex-row items-center px-3 py-2 rounded-lg border"
+              style={[
+                { borderColor: mode === "all" ? colors.primary : colors.border },
+                mode === "all" && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
+              ]}
+            >
+              <AiAgentFillIcon size={16} color={mode === "all" ? colors.primary : colors.mutedForeground} />
+              <Text
+                style={[
+                  typography.meta,
+                  { marginLeft: 6 },
+                  { color: mode === "all" ? colors.primary : colors.foreground },
+                  fontStyle(mode === "all" ? "600" : "400"),
+                ]}
+              >
+                All
+              </Text>
+            </Pressable>
+          </View>
+          <Text
+            className="mt-1"
+            style={[typography.micro, { color: colors.mutedForeground }]}
+          >
+            {mode === "primary" ? "Main agent for conversations" : mode === "subagent" ? "Helper agent for tasks" : "Both primary and subagent modes"}
+          </Text>
         </View>
 
         {/* Description */}
-        <View className={agentDetailViewStyles.field({})}>
+        <View className="mb-5">
           <Text
+            className="mb-1.5"
             style={[
               typography.uiLabel,
               fontStyle("600"),
@@ -259,7 +442,7 @@ export function AgentDetailView({
             Description
           </Text>
           <TextInput
-            className={agentDetailViewStyles.input({})}
+            className="px-3 py-2.5 rounded-lg border"
             style={[
               typography.uiLabel,
               { color: colors.foreground, borderColor: colors.border },
@@ -272,13 +455,13 @@ export function AgentDetailView({
           />
         </View>
 
-        {/* Model */}
+        {/* Model Section */}
         <View
-          className={agentDetailViewStyles.section({})}
+          className="pt-5 border-t mb-5"
           style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
-            className="mb-2"
+            className="mb-1"
             style={[
               typography.uiLabel,
               fontStyle("600"),
@@ -288,125 +471,54 @@ export function AgentDetailView({
             Model
           </Text>
           <Text
-            className="mb-3"
-            style={[typography.meta, { color: colors.mutedForeground }]}
+            className="mb-2"
+            style={[typography.micro, { color: colors.mutedForeground }]}
           >
-            Select the provider and model for this agent.
+            Select provider and model for this agent
           </Text>
-
-          {/* Provider selector */}
-          <View
-            className={agentDetailViewStyles.selectList({})}
-            style={{ borderColor: withOpacity(colors.border, OPACITY.scrim) }}
-          >
-            {providers.map((provider, index) => (
-              <Pressable
-                key={provider.id}
-                onPress={() => {
-                  if (!isBuiltIn) {
-                    setProviderId(provider.id);
-                    setModelId("");
-                  }
-                }}
-                className={agentDetailViewStyles.selectItem({
-                  hasTopBorder: index > 0,
-                })}
-                style={[
-                  index > 0 && { borderTopColor: withOpacity(colors.border, OPACITY.scrim) },
-                  providerId === provider.id && {
-                    backgroundColor: withOpacity(colors.primary, OPACITY.active),
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    typography.meta,
-                    {
-                      color:
-                        providerId === provider.id
-                          ? colors.primary
-                          : colors.foreground,
-                    },
-                    fontStyle(providerId === provider.id ? "600" : "400"),
-                  ]}
-                >
-                  {provider.name}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Model selector */}
-          {selectedProvider &&
-            selectedProvider.models &&
-            selectedProvider.models.length > 0 && (
-              <View className="mt-3">
-                <Text
-                  className="mb-2"
-                  style={[typography.meta, { color: colors.mutedForeground }]}
-                >
-                  Model
-                </Text>
-                <View
-                  className={agentDetailViewStyles.selectList({})}
-                  style={{ borderColor: withOpacity(colors.border, OPACITY.scrim) }}
-                >
-                  {selectedProvider.models.slice(0, 10).map((model, index) => (
-                    <Pressable
-                      key={model.id}
-                      onPress={() => !isBuiltIn && setModelId(model.id)}
-                      className={agentDetailViewStyles.selectItem({
-                        hasTopBorder: index > 0,
-                      })}
-                      style={[
-                        index > 0 && { borderTopColor: withOpacity(colors.border, OPACITY.scrim) },
-                        modelId === model.id && {
-                          backgroundColor: withOpacity(colors.primary, OPACITY.active),
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          typography.meta,
-                          {
-                            color:
-                              modelId === model.id
-                                ? colors.primary
-                                : colors.foreground,
-                          },
-                          fontStyle(modelId === model.id ? "600" : "400"),
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {model.name || model.id}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            )}
+          <ModelSelector
+            providers={providers}
+            providerId={providerId}
+            modelId={modelId}
+            onChange={(provId, modId) => {
+              setProviderId(provId);
+              setModelId(modId);
+            }}
+            disabled={isBuiltIn}
+          />
         </View>
 
         {/* System Prompt */}
         <View
-          className={agentDetailViewStyles.section({})}
+          className="pt-5 border-t mb-5"
           style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
-            className="mb-2"
+            className="mb-1"
             style={[
               typography.uiLabel,
               fontStyle("600"),
               { color: colors.foreground },
             ]}
           >
-            System prompt
+            System Prompt
+          </Text>
+          <Text
+            className="mb-2"
+            style={[typography.micro, { color: colors.mutedForeground }]}
+          >
+            Custom instructions for this agent
           </Text>
           <TextInput
-            className={agentDetailViewStyles.textarea({})}
+            className="px-3 py-3 rounded-lg border"
             style={[
               typography.meta,
-              { color: colors.foreground, borderColor: colors.border },
+              {
+                color: colors.foreground,
+                borderColor: colors.border,
+                minHeight: 150,
+                textAlignVertical: "top",
+              },
             ]}
             value={prompt}
             onChangeText={setPrompt}
@@ -414,14 +526,13 @@ export function AgentDetailView({
             placeholderTextColor={colors.mutedForeground}
             editable={!isBuiltIn}
             multiline
-            textAlignVertical="top"
           />
         </View>
 
         {/* Delete */}
         {!isBuiltIn && !isNewAgent && (
           <View
-            className={agentDetailViewStyles.section({})}
+            className="pt-5 border-t"
             style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             <Pressable onPress={handleDelete}>

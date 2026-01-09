@@ -55,5 +55,6 @@ export const SkeletonMessage = SkeletonComponent.Message;
 
 // Other UI components (not yet migrated)
 export { OpenChamberLogo } from "./OpenChamberLogo";
+export { ProviderLogo } from "./ProviderLogo";
 export { ScrollShadow, ScrollShadowHorizontal } from "./ScrollShadow";
 export { TextLoop } from "./TextLoop";

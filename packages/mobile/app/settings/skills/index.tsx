@@ -11,20 +11,20 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { type Command, commandsApi, isCommandBuiltIn } from "@/api";
-import { ChevronLeft, CommandIcon, PlusIcon } from "@/components/icons";
+import { type Skill, skillsApi, isSkillBuiltIn, isSkillHidden } from "@/api";
+import { BulbIcon, ChevronLeft, PlusIcon } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
 import { IconButton } from "@/components/ui";
 import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
 
-export default function CommandsListScreen() {
+export default function SkillsListScreen() {
 	const { colors } = useTheme();
 	const insets = useSafeAreaInsets();
-	const [commands, setCommands] = useState<Command[]>([]);
+	const [skills, setSkills] = useState<Skill[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isRefreshing, setIsRefreshing] = useState(false);
 
-	const loadCommands = useCallback(async (showRefresh = false) => {
+	const loadSkills = useCallback(async (showRefresh = false) => {
 		if (showRefresh) {
 			setIsRefreshing(true);
 			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -32,10 +32,10 @@ export default function CommandsListScreen() {
 			setIsLoading(true);
 		}
 		try {
-			const data = await commandsApi.list();
-			setCommands(data.filter((c) => !c.hidden));
+			const data = await skillsApi.list();
+			setSkills(data.filter((s) => !isSkillHidden(s)));
 		} catch (error) {
-			console.error("Failed to load commands:", error);
+			console.error("Failed to load skills:", error);
 		} finally {
 			setIsLoading(false);
 			setIsRefreshing(false);
@@ -43,19 +43,19 @@ export default function CommandsListScreen() {
 	}, []);
 
 	useEffect(() => {
-		loadCommands(false);
-	}, [loadCommands]);
+		loadSkills(false);
+	}, [loadSkills]);
 
 	const handleRefresh = useCallback(() => {
-		loadCommands(true);
-	}, [loadCommands]);
+		loadSkills(true);
+	}, [loadSkills]);
 
-	const handleSelectCommand = (commandName: string) => {
-		router.push(`/settings/commands/${encodeURIComponent(commandName)}`);
+	const handleSelectSkill = (skillName: string) => {
+		router.push(`/settings/skills/${encodeURIComponent(skillName)}`);
 	};
 
-	const builtInCommands = commands.filter(isCommandBuiltIn);
-	const customCommands = commands.filter((c) => !isCommandBuiltIn(c));
+	const builtInSkills = skills.filter(isSkillBuiltIn);
+	const customSkills = skills.filter((s) => !isSkillBuiltIn(s));
 
 	return (
 		<View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -77,14 +77,14 @@ export default function CommandsListScreen() {
 					<ChevronLeft size={24} color={colors.foreground} />
 				</Pressable>
 				<Text style={[styles.title, { color: colors.foreground }]}>
-					Commands
+					Skills
 				</Text>
 				<IconButton
 					icon={<PlusIcon size={16} color={colors.mutedForeground} />}
 					variant="ghost"
 					size="icon-sm"
-					accessibilityLabel="Add new command"
-					onPress={() => handleSelectCommand("__new__")}
+					accessibilityLabel="Add new skill"
+					onPress={() => handleSelectSkill("__new__")}
 				/>
 			</View>
 
@@ -115,51 +115,53 @@ export default function CommandsListScreen() {
 						]}
 					>
 						<Text style={[styles.countText, { color: colors.mutedForeground }]}>
-							Total {commands.length}
+							Total {skills.length}
 						</Text>
 					</View>
 
-					{builtInCommands.length > 0 && (
+					{builtInSkills.length > 0 && (
 						<View style={styles.section}>
 							<Text
 								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
-								Built-in Commands
+								Built-in Skills
 							</Text>
-							{builtInCommands.map((command) => (
+							{builtInSkills.map((skill) => (
 								<SettingsListItem
-									key={command.name}
-									title={`/${command.name}`}
-									subtitle={command.description}
-									onPress={() => handleSelectCommand(command.name)}
+									key={skill.name}
+									title={skill.name}
+									subtitle={skill.description}
+									badge="system"
+									onPress={() => handleSelectSkill(skill.name)}
 								/>
 							))}
 						</View>
 					)}
 
-					{customCommands.length > 0 && (
+					{customSkills.length > 0 && (
 						<View style={styles.section}>
 							<Text
 								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
-								Custom Commands
+								Custom Skills
 							</Text>
-							{customCommands.map((command) => (
+							{customSkills.map((skill) => (
 								<SettingsListItem
-									key={command.name}
-									title={`/${command.name}`}
-									subtitle={command.description}
-									onPress={() => handleSelectCommand(command.name)}
+									key={skill.name}
+									title={skill.name}
+									subtitle={skill.description}
+									badge={skill.scope}
+									onPress={() => handleSelectSkill(skill.name)}
 								/>
 							))}
 						</View>
 					)}
 
-					{commands.length === 0 && (
+					{skills.length === 0 && (
 						<View style={styles.emptyContainer}>
-							<CommandIcon size={40} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+							<BulbIcon size={40} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
 							<Text style={[styles.emptyTitle, { color: colors.mutedForeground }]}>
-								No commands configured
+								No skills configured
 							</Text>
 							<Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
 								Use the + button above to create one

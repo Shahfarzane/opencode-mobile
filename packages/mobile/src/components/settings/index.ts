@@ -8,6 +8,7 @@ export { ProviderDetailView } from "./ProviderDetailView";
 export { ProvidersList } from "./ProvidersList";
 export { SettingsListItem } from "./SettingsListItem";
 export { SettingsSection } from "./SettingsSection";
+export { SkillDetailView } from "./SkillDetailView";
 
 // New iOS-style components
 export { SettingsGroup } from "./SettingsGroup";

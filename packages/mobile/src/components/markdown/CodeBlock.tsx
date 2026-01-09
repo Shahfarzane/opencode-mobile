@@ -7,14 +7,20 @@ import { typography, useTheme } from "@/theme";
 import { MAX_CODE_BLOCK_HEIGHT } from "./CodeBlock.styles";
 
 // Chevron icon component
-function ChevronIcon({ expanded, color }: { expanded: boolean; color: string }) {
+function ChevronIcon({
+	expanded,
+	color,
+}: {
+	expanded: boolean;
+	color: string;
+}) {
 	return (
 		<Svg
 			width={12}
 			height={12}
 			viewBox="0 0 24 24"
 			fill="none"
-			style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}
+			style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}
 		>
 			<Path
 				d="M9 18l6-6-6-6"
@@ -365,22 +371,22 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 				borderRadius: 8,
 				borderColor: colors.border,
 				borderWidth: 1,
-				overflow: 'hidden',
+				overflow: "hidden",
 			}}
 		>
 			{/* Header - always visible, tappable to toggle */}
 			<Pressable
 				onPress={handleToggle}
 				style={{
-					flexDirection: 'row',
-					alignItems: 'center',
-					justifyContent: 'space-between',
+					flexDirection: "row",
+					alignItems: "center",
+					justifyContent: "space-between",
 					paddingHorizontal: 12,
 					paddingVertical: 8,
 					backgroundColor: colors.muted,
 				}}
 			>
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+				<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
 					<ChevronIcon expanded={expanded} color={colors.mutedForeground} />
 					<View
 						style={{
@@ -393,8 +399,13 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{language || "text"}
 					</Text>
-					<Text style={[typography.micro, { color: colors.mutedForeground, opacity: 0.6 }]}>
-						({lines.length} {lines.length === 1 ? 'line' : 'lines'})
+					<Text
+						style={[
+							typography.micro,
+							{ color: colors.mutedForeground, opacity: 0.6 },
+						]}
+					>
+						({lines.length} {lines.length === 1 ? "line" : "lines"})
 					</Text>
 				</View>
 				<Pressable
@@ -418,11 +429,17 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 					showsHorizontalScrollIndicator={true}
 					contentContainerStyle={{ flexGrow: 0 }}
 				>
-					<View style={{ flexDirection: 'row', padding: 12, maxHeight: MAX_CODE_BLOCK_HEIGHT }}>
-						<View style={{ marginRight: 12, alignItems: 'flex-end' }}>
+					<View
+						style={{
+							flexDirection: "row",
+							padding: 12,
+							maxHeight: MAX_CODE_BLOCK_HEIGHT,
+						}}
+					>
+						<View style={{ marginRight: 12, alignItems: "flex-end" }}>
 							{lines.map((_, lineNum) => (
 								<Text
-									key={`num-${lineNum}`}
+									key={`num-${lineNum + 1}`}
 									style={{
 										fontFamily: typography.code.fontFamily,
 										fontSize: 14,
@@ -437,11 +454,14 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 						</View>
 						<View>
 							{highlightedLines.map((tokens, lineNum) => (
-								<View key={`line-${lineNum}`} style={{ flexDirection: 'row', flexWrap: 'nowrap' }}>
+								<View
+									key={`line-${lineNum + 1}`}
+									style={{ flexDirection: "row", flexWrap: "nowrap" }}
+								>
 									{tokens.length > 0 ? (
 										tokens.map((token, tokenIdx) => (
 											<Text
-												key={`token-${lineNum}-${tokenIdx}`}
+												key={`token-${lineNum + 1}-${tokenIdx + 1}`}
 												style={{
 													fontFamily: typography.code.fontFamily,
 													fontSize: 14,
@@ -461,7 +481,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 												color: colors.foreground,
 											}}
 										>
-											{' '}
+											{" "}
 										</Text>
 									)}
 								</View>

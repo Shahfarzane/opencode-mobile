@@ -16,13 +16,12 @@ import {
 	AiAgentFillIcon,
 	AiAgentIcon,
 	ChevronLeft,
-	LockIcon,
 	PlusIcon,
 	RobotIcon,
 } from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
-import { Button, IconButton } from "@/components/ui";
-import { Fonts, Spacing, typography, useTheme } from "@/theme";
+import { IconButton } from "@/components/ui";
+import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
 
 /**
  * Returns the appropriate mode icon for an agent based on its mode
@@ -129,12 +128,24 @@ export default function AgentsListScreen() {
 						/>
 					}
 				>
+					{/* Total count header - matches desktop */}
+					<View
+						style={[
+							styles.countHeader,
+							{ borderBottomColor: colors.border },
+						]}
+					>
+						<Text style={[styles.countText, { color: colors.mutedForeground }]}>
+							Total {agents.length}
+						</Text>
+					</View>
+
 					{builtInAgents.length > 0 && (
 						<View style={styles.section}>
 							<Text
 								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
-								BUILT-IN AGENTS
+								Built-in Agents
 							</Text>
 							{builtInAgents.map((agent) => (
 								<SettingsListItem
@@ -142,7 +153,6 @@ export default function AgentsListScreen() {
 									title={agent.name}
 									subtitle={agent.description}
 									badge="system"
-									icon={<LockIcon size={12} color={colors.mutedForeground} />}
 									modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
 									onPress={() => handleSelectAgent(agent.name)}
 								/>
@@ -155,7 +165,7 @@ export default function AgentsListScreen() {
 							<Text
 								style={[styles.sectionTitle, { color: colors.mutedForeground }]}
 							>
-								CUSTOM AGENTS
+								Custom Agents
 							</Text>
 							{customAgents.map((agent) => (
 								<SettingsListItem
@@ -172,19 +182,13 @@ export default function AgentsListScreen() {
 
 					{agents.length === 0 && (
 						<View style={styles.emptyContainer}>
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								No agents yet
+							<RobotIcon size={40} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+							<Text style={[styles.emptyTitle, { color: colors.mutedForeground }]}>
+								No agents configured
 							</Text>
-							<Button
-								variant="secondary"
-								size="sm"
-								onPress={() => handleSelectAgent("__new__")}
-							>
-								<PlusIcon size={16} color={colors.foreground} />
-								<Button.Label>Create your first agent</Button.Label>
-							</Button>
+							<Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+								Use the + button above to create one
+							</Text>
 						</View>
 					)}
 				</ScrollView>
@@ -225,16 +229,27 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	scrollContent: {
-		paddingTop: Spacing[4],
+		paddingTop: 0,
+	},
+	countHeader: {
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[3],
+		borderBottomWidth: StyleSheet.hairlineWidth,
+	},
+	countText: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
 	},
 	section: {
-		marginBottom: Spacing[5],
+		paddingTop: Spacing[2],
+		paddingBottom: Spacing[1],
 	},
 	sectionTitle: {
-		fontSize: 13,
-		fontFamily: Fonts.medium,
+		fontSize: FontSizes.micro,
+		fontFamily: Fonts.semiBold,
 		letterSpacing: 0.5,
-		marginBottom: Spacing[1],
+		textTransform: "uppercase",
+		marginBottom: Spacing[1.5],
 		paddingHorizontal: Spacing[4],
 	},
 	emptyContainer: {
@@ -242,6 +257,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		paddingVertical: 48,
-		gap: 12,
+		paddingHorizontal: Spacing[4],
+		gap: 8,
+	},
+	emptyTitle: {
+		fontSize: FontSizes.uiLabel,
+		fontFamily: Fonts.medium,
+		marginTop: Spacing[3],
+	},
+	emptySubtitle: {
+		fontSize: FontSizes.meta,
+		fontFamily: Fonts.regular,
+		opacity: 0.75,
 	},
 });
