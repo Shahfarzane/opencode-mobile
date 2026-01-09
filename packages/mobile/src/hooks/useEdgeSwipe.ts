@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import type { GestureResponderEvent } from "react-native";
 
 interface EdgeSwipeOptions {
 	edgeThreshold?: number;
@@ -98,52 +97,4 @@ export function useEdgeSwipe(options: EdgeSwipeOptions = {}) {
 			};
 		}
 	}, [enabled, edgeThreshold, minSwipeDistance, maxSwipeTime, onSwipe]);
-}
-
-export function createPanResponderHandlers(options: EdgeSwipeOptions) {
-	const {
-		edgeThreshold = 30,
-		minSwipeDistance = 50,
-		maxSwipeTime = 300,
-		onSwipe,
-	} = options;
-
-	let touchStart: { x: number; y: number; time: number } | null = null;
-
-	return {
-		onStartShouldSetResponder: (evt: GestureResponderEvent) => {
-			const { pageX } = evt.nativeEvent;
-			return pageX <= edgeThreshold;
-		},
-		onResponderGrant: (evt: GestureResponderEvent) => {
-			const { pageX, pageY } = evt.nativeEvent;
-			touchStart = { x: pageX, y: pageY, time: Date.now() };
-		},
-		onResponderRelease: (evt: GestureResponderEvent) => {
-			if (!touchStart || !onSwipe) return;
-
-			const { pageX, pageY } = evt.nativeEvent;
-			const deltaX = pageX - touchStart.x;
-			const deltaY = pageY - touchStart.y;
-			const deltaTime = Date.now() - touchStart.time;
-
-			const isHorizontal = Math.abs(deltaY) < Math.abs(deltaX);
-			const isQuick = deltaTime <= maxSwipeTime;
-			const limitedVertical = Math.abs(deltaY) < minSwipeDistance;
-			const isValidSwipe =
-				deltaX >= minSwipeDistance &&
-				isHorizontal &&
-				isQuick &&
-				limitedVertical;
-
-			if (isValidSwipe) {
-				onSwipe();
-			}
-
-			touchStart = null;
-		},
-		onResponderTerminate: () => {
-			touchStart = null;
-		},
-	};
 }

@@ -22,23 +22,3 @@ export { settingsRowStyles } from "./settings-row.styles";
 export { SettingsGroup } from "./settings-group";
 export type { SettingsGroupProps } from "./settings-group.types";
 export { settingsGroupStyles } from "./settings-group.styles";
-
-// Settings Text Field
-export { SettingsTextField } from "./settings-text-field";
-export type { SettingsTextFieldProps } from "./settings-text-field.types";
-export { settingsTextFieldStyles } from "./settings-text-field.styles";
-
-// Settings Text Area
-export { SettingsTextArea } from "./settings-text-area";
-export type { SettingsTextAreaProps } from "./settings-text-area.types";
-export { settingsTextAreaStyles } from "./settings-text-area.styles";
-
-// Settings Switch
-export { SettingsSwitch } from "./settings-switch";
-export type { SettingsSwitchProps } from "./settings-switch.types";
-export { settingsSwitchStyles } from "./settings-switch.styles";
-
-// Settings Select
-export { SettingsSelect } from "./settings-select";
-export type { SettingsSelectProps, SelectOption } from "./settings-select.types";
-export { settingsSelectStyles } from "./settings-select.styles";

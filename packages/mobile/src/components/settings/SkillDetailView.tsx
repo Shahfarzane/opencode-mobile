@@ -18,7 +18,7 @@ import {
 } from "@/api";
 import { ChevronLeft, FolderIcon, GlobeIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { fontStyle, typography, useTheme } from "@/theme";
+import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { skillDetailViewStyles } from "./SkillDetailView.styles";
 
@@ -182,7 +182,7 @@ export function SkillDetailView({
       {/* Header */}
       <View
         className={skillDetailViewStyles.header({})}
-        style={{ paddingTop: insets.top + 8 }}
+        style={{ paddingTop: insets.top + Spacing.sm }}
       >
         <Pressable
           onPress={onBack}

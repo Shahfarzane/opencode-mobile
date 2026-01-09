@@ -23,15 +23,6 @@ export type {
 	GitStatusFile,
 } from "./git";
 export { gitApi } from "./git";
-export type { NotificationPayload, NotificationsAPI } from "./notifications";
-export { notificationsApi } from "./notifications";
-export type {
-	DirectoryPermissionRequest,
-	DirectoryPermissionResult,
-	PermissionsAPI,
-	StartAccessingResult,
-} from "./permissions";
-export { permissionsApi } from "./permissions";
 export type { Model, Provider, AuthMethod, OAuthStartResult } from "./providers";
 export { providersApi } from "./providers";
 export type {
@@ -49,8 +40,6 @@ export type {
 	TerminalStreamEvent,
 } from "./terminal";
 export { terminalApi } from "./terminal";
-export type { ToolsAPI } from "./tools";
-export { toolsApi } from "./tools";
 export type { ProjectInfo, ServerPathInfo } from "./server";
 export { serverApi } from "./server";
 export type { Skill, SkillConfig } from "./skills";
