@@ -14,6 +14,8 @@ export function SettingsListItem({
   title,
   subtitle,
   badge,
+  icon,
+  modeIcon,
   onPress,
   showChevron = true,
 }: SettingsListItemProps) {
@@ -43,13 +45,15 @@ export function SettingsListItem({
           paddingHorizontal: Spacing[4],
         }}
       >
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {icon && <View style={{ marginRight: 2 }}>{icon}</View>}
             <Text
               style={{
                 color: colors.foreground,
                 fontSize: 17,
                 fontFamily: Fonts.regular,
+                flexShrink: 1,
               }}
               numberOfLines={1}
             >
@@ -59,11 +63,12 @@ export function SettingsListItem({
               <View
                 style={{
                   backgroundColor: colors.muted,
-                  borderColor: colors.border,
+                  borderColor: colors.border + "80", // 50% opacity like desktop
                   borderWidth: 1,
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
+                  paddingHorizontal: 4, // px-1 like desktop
+                  paddingBottom: 1, // pb-px like desktop
                   borderRadius: 4,
+                  flexShrink: 0,
                 }}
               >
                 <Text
@@ -71,12 +76,14 @@ export function SettingsListItem({
                     color: colors.mutedForeground,
                     fontSize: FontSizes.micro,
                     fontFamily: Fonts.regular,
+                    lineHeight: FontSizes.micro, // leading-none like desktop
                   }}
                 >
                   {badge}
                 </Text>
               </View>
             )}
+            {modeIcon && <View style={{ marginLeft: 2, flexShrink: 0 }}>{modeIcon}</View>}
           </View>
           {subtitle && (
             <Text

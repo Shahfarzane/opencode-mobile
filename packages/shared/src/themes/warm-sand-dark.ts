@@ -24,12 +24,12 @@ export const warmSandDarkTheme: Theme = {
 
 	colors: {
 		primary: {
-			base: "#edb449", // oklch(0.77 0.17 85) - golden sand
-			hover: "#d9a33e",
-			active: "#f5c55a",
+			base: "#d97d2f", // oklch(0.65 0.2 55) - warm orange (same as light mode)
+			hover: "#c46c25",
+			active: "#e08d3f",
 			foreground: "#151313",
-			muted: "#edb44980",
-			emphasis: "#f5c55a",
+			muted: "#d97d2f80",
+			emphasis: "#e08d3f",
 		},
 
 		surface: {
@@ -46,11 +46,11 @@ export const warmSandDarkTheme: Theme = {
 		interactive: {
 			border: "#393836", // oklch(0.31 0.01 35)
 			borderHover: "#4a4846",
-			borderFocus: "#edb449",
+			borderFocus: "#d97d2f", // matches primary orange
 			selection: "#cdccc330",
 			selectionForeground: "#cdccc3",
-			focus: "#edb449",
-			focusRing: "#edb44950",
+			focus: "#d97d2f", // matches primary orange
+			focusRing: "#d97d2f50", // matches primary orange
 			cursor: "#cdccc3",
 			hover: "#343331",
 			active: "#403E3C",
@@ -62,7 +62,7 @@ export const warmSandDarkTheme: Theme = {
 			errorBackground: "#d9867820",
 			errorBorder: "#d9867850",
 
-			warning: "#d9a33e",
+			warning: "#ffca16",
 			warningForeground: "#151313",
 			warningBackground: "#d9a33e20",
 			warningBorder: "#d9a33e50",

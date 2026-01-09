@@ -22,7 +22,7 @@
   --text-markdown: 0.9375rem;
   --text-code: 0.9063rem;
   --text-ui-header: 0.9375rem;
-  --text-ui-label: 0.8750rem;
+  --text-ui-label: 0.875rem;
   --text-meta: 0.875rem;
   --text-micro: 0.875rem;
 }
@@ -46,7 +46,11 @@ textarea[data-chat-input="true"]:hover {
 }
 
 :root.vscode-runtime textarea[data-chat-input="true"]::placeholder {
-  color: color-mix(in srgb, var(--vscode-input-placeholderForeground, var(--muted-foreground)) 65%, transparent);
+  color: color-mix(
+    in srgb,
+    var(--vscode-input-placeholderForeground, var(--muted-foreground)) 65%,
+    transparent
+  );
 }
 
 /* Match chat footer background to input in WebKit to avoid dual-tone hover/focus */
@@ -98,7 +102,6 @@ textarea[data-chat-input="true"]:hover {
   );
 }
 
-
 @keyframes spin-once {
   from {
     transform: rotate(0deg);
@@ -145,7 +148,9 @@ textarea[data-chat-input="true"]:hover {
     transform: translateX(0%);
   }
   100% {
-    transform: translateX(calc(-100% + var(--file-mention-marquee-width, 360px)));
+    transform: translateX(
+      calc(-100% + var(--file-mention-marquee-width, 360px))
+    );
   }
 }
 
@@ -172,7 +177,9 @@ textarea[data-chat-input="true"]:hover {
 }
 
 @keyframes bounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0);
     opacity: 0.5;
   }
@@ -188,7 +195,8 @@ textarea[data-chat-input="true"]:hover {
 }
 
 .file-mention-marquee {
-  animation: oc-file-mention-marquee var(--file-mention-marquee-duration, 4s) linear 0.2s 1 both;
+  animation: oc-file-mention-marquee var(--file-mention-marquee-duration, 4s)
+    linear 0.2s 1 both;
   will-change: transform;
 }
 
@@ -303,7 +311,9 @@ svg.animate-spin {
 
   @media (min-width: 1024px) {
     .chat-column {
-      padding-inline: calc(clamp(1.25rem, 2.5vw, 2rem) * var(--padding-scale, 1));
+      padding-inline: calc(
+        clamp(1.25rem, 2.5vw, 2rem) * var(--padding-scale, 1)
+      );
     }
   }
 
@@ -325,7 +335,7 @@ svg.animate-spin {
 
   /* FadeInOnReveal handles all animations - no custom CSS needed */
 
-   /* Heading typography - all use markdown size, differentiated by weight/color */
+  /* Heading typography - all use markdown size, differentiated by weight/color */
 
   .typography-h1 {
     font-size: var(--text-markdown);
@@ -402,7 +412,6 @@ svg.animate-spin {
   .animate-spin-once {
     animation: spin-once 0.5s linear forwards;
   }
-
 }
 
 :root {
@@ -450,7 +459,7 @@ svg.animate-spin {
   --card-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
   --popover: oklch(0.24 0.01 40); /* #282726 */
   --popover-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
-  --primary: oklch(0.77 0.17 85); /* #edb449 - golden sand */
+  --primary: oklch(0.65 0.2 55);
   --primary-foreground: oklch(0.16 0.01 30); /* #151313 */
   --secondary: oklch(0.29 0.01 40); /* #343331 */
   --secondary-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
@@ -462,7 +471,7 @@ svg.animate-spin {
   --destructive-foreground: oklch(0.9 0.02 80); /* #e1dcd0 */
   --border: oklch(0.31 0.01 35); /* #393836 */
   --input: oklch(0.33 0.01 40); /* #403E3C */
-  --ring: oklch(0.77 0.17 85); /* #edb449 */
+  --ring: oklch(0.65 0.2 55); /* Warm orange - matches primary */
   --chart-1: oklch(0.68 0.12 230); /* #5aa9d9 - blue */
   --chart-2: oklch(0.68 0.12 145); /* #81af6c - green */
   --chart-3: oklch(0.7 0.13 95); /* #c2974d - yellow */
@@ -470,12 +479,12 @@ svg.animate-spin {
   --chart-5: oklch(0.68 0.12 55); /* #d29470 - orange */
   --sidebar: oklch(0.16 0.01 30); /* #151313 */
   --sidebar-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
-  --sidebar-primary: oklch(0.77 0.17 85); /* #edb449 */
+  --sidebar-primary: oklch(0.65 0.2 55); /* Warm orange - matches primary */
   --sidebar-primary-foreground: oklch(0.16 0.01 30); /* #151313 */
   --sidebar-accent: oklch(0.24 0.01 40); /* #282726 */
   --sidebar-accent-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
   --sidebar-border: oklch(0.31 0.01 35); /* #393836 */
-  --sidebar-ring: oklch(0.77 0.17 85); /* #edb449 */
+  --sidebar-ring: oklch(0.65 0.2 55); /* Warm orange - matches primary */
 }
 
 * {
@@ -483,7 +492,12 @@ svg.animate-spin {
 }
 
 :root * {
-  border-color: rgba(194, 151, 77, 0.2); /* Warm golden sand borders for light mode */
+  border-color: rgba(
+    194,
+    151,
+    77,
+    0.2
+  ); /* Warm golden sand borders for light mode */
 }
 
 .dark * {
@@ -500,7 +514,7 @@ body {
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  
+
   /* Override Tailwind spacing scale with custom properties that respect --padding-scale */
   --spacing-0: 0;
   --spacing-0\.5: calc(0.125rem * var(--padding-scale, 1));
@@ -536,7 +550,7 @@ body {
   --spacing-72: calc(18rem * var(--padding-scale, 1));
   --spacing-80: calc(20rem * var(--padding-scale, 1));
   --spacing-96: calc(24rem * var(--padding-scale, 1));
-  
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -622,9 +636,11 @@ body {
   --markdown-heading4-size: var(--text-markdown);
   --markdown-heading5-size: var(--text-markdown);
   --markdown-heading6-size: var(--text-markdown);
-  --font-sans: "IBM Plex Mono", "JetBrains Mono", "Fira Code", "SFMono-Regular", "Menlo", monospace;
+  --font-sans: "IBM Plex Mono", "JetBrains Mono", "Fira Code", "SFMono-Regular",
+    "Menlo", monospace;
   --font-heading: var(--font-sans);
-  --font-mono: "IBM Plex Mono", "JetBrains Mono", "Fira Code", "SFMono-Regular", "Menlo", monospace;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", "Fira Code", "SFMono-Regular",
+    "Menlo", monospace;
   --font-family-sans: var(--font-sans);
   --font-family-mono: var(--font-mono);
 }
@@ -635,18 +651,37 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    font-family: var(
+      --font-sans,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif
+    );
     font-weight: var(--ui-regular-font-weight, 400);
   }
 
   .font-sans {
-    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif) !important;
+    font-family: var(
+      --font-sans,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif
+    ) !important;
   }
 
   .font-mono,
   code,
   pre {
-    font-family: var(--font-mono, ui-monospace, SFMono-Regular, 'Liberation Mono', Menlo, monospace) !important;
+    font-family: var(
+      --font-mono,
+      ui-monospace,
+      SFMono-Regular,
+      "Liberation Mono",
+      Menlo,
+      monospace
+    ) !important;
   }
 
   /* Remove focus rings globally */
@@ -836,11 +871,11 @@ html:not(.dark) .chat-scroll {
 
 /* Pierre diff viewer styling */
 .pierre-diff-wrapper {
-  --diffs-font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  --diffs-font-family: var(--font-mono, "IBM Plex Mono", monospace);
   --diffs-font-size: var(--text-code, 13px);
   --diffs-line-height: 1.5;
   --diffs-tab-size: 2;
-  --diffs-header-font-family: var(--font-sans, 'IBM Plex Sans', sans-serif);
+  --diffs-header-font-family: var(--font-sans, "IBM Plex Sans", sans-serif);
   --diffs-min-number-column-width: 4ch;
   --diffs-gap-inline: 0;
   --diffs-gap-block: 0;
@@ -961,14 +996,14 @@ html:not(.dark) .chat-scroll {
 /* Set global device type variables */
 :root {
   --is-mobile: 0;
-  --device-type: 'desktop';
+  --device-type: "desktop";
   --font-scale: 1;
 }
 
 @media (max-width: 1024px) {
-:root.mobile-pointer:not(.desktop-runtime) {
+  :root.mobile-pointer:not(.desktop-runtime) {
     --is-mobile: 1;
-    --device-type: 'mobile';
+    --device-type: "mobile";
     --font-scale: 0.9;
   }
 }
@@ -1184,7 +1219,11 @@ html:not(.dark) .chat-scroll {
       --oc-safe-area-top: env(safe-area-inset-top, 0);
       --oc-safe-area-right: env(safe-area-inset-right, 0);
       --oc-safe-area-bottom: env(safe-area-inset-bottom, 0);
-      --oc-safe-area-bottom-visual: clamp(0px, calc(var(--oc-safe-area-bottom) * 0.05), 4px);
+      --oc-safe-area-bottom-visual: clamp(
+        0px,
+        calc(var(--oc-safe-area-bottom) * 0.05),
+        4px
+      );
       --oc-safe-area-left: env(safe-area-inset-left, 0);
     }
 
@@ -1263,7 +1302,8 @@ html:not(.dark) .chat-scroll {
     }
 
     /* Fix font size for tool displays */
-    [class*="tool"], [class*="code"] {
+    [class*="tool"],
+    [class*="code"] {
       font-size: 0.875rem !important;
     }
   }
@@ -1274,7 +1314,11 @@ html:not(.dark) .chat-scroll {
       --oc-safe-area-top: env(safe-area-inset-top, 0);
       --oc-safe-area-right: env(safe-area-inset-right, 0);
       --oc-safe-area-bottom: env(safe-area-inset-bottom, 0);
-      --oc-safe-area-bottom-visual: clamp(0px, calc(var(--oc-safe-area-bottom) * 0.05), 4px);
+      --oc-safe-area-bottom-visual: clamp(
+        0px,
+        calc(var(--oc-safe-area-bottom) * 0.05),
+        4px
+      );
       --oc-safe-area-left: env(safe-area-inset-left, 0);
     }
 
@@ -1300,9 +1344,14 @@ html:not(.dark) .chat-scroll {
   .pwa-dialog-content {
     --pwa-dialog-padding: clamp(0.75rem, 3vw, 1.25rem);
     top: calc(50% + (var(--oc-safe-area-top, 0px) * 0.22));
-    max-height: calc(100vh - var(--oc-safe-area-top, 0px) - var(--oc-safe-area-bottom-visual, 0px) - 20px);
+    max-height: calc(
+      100vh - var(--oc-safe-area-top, 0px) -
+        var(--oc-safe-area-bottom-visual, 0px) - 20px
+    );
     padding: var(--pwa-dialog-padding);
-    padding-top: calc(var(--pwa-dialog-padding) + (var(--oc-safe-area-top, 0px) * 0.35));
+    padding-top: calc(
+      var(--pwa-dialog-padding) + (var(--oc-safe-area-top, 0px) * 0.35)
+    );
     --tw-translate-y: calc(-50% + (var(--oc-safe-area-top, 0px) * 0.6));
     row-gap: clamp(0.75rem, 2vw, 1.25rem);
   }
@@ -1352,12 +1401,15 @@ html:not(.dark) .chat-scroll {
 @media (display-mode: standalone) {
   /* Home indicator blur overlay */
   body::after {
-    content: '';
+    content: "";
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--oc-safe-area-bottom-visual, var(--oc-safe-area-bottom, env(safe-area-inset-bottom, 0)));
+    height: var(
+      --oc-safe-area-bottom-visual,
+      var(--oc-safe-area-bottom, env(safe-area-inset-bottom, 0))
+    );
     background: linear-gradient(
       to top,
       var(--background) 0%,
@@ -1379,8 +1431,8 @@ html:not(.dark) .chat-scroll {
         to top,
         var(--background) 0%,
         var(--background) 30%,
-        rgba(21, 19, 19, 0.8) 60%,  /* Dark theme fallback */
-        rgba(21, 19, 19, 0.3) 85%,
+        rgba(21, 19, 19, 0.8) 60%,
+        /* Dark theme fallback */ rgba(21, 19, 19, 0.3) 85%,
         transparent 100%
       );
     }
@@ -1391,8 +1443,8 @@ html:not(.dark) .chat-scroll {
         to top,
         var(--background) 0%,
         var(--background) 30%,
-        rgba(248, 247, 243, 0.8) 60%,  /* Light theme fallback */
-        rgba(248, 247, 243, 0.3) 85%,
+        rgba(248, 247, 243, 0.8) 60%,
+        /* Light theme fallback */ rgba(248, 247, 243, 0.3) 85%,
         transparent 100%
       );
     }
@@ -1518,7 +1570,10 @@ html:not(.dark) .chat-scroll {
   color: var(--shiki-dark, var(--shiki-light, inherit));
 }
 
-.dark .streamdown-content [data-streamdown="code-block-body"] span[style*="--shiki-dark"] {
+.dark
+  .streamdown-content
+  [data-streamdown="code-block-body"]
+  span[style*="--shiki-dark"] {
   color: var(--shiki-dark) !important;
 }
 

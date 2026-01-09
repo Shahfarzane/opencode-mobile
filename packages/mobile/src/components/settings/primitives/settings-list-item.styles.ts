@@ -36,17 +36,19 @@ const title = tv({
 
 /**
  * Badge container styles
+ * Matches desktop: px-1 pb-px rounded border-border/50 bg-muted
  */
 const badge = tv({
-  base: "px-1.5 py-0.5 rounded border border-border bg-muted ml-1",
+  base: "px-1 pb-px rounded border border-border/50 bg-muted ml-1",
   variants: {},
 });
 
 /**
  * Badge text styles
+ * Matches desktop: typography-micro text-muted-foreground leading-none
  */
 const badgeText = tv({
-  base: "text-muted-foreground",
+  base: "text-muted-foreground leading-none",
   variants: {},
 });
 

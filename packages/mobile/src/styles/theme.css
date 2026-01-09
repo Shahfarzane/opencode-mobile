@@ -63,9 +63,9 @@
       --popover: oklch(0.24 0.01 40); /* #282726 */
       --popover-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
 
-      /* Primary - Golden Sand */
-      --primary: oklch(0.77 0.17 85); /* #edb449 - golden sand */
-      --primary-hover: oklch(0.82 0.15 85);
+      /* Primary - Warm Orange (same as light mode) */
+      --primary: oklch(0.65 0.2 55); /* #d97d2f - warm orange, same as light */
+      --primary-hover: oklch(0.60 0.2 55);
       --primary-foreground: oklch(0.16 0.01 30); /* #151313 */
 
       /* Secondary */
@@ -93,7 +93,7 @@
       /* Borders and inputs */
       --border: oklch(0.31 0.01 35); /* #393836 */
       --input: oklch(0.33 0.01 40); /* #403E3C */
-      --ring: oklch(0.77 0.17 85); /* #edb449 */
+      --ring: oklch(0.65 0.2 55); /* #d97d2f - warm orange, same as light */
     }
 
     @variant light {
