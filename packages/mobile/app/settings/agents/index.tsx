@@ -12,10 +12,34 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Agent, agentsApi, isAgentBuiltIn, isAgentHidden } from "@/api";
-import { ChevronLeft, PlusIcon } from "@/components/icons";
+import {
+	AiAgentFillIcon,
+	AiAgentIcon,
+	ChevronLeft,
+	LockIcon,
+	PlusIcon,
+	RobotIcon,
+} from "@/components/icons";
 import { SettingsListItem } from "@/components/settings";
 import { Button, IconButton } from "@/components/ui";
 import { Fonts, Spacing, typography, useTheme } from "@/theme";
+
+/**
+ * Returns the appropriate mode icon for an agent based on its mode
+ * Matches desktop AgentsSidebar.tsx:getAgentModeIcon
+ */
+function getAgentModeIcon(mode: string | undefined, primaryColor: string) {
+	switch (mode) {
+		case "primary":
+			return <AiAgentIcon size={12} color={primaryColor} />;
+		case "all":
+			return <AiAgentFillIcon size={12} color={primaryColor} />;
+		case "subagent":
+			return <RobotIcon size={12} color={primaryColor} />;
+		default:
+			return null;
+	}
+}
 
 export default function AgentsListScreen() {
 	const { colors } = useTheme();
@@ -78,8 +102,8 @@ export default function AgentsListScreen() {
 				</Pressable>
 				<Text style={[styles.title, { color: colors.foreground }]}>Agents</Text>
 				<IconButton
-					icon={<PlusIcon size={14} color={colors.primaryForeground} />}
-					variant="primary"
+					icon={<PlusIcon size={16} color={colors.mutedForeground} />}
+					variant="ghost"
 					size="icon-sm"
 					accessibilityLabel="Add new agent"
 					onPress={() => handleSelectAgent("__new__")}
@@ -117,7 +141,9 @@ export default function AgentsListScreen() {
 									key={agent.name}
 									title={agent.name}
 									subtitle={agent.description}
-									badge={agent.mode}
+									badge="system"
+									icon={<LockIcon size={12} color={colors.mutedForeground} />}
+									modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
 									onPress={() => handleSelectAgent(agent.name)}
 								/>
 							))}
@@ -136,7 +162,8 @@ export default function AgentsListScreen() {
 									key={agent.name}
 									title={agent.name}
 									subtitle={agent.description}
-									badge={agent.mode}
+									badge={(agent as { scope?: string }).scope}
+									modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
 									onPress={() => handleSelectAgent(agent.name)}
 								/>
 							))}
@@ -151,11 +178,11 @@ export default function AgentsListScreen() {
 								No agents yet
 							</Text>
 							<Button
-								variant="primary"
+								variant="secondary"
 								size="sm"
 								onPress={() => handleSelectAgent("__new__")}
 							>
-								<PlusIcon size={16} color={colors.primaryForeground} />
+								<PlusIcon size={16} color={colors.foreground} />
 								<Button.Label>Create your first agent</Button.Label>
 							</Button>
 						</View>

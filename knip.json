@@ -1,0 +1,138 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.{js,mjs}"],
+      "project": ["scripts/**/*.{js,mjs}"],
+      "ignore": ["node_modules/**"],
+      "ignoreDependencies": [
+        "@fontsource/*",
+        "@heroui/*",
+        "@ibm/plex",
+        "@opencode-ai/sdk",
+        "@radix-ui/*",
+        "@remixicon/react",
+        "@xterm/*",
+        "class-variance-authority",
+        "clsx",
+        "cmdk",
+        "electron-context-menu",
+        "electron-store",
+        "express",
+        "http-proxy-middleware",
+        "next-themes",
+        "bun-pty",
+        "node-pty",
+        "react",
+        "react-dom",
+        "react-markdown",
+        "react-native-css-interop",
+        "react-native-worklets",
+        "react-syntax-highlighter",
+        "remark-gfm",
+        "simple-git",
+        "sonner",
+        "strip-json-comments",
+        "tailwind-merge",
+        "yaml",
+        "zustand",
+        "cors",
+        "electron",
+        "electron-builder",
+        "react-native-worklets-core",
+        "@vitejs/plugin-react"
+      ]
+    },
+    "packages/web": {
+      "entry": [
+        "src/main.tsx",
+        "server/index.js",
+        "bin/cli.js"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "server/**/*.{ts,js}", "bin/**/*.js"],
+      "ignore": ["dist/**"],
+      "ignoreDependencies": [
+        "@fontsource/*",
+        "@ibm/plex",
+        "cors"
+      ]
+    },
+    "packages/ui": {
+      "entry": ["src/main.tsx", "src/components/ui/*.tsx", "src/hooks/*.ts", "src/lib/*.ts", "src/stores/*.ts"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": [
+        "@ibm/plex",
+        "@fontsource/*",
+        "cors",
+        "electron",
+        "electron-builder"
+      ]
+    },
+    "packages/desktop": {
+      "entry": [
+        "src/main.tsx",
+        "scripts/*.{js,mjs}"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{js,mjs}"],
+      "ignore": ["dist/**", "src-tauri/**"]
+    },
+    "packages/mobile": {
+      "entry": [
+        "app/**/*.{ts,tsx}",
+        "src/**/*.{ts,tsx}"
+      ],
+      "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+      "ignore": [
+        "ios/**",
+        "android/**",
+        ".expo/**",
+        ".maestro/**"
+      ],
+      "ignoreDependencies": [
+        "expo-*",
+        "react-native-*",
+        "@react-native-*",
+        "@gorhom/*",
+        "@shopify/*",
+        "@ronradtke/*",
+        "react-native",
+        "uniwind"
+      ],
+      "ignoreBinaries": ["eas", "maestro"]
+    },
+    "packages/shared": {
+      "entry": ["src/**/*.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/vscode": {
+      "entry": ["src/**/*.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["dist/**", "out/**"],
+      "ignoreDependencies": [
+        "@openchamber/ui",
+        "@opencode-ai/sdk",
+        "react",
+        "react-dom"
+      ]
+    }
+  },
+  "ignoreDependencies": [
+    "@types/*",
+    "autoprefixer",
+    "@tailwindcss/postcss",
+    "tailwindcss",
+    "tw-animate-css",
+    "babel-preset-expo",
+    "@babel/*",
+    "eslint-*",
+    "globals",
+    "concurrently",
+    "nodemon",
+    "cross-env",
+    "sharp",
+    "tailwind-merge"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreBinaries": ["jq"],
+  "ignoreUnresolved": ["metro-minify-terser"]
+}
