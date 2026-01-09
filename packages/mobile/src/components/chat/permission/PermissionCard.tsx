@@ -41,8 +41,8 @@ export function PermissionCard({
 		<View
 			className="border rounded-xl overflow-hidden my-1"
 			style={{
-				backgroundColor: colors.toolBackground,
-				borderColor: colors.toolBorder,
+				backgroundColor: colors.muted,
+				borderColor: colors.border,
 			}}
 		>
 			<PermissionHeader

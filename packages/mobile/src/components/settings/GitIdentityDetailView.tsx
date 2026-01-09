@@ -12,6 +12,7 @@ import {
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { CheckIcon, ChevronLeft } from "@/components/icons";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { gitIdentityDetailViewStyles } from "./GitIdentityDetailView.styles";
 
 interface GitIdentityDetailViewProps {
@@ -261,7 +262,7 @@ export function GitIdentityDetailView({
         {/* Git Config */}
         <View
           className={gitIdentityDetailViewStyles.section({})}
-          style={{ borderTopColor: colors.border + "66" }}
+          style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
             className="mb-3"
@@ -316,7 +317,7 @@ export function GitIdentityDetailView({
         {/* SSH Key */}
         <View
           className={gitIdentityDetailViewStyles.section({})}
-          style={{ borderTopColor: colors.border + "66" }}
+          style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
         >
           <Text
             className="mb-1"
@@ -353,7 +354,7 @@ export function GitIdentityDetailView({
         {!isNewProfile && (
           <View
             className={gitIdentityDetailViewStyles.section({})}
-            style={{ borderTopColor: colors.border + "66" }}
+            style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             <Pressable onPress={handleDelete}>
               <Text style={[typography.meta, { color: colors.destructive }]}>

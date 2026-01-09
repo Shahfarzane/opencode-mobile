@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 import { PlusIcon } from "@/components/icons";
 import { FontSizes, Fonts, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 
 interface WorkspaceGroupProps {
 	groupId: string;
@@ -48,9 +49,7 @@ export function WorkspaceGroup({
 
 	const getPressedBg = (pressed: boolean) =>
 		pressed
-			? isDark
-				? "rgba(255,255,255,0.03)"
-				: "rgba(0,0,0,0.02)"
+			? withOpacity(colors.foreground, OPACITY.subtle)
 			: "transparent";
 
 	return (
@@ -79,14 +78,12 @@ export function WorkspaceGroup({
 					className="w-5 h-5 items-center justify-center rounded-md"
 					style={({ pressed }) => ({
 						backgroundColor: pressed
-							? isDark
-								? "rgba(255,255,255,0.1)"
-								: "rgba(0,0,0,0.05)"
+							? withOpacity(colors.foreground, OPACITY.hover)
 							: "transparent",
 					})}
 					hitSlop={8}
 				>
-					<PlusIcon color={`${colors.mutedForeground}B3`} size={18} />
+					<PlusIcon color={withOpacity(colors.mutedForeground, OPACITY.secondary)} size={18} />
 				</Pressable>
 			</Pressable>
 
@@ -105,7 +102,7 @@ export function WorkspaceGroup({
 									style={[
 										typography.micro,
 										{
-											color: `${colors.mutedForeground}B3`,
+											color: withOpacity(colors.mutedForeground, OPACITY.secondary),
 											fontSize: FontSizes.xs,
 										},
 									]}

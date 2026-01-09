@@ -9,6 +9,7 @@ import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Fonts, FontSizes, fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { timelineSheetStyles } from "./TimelineSheet.styles";
 import type { Message } from "./types";
 
@@ -143,7 +144,7 @@ function TimelineTurnItem({
 						style={{
 							fontFamily: Fonts.bold,
 							fontSize: FontSizes.xxs,
-							color: colors.background,
+							color: colors.primaryForeground,
 						}}
 					>
 						{turn.turnNumber}
@@ -198,7 +199,7 @@ function TimelineTurnItem({
 					{assistantPreview && (
 						<View
 							className={timelineSheetStyles.assistantPreview({})}
-							style={{ backgroundColor: `${colors.muted}80` }}
+							style={{ backgroundColor: withOpacity(colors.muted, OPACITY.half) }}
 						>
 							<Text
 								style={[typography.micro, { color: colors.mutedForeground }]}
@@ -215,7 +216,7 @@ function TimelineTurnItem({
 							onPress={handleNavigate}
 							className={timelineSheetStyles.actionButton({})}
 							style={({ pressed }) => ({
-								backgroundColor: `${colors.primary}15`,
+								backgroundColor: withOpacity(colors.primary, OPACITY.active),
 								opacity: pressed ? 0.7 : 1,
 							})}
 						>
@@ -228,7 +229,7 @@ function TimelineTurnItem({
 							onPress={handleFork}
 							className={timelineSheetStyles.actionButton({})}
 							style={({ pressed }) => ({
-								backgroundColor: `${colors.info}15`,
+								backgroundColor: withOpacity(colors.info, OPACITY.active),
 								opacity: pressed ? 0.7 : 1,
 							})}
 						>

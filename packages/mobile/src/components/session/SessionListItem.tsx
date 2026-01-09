@@ -21,6 +21,7 @@ import {
 	XIcon,
 } from "@/components/icons";
 import { Fonts, FontSizes, getFontFamily, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { SessionActionsMenu } from "./SessionActionsMenu";
 
 export interface SessionCacheInfo {
@@ -174,10 +175,14 @@ export function SessionListItem({
 
 	const getBackgroundColor = (pressed: boolean) => {
 		if (isSelected) {
-			return isDark ? `${colors.accent}CC` : `${colors.primary}1F`;
+			return isDark
+				? withOpacity(colors.accent, OPACITY.strong)
+				: withOpacity(colors.primary, OPACITY.emphasized);
 		}
 		if (pressed) {
-			return isDark ? `${colors.accent}66` : `${colors.primary}0F`;
+			return isDark
+				? withOpacity(colors.accent, OPACITY.scrim)
+				: withOpacity(colors.primary, OPACITY.hover);
 		}
 		return "transparent";
 	};
@@ -189,8 +194,8 @@ export function SessionListItem({
 				style={{
 					paddingLeft: 6 + depth * 20,
 					backgroundColor: isDark
-						? `${colors.accent}CC`
-						: `${colors.primary}1F`,
+						? withOpacity(colors.accent, OPACITY.strong)
+						: withOpacity(colors.primary, OPACITY.emphasized),
 				}}
 			>
 				<View className="flex-row items-center flex-1 gap-2">
@@ -247,14 +252,14 @@ export function SessionListItem({
 						{hasChildren && (
 							<Pressable onPress={handleToggleExpand} className="p-0.5" hitSlop={4}>
 								{isExpanded ? (
-									<ChevronDownIcon color={`${colors.mutedForeground}99`} size={12} />
+									<ChevronDownIcon color={withOpacity(colors.mutedForeground, OPACITY.muted)} size={12} />
 								) : (
-									<ChevronRightIcon color={`${colors.mutedForeground}99`} size={12} />
+									<ChevronRightIcon color={withOpacity(colors.mutedForeground, OPACITY.muted)} size={12} />
 								)}
 							</Pressable>
 						)}
 
-						<Text style={[typography.micro, { color: `${colors.mutedForeground}99` }]}>
+						<Text style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.muted) }]}>
 							{formatDateLabel(timestamp)}
 						</Text>
 
@@ -296,7 +301,7 @@ export function SessionListItem({
 						)}
 
 						{hasChildren && (
-							<Text style={[typography.micro, { color: `${colors.mutedForeground}99` }]}>
+							<Text style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.muted) }]}>
 								{childCount} {childCount === 1 ? "task" : "tasks"}
 							</Text>
 						)}

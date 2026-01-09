@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import { Modal, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
+import { OVERLAYS } from "@/utils/colors";
 
 interface MessageActionsMenuProps {
 	visible: boolean;
@@ -107,7 +108,7 @@ export function MessageActionsMenu({
 		>
 			<Pressable
 				className="flex-1 justify-center items-center"
-				style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+				style={{ backgroundColor: OVERLAYS.scrimMedium }}
 				onPress={onClose}
 			>
 				<View

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
+import { OVERLAYS, withOpacity, OPACITY } from "@/utils/colors";
 import { settingsSelectStyles } from "./settings-select.styles";
 import type { SettingsSelectProps } from "./settings-select.types";
 
@@ -135,7 +136,7 @@ export function SettingsSelect({
       >
         <Pressable
           className={overlayClassName}
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+          style={{ backgroundColor: OVERLAYS.scrimDark }}
           onPress={() => setIsOpen(false)}
         >
           <View
@@ -172,7 +173,7 @@ export function SettingsSelect({
                     className={optionClassName}
                     style={({ pressed }) => [
                       pressed && { backgroundColor: colors.muted },
-                      isSelected && { backgroundColor: colors.primary + "15" },
+                      isSelected && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
                     ]}
                   >
                     <View className={optionContentClassName}>

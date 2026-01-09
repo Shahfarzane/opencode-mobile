@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
 import { FontSizes, FontFamilySans, fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu } from "./MessageActionsMenu";
 import { useMessageActions } from "./useMessageActions";
@@ -95,9 +96,7 @@ function UserMessage({
 	const { showMenu, openMenu, closeMenu, copyMessageContent } =
 		useMessageActions();
 
-	const bubbleBackground = isDark
-		? `${colors.primary}14`
-		: `${colors.primary}1A`;
+	const bubbleBackground = withOpacity(colors.primary, isDark ? OPACITY.light : OPACITY.selected);
 
 	return (
 		<View className="mb-2 px-3">
@@ -301,7 +300,7 @@ function AssistantMessage({
 					{agentName && (
 						<View
 							className="px-1.5 py-0 rounded"
-							style={{ backgroundColor: `${getAgentColor(agentName)}20` }}
+							style={{ backgroundColor: withOpacity(getAgentColor(agentName), OPACITY.emphasized) }}
 						>
 							<Text
 								style={[

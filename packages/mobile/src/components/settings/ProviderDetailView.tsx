@@ -12,6 +12,7 @@ import {
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft } from "@/components/icons";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { providerDetailViewStyles } from "./ProviderDetailView.styles";
 
 interface ProviderDetailViewProps {
@@ -179,7 +180,7 @@ export function ProviderDetailView({
               }}
             >
               {isSaving ? (
-                <ActivityIndicator size="small" color={colors.background} />
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
                 <Text
                   style={[
@@ -209,7 +210,7 @@ export function ProviderDetailView({
         {modelCount > 0 && (
           <View
             className={providerDetailViewStyles.section({})}
-            style={{ borderTopColor: colors.border + "66" }}
+            style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
             <Text
               className={providerDetailViewStyles.sectionTitle({})}
@@ -229,7 +230,7 @@ export function ProviderDetailView({
             </Text>
             <View
               className={providerDetailViewStyles.modelList({})}
-              style={{ borderColor: colors.border + "66" }}
+              style={{ borderColor: withOpacity(colors.border, OPACITY.scrim) }}
             >
               {provider.models?.map((model, index) => (
                 <View
@@ -237,7 +238,7 @@ export function ProviderDetailView({
                   className={providerDetailViewStyles.modelItem({
                     hasTopBorder: index > 0,
                   })}
-                  style={index > 0 ? { borderTopColor: colors.border + "66" } : undefined}
+                  style={index > 0 ? { borderTopColor: withOpacity(colors.border, OPACITY.scrim) } : undefined}
                 >
                   <Text
                     style={[

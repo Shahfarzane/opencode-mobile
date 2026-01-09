@@ -1,5 +1,6 @@
 import { ScrollView, Text, View } from "react-native";
 import { FontSizes, Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import type { Permission } from "./types";
 
 interface PermissionDetailsProps {
@@ -209,7 +210,7 @@ function WebFetchDetails({ permission }: { permission: Permission }) {
 			case "PATCH":
 				return colors.warning;
 			case "DELETE":
-				return colors.error;
+				return colors.destructive;
 			default:
 				return colors.mutedForeground;
 		}
@@ -231,7 +232,7 @@ function WebFetchDetails({ permission }: { permission: Permission }) {
 				<View className="flex-row items-start gap-2">
 					<View
 						className="px-1.5 py-0.5 rounded"
-						style={{ backgroundColor: `${getMethodColor()}20` }}
+						style={{ backgroundColor: withOpacity(getMethodColor(), OPACITY.active) }}
 					>
 						<Text
 							style={[

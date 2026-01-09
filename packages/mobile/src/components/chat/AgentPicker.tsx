@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 
 export interface Agent {
 	name: string;
@@ -123,7 +124,7 @@ export function AgentPicker({
 								className="flex-row items-center justify-between p-3.5 rounded-xl border"
 								style={{
 									backgroundColor: isSelected
-										? `${agentColor}15`
+										? withOpacity(agentColor, OPACITY.active)
 										: colors.card,
 									borderColor: isSelected ? agentColor : colors.border,
 								}}

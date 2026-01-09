@@ -103,12 +103,12 @@ export const GitIdentitiesList = forwardRef<
           className={listStyles.addButton({})}
           style={{ backgroundColor: colors.primary }}
         >
-          <PlusIcon size={14} color={colors.background} />
+          <PlusIcon size={14} color={colors.primaryForeground} />
           <Text
             style={[
               typography.micro,
               fontStyle("600"),
-              { color: colors.background },
+              { color: colors.primaryForeground },
             ]}
           >
             Add
@@ -141,8 +141,8 @@ export const GitIdentitiesList = forwardRef<
             className={listStyles.createButton({})}
             style={{ backgroundColor: colors.primary }}
           >
-            <PlusIcon size={16} color={colors.background} />
-            <Text style={[typography.uiLabel, { color: colors.background }]}>
+            <PlusIcon size={16} color={colors.primaryForeground} />
+            <Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>
               Create your first identity
             </Text>
           </Pressable>

@@ -63,7 +63,7 @@ export function SettingsSwitch({
         onValueChange={onChange}
         disabled={disabled}
         trackColor={{ false: colors.muted, true: colors.primary }}
-        thumbColor={colors.background}
+        thumbColor={colors.card}
       />
     </Pressable>
   );

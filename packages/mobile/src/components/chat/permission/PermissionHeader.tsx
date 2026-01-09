@@ -9,6 +9,7 @@ import {
 	ToolIcon,
 } from "@/components/icons";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { getToolDisplayName } from "./utils";
 
 interface PermissionHeaderProps {
@@ -79,7 +80,7 @@ export function PermissionHeader({
 			<View className="flex-row items-center gap-2">
 				<View
 					className="w-6 h-6 rounded-md items-center justify-center"
-					style={{ backgroundColor: `${colors.warning}20` }}
+					style={{ backgroundColor: withOpacity(colors.warning, OPACITY.emphasized) }}
 				>
 					{getToolIcon(toolName, colors.warning, 16)}
 				</View>

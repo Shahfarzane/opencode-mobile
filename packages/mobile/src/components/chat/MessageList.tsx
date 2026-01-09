@@ -9,6 +9,7 @@ import type {
 import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import { OpenChamberLogo } from "../ui/OpenChamberLogo";
 import { TextLoop } from "../ui/TextLoop";
 import { ChatMessage } from "./ChatMessage";
@@ -58,8 +59,8 @@ const phrases = [
 ];
 
 function EmptyState() {
-	const { isDark } = useTheme();
-	const textColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
+	const { colors } = useTheme();
+	const textColor = withOpacity(colors.foreground, OPACITY.overlay);
 
 	return (
 		<View className={messageListStyles.emptyContainer({})}>

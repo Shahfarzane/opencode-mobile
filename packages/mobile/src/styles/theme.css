@@ -53,88 +53,89 @@
 @layer theme {
   :root {
     /* Dark theme (default for this app) */
+    /* Colors aligned with packages/ui/src/index.css */
     @variant dark {
-      /* Surface colors */
-      --background: oklch(0.15 0.01 50);
-      --foreground: oklch(0.83 0.02 95);
-      --card: oklch(0.18 0.01 55);
-      --card-foreground: oklch(0.83 0.02 95);
-      --popover: oklch(0.22 0.01 55);
-      --popover-foreground: oklch(0.83 0.02 95);
+      /* Surface colors - matches main app .dark class */
+      --background: oklch(0.16 0.01 30); /* #151313 */
+      --foreground: oklch(0.85 0.02 90); /* #cdccc3 */
+      --card: oklch(0.19 0.01 40); /* #1C1B1A */
+      --card-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
+      --popover: oklch(0.24 0.01 40); /* #282726 */
+      --popover-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
 
       /* Primary - Golden Sand */
-      --primary: oklch(0.80 0.16 85);
-      --primary-hover: oklch(0.84 0.15 85);
-      --primary-foreground: oklch(0.15 0.01 50);
+      --primary: oklch(0.77 0.17 85); /* #edb449 - golden sand */
+      --primary-hover: oklch(0.82 0.15 85);
+      --primary-foreground: oklch(0.16 0.01 30); /* #151313 */
 
       /* Secondary */
-      --secondary: oklch(0.28 0.01 60);
-      --secondary-foreground: oklch(0.83 0.02 95);
+      --secondary: oklch(0.29 0.01 40); /* #343331 */
+      --secondary-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
 
       /* Muted surfaces */
-      --muted: oklch(0.33 0.01 60);
-      --muted-foreground: oklch(0.75 0.02 95);
+      --muted: oklch(0.33 0.01 40); /* #403E3C */
+      --muted-foreground: oklch(0.75 0.02 80); /* #b6b4ab */
 
       /* Accent */
-      --accent: oklch(0.28 0.01 60);
-      --accent-foreground: oklch(0.83 0.02 95);
+      --accent: oklch(0.29 0.01 40); /* #343331 */
+      --accent-foreground: oklch(0.85 0.02 90); /* #cdccc3 */
 
       /* Status colors */
-      --destructive: oklch(0.67 0.12 25);
-      --destructive-foreground: oklch(0.15 0.01 50);
-      --success: oklch(0.68 0.12 142);
-      --success-foreground: oklch(0.15 0.01 50);
-      --info: oklch(0.68 0.10 235);
-      --info-foreground: oklch(0.15 0.01 50);
-      --warning: oklch(0.75 0.14 80);
-      --warning-foreground: oklch(0.15 0.01 50);
+      --destructive: oklch(0.65 0.15 30); /* #d98678 */
+      --destructive-foreground: oklch(0.9 0.02 80); /* #e1dcd0 */
+      --success: oklch(0.68 0.12 145); /* #81af6c - green */
+      --success-foreground: oklch(0.16 0.01 30);
+      --info: oklch(0.68 0.12 230); /* #5aa9d9 - blue */
+      --info-foreground: oklch(0.16 0.01 30);
+      --warning: oklch(0.7 0.13 95); /* #c2974d - yellow */
+      --warning-foreground: oklch(0.16 0.01 30);
 
       /* Borders and inputs */
-      --border: oklch(0.30 0.01 55);
-      --input: oklch(0.33 0.01 60);
-      --ring: oklch(0.80 0.16 85);
+      --border: oklch(0.31 0.01 35); /* #393836 */
+      --input: oklch(0.33 0.01 40); /* #403E3C */
+      --ring: oklch(0.77 0.17 85); /* #edb449 */
     }
 
     @variant light {
-      /* Surface colors */
-      --background: oklch(0.97 0.01 90);
-      --foreground: oklch(0.24 0.01 60);
-      --card: oklch(1.00 0 0);
-      --card-foreground: oklch(0.24 0.01 60);
-      --popover: oklch(1.00 0 0);
-      --popover-foreground: oklch(0.24 0.01 60);
+      /* Surface colors - matches main app :root */
+      --background: oklch(0.97 0.02 85); /* Warm sand background */
+      --foreground: oklch(0.25 0.02 40); /* Dark warm text */
+      --card: oklch(0.99 0.01 90); /* Bright sand card */
+      --card-foreground: oklch(0.25 0.02 40); /* Dark warm text */
+      --popover: oklch(0.99 0.01 90); /* Bright sand popover */
+      --popover-foreground: oklch(0.25 0.02 40); /* Dark warm text */
 
-      /* Primary - Golden Sand */
-      --primary: oklch(0.72 0.14 80);
-      --primary-hover: oklch(0.65 0.14 78);
-      --primary-foreground: oklch(1.00 0 0);
+      /* Primary - Orange accent */
+      --primary: oklch(0.65 0.2 55); /* Primary accent - orange */
+      --primary-hover: oklch(0.60 0.2 55);
+      --primary-foreground: oklch(0.99 0.01 90); /* Light text on primary */
 
       /* Secondary */
-      --secondary: oklch(0.93 0.01 90);
-      --secondary-foreground: oklch(0.24 0.01 60);
+      --secondary: oklch(0.92 0.02 80); /* Light sand */
+      --secondary-foreground: oklch(0.25 0.02 40); /* Dark warm text */
 
       /* Muted surfaces */
-      --muted: oklch(0.93 0.01 90);
-      --muted-foreground: oklch(0.50 0.01 60);
+      --muted: oklch(0.9 0.015 75); /* Muted sand */
+      --muted-foreground: oklch(0.45 0.02 50); /* Medium warm text */
 
       /* Accent */
-      --accent: oklch(0.93 0.01 90);
-      --accent-foreground: oklch(0.24 0.01 60);
+      --accent: oklch(0.92 0.02 80); /* Light sand accent */
+      --accent-foreground: oklch(0.25 0.02 40); /* Dark warm text */
 
       /* Status colors */
-      --destructive: oklch(0.58 0.15 25);
-      --destructive-foreground: oklch(1.00 0 0);
-      --success: oklch(0.57 0.12 142);
-      --success-foreground: oklch(1.00 0 0);
-      --info: oklch(0.58 0.10 235);
-      --info-foreground: oklch(1.00 0 0);
-      --warning: oklch(0.65 0.14 78);
-      --warning-foreground: oklch(1.00 0 0);
+      --destructive: oklch(0.55 0.25 25); /* Warm red */
+      --destructive-foreground: oklch(0.99 0.01 90); /* Light text */
+      --success: oklch(0.58 0.15 145); /* Green */
+      --success-foreground: oklch(0.99 0.01 90);
+      --info: oklch(0.58 0.15 230); /* Blue */
+      --info-foreground: oklch(0.99 0.01 90);
+      --warning: oklch(0.6 0.16 85); /* Golden sand */
+      --warning-foreground: oklch(0.99 0.01 90);
 
       /* Borders and inputs */
-      --border: oklch(0.87 0.01 90);
-      --input: oklch(0.93 0.01 90);
-      --ring: oklch(0.72 0.14 80);
+      --border: oklch(0.85 0.02 70); /* Warm border */
+      --input: oklch(0.88 0.02 75); /* Input background */
+      --ring: oklch(0.65 0.2 55); /* Focus ring color */
     }
   }
 }

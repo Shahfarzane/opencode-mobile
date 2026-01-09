@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { OVERLAYS } from "@/utils/colors";
 import { contextUsageDisplayStyles } from "./ContextUsageDisplay.styles";
 
 export interface ContextUsage {
@@ -120,7 +121,7 @@ export function ContextUsageDisplay({
 			>
 				<Pressable
 					className={contextUsageDisplayStyles.modalOverlay({})}
-					style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+					style={{ backgroundColor: OVERLAYS.scrimDark }}
 					onPress={() => setModalVisible(false)}
 				>
 					<View

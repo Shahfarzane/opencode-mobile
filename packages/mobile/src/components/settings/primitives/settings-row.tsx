@@ -77,7 +77,7 @@ export function SettingsRow(props: SettingsRowProps) {
               false: colors.muted,
               true: colors.primary,
             }}
-            thumbColor="#FFFFFF"
+            thumbColor={colors.card}
             ios_backgroundColor={colors.muted}
           />
         )}
