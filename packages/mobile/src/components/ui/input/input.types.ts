@@ -14,14 +14,16 @@ export type InputState = "default" | "focused" | "error" | "disabled";
  * Props for the Input component
  */
 export interface InputProps extends Omit<TextInputProps, "style"> {
-  /** Input label */
-  label?: string;
+  /** Input label (string or ReactNode for custom styling) */
+  label?: React.ReactNode;
   /** Error message (shows error state when provided) */
   error?: string;
   /** Helper text shown below input */
   helperText?: string;
   /** Input size */
   size?: InputSize;
+  /** Prefix text shown before input with muted background (e.g., "@" or "/") */
+  prefix?: string;
   /** Icon to show on the left side */
   leftIcon?: React.ReactNode;
   /** Icon to show on the right side */
@@ -34,6 +36,8 @@ export interface InputProps extends Omit<TextInputProps, "style"> {
   style?: ViewStyle;
   /** Additional style for the input */
   inputStyle?: TextStyle;
+  /** Number of lines for multiline input (sets min height) */
+  numberOfLines?: number;
 }
 
 /**

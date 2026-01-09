@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { FontSizes, Fonts, Spacing, useTheme } from "@/theme";
+import { FontSizes, Fonts, SemanticSpacing, Spacing, useTheme } from "@/theme";
 import type { SettingsRowProps } from "./settings-row.types";
 
 const DISPLAY_NAME = "SettingsRow";
@@ -56,7 +56,7 @@ export function SettingsRow(props: SettingsRowProps) {
       >
         {title}
       </Text>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SemanticSpacing.gapSm }}>
         {value && !isToggle && (
           <Text
             style={{

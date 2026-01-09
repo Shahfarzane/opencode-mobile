@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
-import { FontFamilySans, FontSizes, fontStyle, Radius, typography, useTheme } from "@/theme";
+import { FontFamilySans, FontSizes, fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu } from "./MessageActionsMenu";
@@ -223,10 +223,10 @@ function RenderPart({
 
 		return (
 			<FadeInView key={partKey} isNew={isLastPart && isStreaming}>
-				<View style={{ marginBottom: 4 }}>
+				<View style={{ marginBottom: Spacing[1] }}>
 					<MarkdownRenderer content={textContent} />
 					{isLastPart && isStreaming && (
-						<Text style={{ marginLeft: 2, color: colors.primary }}>▊</Text>
+						<Text style={{ marginLeft: Spacing[0.5], color: colors.primary }}>▊</Text>
 					)}
 				</View>
 			</FadeInView>
@@ -330,10 +330,10 @@ function AssistantMessage({
 						/>
 					))
 				) : (
-					<View style={{ marginBottom: 4 }}>
+					<View style={{ marginBottom: Spacing[1] }}>
 						<MarkdownRenderer content={message.content} />
 						{isStreaming && (
-							<Text style={{ marginLeft: 2, color: colors.primary }}>▊</Text>
+							<Text style={{ marginLeft: Spacing[0.5], color: colors.primary }}>▊</Text>
 						)}
 					</View>
 				)}

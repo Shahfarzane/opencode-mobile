@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { FixedLineHeights, FontSizes, Radius, typography, useTheme } from "@/theme";
+import { FixedLineHeights, FontSizes, Radius, Spacing, typography, useTheme } from "@/theme";
 import { MAX_CODE_BLOCK_HEIGHT } from "./CodeBlock.styles";
 
 // Chevron icon component
@@ -367,7 +367,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 	return (
 		<View
 			style={{
-				marginVertical: 8,
+				marginVertical: Spacing[2],
 				borderRadius: Radius.lg,
 				borderColor: colors.border,
 				borderWidth: 1,
@@ -381,12 +381,12 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 					flexDirection: "row",
 					alignItems: "center",
 					justifyContent: "space-between",
-					paddingHorizontal: 12,
-					paddingVertical: 8,
+					paddingHorizontal: Spacing[3],
+					paddingVertical: Spacing[2],
 					backgroundColor: colors.muted,
 				}}
 			>
-				<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+				<View style={{ flexDirection: "row", alignItems: "center", gap: Spacing[2] }}>
 					<ChevronIcon expanded={expanded} color={colors.mutedForeground} />
 					<View
 						style={{
@@ -413,7 +413,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 						e.stopPropagation();
 						handleCopy();
 					}}
-					style={{ paddingHorizontal: 8, paddingVertical: 4 }}
+					style={{ paddingHorizontal: Spacing[2], paddingVertical: Spacing[1] }}
 				>
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{copied ? "Copied!" : "Copy"}
@@ -432,11 +432,11 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 					<View
 						style={{
 							flexDirection: "row",
-							padding: 12,
+							padding: Spacing[3],
 							maxHeight: MAX_CODE_BLOCK_HEIGHT,
 						}}
 					>
-						<View style={{ marginRight: 12, alignItems: "flex-end" }}>
+						<View style={{ marginRight: Spacing[3], alignItems: "flex-end" }}>
 							{lines.map((_, lineNum) => (
 								<Text
 									key={`num-${lineNum + 1}`}

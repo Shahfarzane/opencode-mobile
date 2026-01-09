@@ -25,10 +25,14 @@ const container = tv({
       md: "rounded-lg",
       lg: "rounded-xl",
     },
+    multiline: {
+      true: "items-start",
+    },
   },
   defaultVariants: {
     state: "default",
     size: "md",
+    multiline: false,
   },
 });
 
@@ -49,11 +53,15 @@ const input = tv({
     hasRightIcon: {
       true: "pr-0",
     },
+    multiline: {
+      true: "py-3",
+    },
   },
   defaultVariants: {
     size: "md",
     hasLeftIcon: false,
     hasRightIcon: false,
+    multiline: false,
   },
 });
 
@@ -110,6 +118,23 @@ const iconWrapper = tv({
 });
 
 /**
+ * Prefix wrapper styles (for @ or / prefixes)
+ */
+const prefix = tv({
+  base: "bg-muted/50 px-3 justify-center items-center",
+  variants: {
+    size: {
+      sm: "min-h-9",
+      md: "min-h-11",
+      lg: "min-h-14",
+    },
+  },
+  defaultVariants: {
+    size: "md",
+  },
+});
+
+/**
  * Combined input styles
  */
 export const inputStyles = combineStyles({
@@ -119,4 +144,5 @@ export const inputStyles = combineStyles({
   label,
   helperText,
   iconWrapper,
+  prefix,
 });

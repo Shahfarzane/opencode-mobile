@@ -25,7 +25,7 @@ export const CardContent = CardComponent.Content;
 export const CardFooter = CardComponent.Footer;
 
 // Input
-export { Input } from "./input";
+export { Input, SearchInput } from "./input";
 export type {
   InputProps,
   InputLabelProps,

@@ -3,7 +3,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { Fonts, FontSizes, LineHeights, Radius, typography, useTheme } from "@/theme";
+import { Fonts, FontSizes, LineHeights, Radius, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
@@ -30,7 +30,7 @@ function ReasoningMarkdown({
 		},
 		paragraph: {
 			marginTop: 0,
-			marginBottom: 4,
+			marginBottom: Spacing[1],
 		},
 		strong: {
 			fontFamily: Fonts.monoSemiBold,
@@ -44,7 +44,7 @@ function ReasoningMarkdown({
 			fontSize: FontSizes.micro,
 			backgroundColor: colors.muted,
 			color: colors.foreground,
-			paddingHorizontal: 4,
+			paddingHorizontal: Spacing[1],
 			borderRadius: Radius.sm,
 			fontStyle: "normal" as const,
 		},
@@ -53,13 +53,13 @@ function ReasoningMarkdown({
 			textDecorationLine: "underline" as const,
 		},
 		bullet_list: {
-			marginBottom: 4,
+			marginBottom: Spacing[1],
 		},
 		ordered_list: {
-			marginBottom: 4,
+			marginBottom: Spacing[1],
 		},
 		list_item: {
-			marginBottom: 2,
+			marginBottom: Spacing[0.5],
 		},
 	};
 

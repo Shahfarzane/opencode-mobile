@@ -1,7 +1,8 @@
 import * as Haptics from "expo-haptics";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Fonts, FontSizes, Radius, Spacing, useTheme } from "@/theme";
+import { Fonts, FontSizes, Radius, SemanticSpacing, Spacing, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import type { SettingsListItemProps } from "./settings-list-item.types";
 
 const DISPLAY_NAME = "SettingsListItem";
@@ -32,8 +33,8 @@ export function SettingsListItem({
 
   // Match desktop selection states: dark:bg-accent/80 bg-primary/12
   const pressedBgColor = isDark
-    ? `${colors.accent}CC` // 80% opacity
-    : `${colors.primary}1F`; // 12% opacity (~0.12 * 255 = 31 = 0x1F)
+    ? withOpacity(colors.accent, OPACITY.strong)
+    : withOpacity(colors.primary, OPACITY.selected);
 
   return (
     <Pressable
@@ -66,7 +67,7 @@ export function SettingsListItem({
 
         {/* Main content */}
         <View style={{ flex: 1, minWidth: 0 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SemanticSpacing.gapSm }}>
             {/* Small icon before title (e.g., lock icon) */}
             {icon && <View style={{ flexShrink: 0 }}>{icon}</View>}
 
@@ -91,9 +92,9 @@ export function SettingsListItem({
               <View
                 style={{
                   backgroundColor: colors.muted,
-                  borderColor: `${colors.border}80`,
+                  borderColor: withOpacity(colors.border, OPACITY.half),
                   borderWidth: 1,
-                  paddingHorizontal: 4,
+                  paddingHorizontal: Spacing[1],
                   paddingBottom: 1,
                   borderRadius: Radius.DEFAULT,
                   flexShrink: 0,
@@ -117,7 +118,7 @@ export function SettingsListItem({
           {subtitle && (
             <Text
               style={{
-                color: `${colors.mutedForeground}99`, // 60% opacity like desktop
+                color: withOpacity(colors.mutedForeground, OPACITY.muted),
                 fontSize: FontSizes.micro,
                 fontFamily: Fonts.regular,
                 marginTop: 1,

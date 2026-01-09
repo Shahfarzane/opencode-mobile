@@ -51,6 +51,7 @@ const InputRoot = forwardRef<TextInput, InputProps>(
       error,
       helperText,
       size = "md",
+      prefix,
       leftIcon,
       rightIcon,
       editable = true,
@@ -60,6 +61,8 @@ const InputRoot = forwardRef<TextInput, InputProps>(
       inputStyle,
       onFocus,
       onBlur,
+      multiline,
+      numberOfLines,
       ...props
     },
     ref
@@ -87,11 +90,13 @@ const InputRoot = forwardRef<TextInput, InputProps>(
     };
 
     const wrapperClassName = inputStyles.wrapper({ className });
-    const containerClassName = inputStyles.container({ state, size });
+    const containerClassName = inputStyles.container({ state, size, multiline });
+    const prefixClassName = inputStyles.prefix({ size });
     const inputClassName_ = inputStyles.input({
       size,
-      hasLeftIcon: !!leftIcon,
+      hasLeftIcon: !!leftIcon || !!prefix,
       hasRightIcon: !!rightIcon,
+      multiline,
       className: inputClassName,
     });
 
@@ -105,6 +110,15 @@ const InputRoot = forwardRef<TextInput, InputProps>(
       onBlur?.(e);
     };
 
+    // Calculate min height for multiline based on numberOfLines
+    // Using line height of ~20px (body text) + padding
+    const multilineStyle = multiline
+      ? {
+          textAlignVertical: "top" as const,
+          minHeight: numberOfLines ? numberOfLines * 20 + 24 : 100,
+        }
+      : undefined;
+
     return (
       <InputContext.Provider value={contextValue}>
         <View className={wrapperClassName} style={style}>
@@ -113,7 +127,15 @@ const InputRoot = forwardRef<TextInput, InputProps>(
           )}
 
           <View className={containerClassName}>
-            {leftIcon && (
+            {prefix && (
+              <View className={prefixClassName}>
+                <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+                  {prefix}
+                </Text>
+              </View>
+            )}
+
+            {leftIcon && !prefix && (
               <View className={inputStyles.iconWrapper({ position: "left" })}>
                 {leftIcon}
               </View>
@@ -126,7 +148,14 @@ const InputRoot = forwardRef<TextInput, InputProps>(
               onBlur={handleBlur}
               placeholderTextColor={colors.mutedForeground}
               className={inputClassName_}
-              style={[typography.body, { color: colors.foreground }, inputStyle]}
+              style={[
+                typography.body,
+                { color: colors.foreground },
+                multilineStyle,
+                inputStyle,
+              ]}
+              multiline={multiline}
+              numberOfLines={numberOfLines}
               {...props}
             />
 
