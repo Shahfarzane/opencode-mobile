@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Animated, Pressable, Text, View } from "react-native";
+import { Animated, Text, View } from "react-native";
 import { LoaderIcon, StopIcon } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { statusRowStyles } from "./StatusRow.styles";
 
@@ -68,19 +69,14 @@ export function StatusRow({
 			</View>
 
 			{isWorking && canAbort && onAbort && (
-				<Pressable
+				<Button
+					variant="destructive"
+					size="xs"
 					onPress={onAbort}
-					className={statusRowStyles.abortButton({})}
-					style={{ backgroundColor: colors.destructive }}
-					hitSlop={8}
 				>
 					<StopIcon size={12} color={colors.destructiveForeground} />
-					<Text
-						style={[typography.micro, { color: colors.destructiveForeground }]}
-					>
-						Stop
-					</Text>
-				</Pressable>
+					<Button.Label>Stop</Button.Label>
+				</Button>
 			)}
 		</View>
 	);

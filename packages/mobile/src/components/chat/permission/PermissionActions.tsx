@@ -1,13 +1,7 @@
-import * as Haptics from "expo-haptics";
-import {
-	ActivityIndicator,
-	Pressable,
-	Text,
-	View,
-} from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { CheckIcon, ClockIcon, XIcon } from "@/components/icons";
-import { fontStyle, typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
+import { Button } from "@/components/ui";
+import { useTheme } from "@/theme";
 
 export type PermissionResponse = "once" | "always" | "reject";
 
@@ -22,74 +16,41 @@ export function PermissionActions({
 }: PermissionActionsProps) {
 	const { colors } = useTheme();
 
-	const handlePress = async (response: PermissionResponse) => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-		onResponse(response);
-	};
-
 	return (
 		<View
 			className="flex-row items-center gap-1.5 px-3 py-2 border-t"
 			style={{ borderTopColor: colors.border }}
 		>
-			<Pressable
-				onPress={() => handlePress("once")}
-				disabled={isResponding}
-				className="flex-1 flex-row items-center justify-center gap-1 px-2 py-1.5 rounded-md"
-				style={({ pressed }) => ({
-					backgroundColor: colors.primary,
-					opacity: pressed ? 0.8 : isResponding ? 0.5 : 1,
-				})}
+			<Button
+				variant="primary"
+				size="xs"
+				onPress={() => onResponse("once")}
+				isDisabled={isResponding}
+				className="flex-1"
 			>
 				<CheckIcon size={14} color={colors.primaryForeground} />
-				<Text
-					style={[
-						typography.meta,
-						fontStyle("600"),
-						{ color: colors.primaryForeground },
-					]}
-				>
-					Allow Once
-				</Text>
-			</Pressable>
+				<Button.Label>Allow Once</Button.Label>
+			</Button>
 
-			<Pressable
-				onPress={() => handlePress("always")}
-				disabled={isResponding}
-				className="flex-row items-center gap-1 px-2 py-1.5 rounded-md"
-				style={({ pressed }) => ({
-					backgroundColor: colors.muted,
-					opacity: pressed ? 0.8 : isResponding ? 0.5 : 1,
-				})}
+			<Button
+				variant="muted"
+				size="xs"
+				onPress={() => onResponse("always")}
+				isDisabled={isResponding}
 			>
 				<ClockIcon size={14} color={colors.mutedForeground} />
-				<Text
-					style={[
-						typography.meta,
-						fontStyle("500"),
-						{ color: colors.mutedForeground },
-					]}
-				>
-					Always
-				</Text>
-			</Pressable>
+				<Button.Label>Always</Button.Label>
+			</Button>
 
-			<Pressable
-				onPress={() => handlePress("reject")}
-				disabled={isResponding}
-				className="flex-row items-center gap-1 px-2 py-1.5 rounded-md"
-				style={({ pressed }) => ({
-					backgroundColor: withOpacity(colors.destructive, OPACITY.active),
-					opacity: pressed ? 0.8 : isResponding ? 0.5 : 1,
-				})}
+			<Button
+				variant="outline"
+				size="xs"
+				onPress={() => onResponse("reject")}
+				isDisabled={isResponding}
 			>
 				<XIcon size={14} color={colors.destructive} />
-				<Text
-					style={[typography.meta, fontStyle("500"), { color: colors.destructive }]}
-				>
-					Deny
-				</Text>
-			</Pressable>
+				<Button.Label style={{ color: colors.destructive }}>Deny</Button.Label>
+			</Button>
 
 			{isResponding && (
 				<ActivityIndicator

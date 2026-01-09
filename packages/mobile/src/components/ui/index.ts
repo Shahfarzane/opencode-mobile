@@ -3,8 +3,8 @@ import { Card as CardComponent } from "./card";
 import { Skeleton as SkeletonComponent } from "./skeleton";
 
 // Button
-export { Button } from "./button";
-export type { ButtonProps, ButtonLabelProps, ButtonVariant, ButtonSize } from "./button";
+export { Button, IconButton } from "./button";
+export type { ButtonProps, ButtonLabelProps, ButtonVariant, ButtonSize, IconButtonProps } from "./button";
 export { buttonStyles } from "./button";
 
 // Card

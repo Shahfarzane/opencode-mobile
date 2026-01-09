@@ -8,7 +8,6 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -16,7 +15,8 @@ import {
 } from "react-native";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { PlusIcon } from "@/components/icons";
-import { fontStyle, typography, useTheme } from "@/theme";
+import { Button } from "@/components/ui";
+import { typography, useTheme } from "@/theme";
 import { listStyles } from "./list.styles";
 import { SettingsListItem } from "./SettingsListItem";
 
@@ -98,22 +98,14 @@ export const GitIdentitiesList = forwardRef<
         <Text style={[typography.meta, { color: colors.mutedForeground }]}>
           Total {profiles.length}
         </Text>
-        <Pressable
+        <Button
+          variant="primary"
+          size="xs"
           onPress={() => onSelectProfile("__new__")}
-          className={listStyles.addButton({})}
-          style={{ backgroundColor: colors.primary }}
         >
           <PlusIcon size={14} color={colors.primaryForeground} />
-          <Text
-            style={[
-              typography.micro,
-              fontStyle("600"),
-              { color: colors.primaryForeground },
-            ]}
-          >
-            Add
-          </Text>
-        </Pressable>
+          <Button.Label>Add</Button.Label>
+        </Button>
       </View>
 
       <View className={listStyles.section({})}>
@@ -133,19 +125,14 @@ export const GitIdentitiesList = forwardRef<
           <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
             No git identities yet
           </Text>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onSelectProfile("__new__");
-            }}
-            className={listStyles.createButton({})}
-            style={{ backgroundColor: colors.primary }}
+          <Button
+            variant="primary"
+            size="sm"
+            onPress={() => onSelectProfile("__new__")}
           >
             <PlusIcon size={16} color={colors.primaryForeground} />
-            <Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>
-              Create your first identity
-            </Text>
-          </Pressable>
+            <Button.Label>Create your first identity</Button.Label>
+          </Button>
         </View>
       )}
     </ScrollView>

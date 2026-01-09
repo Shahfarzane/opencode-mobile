@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { type Provider, providersApi } from "@/api";
 import { ChevronLeft } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { providerDetailViewStyles } from "./ProviderDetailView.styles";
@@ -171,32 +172,15 @@ export function ProviderDetailView({
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Pressable
+            <Button
+              variant={apiKey.trim() ? "primary" : "muted"}
+              size="sm"
               onPress={handleSaveApiKey}
-              disabled={isSaving || !apiKey.trim()}
-              className={providerDetailViewStyles.button({ disabled: isSaving })}
-              style={{
-                backgroundColor: apiKey.trim() ? colors.primary : colors.muted,
-              }}
+              isDisabled={isSaving || !apiKey.trim()}
+              isLoading={isSaving}
             >
-              {isSaving ? (
-                <ActivityIndicator size="small" color={colors.primaryForeground} />
-              ) : (
-                <Text
-                  style={[
-                    typography.meta,
-                    {
-                      color: apiKey.trim()
-                        ? colors.primaryForeground
-                        : colors.mutedForeground,
-                    },
-                    fontStyle("500"),
-                  ]}
-                >
-                  Save
-                </Text>
-              )}
-            </Pressable>
+              <Button.Label>Save</Button.Label>
+            </Button>
           </View>
           <Text
             className="mt-1.5"

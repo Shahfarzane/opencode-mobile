@@ -8,12 +8,15 @@ export type ButtonVariant =
   | "secondary"
   | "outline"
   | "ghost"
-  | "destructive";
+  | "destructive"
+  | "warning"
+  | "muted"
+  | "info";
 
 /**
  * Button size options
  */
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "sm" | "md" | "lg" | "xs" | "icon-sm" | "icon-md" | "icon-lg";
 
 /**
  * Props for the Button root component

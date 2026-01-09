@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { type GitIdentityProfile, gitApi } from "@/api";
 import { CheckIcon, ChevronLeft } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { gitIdentityDetailViewStyles } from "./GitIdentityDetailView.styles";
@@ -181,26 +182,15 @@ export function GitIdentityDetailView({
             {isNewProfile ? "New Identity" : name || "Git Identity"}
           </Text>
         </Pressable>
-        <Pressable
+        <Button
+          variant="primary"
+          size="sm"
           onPress={handleSave}
-          disabled={isSaving}
-          className={gitIdentityDetailViewStyles.saveButton({ disabled: isSaving })}
-          style={{ backgroundColor: colors.primary }}
+          isDisabled={isSaving}
+          isLoading={isSaving}
         >
-          {isSaving ? (
-            <ActivityIndicator size="small" color={colors.primaryForeground} />
-          ) : (
-            <Text
-              style={[
-                typography.meta,
-                fontStyle("500"),
-                { color: colors.primaryForeground },
-              ]}
-            >
-              Save
-            </Text>
-          )}
-        </Pressable>
+          <Button.Label>Save</Button.Label>
+        </Button>
       </View>
 
       <ScrollView
