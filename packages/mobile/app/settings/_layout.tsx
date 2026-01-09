@@ -18,7 +18,6 @@ export default function SettingsLayout() {
 			<Stack.Screen name="connection" />
 			<Stack.Screen name="appearance" />
 			<Stack.Screen name="preferences" />
-			<Stack.Screen name="about" />
 			<Stack.Screen name="agents" />
 			<Stack.Screen name="commands" />
 			<Stack.Screen name="providers" />
