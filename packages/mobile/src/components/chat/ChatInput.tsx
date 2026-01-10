@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { AiAgentIcon, SendIcon, StopIcon } from "@/components/icons";
 import { IconButton } from "@/components/ui";
+import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { FontSizes, Fonts, fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { chatInputStyles, MOBILE_SPACING } from "./ChatInput.styles";
@@ -330,37 +331,6 @@ function getPermissionModeColors(
 	return null;
 }
 
-// Provider logo component matching desktop UI
-function ProviderLogo({ providerId }: { providerId: string }) {
-	const { colors } = useTheme();
-
-	// Map provider IDs to display symbols (matching desktop's ProviderLogo)
-	const getProviderSymbol = (id: string) => {
-		const normalizedId = id.toLowerCase();
-		if (normalizedId.includes("anthropic")) return "A\\";
-		if (normalizedId.includes("openai")) return "O";
-		if (normalizedId.includes("google") || normalizedId.includes("gemini"))
-			return "G";
-		if (normalizedId.includes("mistral")) return "M";
-		if (normalizedId.includes("groq")) return "Gr";
-		if (normalizedId.includes("ollama")) return "Ol";
-		if (normalizedId.includes("openrouter")) return "OR";
-		if (normalizedId.includes("deepseek")) return "DS";
-		return id.charAt(0).toUpperCase();
-	};
-
-	return (
-			<Text
-				style={[
-					typography.micro,
-					fontStyle("600"),
-					{ color: colors.mutedForeground },
-				]}
-			>
-				{getProviderSymbol(providerId)}
-		</Text>
-	);
-}
 
 // Agent badge component with color support and icon
 function AgentBadge({ name, color }: { name: string; color?: string }) {
@@ -695,7 +665,7 @@ export function ChatInput({
 							>
 								{modelInfo ? (
 									<>
-										<ProviderLogo providerId={modelInfo.providerId} />
+										<ProviderLogo providerId={modelInfo.providerId} size={14} />
 										<Text
 											style={[
 												typography.micro,

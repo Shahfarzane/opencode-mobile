@@ -12,16 +12,26 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CheckIcon, SearchIcon, StarIcon, XIcon } from "@/components/icons";
+import { BrainIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon, ClockIcon, ImageIcon, SearchIcon, StarIcon, ToolIcon, XIcon } from "@/components/icons";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { Radius, Spacing, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
+
+interface ModelMetadata {
+	reasoning?: boolean;
+	tool_call?: boolean;
+	modalities?: {
+		input?: string[];
+		output?: string[];
+	};
+}
 
 interface Model {
 	id: string;
 	name: string;
 	contextLength?: number;
 	outputLength?: number;
+	metadata?: ModelMetadata;
 }
 
 interface Provider {
@@ -40,6 +50,7 @@ interface ModelPickerProps {
 	onClose: () => void;
 	favoriteModels?: Set<string>;
 	onToggleFavorite?: (providerId: string, modelId: string) => void;
+	recentModels?: Array<{ providerId: string; modelId: string }>;
 }
 
 /**
@@ -126,26 +137,81 @@ function ProviderLogoWithFallback({ providerId, size = 16 }: { providerId: strin
 }
 
 /**
- * Section header component (Provider name with logo)
+ * Collapsible provider header component (Provider name with logo, Current tag, and arrow)
  */
-function SectionHeader({
+function ProviderHeader({
 	providerId,
-	providerName
+	providerName,
+	isExpanded,
+	isCurrent,
+	onPress,
 }: {
 	providerId: string;
 	providerName: string;
+	isExpanded: boolean;
+	isCurrent: boolean;
+	onPress: () => void;
 }) {
 	const { colors } = useTheme();
 
 	return (
-		<View
-			className="flex-row items-center gap-2 px-3 py-2"
-			style={{ backgroundColor: colors.background }}
+		<Pressable
+			onPress={onPress}
+			className="flex-row items-center justify-between px-3 py-2"
+			style={({ pressed }) => ({
+				backgroundColor: pressed ? withOpacity(colors.muted, 0.5) : "transparent",
+			})}
 		>
-			<ProviderLogoWithFallback providerId={providerId} size={20} />
-			<Text style={[typography.body, fontStyle("600"), { color: colors.primary }]}>
-				{providerName}
-			</Text>
+			<View className="flex-row items-center gap-2 flex-1">
+				<ProviderLogo providerId={providerId} size={14} />
+				<Text style={[typography.body, fontStyle("500"), { color: colors.foreground }]}>
+					{providerName}
+				</Text>
+				{isCurrent && (
+					<Text style={[typography.micro, { color: colors.primary }]}>
+						Current
+					</Text>
+				)}
+			</View>
+			{isExpanded ? (
+				<ChevronDownIcon size={12} color={colors.mutedForeground} />
+			) : (
+				<ChevronRightIcon size={12} color={colors.mutedForeground} />
+			)}
+		</Pressable>
+	);
+}
+
+/**
+ * Capability icons component for model features
+ */
+function CapabilityIcons({ model }: { model: Model }) {
+	const { colors } = useTheme();
+	const metadata = model.metadata;
+	const icons: Array<{ key: string; Icon: typeof BrainIcon; label: string }> = [];
+
+	// Check for reasoning capability
+	if (metadata?.reasoning) {
+		icons.push({ key: "reasoning", Icon: BrainIcon, label: "Reasoning" });
+	}
+
+	// Check for tool calling capability
+	if (metadata?.tool_call) {
+		icons.push({ key: "tool_call", Icon: ToolIcon, label: "Tool calling" });
+	}
+
+	// Check for image input modality (vision)
+	if (metadata?.modalities?.input?.includes("image")) {
+		icons.push({ key: "vision", Icon: ImageIcon, label: "Vision" });
+	}
+
+	if (icons.length === 0) return null;
+
+	return (
+		<View className="flex-row items-center gap-1">
+			{icons.map(({ key, Icon }) => (
+				<Icon key={key} size={12} color={colors.mutedForeground} />
+			))}
 		</View>
 	);
 }
@@ -160,6 +226,7 @@ function ModelRow({
 	isFavorite,
 	onSelect,
 	onToggleFavorite,
+	showProviderIcon = false,
 }: {
 	model: Model;
 	providerId: string;
@@ -167,16 +234,26 @@ function ModelRow({
 	isFavorite: boolean;
 	onSelect: () => void;
 	onToggleFavorite?: () => void;
+	showProviderIcon?: boolean;
 }) {
 	const { colors } = useTheme();
 	const displayName = model.name || model.id;
-	const truncatedName = displayName.length > 28 ? `${displayName.substring(0, 25)}...` : displayName;
+	const truncatedName = displayName.length > 24 ? `${displayName.substring(0, 21)}...` : displayName;
 	const contextStr = formatContextLength(model.contextLength);
+	const outputStr = formatContextLength(model.outputLength);
+	// Format as "XXX ctx • XXX out" like PWA
+	const contextDisplay = contextStr && outputStr
+		? `${contextStr} ctx • ${outputStr} out`
+		: contextStr
+			? `${contextStr} ctx`
+			: outputStr
+				? `${outputStr} out`
+				: "";
 
 	return (
 		<Pressable
 			onPress={onSelect}
-			className="flex-row items-center py-2.5 px-3"
+			className="flex-row items-center py-2 px-3"
 			style={({ pressed }) => ({
 				backgroundColor: pressed
 					? colors.muted
@@ -185,13 +262,16 @@ function ModelRow({
 						: "transparent",
 			})}
 		>
-			{/* Model name */}
-			<View className="flex-1 flex-row items-center">
+			{/* Left: Provider icon (optional) + Model name */}
+			<View className="flex-row items-center gap-1.5 min-w-0" style={{ flex: 1 }}>
+				{showProviderIcon && (
+					<ProviderLogo providerId={providerId} size={12} />
+				)}
 				<Text
 					style={[
 						typography.body,
 						fontStyle("500"),
-						{ color: isSelected ? colors.primary : colors.foreground, flexShrink: 1 },
+						{ color: isSelected ? colors.primary : colors.foreground },
 					]}
 					numberOfLines={1}
 				>
@@ -199,37 +279,47 @@ function ModelRow({
 				</Text>
 			</View>
 
-			{/* Right side: context, checkmark and favorite */}
-			<View className="flex-row items-center gap-3">
-				{contextStr ? (
+			{/* Middle: Context info (spaced evenly) */}
+			{contextDisplay ? (
+				<Text style={[typography.micro, { color: colors.mutedForeground, marginHorizontal: 8 }]}>
+					{contextDisplay}
+				</Text>
+			) : null}
+
+			{/* Right side: capability icons, selected indicator, and favorite */}
+			<View className="flex-row items-center gap-1.5">
+				<CapabilityIcons model={model} />
+				{isSelected && (
 					<View
 						style={{
-							backgroundColor: withOpacity(colors.mutedForeground, 0.15),
-							paddingHorizontal: 6,
-							paddingVertical: 2,
-							borderRadius: Radius.sm,
+							width: 8,
+							height: 8,
+							borderRadius: 4,
+							backgroundColor: colors.primary,
+						}}
+					/>
+				)}
+				{onToggleFavorite && (
+					<Pressable
+						onPress={(e) => {
+							e.stopPropagation();
+							onToggleFavorite();
+						}}
+						hitSlop={8}
+						style={{
+							width: 28,
+							height: 28,
+							alignItems: "center",
+							justifyContent: "center",
 						}}
 					>
-						<Text style={[typography.micro, fontStyle("500"), { color: colors.mutedForeground }]}>
-							{contextStr}
-						</Text>
-					</View>
-				) : null}
-				{isSelected && <CheckIcon size={16} color={colors.primary} />}
-				<Pressable
-					onPress={(e) => {
-						e.stopPropagation();
-						onToggleFavorite?.();
-					}}
-					hitSlop={8}
-					style={{ padding: 4 }}
-				>
-					<StarIcon
-						size={16}
-						color={isFavorite ? "#EAB308" : colors.mutedForeground}
-						fill={isFavorite ? "#EAB308" : "transparent"}
-					/>
-				</Pressable>
+						<StarIcon
+							size={14}
+							color={isFavorite ? "#EAB308" : colors.mutedForeground}
+							fill={isFavorite ? "#EAB308" : "transparent"}
+						/>
+					</Pressable>
+				)}
 			</View>
 		</Pressable>
 	);
@@ -260,12 +350,14 @@ export function ModelPicker({
 	onClose,
 	favoriteModels = new Set(),
 	onToggleFavorite,
+	recentModels = [],
 }: ModelPickerProps) {
 	const { colors } = useTheme();
 	const insets = useSafeAreaInsets();
 	const bottomSheetRef = useRef<BottomSheet>(null);
 	const snapPoints = useMemo(() => ["70%", "90%"], []);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
 
 	// Handle visibility changes
 	useEffect(() => {
@@ -334,6 +426,49 @@ export function ModelPicker({
 		});
 	}, [favoriteModelsList, searchQuery]);
 
+	// Get recent models list
+	const recentModelsList = useMemo(() => {
+		const recents: { providerId: string; providerName: string; model: Model }[] = [];
+		for (const recent of recentModels) {
+			const provider = availableProviders.find(p => p.id === recent.providerId);
+			if (provider?.models) {
+				const model = provider.models.find(m => m.id === recent.modelId);
+				if (model) {
+					recents.push({
+						providerId: provider.id,
+						providerName: provider.name,
+						model,
+					});
+				}
+			}
+		}
+		return recents;
+	}, [availableProviders, recentModels]);
+
+	// Filter recents by search
+	const filteredRecents = useMemo(() => {
+		const query = searchQuery.toLowerCase().trim();
+		if (!query) return recentModelsList;
+		return recentModelsList.filter(({ model, providerName }) => {
+			const modelName = (model.name || model.id).toLowerCase();
+			return modelName.includes(query) || providerName.toLowerCase().includes(query);
+		});
+	}, [recentModelsList, searchQuery]);
+
+	// Toggle provider expansion
+	const toggleProviderExpansion = useCallback((providerId: string) => {
+		Haptics.selectionAsync();
+		setExpandedProviders(prev => {
+			const newSet = new Set(prev);
+			if (newSet.has(providerId)) {
+				newSet.delete(providerId);
+			} else {
+				newSet.add(providerId);
+			}
+			return newSet;
+		});
+	}, []);
+
 	const handleModelSelect = useCallback(
 		(providerId: string, modelId: string) => {
 			Haptics.selectionAsync();
@@ -380,7 +515,7 @@ export function ModelPicker({
 	}, [onClose]);
 
 	const isSearching = searchQuery.trim().length > 0;
-	const hasResults = filteredProviders.length > 0 || filteredFavorites.length > 0;
+	const hasResults = filteredProviders.length > 0 || filteredFavorites.length > 0 || filteredRecents.length > 0;
 
 	return (
 		<BottomSheet
@@ -398,7 +533,7 @@ export function ModelPicker({
 			{/* Header */}
 			<View className="px-4 pb-3 flex-row items-center justify-between">
 				<Text style={[typography.uiHeader, fontStyle("600"), { color: colors.foreground }]}>
-					Select Model
+					Select model
 				</Text>
 				<Pressable
 					onPress={handleClose}
@@ -423,7 +558,7 @@ export function ModelPicker({
 					<BottomSheetTextInput
 						value={searchQuery}
 						onChangeText={setSearchQuery}
-						placeholder="Search models"
+						placeholder="Search providers or models"
 						placeholderTextColor={colors.mutedForeground}
 						style={[
 							typography.body,
@@ -456,13 +591,41 @@ export function ModelPicker({
 						</Text>
 					</View>
 				) : (
-					<>
+					<View>
+						{/* Recent Section */}
+						{filteredRecents.length > 0 && (
+							<View style={{ marginBottom: 8 }}>
+								<View className="flex-row items-center gap-2 px-3 py-1.5">
+									<ClockIcon size={14} color={colors.mutedForeground} />
+									<Text style={[typography.micro, fontStyle("600"), { color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 }]}>
+										Recent
+									</Text>
+								</View>
+								{filteredRecents.map(({ providerId, model }) => {
+									const isSelected = providerId === currentProviderId && model.id === currentModelId;
+									return (
+										<ModelRow
+											key={`recent-${providerId}-${model.id}`}
+											model={model}
+											providerId={providerId}
+											isSelected={isSelected}
+											isFavorite={isFavorite(providerId, model.id)}
+											onSelect={() => handleModelSelect(providerId, model.id)}
+											onToggleFavorite={onToggleFavorite ? () => handleToggleFavorite(providerId, model.id) : undefined}
+											showProviderIcon
+										/>
+									);
+								})}
+								<Separator />
+							</View>
+						)}
+
 						{/* Favorites Section */}
 						{filteredFavorites.length > 0 && (
-							<>
-								<View className="flex-row items-center gap-2 px-3 py-2">
+							<View style={{ marginBottom: 8 }}>
+								<View className="flex-row items-center gap-2 px-3 py-1.5">
 									<StarIcon size={14} color={colors.primary} fill={colors.primary} />
-									<Text style={[typography.uiLabel, fontStyle("600"), { color: colors.foreground }]}>
+									<Text style={[typography.micro, fontStyle("600"), { color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 }]}>
 										Favorites
 									</Text>
 								</View>
@@ -477,39 +640,50 @@ export function ModelPicker({
 											isFavorite={true}
 											onSelect={() => handleModelSelect(providerId, model.id)}
 											onToggleFavorite={onToggleFavorite ? () => handleToggleFavorite(providerId, model.id) : undefined}
+											showProviderIcon
 										/>
 									);
 								})}
 								<Separator />
-							</>
+							</View>
 						)}
 
-						{/* Provider Sections */}
-						{filteredProviders.map((provider, providerIndex) => (
-							<View key={provider.id}>
-								{providerIndex > 0 && <Separator />}
-								<SectionHeader
-									providerId={provider.id}
-									providerName={provider.name}
-								/>
-								{provider.models?.map((model) => {
-									const isSelected = provider.id === currentProviderId && model.id === currentModelId;
-									const modelIsFavorite = isFavorite(provider.id, model.id);
-									return (
-										<ModelRow
-											key={`${provider.id}-${model.id}`}
-											model={model}
-											providerId={provider.id}
-											isSelected={isSelected}
-											isFavorite={modelIsFavorite}
-											onSelect={() => handleModelSelect(provider.id, model.id)}
-											onToggleFavorite={onToggleFavorite ? () => handleToggleFavorite(provider.id, model.id) : undefined}
-										/>
-									);
-								})}
-							</View>
-						))}
-					</>
+						{/* Provider Sections (Collapsible) */}
+						{filteredProviders.map((provider) => {
+							const isExpanded = expandedProviders.has(provider.id);
+							const isCurrent = provider.id === currentProviderId;
+							return (
+								<View key={provider.id}>
+									<ProviderHeader
+										providerId={provider.id}
+										providerName={provider.name}
+										isExpanded={isExpanded}
+										isCurrent={isCurrent}
+										onPress={() => toggleProviderExpansion(provider.id)}
+									/>
+									{isExpanded && (
+										<View style={{ paddingLeft: 8 }}>
+											{provider.models?.map((model) => {
+												const isSelected = provider.id === currentProviderId && model.id === currentModelId;
+												const modelIsFavorite = isFavorite(provider.id, model.id);
+												return (
+													<ModelRow
+														key={`${provider.id}-${model.id}`}
+														model={model}
+														providerId={provider.id}
+														isSelected={isSelected}
+														isFavorite={modelIsFavorite}
+														onSelect={() => handleModelSelect(provider.id, model.id)}
+														onToggleFavorite={onToggleFavorite ? () => handleToggleFavorite(provider.id, model.id) : undefined}
+													/>
+												);
+											})}
+										</View>
+									)}
+								</View>
+							);
+						})}
+					</View>
 				)}
 			</BottomSheetScrollView>
 		</BottomSheet>
