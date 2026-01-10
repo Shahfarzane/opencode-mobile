@@ -315,8 +315,8 @@ function ModelRow({
 					>
 						<StarIcon
 							size={14}
-							color={isFavorite ? "#EAB308" : colors.mutedForeground}
-							fill={isFavorite ? "#EAB308" : "transparent"}
+							color={isFavorite ? colors.warning : colors.mutedForeground}
+							fill={isFavorite ? colors.warning : "transparent"}
 						/>
 					</Pressable>
 				)}

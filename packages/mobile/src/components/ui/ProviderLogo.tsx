@@ -40,7 +40,7 @@ function getProviderSymbol(providerId: string): string {
  * Falls back to text symbol if logo fails to load
  */
 export function ProviderLogo({ providerId, size = 16, style, onLoad, onError }: ProviderLogoProps) {
-  const { isDark, colors } = useTheme();
+  const { colors } = useTheme();
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -77,7 +77,7 @@ export function ProviderLogo({ providerId, size = 16, style, onLoad, onError }: 
 
   const normalizedId = providerId.toLowerCase();
   const logoUrl = `https://models.dev/logos/${normalizedId}.svg`;
-  const fillColor = isDark ? "#ffffff" : "#000000";
+  const fillColor = colors.foreground;
 
   return (
     <View style={[{ width: size, height: size }, style]}>

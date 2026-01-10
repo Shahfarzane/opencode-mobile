@@ -36,6 +36,7 @@ import {
 } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { FontSizes, typography, useTheme } from "../../src/theme";
+import { withOpacity } from "../../src/utils/colors";
 
 type FileStatusType = "staged" | "modified" | "untracked";
 
@@ -295,7 +296,7 @@ function BranchSelectorModal({
 											{branch}
 										</Text>
 										{branch === currentBranch && (
-											<View style={[styles.currentBadge, { backgroundColor: colors.primary + "20" }]}>
+											<View style={[styles.currentBadge, { backgroundColor: withOpacity(colors.primary, 0.12) }]}>
 												<Text style={[typography.micro, { color: colors.primary }]}>Current</Text>
 											</View>
 										)}
@@ -335,7 +336,7 @@ function BranchSelectorModal({
 
 						{/* Empty state */}
 						{filteredLocal.length === 0 && filteredRemote.length === 0 && (
-							<View style={styles.emptyState}>
+							<View style={styles.branchModalEmptyState}>
 								<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 									{search ? `No branches matching "${search}"` : "No branches available"}
 								</Text>
@@ -1636,7 +1637,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 		borderRadius: 6,
 	},
-	emptyState: {
+	branchModalEmptyState: {
 		paddingVertical: 32,
 		alignItems: "center",
 	},

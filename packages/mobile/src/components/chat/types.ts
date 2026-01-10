@@ -74,7 +74,7 @@ export function inferProviderIdFromModelName(modelName?: string): string | undef
 	if (!modelName) return undefined;
 	const lower = modelName.toLowerCase();
 	if (lower.includes("claude") || lower.includes("anthropic")) return "anthropic";
-	if (lower.includes("gpt") || lower.includes("openai") || lower.includes("o1") || lower.includes("o3")) return "openai";
+	if (lower.includes("gpt") || lower.includes("openai") || /\bo[13](-|$)/.test(lower)) return "openai";
 	if (lower.includes("gemini") || lower.includes("google")) return "google";
 	if (lower.includes("mistral")) return "mistral";
 	if (lower.includes("llama")) return "meta";
