@@ -5,6 +5,8 @@ import {
 	ActivityIndicator,
 	Alert,
 	FlatList,
+	KeyboardAvoidingView,
+	Platform,
 	Pressable,
 	StyleSheet,
 	Text,
@@ -282,38 +284,42 @@ export default function DirectoryScreen() {
 			: currentPath;
 
 	return (
-		<View
-			style={[
-				styles.container,
-				{
-					backgroundColor: colors.background,
-					paddingTop: insets.top + 16,
-				},
-			]}
+		<KeyboardAvoidingView
+			behavior={Platform.OS === "ios" ? "padding" : "height"}
+			style={styles.container}
 		>
-			{/* Header */}
-			<View style={styles.header}>
-				<BackButton />
-				<Text style={[typography.h2, { color: colors.foreground, marginTop: Spacing.md }]}>
-					Select Directory
-				</Text>
-				<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 8 }]}>
-					Choose your project folder
-				</Text>
-			</View>
+			<View
+				style={[
+					styles.container,
+					{
+						backgroundColor: colors.background,
+						paddingTop: insets.top + 16,
+					},
+				]}
+			>
+				{/* Header */}
+				<View style={styles.header}>
+					<BackButton />
+					<Text style={[typography.h2, { color: colors.foreground, marginTop: Spacing.md }]}>
+						Select Directory
+					</Text>
+					<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 8 }]}>
+						Choose your project folder
+					</Text>
+				</View>
 
-			{/* Path input */}
-			<View style={styles.pathSection}>
-				<Input
-					value={pathInput}
-					onChangeText={setPathInput}
-					onSubmitEditing={handlePathSubmit}
-					placeholder="Enter path..."
-					autoCapitalize="none"
-					autoCorrect={false}
-					returnKeyType="go"
-				/>
-			</View>
+				{/* Path input */}
+				<View style={styles.pathSection}>
+					<Input
+						value={pathInput}
+						onChangeText={setPathInput}
+						onSubmitEditing={handlePathSubmit}
+						placeholder="Enter path..."
+						autoCapitalize="none"
+						autoCorrect={false}
+						returnKeyType="go"
+					/>
+				</View>
 
 			{/* Pinned directories section */}
 			{pinnedDirectories.length > 0 && (
@@ -375,6 +381,7 @@ export default function DirectoryScreen() {
 				<FlatList
 					data={entries}
 					keyExtractor={(item) => item.path}
+					keyboardShouldPersistTaps="handled"
 					renderItem={({ item }) => (
 						<DirectoryRow
 							item={item}
@@ -415,9 +422,10 @@ export default function DirectoryScreen() {
 				style={{ width: "100%", marginTop: 12 }}
 			>
 				<Button.Label>Use This Directory</Button.Label>
-			</Button>
+				</Button>
 			</View>
-		</View>
+			</View>
+		</KeyboardAvoidingView>
 	);
 }
 
