@@ -1,7 +1,17 @@
 {
   "name": "@opencode/mobile",
   "version": "1.0.0",
+  "description": "OpenCode React Native mobile app",
   "private": true,
+  "author": {
+    "name": "Shahin Farzane",
+    "email": "hey@nerd.ceo",
+    "url": "https://github.com/Shahfarzane"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shahfarzane/opencode-mobile"
+  },
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
