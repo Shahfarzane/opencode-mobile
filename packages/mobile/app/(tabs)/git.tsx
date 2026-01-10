@@ -167,50 +167,28 @@ function BranchSelectorModal({
 		onClose();
 	};
 
-	const renderBranchItem = ({ item, isRemote = false }: { item: string; isRemote?: boolean }) => (
-		<Pressable
-			onPress={() => handleCheckout(item)}
-			disabled={isCheckingOut}
-			style={({ pressed }) => [
-				styles.branchItem,
-				pressed && { backgroundColor: colors.muted },
-				{ opacity: isCheckingOut ? 0.5 : 1 },
-			]}
-		>
-			<GitBranchIcon size={14} color={isRemote ? colors.mutedForeground : colors.primary} />
-			<Text
-				style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]}
-				numberOfLines={1}
-			>
-				{item}
-			</Text>
-			{item === currentBranch && (
-				<Text style={[typography.micro, { color: colors.primary }]}>Current</Text>
-			)}
-		</Pressable>
-	);
-
 	return (
 		<Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
 			<Pressable style={styles.modalOverlay} onPress={handleClose}>
-				<Pressable style={[styles.branchModal, { backgroundColor: colors.card }]} onPress={() => {}}>
+				<Pressable
+					style={[
+						styles.branchModal,
+						{
+							backgroundColor: colors.card,
+							borderColor: colors.border,
+							shadowColor: "#000",
+						}
+					]}
+					onPress={() => {}}
+				>
 					{/* Header */}
 					<View style={[styles.branchModalHeader, { borderBottomColor: colors.border }]}>
-						<View>
-							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
-								Switch Branch
-							</Text>
-							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-								{localBranches.length} local · {remoteBranches.length} remote
-							</Text>
-						</View>
-						<IconButton
-							icon={<XIcon size={18} color={colors.mutedForeground} />}
-							variant="ghost"
-							size="icon-sm"
-							accessibilityLabel="Close"
-							onPress={handleClose}
-						/>
+						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+							Switch Branch
+						</Text>
+						<Pressable onPress={handleClose} hitSlop={8}>
+							<XIcon size={20} color={colors.mutedForeground} />
+						</Pressable>
 					</View>
 
 					{/* Search */}
@@ -221,7 +199,6 @@ function BranchSelectorModal({
 								{
 									backgroundColor: colors.muted,
 									color: colors.foreground,
-									borderColor: colors.border,
 								},
 							]}
 							placeholder="Search branches..."
@@ -237,6 +214,7 @@ function BranchSelectorModal({
 							onPress={() => setShowCreate(true)}
 							style={({ pressed }) => [
 								styles.createBranchButton,
+								{ borderBottomColor: colors.border },
 								pressed && { backgroundColor: colors.muted },
 							]}
 						>
@@ -246,14 +224,13 @@ function BranchSelectorModal({
 							</Text>
 						</Pressable>
 					) : (
-						<View style={[styles.createBranchForm, { borderColor: colors.border }]}>
+						<View style={[styles.createBranchForm, { borderBottomColor: colors.border }]}>
 							<TextInput
 								style={[
 									styles.createBranchInput,
 									{
 										backgroundColor: colors.muted,
 										color: colors.foreground,
-										borderColor: colors.border,
 									},
 								]}
 								placeholder="New branch name"
@@ -263,94 +240,108 @@ function BranchSelectorModal({
 								autoFocus
 								onSubmitEditing={handleCreate}
 							/>
-							<View style={styles.createBranchActions}>
-								<IconButton
-									icon={isCreating ? (
-										<ActivityIndicator size="small" color={colors.primary} />
-									) : (
-										<PlusIcon size={16} color={colors.primary} />
-									)}
-									variant="ghost"
-									size="icon-sm"
-									accessibilityLabel="Create"
-									onPress={handleCreate}
-									disabled={!newBranchName.trim() || isCreating}
-								/>
-								<IconButton
-									icon={<XIcon size={16} color={colors.mutedForeground} />}
-									variant="ghost"
-									size="icon-sm"
-									accessibilityLabel="Cancel"
-									onPress={() => {
-										setShowCreate(false);
-										setNewBranchName("");
-									}}
-									disabled={isCreating}
-								/>
-							</View>
+							<Pressable
+								onPress={handleCreate}
+								disabled={!newBranchName.trim() || isCreating}
+								style={{ opacity: !newBranchName.trim() || isCreating ? 0.5 : 1 }}
+							>
+								{isCreating ? (
+									<ActivityIndicator size="small" color={colors.primary} />
+								) : (
+									<CheckIcon size={20} color={colors.primary} />
+								)}
+							</Pressable>
+							<Pressable
+								onPress={() => {
+									setShowCreate(false);
+									setNewBranchName("");
+								}}
+								disabled={isCreating}
+							>
+								<XIcon size={20} color={colors.mutedForeground} />
+							</Pressable>
 						</View>
 					)}
 
-					{/* Branch lists - using fixed height to ensure visibility */}
-					<View style={{ height: 250 }}>
-						<ScrollView
-							style={{ flex: 1 }}
-							contentContainerStyle={{ paddingBottom: 8 }}
-							showsVerticalScrollIndicator
-							nestedScrollEnabled
-						>
-							{/* Local branches */}
-							{filteredLocal.length > 0 && (
-								<View>
-									<Text
-										style={[
-											typography.micro,
-											styles.branchListHeader,
-											{ color: colors.mutedForeground, backgroundColor: colors.muted },
+					{/* Branch list */}
+					<ScrollView
+						style={styles.branchList}
+						contentContainerStyle={styles.branchListContent}
+						showsVerticalScrollIndicator={false}
+						nestedScrollEnabled
+					>
+						{/* Local branches */}
+						{filteredLocal.length > 0 && (
+							<View style={styles.branchSection}>
+								<Text style={[styles.branchSectionHeader, { color: colors.mutedForeground }]}>
+									Local
+								</Text>
+								{filteredLocal.map((branch) => (
+									<Pressable
+										key={`local-${branch}`}
+										onPress={() => handleCheckout(branch)}
+										disabled={isCheckingOut}
+										style={({ pressed }) => [
+											styles.branchItem,
+											pressed && { backgroundColor: colors.muted },
+											{ opacity: isCheckingOut ? 0.5 : 1 },
 										]}
 									>
-										LOCAL BRANCHES
-									</Text>
-									{filteredLocal.map((branch) => (
-										<View key={`local-${branch}`}>
-											{renderBranchItem({ item: branch })}
-										</View>
-									))}
-								</View>
-							)}
+										<GitBranchIcon size={16} color={colors.primary} />
+										<Text
+											style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]}
+											numberOfLines={1}
+										>
+											{branch}
+										</Text>
+										{branch === currentBranch && (
+											<View style={[styles.currentBadge, { backgroundColor: colors.primary + "20" }]}>
+												<Text style={[typography.micro, { color: colors.primary }]}>Current</Text>
+											</View>
+										)}
+									</Pressable>
+								))}
+							</View>
+						)}
 
-							{/* Remote branches */}
-							{filteredRemote.length > 0 && (
-								<View style={{ marginTop: 8 }}>
-									<Text
-										style={[
-											typography.micro,
-											styles.branchListHeader,
-											{ color: colors.mutedForeground, backgroundColor: colors.muted },
+						{/* Remote branches */}
+						{filteredRemote.length > 0 && (
+							<View style={styles.branchSection}>
+								<Text style={[styles.branchSectionHeader, { color: colors.mutedForeground }]}>
+									Remote
+								</Text>
+								{filteredRemote.map((branch) => (
+									<Pressable
+										key={`remote-${branch}`}
+										onPress={() => handleCheckout(branch)}
+										disabled={isCheckingOut}
+										style={({ pressed }) => [
+											styles.branchItem,
+											pressed && { backgroundColor: colors.muted },
+											{ opacity: isCheckingOut ? 0.5 : 1 },
 										]}
 									>
-										REMOTE BRANCHES
-									</Text>
-									{filteredRemote.map((branch) => (
-										<View key={`remote-${branch}`}>
-											{renderBranchItem({ item: branch, isRemote: true })}
-										</View>
-									))}
-								</View>
-							)}
+										<GitBranchIcon size={16} color={colors.mutedForeground} />
+										<Text
+											style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]}
+											numberOfLines={1}
+										>
+											{branch}
+										</Text>
+									</Pressable>
+								))}
+							</View>
+						)}
 
-							{filteredLocal.length === 0 && filteredRemote.length === 0 && (
-								<Text
-									style={[
-										typography.meta,
-										{ color: colors.mutedForeground, textAlign: "center", padding: 16 },
-									]}
-								>
+						{/* Empty state */}
+						{filteredLocal.length === 0 && filteredRemote.length === 0 && (
+							<View style={styles.emptyState}>
+								<Text style={[typography.meta, { color: colors.mutedForeground }]}>
 									{search ? `No branches matching "${search}"` : "No branches available"}
 								</Text>
-							)}
-						</ScrollView>
-					</View>
+							</View>
+						)}
+					</ScrollView>
 				</Pressable>
 			</Pressable>
 		</Modal>
@@ -1558,78 +1549,95 @@ const styles = StyleSheet.create({
 	// Branch selector modal styles
 	modalOverlay: {
 		flex: 1,
-		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		backgroundColor: "rgba(0, 0, 0, 0.4)",
 		justifyContent: "center",
 		alignItems: "center",
-		padding: 20,
+		padding: 24,
 	},
 	branchModal: {
 		width: "100%",
-		maxWidth: 340,
-		maxHeight: "70%",
-		borderRadius: 12,
+		maxWidth: 320,
+		maxHeight: "65%",
+		borderRadius: 16,
+		borderWidth: 1,
 		overflow: "hidden",
-		flexDirection: "column",
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.15,
+		shadowRadius: 24,
+		elevation: 8,
 	},
 	branchModalHeader: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingVertical: 14,
 		borderBottomWidth: 1,
 	},
 	branchSearchContainer: {
 		paddingHorizontal: 12,
-		paddingVertical: 8,
+		paddingVertical: 10,
 	},
 	branchSearchInput: {
 		paddingHorizontal: 12,
 		paddingVertical: 10,
-		borderRadius: 8,
-		borderWidth: 1,
-		fontSize: 14,
+		borderRadius: 10,
+		fontSize: 15,
 	},
 	createBranchButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-	},
-	createBranchForm: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		gap: 8,
-	},
-	createBranchInput: {
-		flex: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		borderWidth: 1,
-		fontSize: 14,
-	},
-	createBranchActions: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-	},
-	branchList: {
-		flex: 1,
-	},
-	branchListHeader: {
-		paddingHorizontal: 16,
-		paddingVertical: 8,
-		fontWeight: "600",
-	},
-	branchItem: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
 		paddingHorizontal: 16,
 		paddingVertical: 12,
+		borderBottomWidth: 1,
+	},
+	createBranchForm: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		gap: 12,
+		borderBottomWidth: 1,
+	},
+	createBranchInput: {
+		flex: 1,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderRadius: 10,
+		fontSize: 15,
+	},
+	branchList: {
+		maxHeight: 280,
+	},
+	branchListContent: {
+		paddingVertical: 4,
+	},
+	branchSection: {
+		paddingTop: 4,
+	},
+	branchSectionHeader: {
+		fontSize: 12,
+		fontWeight: "600",
+		textTransform: "uppercase",
+		letterSpacing: 0.5,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	branchItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		paddingHorizontal: 16,
+		paddingVertical: 11,
+	},
+	currentBadge: {
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		borderRadius: 6,
+	},
+	emptyState: {
+		paddingVertical: 32,
+		alignItems: "center",
 	},
 });
