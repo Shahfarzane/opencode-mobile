@@ -9,6 +9,7 @@ import {
 	SettingsIcon,
 	TerminalIcon,
 } from "@/components/icons";
+import { IconButton } from "@/components/ui";
 import { useTheme } from "@/theme";
 import { headerStyles } from "./Header.styles";
 
@@ -79,13 +80,13 @@ export function Header({
 			<View className={headerStyles.content({})}>
 				{/* Left section: Sessions button + context usage */}
 				<View className={headerStyles.leftSection({})}>
-					<Pressable
+					<IconButton
+						icon={<PlaylistAddIcon color={colors.mutedForeground} size={20} />}
+						variant="ghost"
+						size="icon-sm"
 						onPress={onSessionsPress || onMenuPress}
-						className={headerStyles.iconButton({})}
-						hitSlop={8}
-					>
-						<PlaylistAddIcon color={colors.mutedForeground} size={20} />
-					</Pressable>
+						accessibilityLabel="Sessions"
+					/>
 					{showContextUsage && (
 						<ContextUsageDisplay usage={contextUsage} size="compact" />
 					)}
@@ -121,21 +122,21 @@ export function Header({
 						);
 					})}
 
-					<Pressable
-						onPress={onSettingsPress}
-						className={headerStyles.iconButton({})}
-						hitSlop={4}
-					>
-						<View className={headerStyles.tabContent({})}>
-							<SettingsIcon color={colors.mutedForeground} size={20} />
-							{hasUpdate && (
-								<View
-									className={headerStyles.updateDot({})}
-									style={{ backgroundColor: colors.primary }}
-								/>
-							)}
-						</View>
-					</Pressable>
+					<View className={headerStyles.tabContent({})}>
+						<IconButton
+							icon={<SettingsIcon color={colors.mutedForeground} size={20} />}
+							variant="ghost"
+							size="icon-sm"
+							onPress={onSettingsPress}
+							accessibilityLabel="Settings"
+						/>
+						{hasUpdate && (
+							<View
+								className={headerStyles.updateDot({})}
+								style={{ backgroundColor: colors.primary }}
+							/>
+						)}
+					</View>
 				</View>
 			</View>
 		</View>

@@ -17,7 +17,7 @@ import {
 	FolderIcon,
 	XIcon,
 } from "@/components/icons";
-import { SearchInput } from "@/components/ui";
+import { Button, SearchInput } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { filesApi, type FileListEntry } from "@/api/files";
@@ -409,27 +409,14 @@ export function ServerFilePicker({
 							? `${selectedFiles.size} file${selectedFiles.size !== 1 ? "s" : ""} selected`
 							: "No files selected"}
 					</Text>
-					<Pressable
+					<Button
+						variant={selectedFiles.size > 0 ? "primary" : "muted"}
+						size="sm"
 						onPress={handleConfirm}
-						disabled={selectedFiles.size === 0}
-						className="px-4 py-2 rounded-lg"
-						style={{
-							backgroundColor: selectedFiles.size > 0 ? colors.primary : colors.muted,
-							opacity: selectedFiles.size === 0 ? 0.5 : 1,
-						}}
+						isDisabled={selectedFiles.size === 0}
 					>
-						<Text
-							style={[
-								typography.uiLabel,
-								{
-									color: selectedFiles.size > 0 ? colors.primaryForeground : colors.mutedForeground,
-									fontWeight: "600",
-								},
-							]}
-						>
-							Attach Files
-						</Text>
-					</Pressable>
+						<Button.Label>Attach Files</Button.Label>
+					</Button>
 				</View>
 			</View>
 		</Modal>

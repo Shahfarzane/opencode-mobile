@@ -9,35 +9,22 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { Button } from "@/components/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
 import { type FileListEntry, filesApi } from "../../src/api";
+import {
+	ArrowUpIcon,
+	ChevronRightIcon,
+	FileIcon,
+	FolderIcon,
+} from "../../src/components/icons";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { typography, useTheme } from "../../src/theme";
 
-function FolderIcon({ size = 20, color }: { size?: number; color: string }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function FileIcon({
-	size = 20,
-	extension,
-	colors,
-}: {
-	size?: number;
-	extension?: string;
-	colors: { code: string; config: string; doc: string; default: string };
-}) {
+function getFileColor(
+	extension: string | undefined,
+	colors: { code: string; config: string; doc: string; default: string },
+): string {
 	const isCode = [
 		"ts",
 		"tsx",
@@ -57,32 +44,13 @@ function FileIcon({
 	);
 	const isDoc = ["md", "txt", "doc", "pdf"].includes(extension || "");
 
-	const color = isCode
+	return isCode
 		? colors.code
 		: isConfig
 			? colors.config
 			: isDoc
 				? colors.doc
 				: colors.default;
-
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<Path
-				d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
 }
 
 function FileItem({
@@ -112,9 +80,9 @@ function FileItem({
 			]}
 		>
 			{item.isDirectory ? (
-				<FolderIcon color={colors.primary} />
+				<FolderIcon size={20} color={colors.primary} />
 			) : (
-				<FileIcon extension={extension} colors={fileColors} />
+				<FileIcon size={20} color={getFileColor(extension, fileColors)} />
 			)}
 			<Text
 				style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]}
@@ -123,15 +91,7 @@ function FileItem({
 				{item.name}
 			</Text>
 			{item.isDirectory && (
-				<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-					<Path
-						d="M9 18l6-6-6-6"
-						stroke={colors.mutedForeground}
-						strokeWidth={2}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</Svg>
+				<ChevronRightIcon size={16} color={colors.mutedForeground} />
 			)}
 		</Pressable>
 	);
@@ -291,19 +251,14 @@ export default function FilesScreen() {
 					>
 						Select a project directory to browse files
 					</Text>
-					<Pressable
-						onPress={() => router.push("/onboarding/directory")}
-						style={[styles.selectButton, { backgroundColor: colors.primary }]}
-					>
-						<Text
-							style={[
-								typography.uiLabel,
-								{ color: colors.primaryForeground, fontWeight: "500" },
-							]}
-						>
-							Select Directory
-						</Text>
-					</Pressable>
+				<Button
+					variant="primary"
+					size="lg"
+					onPress={() => router.push("/onboarding/directory")}
+					style={{ marginTop: 24 }}
+				>
+					<Button.Label>Select Directory</Button.Label>
+				</Button>
 				</View>
 			</View>
 		);
@@ -357,14 +312,14 @@ export default function FilesScreen() {
 					>
 						{error}
 					</Text>
-					<Pressable
+					<Button
+						variant="muted"
+						size="md"
 						onPress={() => loadDirectory(currentPath)}
-						style={[styles.retryButton, { backgroundColor: colors.muted }]}
+						style={{ marginTop: 16 }}
 					>
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-							Retry
-						</Text>
-					</Pressable>
+						<Button.Label>Retry</Button.Label>
+					</Button>
 				</View>
 			) : (
 				<FlatList
@@ -386,15 +341,7 @@ export default function FilesScreen() {
 									pressed && { backgroundColor: colors.muted },
 								]}
 							>
-								<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-									<Path
-										d="M17 11l-5-5-5 5M12 6v12"
-										stroke={colors.mutedForeground}
-										strokeWidth={2}
-										strokeLinecap="round"
-										strokeLinejoin="round"
-									/>
-								</Svg>
+								<ArrowUpIcon size={20} color={colors.mutedForeground} />
 								<Text
 									style={[
 										typography.uiLabel,

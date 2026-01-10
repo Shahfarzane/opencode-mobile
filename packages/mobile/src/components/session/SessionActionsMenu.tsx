@@ -1,15 +1,15 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { useEffect, useState } from "react";
-import { Dimensions, Modal, Pressable, Text, View } from "react-native";
-import Animated, {
-	runOnJS,
-	useAnimatedStyle,
-	useSharedValue,
-	withSpring,
-	withTiming,
-	interpolate,
-} from "react-native-reanimated";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	Animated,
+	Dimensions,
+	type LayoutChangeEvent,
+	Modal,
+	Pressable,
+	Text,
+	View,
+} from "react-native";
 import {
 	CopyIcon,
 	FolderIcon,
@@ -18,7 +18,15 @@ import {
 	ShareIcon,
 	TrashIcon,
 } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import {
+	AnimationTokens,
+	getShadowColor,
+	MenuPositioning,
+	OpacityTokens,
+	ShadowTokens,
+	typography,
+	useTheme,
+} from "@/theme";
 import { sessionActionsMenuStyles } from "./SessionActionsMenu.styles";
 
 interface SessionActionsMenuProps {
@@ -35,19 +43,10 @@ interface SessionActionsMenuProps {
 	anchorPosition?: { x: number; y: number } | null;
 }
 
-const MENU_WIDTH = 180;
-const MENU_HEIGHT = 180;
-const MENU_MARGIN = 8;
-
 const SPRING_CONFIG = {
-	damping: 22,
-	mass: 1,
-	stiffness: 380,
+	...AnimationTokens.menuSpring,
+	useNativeDriver: true,
 };
-
-const CLOSE_DURATION = 150;
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function SessionActionsMenu({
 	visible,
@@ -64,49 +63,77 @@ export function SessionActionsMenu({
 }: SessionActionsMenuProps) {
 	const { colors, isDark } = useTheme();
 	const screenWidth = Dimensions.get("window").width;
+	const screenHeight = Dimensions.get("window").height;
 	const [modalVisible, setModalVisible] = useState(false);
-	
-	const progress = useSharedValue(0);
+	const [menuLayout, setMenuLayout] = useState<{ width: number; height: number }>({ width: MenuPositioning.width, height: 200 });
 
+	const progress = useRef(new Animated.Value(0)).current;
+
+	// Calculate menu position ensuring it stays within screen bounds
 	const menuPosition = anchorPosition
-		? {
-				top: anchorPosition.y + MENU_MARGIN,
-				right: screenWidth - anchorPosition.x,
-			}
+		? (() => {
+				const rightOffset = screenWidth - anchorPosition.x;
+				const topOffset = anchorPosition.y + MenuPositioning.margin;
+
+				// Ensure menu doesn't go off-screen bottom
+				const maxTop = screenHeight - menuLayout.height - MenuPositioning.margin;
+				const adjustedTop = Math.min(topOffset, maxTop);
+
+				// Ensure menu doesn't go off-screen right
+				const minRight = MenuPositioning.margin;
+				const adjustedRight = Math.max(rightOffset, minRight);
+
+				return {
+					top: Math.max(adjustedTop, MenuPositioning.margin),
+					right: adjustedRight,
+				};
+			})()
 		: null;
+
+	const handleLayout = useCallback((event: LayoutChangeEvent) => {
+		const { width, height } = event.nativeEvent.layout;
+		setMenuLayout({ width, height });
+	}, []);
 
 	useEffect(() => {
 		if (visible) {
 			setModalVisible(true);
-			progress.value = withSpring(1, SPRING_CONFIG);
+			Animated.spring(progress, {
+				toValue: 1,
+				...SPRING_CONFIG,
+			}).start();
 		} else {
-			progress.value = withTiming(0, { duration: CLOSE_DURATION }, (finished) => {
+			Animated.timing(progress, {
+				toValue: 0,
+				duration: AnimationTokens.menuCloseDuration,
+				useNativeDriver: true,
+			}).start(({ finished }) => {
 				if (finished) {
-					runOnJS(setModalVisible)(false);
+					setModalVisible(false);
 				}
 			});
 		}
 	}, [visible, progress]);
 
-	const backdropStyle = useAnimatedStyle(() => ({
-		opacity: interpolate(progress.value, [0, 1], [0, 0.4]),
-	}));
-
-	const menuStyle = useAnimatedStyle(() => {
-		const halfWidth = MENU_WIDTH / 2;
-		const halfHeight = MENU_HEIGHT / 2;
-
-		return {
-			opacity: interpolate(progress.value, [0, 0.3, 1], [0, 0.8, 1]),
-			transform: [
-				{ translateX: halfWidth },
-				{ translateY: -halfHeight },
-				{ scale: interpolate(progress.value, [0, 1], [0.85, 1]) },
-				{ translateX: -halfWidth },
-				{ translateY: halfHeight },
-			],
-		};
+	const backdropOpacity = progress.interpolate({
+		inputRange: [0, 1],
+		outputRange: [0, OpacityTokens.backdrop],
 	});
+
+	const menuOpacity = progress.interpolate({
+		inputRange: [0, 0.3, 1],
+		outputRange: [0, 0.8, 1],
+	});
+
+	const menuScale = progress.interpolate({
+		inputRange: [0, 1],
+		outputRange: [AnimationTokens.menuScaleFrom, AnimationTokens.menuScaleTo],
+	});
+
+	// Transform origin: top-right corner
+	// Since React Native transforms from center, we need to translate to achieve top-right origin
+	const halfWidth = menuLayout.width / 2;
+	const halfHeight = menuLayout.height / 2;
 
 	const handleRename = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -157,40 +184,45 @@ export function SessionActionsMenu({
 			onRequestClose={onClose}
 		>
 			<View className={sessionActionsMenuStyles.overlay({})}>
-				<AnimatedPressable
-					style={[
-						{
-							position: "absolute",
-							top: 0,
-							left: 0,
-							right: 0,
-							bottom: 0,
-							backgroundColor: "#000",
-						},
-						backdropStyle,
-					]}
+				<Pressable
+					style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
 					onPress={onClose}
-				/>
+				>
+					<Animated.View
+						style={{
+							flex: 1,
+							backgroundColor: "#000",
+							opacity: backdropOpacity,
+						}}
+					/>
+				</Pressable>
 				<Animated.View
+					onLayout={handleLayout}
 					className={sessionActionsMenuStyles.menu({})}
 					style={[
 						{
 							backgroundColor: colors.card,
 							borderColor: colors.border,
 							borderWidth: 1,
-							shadowColor: isDark ? "#000" : "#666",
-							shadowOffset: { width: 0, height: 4 },
-							shadowOpacity: 0.15,
-							shadowRadius: 12,
-							elevation: 8,
-							minWidth: MENU_WIDTH,
+							shadowColor: getShadowColor(isDark),
+							...ShadowTokens.menu,
+							minWidth: MenuPositioning.width,
+							opacity: menuOpacity,
+							// Transform origin: top-right corner
+							// Translate to move top-right to center, scale, then translate back
+							transform: [
+								{ translateX: halfWidth },
+								{ translateY: -halfHeight },
+								{ scale: menuScale },
+								{ translateX: -halfWidth },
+								{ translateY: halfHeight },
+							],
 						},
 						menuPosition && {
 							position: "absolute",
 							top: menuPosition.top,
 							right: menuPosition.right,
 						},
-						menuStyle,
 					]}
 				>
 					<Pressable
@@ -272,7 +304,9 @@ export function SessionActionsMenu({
 								})}
 							>
 								<FolderIcon color={colors.foreground} size={18} />
-								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+								<Text
+									style={[typography.uiLabel, { color: colors.foreground }]}
+								>
 									Copy Worktree Path
 								</Text>
 							</Pressable>

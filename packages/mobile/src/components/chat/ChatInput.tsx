@@ -9,8 +9,8 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
-import { AiAgentIcon } from "@/components/icons";
+import { AiAgentIcon, SendIcon, StopIcon } from "@/components/icons";
+import { IconButton } from "@/components/ui";
 import { FontSizes, Fonts, fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { chatInputStyles, MOBILE_SPACING } from "./ChatInput.styles";
@@ -71,33 +71,6 @@ interface ChatInputProps {
 	activeAgent?: AgentInfo;
 	onModelPress?: () => void;
 	onAgentPress?: () => void;
-}
-
-function SendIcon({ color, size = 20 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function StopIcon({ color, size = 20 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
-				stroke={color}
-				strokeWidth={2}
-			/>
-			<Path d="M15 9H9v6h6V9z" fill={color} />
-		</Svg>
-	);
 }
 
 function AgentIcon() {
@@ -765,24 +738,23 @@ export function ChatInput({
 						)}
 
 						{/* Send/Stop button (flex-shrink-0) */}
-						<Pressable
-							onPress={handleSend}
-							disabled={!canSend && !isLoading}
-							className={chatInputStyles.toolbarButton({})}
-							style={({ pressed }) =>
-								pressed && canSend ? { opacity: 0.7 } : undefined
+						<IconButton
+							icon={
+								isLoading ? (
+									<StopIcon color={colors.destructive} size={20} />
+								) : (
+									<SendIcon
+										color={canSend ? colors.primary : colors.mutedForeground}
+										size={20}
+									/>
+								)
 							}
-							hitSlop={8}
-						>
-							{isLoading ? (
-								<StopIcon color={colors.destructive} size={20} />
-							) : (
-								<SendIcon
-									color={canSend ? colors.primary : colors.mutedForeground}
-									size={20}
-								/>
-							)}
-						</Pressable>
+							variant="ghost"
+							size="icon-sm"
+							onPress={handleSend}
+							isDisabled={!canSend && !isLoading}
+							accessibilityLabel={isLoading ? "Stop" : "Send message"}
+						/>
 					</View>
 				</View>
 			</View>

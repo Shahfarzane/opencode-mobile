@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileIcon, FolderIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { IconButton } from "@/components/ui";
+import { getShadowColor, ShadowTokens, typography, useTheme } from "@/theme";
 import { OVERLAYS } from "@/utils/colors";
 import { useConnectionStore } from "@/stores/useConnectionStore";
 import { ServerFilePicker } from "./ServerFilePicker";
@@ -54,7 +55,7 @@ export function FileAttachmentButton({
 	onFileAttached,
 	disabled = false,
 }: FileAttachmentButtonProps) {
-	const { colors } = useTheme();
+	const { colors, isDark } = useTheme();
 	const insets = useSafeAreaInsets();
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
 	const [isServerPickerOpen, setIsServerPickerOpen] = useState(false);
@@ -177,15 +178,14 @@ export function FileAttachmentButton({
 	return (
 		<>
 			<View ref={buttonRef} collapsable={false}>
-				<Pressable
+				<IconButton
+					icon={<PlusCircleIcon size={20} color={colors.mutedForeground} />}
+					variant="ghost"
+					size="icon-sm"
 					onPress={showOptions}
-					disabled={disabled}
-					className="p-1.5"
-					style={{ opacity: disabled ? 0.5 : 1 }}
-					hitSlop={8}
-				>
-					<PlusCircleIcon size={20} color={colors.mutedForeground} />
-				</Pressable>
+					isDisabled={disabled}
+					accessibilityLabel="Attach file"
+				/>
 			</View>
 
 			<Modal
@@ -209,11 +209,8 @@ export function FileAttachmentButton({
 							bottom: buttonLayout
 								? Dimensions.get("window").height - buttonLayout.y + 8
 								: insets.bottom + 80,
-							shadowColor: "#000",
-							shadowOffset: { width: 0, height: 2 },
-							shadowOpacity: 0.15,
-							shadowRadius: 8,
-							elevation: 8,
+							shadowColor: getShadowColor(isDark),
+							...ShadowTokens.menu,
 						}}
 					>
 						<Pressable
@@ -316,13 +313,13 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 							</Text>
 						</View>
 
-						<Pressable
+						<IconButton
+							icon={<XIcon size={14} color={colors.mutedForeground} />}
+							variant="ghost"
+							size="icon-sm"
 							onPress={() => onRemove(file.id)}
-							className="p-1"
-							hitSlop={8}
-						>
-							<XIcon size={14} color={colors.mutedForeground} />
-						</Pressable>
+							accessibilityLabel={`Remove ${file.name}`}
+						/>
 					</View>
 				);
 			})}

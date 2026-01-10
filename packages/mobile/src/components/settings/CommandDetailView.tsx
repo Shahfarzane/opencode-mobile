@@ -507,11 +507,11 @@ export function CommandDetailView({
             className="pt-5 border-t"
             style={{ borderTopColor: withOpacity(colors.border, OPACITY.scrim) }}
           >
-            <Pressable onPress={handleDelete}>
-              <Text style={[typography.meta, { color: colors.destructive }]}>
+            <Button variant="ghost" size="sm" onPress={handleDelete}>
+              <Button.Label style={{ color: colors.destructive }}>
                 Delete command
-              </Text>
-            </Pressable>
+              </Button.Label>
+            </Button>
           </View>
         )}
       </ScrollView>

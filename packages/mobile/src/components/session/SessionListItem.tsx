@@ -19,6 +19,7 @@ import {
 	WarningIcon,
 	XIcon,
 } from "@/components/icons";
+import { IconButton } from "@/components/ui";
 import { Fonts, FontSizes, getFontFamily, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { SessionActionsMenu } from "./SessionActionsMenu";
@@ -208,12 +209,20 @@ export function SessionListItem({
 						placeholderTextColor={colors.mutedForeground}
 						onSubmitEditing={handleSaveEdit}
 					/>
-					<Pressable onPress={handleSaveEdit} className="p-1" hitSlop={8}>
-						<CheckIcon color={colors.foreground} size={16} />
-					</Pressable>
-					<Pressable onPress={handleCancelEdit} className="p-1" hitSlop={8}>
-						<XIcon color={colors.mutedForeground} size={16} />
-					</Pressable>
+					<IconButton
+						icon={<CheckIcon color={colors.foreground} size={16} />}
+						variant="ghost"
+						size="icon-sm"
+						onPress={handleSaveEdit}
+						accessibilityLabel="Save"
+					/>
+					<IconButton
+						icon={<XIcon color={colors.mutedForeground} size={16} />}
+						variant="ghost"
+						size="icon-sm"
+						onPress={handleCancelEdit}
+						accessibilityLabel="Cancel"
+					/>
 				</View>
 			</View>
 		);
@@ -326,9 +335,15 @@ export function SessionListItem({
 					</View>
 				</View>
 
-			<Pressable ref={menuButtonRef} onPress={handleOpenMenu} className="p-1.5 ml-1" hitSlop={8}>
-				<MoreVerticalIcon color={colors.mutedForeground} size={18} />
-			</Pressable>
+			<View ref={menuButtonRef}>
+				<IconButton
+					icon={<MoreVerticalIcon color={colors.mutedForeground} size={18} />}
+					variant="ghost"
+					size="icon-sm"
+					onPress={handleOpenMenu}
+					accessibilityLabel="Session options"
+				/>
+			</View>
 
 				{isSelected && (
 					<View

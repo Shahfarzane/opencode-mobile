@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { ChevronRightIcon } from "@/components/icons";
 import { FontSizes, Fonts, SemanticSpacing, Spacing, useTheme } from "@/theme";
 import type { SettingsRowProps } from "./settings-row.types";
 
@@ -82,15 +82,7 @@ export function SettingsRow(props: SettingsRowProps) {
           />
         )}
         {isNavigation && !isToggle && (
-          <Svg width={7} height={12} viewBox="0 0 7 12" fill="none">
-            <Path
-              d="M1 1l5 5-5 5"
-              stroke={colors.mutedForeground}
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
+          <ChevronRightIcon size={14} color={colors.mutedForeground} />
         )}
       </View>
     </View>

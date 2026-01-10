@@ -6,30 +6,16 @@ import type {
 	NativeSyntheticEvent,
 	TextStyle,
 } from "react-native";
-import { Pressable, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { Text, View } from "react-native";
+import { ArrowDownIcon } from "@/components/icons";
+import { IconButton } from "@/components/ui";
+import { getShadowColor, ShadowTokens, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { OpenChamberLogo } from "../ui/OpenChamberLogo";
 import { TextLoop } from "../ui/TextLoop";
 import { ChatMessage } from "./ChatMessage";
 import { messageListStyles } from "./MessageList.styles";
 import type { Message } from "./types";
-
-// Arrow down icon for scroll-to-bottom button
-function ArrowDownIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 5v14M19 12l-7 7-7-7"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
 
 type MessageListProps = {
 	messages: Message[];
@@ -93,7 +79,7 @@ export function MessageList({
 	onFork,
 	onSelectSession,
 }: MessageListProps) {
-	const { colors } = useTheme();
+	const { colors, isDark } = useTheme();
 	const listRef = useRef<FlashListRef<Message>>(null);
 	const [showScrollButton, setShowScrollButton] = useState(false);
 
@@ -162,23 +148,24 @@ export function MessageList({
 			/>
 			{/* Scroll-to-bottom button */}
 			{showScrollButton && messages.length > 0 && (
-				<Pressable
-					onPress={scrollToBottom}
+				<View
 					className={messageListStyles.scrollToBottomButton({})}
-					style={({ pressed }) => ({
+					style={{
 						backgroundColor: colors.background,
 						borderColor: colors.border,
 						borderWidth: 1,
-						opacity: pressed ? 0.8 : 1,
-						shadowColor: "#000",
-						shadowOffset: { width: 0, height: 4 },
-						shadowOpacity: 0.15,
-						shadowRadius: 8,
-						elevation: 4,
-					})}
+						shadowColor: getShadowColor(isDark),
+						...ShadowTokens.card,
+					}}
 				>
-					<ArrowDownIcon color={colors.foreground} size={16} />
-				</Pressable>
+					<IconButton
+						icon={<ArrowDownIcon color={colors.foreground} size={16} />}
+						variant="ghost"
+						size="icon-sm"
+						onPress={scrollToBottom}
+						accessibilityLabel="Scroll to bottom"
+					/>
+				</View>
 			)}
 		</View>
 	);
