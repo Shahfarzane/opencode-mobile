@@ -7,7 +7,8 @@ import { MessageActionsMenu } from "./MessageActionsMenu";
 import { useMessageActions } from "./useMessageActions";
 import { ReasoningPart, ToolPart } from "./parts";
 import { CopyIcon, UndoIcon, GitBranchIcon, CheckIcon } from "../icons";
-import type { Message, MessagePart } from "./types";
+import { ProviderLogo } from "../ui/ProviderLogo";
+import { type Message, type MessagePart, inferProviderIdFromModelName } from "./types";
 
 function FadeInView({
 	children,
@@ -48,16 +49,21 @@ function FadeInView({
 	);
 }
 
-function ProviderLogo({ modelName, color }: { modelName?: string; color: string }) {
-	const getProviderSymbol = (name?: string): string => {
+/**
+ * Fallback provider symbol when logo fails to load
+ */
+function ProviderSymbol({ modelName, color }: { modelName?: string; color: string }) {
+	const getSymbol = (name?: string): string => {
 		if (!name) return "AI";
 		const lower = name.toLowerCase();
 		if (lower.includes("claude") || lower.includes("anthropic")) return "A\\";
-		if (lower.includes("gpt") || lower.includes("openai")) return "O";
+		if (lower.includes("gpt") || lower.includes("openai") || lower.includes("o1") || lower.includes("o3")) return "O";
 		if (lower.includes("gemini") || lower.includes("google")) return "G";
 		if (lower.includes("mistral")) return "M";
 		if (lower.includes("llama")) return "L";
 		if (lower.includes("deepseek")) return "DS";
+		if (lower.includes("groq")) return "Gr";
+		if (lower.includes("xai") || lower.includes("grok")) return "X";
 		return "AI";
 	};
 
@@ -69,8 +75,55 @@ function ProviderLogo({ modelName, color }: { modelName?: string; color: string 
 				color,
 			}}
 		>
-			{getProviderSymbol(modelName)}
+			{getSymbol(modelName)}
 		</Text>
+	);
+}
+
+/**
+ * Provider logo with fallback to text symbol
+ * Shows the provider's logo image if available, falls back to text symbol
+ */
+function MessageProviderLogo({ providerId, modelName }: { providerId?: string; modelName?: string }) {
+	const { colors } = useTheme();
+	const [logoLoaded, setLogoLoaded] = useState(false);
+	const [logoError, setLogoError] = useState(false);
+	const resolvedProviderId = providerId || inferProviderIdFromModelName(modelName);
+
+	// Reset state when provider changes
+	useEffect(() => {
+		setLogoLoaded(false);
+		setLogoError(false);
+	}, [resolvedProviderId]);
+
+	// If we can't determine the provider or logo failed, show the text fallback
+	if (!resolvedProviderId || logoError) {
+		return <ProviderSymbol modelName={modelName} color={colors.mutedForeground} />;
+	}
+
+	// Show both logo and text, hiding text once logo loads
+	return (
+		<View style={{ width: 16, height: 16, alignItems: "center", justifyContent: "center" }}>
+			{/* Text fallback - hidden once logo loads */}
+			{!logoLoaded && (
+				<ProviderSymbol modelName={modelName} color={colors.mutedForeground} />
+			)}
+			{/* Logo positioned on top */}
+			<View
+				style={{
+					position: logoLoaded ? "relative" : "absolute",
+					alignItems: "center",
+					justifyContent: "center",
+				}}
+			>
+				<ProviderLogo
+					providerId={resolvedProviderId}
+					size={14}
+					onLoad={() => setLogoLoaded(true)}
+					onError={() => setLogoError(true)}
+				/>
+			</View>
+		</View>
 	);
 }
 
@@ -386,7 +439,7 @@ function AssistantMessage({
 			{showHeader && (
 				<View className="flex-row items-center gap-2 mb-2 pl-3">
 					<View className="items-center justify-center">
-						<ProviderLogo modelName={modelName} color={colors.mutedForeground} />
+						<MessageProviderLogo providerId={message.providerId} modelName={modelName} />
 					</View>
 					<Text
 						style={[
