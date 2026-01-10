@@ -38,8 +38,8 @@ export default function TerminalScreen() {
 	const { directory, isConnected: isServerConnected } = useConnectionStore();
 	const scrollViewRef = useRef<ScrollView>(null);
 	const inputRef = useRef<TextInput>(null);
+	const inputValueRef = useRef<string>("");
 
-	const [inputValue, setInputValue] = useState("");
 	const [ctrlMode, setCtrlMode] = useState(false);
 	const [cmdMode, setCmdMode] = useState(false);
 	const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -72,7 +72,17 @@ export default function TerminalScreen() {
 
 	const handleData = useCallback(
 		(data: string) => {
-			appendOutput(data);
+			// Filter out the duplicate first character pattern from zsh
+			// Pattern: char + backspace (\x08) + same char (zsh line editor echo)
+			let filteredData = data;
+			if (data.length >= 3 && data.charCodeAt(1) === 0x08) {
+				const firstChar = data.charAt(0);
+				const thirdChar = data.charAt(2);
+				if (firstChar === thirdChar) {
+					filteredData = data.slice(2);
+				}
+			}
+			appendOutput(filteredData);
 		},
 		[appendOutput],
 	);
@@ -172,7 +182,6 @@ export default function TerminalScreen() {
 	const sendInput = useCallback(
 		async (data: string) => {
 			if (!sessionId || !isConnected) return;
-
 			try {
 				await terminalApi.sendInput(sessionId, data);
 			} catch (err) {
@@ -182,22 +191,17 @@ export default function TerminalScreen() {
 		[sessionId, isConnected],
 	);
 
-	const handleSubmit = useCallback(() => {
-		if (!inputValue.trim() && !inputValue) return;
-		sendInput(inputValue + "\n");
-		setInputValue("");
-	}, [inputValue, sendInput]);
 
 	const handleSpecialKey = useCallback(
 		(key: string) => {
 			if (key === "ctrl") {
-				setCtrlMode(!ctrlMode);
+				setCtrlMode((prev) => !prev);
 				setCmdMode(false);
 				return;
 			}
 
 			if (key === "cmd") {
-				setCmdMode(!cmdMode);
+				setCmdMode((prev) => !prev);
 				setCtrlMode(false);
 				return;
 			}
@@ -212,20 +216,6 @@ export default function TerminalScreen() {
 				sendInput(key);
 			}
 			setCmdMode(false);
-		},
-		[ctrlMode, cmdMode, sendInput],
-	);
-
-	const handleCharInput = useCallback(
-		(char: string) => {
-			if (ctrlMode && char.length === 1 && /[a-zA-Z]/.test(char)) {
-				const ctrlChar = String.fromCharCode(
-					char.toUpperCase().charCodeAt(0) - 64,
-				);
-				sendInput(ctrlChar);
-				setCtrlMode(false);
-				setInputValue("");
-			}
 		},
 		[ctrlMode, sendInput],
 	);
@@ -266,6 +256,17 @@ export default function TerminalScreen() {
 			}
 		};
 	}, [sessionId]);
+
+	// Focus input when terminal becomes connected
+	useEffect(() => {
+		if (isConnected && !hasExited) {
+			// Small delay to ensure the input is ready
+			const timer = setTimeout(() => {
+				inputRef.current?.focus();
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+	}, [isConnected, hasExited]);
 
 	const HEADER_HEIGHT = 52;
 	const keyboardOffset = HEADER_HEIGHT + insets.top;
@@ -506,6 +507,7 @@ export default function TerminalScreen() {
 					style={[styles.terminalOutput, { backgroundColor: terminalBg }]}
 					contentContainerStyle={[styles.terminalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
 					keyboardShouldPersistTaps="handled"
+					keyboardDismissMode="none"
 				>
 					<AnsiText
 						text={output || ""}
@@ -513,14 +515,46 @@ export default function TerminalScreen() {
 						baseColor={terminalText}
 					/>
 
-					{/* Inline input prompt - appears at the end of terminal output */}
+					{/* Inline input - appears at the end of terminal output */}
 					{isConnected && !hasExited && (
 						<View style={styles.inlineInputRow}>
-							<Text style={[typography.code, { color: colors.success }]}>$ </Text>
-							<Text style={[typography.code, { color: terminalText }]}>
-								{inputValue}
-							</Text>
-							<View style={[styles.cursor, { backgroundColor: terminalText }]} />
+							<TextInput
+								ref={inputRef}
+								defaultValue=""
+								onChangeText={(text) => {
+									inputValueRef.current = text;
+								}}
+								onSubmitEditing={() => {
+									const value = inputValueRef.current;
+									if (value) {
+										sendInput(value + "\n");
+										inputRef.current?.clear();
+										inputValueRef.current = "";
+									}
+								}}
+								editable={!hasExited && isConnected}
+								autoCapitalize="none"
+								autoCorrect={false}
+								autoComplete="off"
+								spellCheck={false}
+								textContentType="none"
+								keyboardType="ascii-capable"
+								returnKeyType="send"
+								blurOnSubmit={false}
+								selectTextOnFocus={false}
+								enablesReturnKeyAutomatically={false}
+								style={[
+									typography.code,
+									{
+										flex: 1,
+										color: terminalText,
+										backgroundColor: 'transparent',
+										padding: 0,
+										margin: 0,
+										minHeight: 20,
+									},
+								]}
+							/>
 						</View>
 					)}
 
@@ -530,26 +564,6 @@ export default function TerminalScreen() {
 						</Text>
 					)}
 				</ScrollView>
-
-				{/* Hidden TextInput for keyboard capture */}
-				<TextInput
-					ref={inputRef}
-					value={inputValue}
-					onChangeText={(text) => {
-						setInputValue(text);
-						if (text.length > inputValue.length) {
-							handleCharInput(text.slice(-1));
-						}
-					}}
-					onSubmitEditing={handleSubmit}
-					editable={!hasExited && isConnected}
-					autoCapitalize="none"
-					autoCorrect={false}
-					returnKeyType="send"
-					blurOnSubmit={false}
-					style={styles.hiddenInput}
-					autoFocus={isConnected && !hasExited}
-				/>
 
 				{error && (
 					<View
@@ -647,16 +661,5 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		marginTop: 4,
-	},
-	cursor: {
-		width: 8,
-		height: 16,
-		opacity: 0.7,
-	},
-	hiddenInput: {
-		position: "absolute",
-		opacity: 0,
-		height: 0,
-		width: 0,
 	},
 });

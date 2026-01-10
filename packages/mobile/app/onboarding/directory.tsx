@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -10,9 +10,10 @@ import {
 	Pressable,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
-import { Button, Input } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type FileListEntry, filesApi } from "../../src/api";
 import {
@@ -283,43 +284,41 @@ export default function DirectoryScreen() {
 			? "~" + currentPath.slice(homePath.length)
 			: currentPath;
 
-	return (
-		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			style={styles.container}
-		>
-			<View
-				style={[
-					styles.container,
-					{
-						backgroundColor: colors.background,
-						paddingTop: insets.top + 16,
-					},
-				]}
-			>
-				{/* Header */}
-				<View style={styles.header}>
-					<BackButton />
-					<Text style={[typography.h2, { color: colors.foreground, marginTop: Spacing.md }]}>
-						Select Directory
-					</Text>
-					<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 8 }]}>
-						Choose your project folder
-					</Text>
-				</View>
+	// Memoize header component to avoid re-renders
+	const ListHeader = useMemo(() => (
+		<View>
+			{/* Header */}
+			<View style={styles.header}>
+				<BackButton />
+				<Text style={[typography.h2, { color: colors.foreground, marginTop: Spacing.md }]}>
+					Select Directory
+				</Text>
+				<Text style={[typography.meta, { color: colors.mutedForeground, marginTop: 8 }]}>
+					Choose your project folder
+				</Text>
+			</View>
 
-				{/* Path input */}
-				<View style={styles.pathSection}>
-					<Input
-						value={pathInput}
-						onChangeText={setPathInput}
-						onSubmitEditing={handlePathSubmit}
-						placeholder="Enter path..."
-						autoCapitalize="none"
-						autoCorrect={false}
-						returnKeyType="go"
-					/>
-				</View>
+			{/* Path input */}
+			<View style={styles.pathSection}>
+				<TextInput
+					value={pathInput}
+					onChangeText={setPathInput}
+					onSubmitEditing={handlePathSubmit}
+					placeholder="Enter path..."
+					placeholderTextColor={colors.mutedForeground}
+					autoCapitalize="none"
+					autoCorrect={false}
+					returnKeyType="go"
+					style={[
+						styles.pathInput,
+						{
+							borderColor: colors.border,
+							color: colors.foreground,
+							backgroundColor: colors.background,
+						},
+					]}
+				/>
+			</View>
 
 			{/* Pinned directories section */}
 			{pinnedDirectories.length > 0 && (
@@ -358,13 +357,14 @@ export default function DirectoryScreen() {
 				</Pressable>
 			)}
 
-			{/* Content */}
-			{isLoading ? (
-				<View style={styles.centered}>
+			{/* Loading or error states */}
+			{isLoading && (
+				<View style={styles.loadingContainer}>
 					<ActivityIndicator size="small" color={colors.primary} />
 				</View>
-			) : error ? (
-				<View style={styles.centered}>
+			)}
+			{error && !isLoading && (
+				<View style={styles.errorContainer}>
 					<Text style={[typography.meta, { color: colors.destructive, textAlign: "center" }]}>
 						{error}
 					</Text>
@@ -377,11 +377,31 @@ export default function DirectoryScreen() {
 						<Button.Label>Retry</Button.Label>
 					</Button>
 				</View>
-			) : (
+			)}
+		</View>
+	), [colors, pathInput, pinnedDirectories, homePath, canGoUp, isLoading, error, currentPath, handleGoUp, handlePathSubmit, loadDirectory, togglePinnedDirectory]);
+
+	return (
+		<KeyboardAvoidingView
+			behavior={Platform.OS === "ios" ? "padding" : "height"}
+			style={styles.container}
+			keyboardVerticalOffset={0}
+		>
+			<View
+				style={[
+					styles.container,
+					{
+						backgroundColor: colors.background,
+						paddingTop: insets.top + 16,
+					},
+				]}
+			>
 				<FlatList
-					data={entries}
+					data={isLoading || error ? [] : entries}
 					keyExtractor={(item) => item.path}
-					keyboardShouldPersistTaps="handled"
+					keyboardShouldPersistTaps="always"
+					keyboardDismissMode="interactive"
+					ListHeaderComponent={ListHeader}
 					renderItem={({ item }) => (
 						<DirectoryRow
 							item={item}
@@ -390,40 +410,41 @@ export default function DirectoryScreen() {
 							onTogglePin={() => togglePinnedDirectory(item.path)}
 						/>
 					)}
-					contentContainerStyle={{ paddingTop: 8, paddingBottom: 16 }}
+					contentContainerStyle={{ paddingBottom: 16, flexGrow: 1 }}
 					ListEmptyComponent={
-						<View style={styles.empty}>
-							<Text style={[typography.meta, { color: colors.mutedForeground }]}>
-								No subdirectories
-							</Text>
-						</View>
+						!isLoading && !error ? (
+							<View style={styles.empty}>
+								<Text style={[typography.meta, { color: colors.mutedForeground }]}>
+									No subdirectories
+								</Text>
+							</View>
+						) : null
 					}
 				/>
-			)}
 
-			{/* Bottom bar */}
-			<View
-				style={[
-					styles.bottomBar,
-					{
-						borderTopColor: colors.border + "66",
-						backgroundColor: colors.background,
-						paddingBottom: insets.bottom + 24,
-					},
-				]}
-			>
-				<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-					Selected: {displayPath}
-				</Text>
-			<Button
-				variant="primary"
-				size="lg"
-				onPress={handleSelect}
-				style={{ width: "100%", marginTop: 12 }}
-			>
-				<Button.Label>Use This Directory</Button.Label>
-				</Button>
-			</View>
+				{/* Bottom bar */}
+				<View
+					style={[
+						styles.bottomBar,
+						{
+							borderTopColor: colors.border + "66",
+							backgroundColor: colors.background,
+							paddingBottom: insets.bottom + 24,
+						},
+					]}
+				>
+					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+						Selected: {displayPath}
+					</Text>
+					<Button
+						variant="primary"
+						size="lg"
+						onPress={handleSelect}
+						style={{ width: "100%", marginTop: 12 }}
+					>
+						<Button.Label>Use This Directory</Button.Label>
+					</Button>
+				</View>
 			</View>
 		</KeyboardAvoidingView>
 	);
@@ -447,19 +468,23 @@ const styles = StyleSheet.create({
 	pathSection: {
 		paddingHorizontal: 24,
 		marginTop: 24,
+		marginBottom: 8,
 	},
 	pathInput: {
 		borderWidth: 1,
 		borderRadius: 8,
 		paddingHorizontal: 14,
 		paddingVertical: 12,
+		minHeight: 48,
+		fontSize: 16,
 	},
 	goUpRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 10,
 		marginHorizontal: 16,
-		marginTop: 16,
+		marginTop: 8,
+		marginBottom: 8,
 		padding: 14,
 		borderWidth: 1,
 		borderRadius: 8,
@@ -474,18 +499,14 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderRadius: 8,
 	},
-	centered: {
-		flex: 1,
+	loadingContainer: {
+		paddingVertical: 32,
 		alignItems: "center",
-		justifyContent: "center",
-		paddingHorizontal: 24,
 	},
-	retryBtn: {
-		marginTop: 16,
-		borderWidth: 1,
-		borderRadius: 8,
-		paddingHorizontal: 20,
-		paddingVertical: 10,
+	errorContainer: {
+		paddingVertical: 24,
+		paddingHorizontal: 24,
+		alignItems: "center",
 	},
 	empty: {
 		alignItems: "center",
@@ -511,11 +532,5 @@ const styles = StyleSheet.create({
 		borderTopWidth: 1,
 		paddingHorizontal: 24,
 		paddingTop: 16,
-	},
-	selectBtn: {
-		marginTop: 12,
-		borderRadius: 8,
-		paddingVertical: 14,
-		alignItems: "center",
 	},
 });
