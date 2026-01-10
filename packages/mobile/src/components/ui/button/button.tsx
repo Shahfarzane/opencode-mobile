@@ -1,7 +1,8 @@
 import * as Haptics from "expo-haptics";
 import { createContext, forwardRef, useContext } from "react";
-import { ActivityIndicator, Pressable, Text, type View } from "react-native";
+import { ActivityIndicator, Pressable, Text, type View, type ViewStyle } from "react-native";
 import { typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import {
 	BUTTON_DISPLAY_NAME,
 	BUTTON_LABEL_DISPLAY_NAME,
@@ -54,7 +55,7 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 		},
 		ref,
 	) => {
-		const { colors } = useTheme();
+		const { colors, isDark } = useTheme();
 
 		const disabled = isDisabled || isLoading;
 
@@ -78,7 +79,8 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 			className,
 		});
 
-		// Get background color based on variant - use JS theme colors for consistency
+		// Get background color based on variant - matches PWA dark/light mode handling
+		// PWA: outline uses dark:bg-input/30, ghost is transparent but with dark:hover:bg-accent/50
 		const getBackgroundColor = () => {
 			switch (variant) {
 				case "primary":
@@ -86,7 +88,8 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 				case "secondary":
 					return colors.secondary;
 				case "destructive":
-					return colors.destructive;
+					// PWA: dark:bg-destructive/60
+					return isDark ? withOpacity(colors.destructive, 0.6) : colors.destructive;
 				case "warning":
 					return colors.warning;
 				case "muted":
@@ -94,6 +97,8 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 				case "info":
 					return colors.info;
 				case "outline":
+					// PWA: dark:bg-input/30 - 30% opacity of input color in dark mode
+					return isDark ? withOpacity(colors.input, OPACITY.overlay) : "transparent";
 				case "ghost":
 					return "transparent";
 				default:
@@ -145,12 +150,56 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 			isDisabled: disabled,
 		};
 
-		// Get border color for outline variant
+		// Get border color for outline variant - PWA: dark:border-input
 		const getBorderColor = () => {
 			if (variant === "outline") {
-				return colors.border;
+				return isDark ? colors.input : colors.border;
 			}
 			return undefined;
+		};
+
+		// Get pressed background color - matches PWA hover states
+		// PWA: outline dark:hover:bg-input/50, ghost dark:hover:bg-accent/50
+		const getPressedBackgroundColor = () => {
+			const baseColor = getBackgroundColor();
+
+			if (variant === "outline") {
+				// PWA: dark:hover:bg-input/50
+				return isDark
+					? withOpacity(colors.input, OPACITY.half)
+					: withOpacity(colors.accent, OPACITY.selected);
+			}
+
+			if (variant === "ghost") {
+				// PWA: dark:hover:bg-accent/50
+				return isDark
+					? withOpacity(colors.accent, OPACITY.half)
+					: withOpacity(colors.accent, OPACITY.selected);
+			}
+
+			if (baseColor === "transparent") {
+				return withOpacity(colors.foreground, OPACITY.selected);
+			}
+
+			// For solid variants, darken slightly (90% opacity effect)
+			return withOpacity(baseColor, 0.9);
+		};
+
+		// Dynamic style function for press states
+		const getButtonStyle = ({ pressed }: { pressed: boolean }): ViewStyle[] => {
+			const baseStyle: ViewStyle = { backgroundColor: getBackgroundColor() };
+			const borderStyle: ViewStyle | false = variant === "outline" && { borderColor: getBorderColor() };
+			const pressedStyle: ViewStyle | false = pressed && !disabled && {
+				backgroundColor: getPressedBackgroundColor(),
+				opacity: 0.95,
+			};
+
+			return [
+				baseStyle,
+				borderStyle || {},
+				pressedStyle || {},
+				style as ViewStyle,
+			].filter(Boolean) as ViewStyle[];
 		};
 
 		return (
@@ -160,11 +209,7 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 					disabled={disabled}
 					onPress={handlePress}
 					className={rootClassName}
-					style={[
-						{ backgroundColor: getBackgroundColor() },
-						variant === "outline" && { borderColor: getBorderColor() },
-						style,
-					]}
+					style={getButtonStyle}
 					accessibilityRole="button"
 					accessibilityState={{ disabled }}
 					{...props}

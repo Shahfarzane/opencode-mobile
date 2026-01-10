@@ -43,6 +43,7 @@ const toolbarLeftSection = tv({
 });
 
 const toolbarRightSection = tv({
+  // Match PWA mobile ModelControls: gap-x-1.5 (6px) between model, agent, and action button
   base: "flex-1 flex-row items-center justify-end gap-1.5 min-w-0",
   variants: {},
 });
@@ -58,7 +59,8 @@ const modelInfoContainer = tv({
 });
 
 const modelSelector = tv({
-  base: "flex-row items-center gap-1 min-w-0",
+  // Match PWA mobile: gap-1.5 (6px) between provider icon and model name
+  base: "flex-row items-center gap-1.5 min-w-0",
   variants: {},
 });
 

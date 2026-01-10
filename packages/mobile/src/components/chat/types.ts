@@ -61,10 +61,32 @@ export type Message = {
 	createdAt?: number;
 	// Model/agent info for assistant messages
 	modelName?: string;
+	providerId?: string;
 	agentName?: string;
 	// Token usage info
 	tokens?: number | TokenBreakdown;
 };
+
+/**
+ * Infers provider ID from model name for fallback when providerId is not available
+ */
+export function inferProviderIdFromModelName(modelName?: string): string | undefined {
+	if (!modelName) return undefined;
+	const lower = modelName.toLowerCase();
+	if (lower.includes("claude") || lower.includes("anthropic")) return "anthropic";
+	if (lower.includes("gpt") || lower.includes("openai") || lower.includes("o1") || lower.includes("o3")) return "openai";
+	if (lower.includes("gemini") || lower.includes("google")) return "google";
+	if (lower.includes("mistral")) return "mistral";
+	if (lower.includes("llama")) return "meta";
+	if (lower.includes("deepseek")) return "deepseek";
+	if (lower.includes("groq")) return "groq";
+	if (lower.includes("ollama")) return "ollama";
+	if (lower.includes("openrouter")) return "openrouter";
+	if (lower.includes("xai") || lower.includes("grok")) return "xai";
+	if (lower.includes("cohere")) return "cohere";
+	if (lower.includes("perplexity")) return "perplexity";
+	return undefined;
+}
 
 export function convertStreamingPart(part: StreamingPart): MessagePart {
 	if (part.type === "tool") {

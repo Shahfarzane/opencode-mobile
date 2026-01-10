@@ -13,8 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { terminalApi } from "../../src/api";
 import { AnsiText } from "../../src/components/terminal/AnsiText";
-import { Button, IconButton } from "../../src/components/ui";
-import { ChevronRightIcon } from "../../src/components/icons";
+import { Button } from "../../src/components/ui";
 import { useTerminalStream } from "../../src/hooks/useTerminalStream";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { useTerminalStore } from "../../src/stores/useTerminalStore";
@@ -497,19 +496,60 @@ export default function TerminalScreen() {
 				</ScrollView>
 			</View>
 
-			{/* Terminal Output */}
-			<View style={styles.terminalContainer}>
+			{/* Terminal Output with inline input */}
+			<Pressable
+				style={styles.terminalContainer}
+				onPress={() => inputRef.current?.focus()}
+			>
 				<ScrollView
 					ref={scrollViewRef}
 					style={[styles.terminalOutput, { backgroundColor: terminalBg }]}
-					contentContainerStyle={styles.terminalContent}
+					contentContainerStyle={[styles.terminalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
+					keyboardShouldPersistTaps="handled"
 				>
 					<AnsiText
 						text={output || ""}
 						style={[typography.code, styles.terminalText]}
 						baseColor={terminalText}
 					/>
+
+					{/* Inline input prompt - appears at the end of terminal output */}
+					{isConnected && !hasExited && (
+						<View style={styles.inlineInputRow}>
+							<Text style={[typography.code, { color: colors.success }]}>$ </Text>
+							<Text style={[typography.code, { color: terminalText }]}>
+								{inputValue}
+							</Text>
+							<View style={[styles.cursor, { backgroundColor: terminalText }]} />
+						</View>
+					)}
+
+					{hasExited && (
+						<Text style={[typography.code, { color: colors.mutedForeground, marginTop: 8 }]}>
+							[Session ended - tap Restart to begin a new session]
+						</Text>
+					)}
 				</ScrollView>
+
+				{/* Hidden TextInput for keyboard capture */}
+				<TextInput
+					ref={inputRef}
+					value={inputValue}
+					onChangeText={(text) => {
+						setInputValue(text);
+						if (text.length > inputValue.length) {
+							handleCharInput(text.slice(-1));
+						}
+					}}
+					onSubmitEditing={handleSubmit}
+					editable={!hasExited && isConnected}
+					autoCapitalize="none"
+					autoCorrect={false}
+					returnKeyType="send"
+					blurOnSubmit={false}
+					style={styles.hiddenInput}
+					autoFocus={isConnected && !hasExited}
+				/>
 
 				{error && (
 					<View
@@ -526,55 +566,7 @@ export default function TerminalScreen() {
 						</Text>
 					</View>
 				)}
-			</View>
-
-			{/* Input Bar - simplified for mobile */}
-			<View
-				style={[
-					styles.inputArea,
-					{
-						borderTopColor: colors.border,
-						backgroundColor: colors.background,
-						paddingBottom: Math.max(insets.bottom, 8),
-					},
-				]}
-			>
-				<View
-					style={[
-						styles.inputWrapper,
-						{ backgroundColor: terminalBg, borderColor: colors.border },
-					]}
-				>
-					<Text style={[typography.uiLabel, { color: colors.success }]}>$</Text>
-					<TextInput
-						ref={inputRef}
-						value={inputValue}
-						onChangeText={(text) => {
-							setInputValue(text);
-							if (text.length > inputValue.length) {
-								handleCharInput(text.slice(-1));
-							}
-						}}
-						onSubmitEditing={handleSubmit}
-						placeholder={hasExited ? "Session ended" : "Enter command..."}
-						placeholderTextColor={colors.mutedForeground}
-						editable={!hasExited && isConnected}
-						autoCapitalize="none"
-						autoCorrect={false}
-						returnKeyType="send"
-						blurOnSubmit={false}
-						style={[styles.textInput, typography.body, { color: terminalText }]}
-					/>
-				</View>
-				<IconButton
-					icon={<ChevronRightIcon size={20} color={colors.primaryForeground} />}
-					variant={hasExited || !isConnected ? "muted" : "primary"}
-					size="icon-md"
-					accessibilityLabel="Send command"
-					onPress={handleSubmit}
-					disabled={hasExited || !isConnected}
-				/>
-			</View>
+			</Pressable>
 		</KeyboardAvoidingView>
 	);
 }
@@ -650,26 +642,21 @@ const styles = StyleSheet.create({
 		padding: 8,
 		borderTopWidth: 1,
 	},
-	// Input area
-	inputArea: {
+	// Inline input (typing inside terminal)
+	inlineInputRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 8,
-		paddingTop: 8,
-		gap: 8,
-		borderTopWidth: 1,
+		marginTop: 4,
 	},
-	inputWrapper: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: 8,
-		borderWidth: 1,
-		paddingHorizontal: 12,
+	cursor: {
+		width: 8,
+		height: 16,
+		opacity: 0.7,
 	},
-	textInput: {
-		flex: 1,
-		paddingVertical: 12,
-		paddingHorizontal: 8,
+	hiddenInput: {
+		position: "absolute",
+		opacity: 0,
+		height: 0,
+		width: 0,
 	},
 });

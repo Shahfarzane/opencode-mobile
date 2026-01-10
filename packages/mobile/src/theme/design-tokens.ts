@@ -98,6 +98,7 @@ export const RadiusTokens = {
  * Animation tokens matching desktop
  *
  * Desktop uses 150ms transitions for most interactive elements.
+ * iOS-native animations use spring physics with specific values.
  */
 export const AnimationTokens = {
 	// Duration (ms)
@@ -106,16 +107,31 @@ export const AnimationTokens = {
 	durationSlow: 250,
 	durationSlowest: 350,
 
-	// Spring config for menus (matching desktop feel)
+	// Spring config for menus (iOS-native feel)
+	// iOS typically uses ~500 stiffness and ~30 damping for bouncy animations
 	menuSpring: {
-		damping: 22,
-		mass: 1,
-		stiffness: 380,
+		damping: 28, // Slightly higher damping for smoother settle
+		mass: 0.9, // Lighter mass for snappier response
+		stiffness: 420, // Higher stiffness for quicker animation
 	},
 
-	// Menu animation
-	menuCloseDuration: 150,
-	menuScaleFrom: 0.85,
+	// Spring config for subtle animations (less bounce)
+	subtleSpring: {
+		damping: 32,
+		mass: 1,
+		stiffness: 350,
+	},
+
+	// Spring config for iOS sheet-like animations
+	sheetSpring: {
+		damping: 35,
+		mass: 1.2,
+		stiffness: 300,
+	},
+
+	// Menu animation - matches PWA zoom-in-95/zoom-out-95
+	menuCloseDuration: 150, // Match PWA duration
+	menuScaleFrom: 0.95, // PWA: zoom-out-95 / zoom-in-95
 	menuScaleTo: 1,
 } as const;
 
@@ -136,6 +152,39 @@ export const ShadowTokens = {
 		shadowOpacity: 0.1,
 		shadowRadius: 8,
 		elevation: 4,
+	},
+} as const;
+
+/**
+ * Focus ring tokens matching desktop
+ *
+ * Desktop uses: focus-visible:ring-ring/50 focus-visible:ring-[3px]
+ * This is implemented as a shadow in React Native.
+ */
+export const FocusRingTokens = {
+	width: 3, // ring-[3px]
+	opacity: 0.5, // ring-ring/50
+} as const;
+
+/**
+ * Input styling tokens matching desktop PWA
+ *
+ * Desktop input styles from packages/ui/src/components/ui/input.tsx:
+ * - dark:bg-input/30 - 30% opacity background in dark mode
+ * - placeholder:text-muted-foreground - placeholder color
+ * - transition-[color,box-shadow,border-color] - transition properties
+ */
+export const InputTokens = {
+	darkBackgroundOpacity: 0.3, // dark:bg-input/30
+	borderWidth: 1, // border
+	height: {
+		sm: 36, // h-9 - desktop size
+		md: 44, // iOS minimum touch target
+		lg: 56, // Large inputs
+	},
+	padding: {
+		x: 12, // px-3
+		y: 4, // py-1 (desktop), py-2 (mobile)
 	},
 } as const;
 

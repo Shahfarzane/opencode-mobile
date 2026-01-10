@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { AiAgentIcon, SendIcon, StopIcon } from "@/components/icons";
 import { IconButton } from "@/components/ui";
+import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { FontSizes, Fonts, fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { chatInputStyles, MOBILE_SPACING } from "./ChatInput.styles";
@@ -71,6 +72,8 @@ interface ChatInputProps {
 	activeAgent?: AgentInfo;
 	onModelPress?: () => void;
 	onAgentPress?: () => void;
+	/** Whether a session is currently active (for placeholder text) */
+	hasActiveSession?: boolean;
 }
 
 function AgentIcon() {
@@ -330,37 +333,6 @@ function getPermissionModeColors(
 	return null;
 }
 
-// Provider logo component matching desktop UI
-function ProviderLogo({ providerId }: { providerId: string }) {
-	const { colors } = useTheme();
-
-	// Map provider IDs to display symbols (matching desktop's ProviderLogo)
-	const getProviderSymbol = (id: string) => {
-		const normalizedId = id.toLowerCase();
-		if (normalizedId.includes("anthropic")) return "A\\";
-		if (normalizedId.includes("openai")) return "O";
-		if (normalizedId.includes("google") || normalizedId.includes("gemini"))
-			return "G";
-		if (normalizedId.includes("mistral")) return "M";
-		if (normalizedId.includes("groq")) return "Gr";
-		if (normalizedId.includes("ollama")) return "Ol";
-		if (normalizedId.includes("openrouter")) return "OR";
-		if (normalizedId.includes("deepseek")) return "DS";
-		return id.charAt(0).toUpperCase();
-	};
-
-	return (
-			<Text
-				style={[
-					typography.micro,
-					fontStyle("600"),
-					{ color: colors.mutedForeground },
-				]}
-			>
-				{getProviderSymbol(providerId)}
-		</Text>
-	);
-}
 
 // Agent badge component with color support and icon
 function AgentBadge({ name, color }: { name: string; color?: string }) {
@@ -402,10 +374,14 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 	);
 }
 
+// Default placeholder text matching PWA desktop
+const DEFAULT_PLACEHOLDER_ACTIVE = "# for agents; @ for files; / for commands";
+const DEFAULT_PLACEHOLDER_INACTIVE = "Select or create a session to start chatting";
+
 export function ChatInput({
 	onSend,
 	isLoading = false,
-	placeholder = "# for agents; @ for files; / for commands",
+	placeholder,
 	agents = [],
 	commands = [],
 	onFileSearch,
@@ -414,8 +390,11 @@ export function ChatInput({
 	activeAgent,
 	onModelPress,
 	onAgentPress,
+	hasActiveSession = true,
 }: ChatInputProps) {
-	const { colors } = useTheme();
+	// Use custom placeholder if provided, otherwise use conditional defaults
+	const inputPlaceholder = placeholder ?? (hasActiveSession ? DEFAULT_PLACEHOLDER_ACTIVE : DEFAULT_PLACEHOLDER_INACTIVE);
+	const { colors, isDark } = useTheme();
 	const permissionColors = getPermissionModeColors(permissionMode, colors);
 	const inputRef = useRef<TextInput>(null);
 
@@ -624,7 +603,8 @@ export function ChatInput({
 		(text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
 	// Match desktop's semi-transparent input background
-	const inputBackground = withOpacity(colors.input, OPACITY.selected); // ~10% opacity like bg-input/10
+	// PWA: bg-input/10 dark:bg-input/30 (10% in light, 30% in dark)
+	const inputBackground = withOpacity(colors.input, isDark ? OPACITY.overlay : OPACITY.selected);
 
 	return (
 		<View className={chatInputStyles.container({})}>
@@ -656,11 +636,11 @@ export function ChatInput({
 					onSelectionChange={(e) =>
 						setCursorPosition(e.nativeEvent.selection.start)
 					}
-					placeholder={placeholder}
-					placeholderTextColor={withOpacity(colors.mutedForeground, OPACITY.half)}
+					placeholder={inputPlaceholder}
+					placeholderTextColor={colors.mutedForeground}
 					multiline
 					maxLength={10000}
-					editable={!isLoading}
+					editable={!isLoading && hasActiveSession}
 					className={chatInputStyles.textInput({})}
 					style={[typography.body, { color: colors.foreground, textAlignVertical: "top" }]}
 				/>
@@ -695,11 +675,12 @@ export function ChatInput({
 							>
 								{modelInfo ? (
 									<>
-										<ProviderLogo providerId={modelInfo.providerId} />
+										<ProviderLogo providerId={modelInfo.providerId} size={14} />
 										<Text
 											style={[
 												typography.micro,
-												{ color: colors.mutedForeground, flexShrink: 1 },
+												fontStyle("500"),
+												{ color: colors.foreground, flexShrink: 1 },
 											]}
 											numberOfLines={1}
 											ellipsizeMode="tail"
@@ -711,6 +692,7 @@ export function ChatInput({
 									<Text
 										style={[
 											typography.micro,
+											fontStyle("500"),
 											{ color: colors.mutedForeground },
 										]}
 										numberOfLines={1}

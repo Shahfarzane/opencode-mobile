@@ -1,6 +1,6 @@
 import { createContext, forwardRef, useContext, useState } from "react";
-import { Text, TextInput, View } from "react-native";
-import { typography, useTheme } from "@/theme";
+import { Text, TextInput, View, type ViewStyle } from "react-native";
+import { typography, useTheme, FocusRingTokens } from "@/theme";
 import { inputStyles } from "./input.styles";
 import type {
   InputContextValue,
@@ -119,6 +119,16 @@ const InputRoot = forwardRef<TextInput, InputProps>(
         }
       : undefined;
 
+    // Focus ring styling matching PWA: focus-visible:ring-ring/50 focus-visible:ring-[3px]
+    const focusRingStyle: ViewStyle = isFocused && !isDisabled && !hasError
+      ? {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: FocusRingTokens.opacity,
+          shadowRadius: FocusRingTokens.width,
+        }
+      : {};
+
     return (
       <InputContext.Provider value={contextValue}>
         <View className={wrapperClassName} style={style}>
@@ -126,7 +136,7 @@ const InputRoot = forwardRef<TextInput, InputProps>(
             <InputLabel size={size}>{label}</InputLabel>
           )}
 
-          <View className={containerClassName}>
+          <View className={containerClassName} style={focusRingStyle}>
             {prefix && (
               <View className={prefixClassName}>
                 <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>

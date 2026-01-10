@@ -35,6 +35,16 @@ export type {
 } from "./input";
 export { inputStyles } from "./input";
 
+// TextField (multiline text input primitive)
+export { TextField } from "./textfield";
+export type {
+  TextFieldProps,
+  TextFieldSize,
+  TextFieldState,
+  TextFieldVariant,
+} from "./textfield";
+export { textFieldStyles } from "./textfield";
+
 // Skeleton
 export { Skeleton } from "./skeleton";
 export type {

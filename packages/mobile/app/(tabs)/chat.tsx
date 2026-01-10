@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,12 +8,14 @@ import {
 	type Command,
 	commandsApi,
 	filesApi,
+	type Model,
 	type Provider,
 	providersApi,
 	type SettingsPayload,
 	sessionsApi,
 	settingsApi,
 } from "../../src/api";
+import { fetchModelsMetadata, getContextLength, type ModelMetadata } from "../../src/lib/modelsMetadata";
 import type {
 	AgentInfo,
 	Message,
@@ -103,6 +106,7 @@ export default function ChatScreen() {
 	const [permissions, setPermissions] = useState<Permission[]>([]);
 
 	const [providers, setProviders] = useState<Provider[]>([]);
+	const [modelsMetadata, setModelsMetadata] = useState<Map<string, ModelMetadata>>(new Map());
 	const [currentProviderId, setCurrentProviderId] = useState<
 		string | undefined
 	>();
@@ -117,6 +121,45 @@ export default function ChatScreen() {
 	const [showModelPicker, setShowModelPicker] = useState(false);
 	const [openChamberSettings, setOpenChamberSettings] =
 		useState<SettingsPayload | null>(null);
+
+	// Favorite models state
+	const [favoriteModels, setFavoriteModels] = useState<Set<string>>(new Set());
+
+	// Load favorite models from storage on mount
+	useEffect(() => {
+		const loadFavorites = async () => {
+			try {
+				const stored = await AsyncStorage.getItem("favoriteModels");
+				if (stored) {
+					const parsed = JSON.parse(stored);
+					if (Array.isArray(parsed)) {
+						setFavoriteModels(new Set(parsed));
+					}
+				}
+			} catch (err) {
+				console.error("Failed to load favorite models:", err);
+			}
+		};
+		loadFavorites();
+	}, []);
+
+	// Handler to toggle a model as favorite
+	const handleToggleFavorite = useCallback(async (providerId: string, modelId: string) => {
+		const key = `${providerId}/${modelId}`;
+		setFavoriteModels((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(key)) {
+				newSet.delete(key);
+			} else {
+				newSet.add(key);
+			}
+			// Persist to storage
+			AsyncStorage.setItem("favoriteModels", JSON.stringify(Array.from(newSet))).catch((err) =>
+				console.error("Failed to save favorite models:", err)
+			);
+			return newSet;
+		});
+	}, []);
 
 	const activeAgent: AgentInfo | undefined = useMemo(() => {
 		if (!currentAgentName) return undefined;
@@ -451,6 +494,32 @@ export default function ChatScreen() {
 		fetchProviders();
 	}, [isConnected]);
 
+	// Fetch model metadata from models.dev for context window info
+	useEffect(() => {
+		const loadMetadata = async () => {
+			try {
+				const metadata = await fetchModelsMetadata();
+				setModelsMetadata(metadata);
+			} catch (err) {
+				console.error("Failed to fetch model metadata:", err);
+			}
+		};
+		loadMetadata();
+	}, []);
+
+	// Enrich providers with context length from models.dev metadata
+	const enrichedProviders = useMemo(() => {
+		if (modelsMetadata.size === 0) return providers;
+
+		return providers.map((provider) => ({
+			...provider,
+			models: provider.models?.map((model) => {
+				const contextLength = getContextLength(modelsMetadata, provider.id, model.id);
+				return contextLength ? { ...model, contextLength } : model;
+			}),
+		}));
+	}, [providers, modelsMetadata]);
+
 	// Fetch commands (for autocomplete)
 	useEffect(() => {
 		if (!isConnected) return;
@@ -689,11 +758,15 @@ export default function ChatScreen() {
 						// Extract model/agent info from assistant messages
 						let messageModelName: string | undefined;
 						let messageAgentName: string | undefined;
+						let messageProviderId: string | undefined;
 
 						if (msg.info.role === "assistant") {
 							if (msg.info.providerID) lastProviderID = msg.info.providerID;
 							if (msg.info.modelID) lastModelID = msg.info.modelID;
 							if (msg.info.mode) lastAgentName = msg.info.mode;
+
+							// Set providerId for logo display
+							messageProviderId = msg.info.providerID;
 
 							// Derive model display name from provider/model IDs
 							if (msg.info.providerID && msg.info.modelID) {
@@ -725,6 +798,7 @@ export default function ChatScreen() {
 							parts: parts.length > 0 ? parts : undefined,
 							createdAt: msg.info.createdAt || Date.now(),
 							modelName: messageModelName,
+							providerId: messageProviderId,
 							agentName: messageAgentName,
 							tokens: msg.info.tokens,
 						});
@@ -849,6 +923,7 @@ export default function ChatScreen() {
 					isStreaming: true,
 					createdAt: Date.now(),
 					modelName: modelInfo?.modelName,
+					providerId: currentProviderId,
 					agentName: activeAgent?.name,
 				};
 
@@ -1042,7 +1117,7 @@ export default function ChatScreen() {
 			/>
 
 			<ModelPicker
-				providers={providers}
+				providers={enrichedProviders}
 				currentProviderId={currentProviderId}
 				currentModelId={currentModelId}
 				onModelChange={(providerId, modelId) => {
@@ -1051,6 +1126,8 @@ export default function ChatScreen() {
 				}}
 				visible={showModelPicker}
 				onClose={() => setShowModelPicker(false)}
+				favoriteModels={favoriteModels}
+				onToggleFavorite={handleToggleFavorite}
 			/>
 		</KeyboardAvoidingView>
 	);
