@@ -3,11 +3,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
+	FlatList,
+	Modal,
 	Pressable,
 	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import { Button, IconButton, Input } from "@/components/ui";
@@ -18,11 +21,14 @@ import {
 	ChevronDownIcon,
 	ClockIcon,
 	GitBranchIcon,
+	PlusIcon,
 	RefreshIcon,
 	SparkleIcon,
 	UndoIcon,
+	XIcon,
 } from "@/components/icons";
 import {
+	type GitBranch,
 	type GitLog,
 	type GitStatus,
 	type GitStatusFile,
@@ -97,34 +103,300 @@ function DiffStats({
 }
 
 
-function GitHeader({
-	status,
-	onRefresh,
-	onPull,
-	onPush,
-	isPulling,
-	isPushing,
-	isRefreshing,
+// Branch Selector Modal Component
+function BranchSelectorModal({
+	visible,
+	onClose,
+	currentBranch,
+	localBranches,
+	remoteBranches,
+	onCheckout,
+	onCreate,
+	isCheckingOut,
+	isCreating,
 }: {
-	status: GitStatus | null;
-	onRefresh: () => void;
-	onPull: () => void;
-	onPush: () => void;
-	isPulling: boolean;
-	isPushing: boolean;
-	isRefreshing: boolean;
+	visible: boolean;
+	onClose: () => void;
+	currentBranch: string | null | undefined;
+	localBranches: string[];
+	remoteBranches: string[];
+	onCheckout: (branch: string) => void;
+	onCreate: (name: string) => void;
+	isCheckingOut: boolean;
+	isCreating: boolean;
 }) {
 	const { colors } = useTheme();
+	const [search, setSearch] = useState("");
+	const [showCreate, setShowCreate] = useState(false);
+	const [newBranchName, setNewBranchName] = useState("");
 
-	const isBusy = isPulling || isPushing || isRefreshing;
+	const filteredLocal = localBranches.filter((b) =>
+		b.toLowerCase().includes(search.toLowerCase())
+	);
+	const filteredRemote = remoteBranches.filter((b) =>
+		b.toLowerCase().includes(search.toLowerCase())
+	);
+
+	const handleCheckout = (branch: string) => {
+		if (branch === currentBranch) {
+			onClose();
+			return;
+		}
+		onCheckout(branch);
+	};
+
+	const handleCreate = () => {
+		const sanitized = newBranchName
+			.trim()
+			.replace(/\s+/g, "-")
+			.replace(/[^A-Za-z0-9._/-]/g, "-")
+			.replace(/-+/g, "-")
+			.replace(/^[-/]+/, "")
+			.replace(/[-/]+$/, "");
+		if (sanitized) {
+			onCreate(sanitized);
+			setNewBranchName("");
+			setShowCreate(false);
+		}
+	};
+
+	const handleClose = () => {
+		setSearch("");
+		setShowCreate(false);
+		setNewBranchName("");
+		onClose();
+	};
+
+	const renderBranchItem = ({ item, isRemote = false }: { item: string; isRemote?: boolean }) => (
+		<Pressable
+			onPress={() => handleCheckout(item)}
+			disabled={isCheckingOut}
+			style={({ pressed }) => [
+				styles.branchItem,
+				pressed && { backgroundColor: colors.muted },
+				{ opacity: isCheckingOut ? 0.5 : 1 },
+			]}
+		>
+			<GitBranchIcon size={14} color={isRemote ? colors.mutedForeground : colors.primary} />
+			<Text
+				style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]}
+				numberOfLines={1}
+			>
+				{item}
+			</Text>
+			{item === currentBranch && (
+				<Text style={[typography.micro, { color: colors.primary }]}>Current</Text>
+			)}
+		</Pressable>
+	);
+
+	return (
+		<Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+			<Pressable style={styles.modalOverlay} onPress={handleClose}>
+				<Pressable style={[styles.branchModal, { backgroundColor: colors.card }]} onPress={() => {}}>
+					{/* Header */}
+					<View style={[styles.branchModalHeader, { borderBottomColor: colors.border }]}>
+						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+							Switch Branch
+						</Text>
+						<IconButton
+							icon={<XIcon size={18} color={colors.mutedForeground} />}
+							variant="ghost"
+							size="icon-sm"
+							accessibilityLabel="Close"
+							onPress={handleClose}
+						/>
+					</View>
+
+					{/* Search */}
+					<View style={styles.branchSearchContainer}>
+						<TextInput
+							style={[
+								styles.branchSearchInput,
+								{
+									backgroundColor: colors.muted,
+									color: colors.foreground,
+									borderColor: colors.border,
+								},
+							]}
+							placeholder="Search branches..."
+							placeholderTextColor={colors.mutedForeground}
+							value={search}
+							onChangeText={setSearch}
+						/>
+					</View>
+
+					{/* Create new branch */}
+					{!showCreate ? (
+						<Pressable
+							onPress={() => setShowCreate(true)}
+							style={({ pressed }) => [
+								styles.createBranchButton,
+								pressed && { backgroundColor: colors.muted },
+							]}
+						>
+							<PlusIcon size={16} color={colors.primary} />
+							<Text style={[typography.uiLabel, { color: colors.primary }]}>
+								Create new branch...
+							</Text>
+						</Pressable>
+					) : (
+						<View style={[styles.createBranchForm, { borderColor: colors.border }]}>
+							<TextInput
+								style={[
+									styles.createBranchInput,
+									{
+										backgroundColor: colors.muted,
+										color: colors.foreground,
+										borderColor: colors.border,
+									},
+								]}
+								placeholder="New branch name"
+								placeholderTextColor={colors.mutedForeground}
+								value={newBranchName}
+								onChangeText={setNewBranchName}
+								autoFocus
+								onSubmitEditing={handleCreate}
+							/>
+							<View style={styles.createBranchActions}>
+								<IconButton
+									icon={isCreating ? (
+										<ActivityIndicator size="small" color={colors.primary} />
+									) : (
+										<PlusIcon size={16} color={colors.primary} />
+									)}
+									variant="ghost"
+									size="icon-sm"
+									accessibilityLabel="Create"
+									onPress={handleCreate}
+									disabled={!newBranchName.trim() || isCreating}
+								/>
+								<IconButton
+									icon={<XIcon size={16} color={colors.mutedForeground} />}
+									variant="ghost"
+									size="icon-sm"
+									accessibilityLabel="Cancel"
+									onPress={() => {
+										setShowCreate(false);
+										setNewBranchName("");
+									}}
+									disabled={isCreating}
+								/>
+							</View>
+						</View>
+					)}
+
+					{/* Branch lists */}
+					<ScrollView style={styles.branchList}>
+						{/* Local branches */}
+						{filteredLocal.length > 0 && (
+							<View>
+								<Text
+									style={[
+										typography.micro,
+										styles.branchListHeader,
+										{ color: colors.mutedForeground, backgroundColor: colors.muted },
+									]}
+								>
+									LOCAL BRANCHES
+								</Text>
+								{filteredLocal.map((branch) => (
+									<View key={`local-${branch}`}>
+										{renderBranchItem({ item: branch })}
+									</View>
+								))}
+							</View>
+						)}
+
+						{/* Remote branches */}
+						{filteredRemote.length > 0 && (
+							<View style={{ marginTop: 8 }}>
+								<Text
+									style={[
+										typography.micro,
+										styles.branchListHeader,
+										{ color: colors.mutedForeground, backgroundColor: colors.muted },
+									]}
+								>
+									REMOTE BRANCHES
+								</Text>
+								{filteredRemote.map((branch) => (
+									<View key={`remote-${branch}`}>
+										{renderBranchItem({ item: branch, isRemote: true })}
+									</View>
+								))}
+							</View>
+						)}
+
+						{filteredLocal.length === 0 && filteredRemote.length === 0 && (
+							<Text
+								style={[
+									typography.meta,
+									{ color: colors.mutedForeground, textAlign: "center", padding: 16 },
+								]}
+							>
+								No branches found
+							</Text>
+						)}
+					</ScrollView>
+				</Pressable>
+			</Pressable>
+		</Modal>
+	);
+}
+
+function GitHeader({
+	status,
+	branches,
+	onFetch,
+	onPull,
+	onPush,
+	onCheckoutBranch,
+	onCreateBranch,
+	isFetching,
+	isPulling,
+	isPushing,
+	isCheckingOut,
+	isCreating,
+}: {
+	status: GitStatus | null;
+	branches: GitBranch | null;
+	onFetch: () => void;
+	onPull: () => void;
+	onPush: () => void;
+	onCheckoutBranch: (branch: string) => void;
+	onCreateBranch: (name: string) => void;
+	isFetching: boolean;
+	isPulling: boolean;
+	isPushing: boolean;
+	isCheckingOut: boolean;
+	isCreating: boolean;
+}) {
+	const { colors } = useTheme();
+	const [branchModalVisible, setBranchModalVisible] = useState(false);
+
+	const isBusy = isFetching || isPulling || isPushing || isCheckingOut;
+
+	// Parse local and remote branches
+	const localBranches = branches?.all.filter((b) => !b.startsWith("remotes/")) ?? [];
+	const remoteBranches = branches?.all
+		.filter((b) => b.startsWith("remotes/"))
+		.map((b) => b.replace(/^remotes\/[^/]+\//, "")) ?? [];
 
 	return (
 		<View style={[styles.gitHeader, { borderBottomColor: colors.border }]}>
-			{/* Branch selector */}
-			<Pressable style={[styles.branchSelector, { backgroundColor: colors.card }]}>
+			{/* Branch selector - now clickable! */}
+			<Pressable
+				style={({ pressed }) => [
+					styles.branchSelector,
+					{ backgroundColor: pressed ? colors.muted : colors.card },
+				]}
+				onPress={() => setBranchModalVisible(true)}
+				disabled={isBusy}
+			>
 				<GitBranchIcon color={colors.primary} size={14} />
 				<Text
-					style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}
+					style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500", maxWidth: 120 }]}
 					numberOfLines={1}
 				>
 					{status?.current ?? "main"}
@@ -144,17 +416,17 @@ function GitHeader({
 
 			{/* Action buttons */}
 			<View style={styles.headerActions}>
-				{/* Refresh */}
+				{/* Fetch */}
 				<IconButton
-					icon={isRefreshing ? (
+					icon={isFetching ? (
 						<ActivityIndicator size="small" color={colors.mutedForeground} />
 					) : (
 						<RefreshIcon color={colors.mutedForeground} size={18} />
 					)}
 					variant="ghost"
 					size="icon-sm"
-					accessibilityLabel="Refresh"
-					onPress={onRefresh}
+					accessibilityLabel="Fetch"
+					onPress={onFetch}
 					disabled={isBusy}
 					style={{ opacity: isBusy ? 0.5 : 1 }}
 				/>
@@ -190,11 +462,23 @@ function GitHeader({
 				/>
 			</View>
 
-			{/* Branch dropdown (placeholder for future) */}
-			<Pressable style={[styles.branchDropdown, { backgroundColor: colors.card }]}>
-				<GitBranchIcon color={colors.mutedForeground} size={14} />
-				<ChevronDownIcon color={colors.mutedForeground} size={14} />
-			</Pressable>
+			{/* Branch selector modal */}
+			<BranchSelectorModal
+				visible={branchModalVisible}
+				onClose={() => setBranchModalVisible(false)}
+				currentBranch={status?.current}
+				localBranches={localBranches}
+				remoteBranches={remoteBranches}
+				onCheckout={(branch) => {
+					onCheckoutBranch(branch);
+					setBranchModalVisible(false);
+				}}
+				onCreate={(name) => {
+					onCreateBranch(name);
+				}}
+				isCheckingOut={isCheckingOut}
+				isCreating={isCreating}
+			/>
 		</View>
 	);
 }
@@ -560,12 +844,16 @@ export default function GitScreen() {
 	const { isConnected, directory } = useConnectionStore();
 
 	const [status, setStatus] = useState<GitStatus | null>(null);
+	const [branches, setBranches] = useState<GitBranch | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isCommitting, setIsCommitting] = useState(false);
 	const [isPushing, setIsPushing] = useState(false);
 	const [isPulling, setIsPulling] = useState(false);
+	const [isFetching, setIsFetching] = useState(false);
+	const [isCheckingOut, setIsCheckingOut] = useState(false);
+	const [isCreatingBranch, setIsCreatingBranch] = useState(false);
 
 	// Commit message state (for inline commit section)
 	const [commitMessage, setCommitMessage] = useState("");
@@ -602,16 +890,23 @@ export default function GitScreen() {
 			if (!isGit) {
 				setError("Not a git repository");
 				setStatus(null);
+				setBranches(null);
 				return;
 			}
 
-			const gitStatus = await gitApi.getStatus();
+			// Load status and branches in parallel
+			const [gitStatus, gitBranches] = await Promise.all([
+				gitApi.getStatus(),
+				gitApi.getBranches(),
+			]);
 			setStatus(gitStatus);
+			setBranches(gitBranches);
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : "Failed to load git status",
 			);
 			setStatus(null);
+			setBranches(null);
 		} finally {
 			setIsLoading(false);
 			setIsRefreshing(false);
@@ -769,6 +1064,53 @@ export default function GitScreen() {
 			);
 		} finally {
 			setIsPulling(false);
+		}
+	};
+
+	const handleFetch = async () => {
+		setIsFetching(true);
+		try {
+			await gitApi.fetch();
+			await loadStatus();
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to fetch",
+			);
+		} finally {
+			setIsFetching(false);
+		}
+	};
+
+	const handleCheckoutBranch = async (branch: string) => {
+		setIsCheckingOut(true);
+		try {
+			await gitApi.checkout(branch);
+			await loadStatus();
+			Alert.alert("Success", `Switched to branch '${branch}'`);
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to switch branch",
+			);
+		} finally {
+			setIsCheckingOut(false);
+		}
+	};
+
+	const handleCreateBranch = async (name: string) => {
+		setIsCreatingBranch(true);
+		try {
+			await gitApi.createBranch(name);
+			await loadStatus();
+			Alert.alert("Success", `Created and switched to branch '${name}'`);
+		} catch (err) {
+			Alert.alert(
+				"Error",
+				err instanceof Error ? err.message : "Failed to create branch",
+			);
+		} finally {
+			setIsCreatingBranch(false);
 		}
 	};
 
@@ -999,12 +1341,17 @@ export default function GitScreen() {
 			{/* New GitHeader with branch, sync status, action buttons */}
 			<GitHeader
 				status={status}
-				onRefresh={handleRefresh}
+				branches={branches}
+				onFetch={handleFetch}
 				onPull={handlePull}
 				onPush={handlePush}
+				onCheckoutBranch={handleCheckoutBranch}
+				onCreateBranch={handleCreateBranch}
+				isFetching={isFetching}
 				isPulling={isPulling}
 				isPushing={isPushing}
-				isRefreshing={isRefreshing}
+				isCheckingOut={isCheckingOut}
+				isCreating={isCreatingBranch}
 			/>
 
 			{renderContent()}
@@ -1044,21 +1391,13 @@ const styles = StyleSheet.create({
 		gap: 2,
 		marginLeft: "auto",
 	},
-	branchDropdown: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 8,
-		paddingVertical: 6,
-		borderRadius: 8,
-	},
-	// FileItem styles
+	// FileItem styles - aligned with PWA
 	fileItem: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 10,
+		gap: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 6,
 	},
 	statusIcon: {
 		width: 24,
@@ -1090,8 +1429,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
 	},
 	changesCountAndButtons: {
 		flexDirection: "row",
@@ -1104,7 +1443,7 @@ const styles = StyleSheet.create({
 		marginTop: 12,
 		borderRadius: 12,
 		borderWidth: 1,
-		padding: 12,
+		padding: 10,
 	},
 	commitSectionHeader: {
 		flexDirection: "row",
@@ -1115,14 +1454,16 @@ const styles = StyleSheet.create({
 	commitActions: {
 		flexDirection: "row",
 		alignItems: "center",
+		flexWrap: "wrap",
 		gap: 8,
+		marginTop: 10,
 	},
 	// Staged section / section header
 	sectionHeader: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: 16,
+		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
 	countBadge: {
@@ -1155,8 +1496,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
 	},
 	historySectionTitle: {
 		flexDirection: "row",
@@ -1173,8 +1514,8 @@ const styles = StyleSheet.create({
 	historyItem: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
 	},
 	historyItemContent: {
 		flex: 1,
@@ -1190,5 +1531,81 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		borderRadius: 4,
+	},
+	// Branch selector modal styles
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		justifyContent: "center",
+		alignItems: "center",
+		padding: 20,
+	},
+	branchModal: {
+		width: "100%",
+		maxWidth: 340,
+		maxHeight: "70%",
+		borderRadius: 12,
+		overflow: "hidden",
+	},
+	branchModalHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+	},
+	branchSearchContainer: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+	},
+	branchSearchInput: {
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderRadius: 8,
+		borderWidth: 1,
+		fontSize: 14,
+	},
+	createBranchButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+	},
+	createBranchForm: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		gap: 8,
+	},
+	createBranchInput: {
+		flex: 1,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
+		borderWidth: 1,
+		fontSize: 14,
+	},
+	createBranchActions: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+	},
+	branchList: {
+		flex: 1,
+	},
+	branchListHeader: {
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		fontWeight: "600",
+	},
+	branchItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 	},
 });

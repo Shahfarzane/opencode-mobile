@@ -699,7 +699,8 @@ export function ChatInput({
 										<Text
 											style={[
 												typography.micro,
-												{ color: colors.mutedForeground, flexShrink: 1 },
+												fontStyle("500"),
+												{ color: colors.foreground, flexShrink: 1 },
 											]}
 											numberOfLines={1}
 											ellipsizeMode="tail"
@@ -711,6 +712,7 @@ export function ChatInput({
 									<Text
 										style={[
 											typography.micro,
+											fontStyle("500"),
 											{ color: colors.mutedForeground },
 										]}
 										numberOfLines={1}
