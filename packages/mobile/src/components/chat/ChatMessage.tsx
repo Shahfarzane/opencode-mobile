@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
 import { FontFamilySans, FontSizes, fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
@@ -6,6 +6,7 @@ import { MarkdownRenderer } from "../markdown/MarkdownRenderer";
 import { MessageActionsMenu } from "./MessageActionsMenu";
 import { useMessageActions } from "./useMessageActions";
 import { ReasoningPart, ToolPart } from "./parts";
+import { CopyIcon, UndoIcon, GitBranchIcon, CheckIcon } from "../icons";
 import type { Message, MessagePart } from "./types";
 
 function FadeInView({
@@ -81,6 +82,29 @@ type ChatMessageProps = {
 	showHeader?: boolean;
 };
 
+function MessageActionButton({
+	icon,
+	onPress,
+	accessibilityLabel,
+}: {
+	icon: React.ReactNode;
+	onPress: () => void;
+	accessibilityLabel: string;
+}) {
+	return (
+		<Pressable
+			onPress={onPress}
+			accessibilityLabel={accessibilityLabel}
+			style={{
+				padding: Spacing[1.5],
+				borderRadius: Radius.md,
+			}}
+		>
+			{icon}
+		</Pressable>
+	);
+}
+
 function UserMessage({
 	content,
 	messageId,
@@ -93,15 +117,54 @@ function UserMessage({
 	onFork?: (messageId: string) => void;
 }) {
 	const { colors, isDark } = useTheme();
-	const { showMenu, openMenu, closeMenu, copyMessageContent } =
+	const { showMenu, messageLayout, bubbleRef, openMenu, closeMenu, copyMessageContent } =
 		useMessageActions();
+	const [copied, setCopied] = useState(false);
+	const [showActions, setShowActions] = useState(false);
+	const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const bubbleBackground = withOpacity(colors.primary, isDark ? OPACITY.light : OPACITY.selected);
 
+	const handleCopy = () => {
+		copyMessageContent(content);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
+	const handlePress = () => {
+		// Clear any existing timeout
+		if (hideTimeoutRef.current) {
+			clearTimeout(hideTimeoutRef.current);
+		}
+
+		setShowActions((prev) => !prev);
+
+		// Auto-hide after 4 seconds if showing
+		if (!showActions) {
+			hideTimeoutRef.current = setTimeout(() => {
+				setShowActions(false);
+			}, 4000);
+		}
+	};
+
+	// Cleanup timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (hideTimeoutRef.current) {
+				clearTimeout(hideTimeoutRef.current);
+			}
+		};
+	}, []);
+
 	return (
 		<View className="mb-2 px-3">
-			<Pressable onLongPress={openMenu} className="flex-row justify-end items-start gap-2">
+			<Pressable
+				onPress={handlePress}
+				onLongPress={openMenu}
+				className="flex-row justify-end items-start gap-2"
+			>
 				<View
+					ref={bubbleRef}
 					className="px-3 py-2"
 					style={{
 						maxWidth: "85%",
@@ -115,13 +178,41 @@ function UserMessage({
 					</Text>
 				</View>
 			</Pressable>
+			{/* Inline action icons - only shown when message is pressed */}
+			{showActions && (
+				<View className="flex-row justify-end items-center gap-1 mt-1">
+					{onRevert && (
+						<MessageActionButton
+							icon={<UndoIcon size={14} color={colors.mutedForeground} />}
+							onPress={() => onRevert(messageId)}
+							accessibilityLabel="Revert to this message"
+						/>
+					)}
+					{onFork && (
+						<MessageActionButton
+							icon={<GitBranchIcon size={14} color={colors.mutedForeground} />}
+							onPress={() => onFork(messageId)}
+							accessibilityLabel="Fork from this message"
+						/>
+					)}
+					<MessageActionButton
+						icon={copied
+							? <CheckIcon size={14} color={colors.primary} />
+							: <CopyIcon size={14} color={colors.mutedForeground} />
+						}
+						onPress={handleCopy}
+						accessibilityLabel="Copy message"
+					/>
+				</View>
+			)}
 			<MessageActionsMenu
 				visible={showMenu}
 				onClose={closeMenu}
-				onCopy={() => copyMessageContent(content)}
+				onCopy={handleCopy}
 				onRevert={onRevert ? () => onRevert(messageId) : undefined}
 				onBranchSession={onFork ? () => onFork(messageId) : undefined}
 				isAssistantMessage={false}
+				messageLayout={messageLayout}
 			/>
 		</View>
 	);
@@ -252,8 +343,9 @@ function AssistantMessage({
 	const { colors } = useTheme();
 	const hasParts = message.parts && message.parts.length > 0;
 	const isStreaming = message.isStreaming ?? false;
-	const { showMenu, openMenu, closeMenu, copyMessageContent } =
+	const { showMenu, messageLayout, bubbleRef, openMenu, closeMenu, copyMessageContent } =
 		useMessageActions();
+	const [copied, setCopied] = useState(false);
 
 	const modelName = message.modelName;
 	const agentName = message.agentName;
@@ -268,6 +360,12 @@ function AssistantMessage({
 		return message.content;
 	};
 
+	const handleCopy = () => {
+		copyMessageContent(getTextContent());
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
 	const getAgentColor = (name: string) => {
 		const agentColors = [
 			"#3B82F6", "#10B981", "#F59E0B", "#EF4444",
@@ -279,6 +377,9 @@ function AssistantMessage({
 		}
 		return agentColors[Math.abs(hash) % agentColors.length];
 	};
+
+	// Only show action icons when message is complete (not streaming)
+	const showActionIcons = !isStreaming && getTextContent().trim().length > 0;
 
 	return (
 		<View className="mb-2 px-3">
@@ -316,7 +417,7 @@ function AssistantMessage({
 				</View>
 			)}
 
-			<Pressable onLongPress={openMenu} style={{ paddingLeft: 12 }}>
+			<Pressable ref={bubbleRef} onLongPress={openMenu} style={{ paddingLeft: 12 }}>
 				{hasParts ? (
 					message.parts!.map((part, idx) => (
 						<RenderPart
@@ -338,15 +439,36 @@ function AssistantMessage({
 					</View>
 				)}
 			</Pressable>
+			{/* Inline action icons for assistant messages */}
+			{showActionIcons && (
+				<View className="flex-row items-center gap-1 mt-1 pl-3">
+					{onBranchSession && (
+						<MessageActionButton
+							icon={<GitBranchIcon size={14} color={colors.mutedForeground} />}
+							onPress={() => onBranchSession(message.id)}
+							accessibilityLabel="Start new session from this answer"
+						/>
+					)}
+					<MessageActionButton
+						icon={copied
+							? <CheckIcon size={14} color={colors.primary} />
+							: <CopyIcon size={14} color={colors.mutedForeground} />
+						}
+						onPress={handleCopy}
+						accessibilityLabel="Copy answer"
+					/>
+				</View>
+			)}
 			<MessageActionsMenu
 				visible={showMenu}
 				onClose={closeMenu}
-				onCopy={() => copyMessageContent(getTextContent())}
+				onCopy={handleCopy}
 				onRevert={onRevert ? () => onRevert(message.id) : undefined}
 				onBranchSession={
 					onBranchSession ? () => onBranchSession(message.id) : undefined
 				}
 				isAssistantMessage={true}
+				messageLayout={messageLayout}
 			/>
 		</View>
 	);
