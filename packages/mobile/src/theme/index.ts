@@ -22,6 +22,7 @@ export {
 export {
 	AnimationTokens,
 	DesktopSizes,
+	FocusRingTokens,
 	getShadowColor,
 	IconSizes,
 	MenuPositioning,

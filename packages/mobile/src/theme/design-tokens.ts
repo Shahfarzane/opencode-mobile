@@ -98,6 +98,7 @@ export const RadiusTokens = {
  * Animation tokens matching desktop
  *
  * Desktop uses 150ms transitions for most interactive elements.
+ * iOS-native animations use spring physics with specific values.
  */
 export const AnimationTokens = {
 	// Duration (ms)
@@ -106,16 +107,31 @@ export const AnimationTokens = {
 	durationSlow: 250,
 	durationSlowest: 350,
 
-	// Spring config for menus (matching desktop feel)
+	// Spring config for menus (iOS-native feel)
+	// iOS typically uses ~500 stiffness and ~30 damping for bouncy animations
 	menuSpring: {
-		damping: 22,
+		damping: 28, // Slightly higher damping for smoother settle
+		mass: 0.9, // Lighter mass for snappier response
+		stiffness: 420, // Higher stiffness for quicker animation
+	},
+
+	// Spring config for subtle animations (less bounce)
+	subtleSpring: {
+		damping: 32,
 		mass: 1,
-		stiffness: 380,
+		stiffness: 350,
+	},
+
+	// Spring config for iOS sheet-like animations
+	sheetSpring: {
+		damping: 35,
+		mass: 1.2,
+		stiffness: 300,
 	},
 
 	// Menu animation
-	menuCloseDuration: 150,
-	menuScaleFrom: 0.85,
+	menuCloseDuration: 120, // Slightly faster close for snappier feel
+	menuScaleFrom: 0.92, // Slightly larger start scale for subtler effect
 	menuScaleTo: 1,
 } as const;
 
@@ -137,6 +153,17 @@ export const ShadowTokens = {
 		shadowRadius: 8,
 		elevation: 4,
 	},
+} as const;
+
+/**
+ * Focus ring tokens matching desktop
+ *
+ * Desktop uses: focus-visible:ring-ring/50 focus-visible:ring-[3px]
+ * This is implemented as a shadow in React Native.
+ */
+export const FocusRingTokens = {
+	width: 3, // ring-[3px]
+	opacity: 0.5, // ring-ring/50
 } as const;
 
 /**

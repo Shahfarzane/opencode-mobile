@@ -1,7 +1,8 @@
 import * as Haptics from "expo-haptics";
 import { createContext, forwardRef, useContext } from "react";
-import { ActivityIndicator, Pressable, Text, type View } from "react-native";
+import { ActivityIndicator, Pressable, Text, type View, type ViewStyle } from "react-native";
 import { typography, useTheme } from "@/theme";
+import { withOpacity, OPACITY } from "@/utils/colors";
 import {
 	BUTTON_DISPLAY_NAME,
 	BUTTON_LABEL_DISPLAY_NAME,
@@ -153,6 +154,34 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 			return undefined;
 		};
 
+		// Get pressed background color - matches PWA hover:bg-primary/90 pattern
+		const getPressedBackgroundColor = () => {
+			const baseColor = getBackgroundColor();
+			if (baseColor === "transparent") {
+				// For ghost/outline variants, show a subtle background on press
+				return withOpacity(colors.foreground, OPACITY.selected);
+			}
+			// For solid variants, darken slightly (90% opacity effect)
+			return withOpacity(baseColor, 0.9);
+		};
+
+		// Dynamic style function for press states
+		const getButtonStyle = ({ pressed }: { pressed: boolean }): ViewStyle[] => {
+			const baseStyle: ViewStyle = { backgroundColor: getBackgroundColor() };
+			const borderStyle: ViewStyle | false = variant === "outline" && { borderColor: getBorderColor() };
+			const pressedStyle: ViewStyle | false = pressed && !disabled && {
+				backgroundColor: getPressedBackgroundColor(),
+				opacity: 0.95,
+			};
+
+			return [
+				baseStyle,
+				borderStyle || {},
+				pressedStyle || {},
+				style as ViewStyle,
+			].filter(Boolean) as ViewStyle[];
+		};
+
 		return (
 			<ButtonContext.Provider value={contextValue}>
 				<Pressable
@@ -160,11 +189,7 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 					disabled={disabled}
 					onPress={handlePress}
 					className={rootClassName}
-					style={[
-						{ backgroundColor: getBackgroundColor() },
-						variant === "outline" && { borderColor: getBorderColor() },
-						style,
-					]}
+					style={getButtonStyle}
 					accessibilityRole="button"
 					accessibilityState={{ disabled }}
 					{...props}

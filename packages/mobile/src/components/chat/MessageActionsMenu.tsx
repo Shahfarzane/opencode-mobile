@@ -1,8 +1,8 @@
 import * as Haptics from "expo-haptics";
-import { Dimensions, Modal, Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Dimensions, Modal, Pressable, Text, View } from "react-native";
 import { CopyIcon, GitForkIcon, UndoIcon } from "@/components/icons";
-import { getShadowColor, ShadowTokens, typography, useTheme } from "@/theme";
-import { OVERLAYS } from "@/utils/colors";
+import { AnimationTokens, getShadowColor, OpacityTokens, ShadowTokens, typography, useTheme } from "@/theme";
 
 interface MessageLayout {
 	x: number;
@@ -25,6 +25,11 @@ interface MessageActionsMenuProps {
 const MENU_ITEM_HEIGHT = 44;
 const SCREEN_PADDING = 16;
 
+const SPRING_CONFIG = {
+	...AnimationTokens.menuSpring,
+	useNativeDriver: true,
+};
+
 export function MessageActionsMenu({
 	visible,
 	onClose,
@@ -36,6 +41,43 @@ export function MessageActionsMenu({
 }: MessageActionsMenuProps) {
 	const { colors, isDark } = useTheme();
 	const screenHeight = Dimensions.get("window").height;
+	const [modalVisible, setModalVisible] = useState(false);
+	const progress = useRef(new Animated.Value(0)).current;
+
+	useEffect(() => {
+		if (visible) {
+			setModalVisible(true);
+			Animated.spring(progress, {
+				toValue: 1,
+				...SPRING_CONFIG,
+			}).start();
+		} else {
+			Animated.timing(progress, {
+				toValue: 0,
+				duration: AnimationTokens.menuCloseDuration,
+				useNativeDriver: true,
+			}).start(({ finished }) => {
+				if (finished) {
+					setModalVisible(false);
+				}
+			});
+		}
+	}, [visible, progress]);
+
+	const backdropOpacity = progress.interpolate({
+		inputRange: [0, 1],
+		outputRange: [0, OpacityTokens.backdrop],
+	});
+
+	const menuOpacity = progress.interpolate({
+		inputRange: [0, 0.3, 1],
+		outputRange: [0, 0.8, 1],
+	});
+
+	const menuScale = progress.interpolate({
+		inputRange: [0, 1],
+		outputRange: [AnimationTokens.menuScaleFrom, AnimationTokens.menuScaleTo],
+	});
 
 	const handleCopy = async () => {
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -92,25 +134,39 @@ export function MessageActionsMenu({
 
 	return (
 		<Modal
-			visible={visible}
+			visible={modalVisible}
 			transparent
-			animationType="fade"
+			animationType="none"
 			onRequestClose={onClose}
 		>
-			<Pressable
-				className="flex-1"
-				style={{ backgroundColor: OVERLAYS.scrimMedium }}
-				onPress={onClose}
-			>
-				{/* Action menu */}
-				<View
+			<View className="flex-1">
+				{/* Animated backdrop */}
+				<Pressable
+					style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+					onPress={onClose}
+				>
+					<Animated.View
+						style={{
+							flex: 1,
+							backgroundColor: "#000",
+							opacity: backdropOpacity,
+						}}
+					/>
+				</Pressable>
+
+				{/* Animated action menu */}
+				<Animated.View
 					className="rounded-xl overflow-hidden"
 					style={[
 						{
 							backgroundColor: colors.card,
+							borderColor: colors.border,
+							borderWidth: 1,
 							shadowColor: getShadowColor(isDark),
 							minWidth: 140,
 							...ShadowTokens.menu,
+							opacity: menuOpacity,
+							transform: [{ scale: menuScale }],
 						},
 						menuStyle,
 					]}
@@ -166,8 +222,8 @@ export function MessageActionsMenu({
 							</Pressable>
 						</>
 					)}
-				</View>
-			</Pressable>
+				</Animated.View>
+			</View>
 		</Modal>
 	);
 }

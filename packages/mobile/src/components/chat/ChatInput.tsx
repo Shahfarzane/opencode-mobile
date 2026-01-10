@@ -72,6 +72,8 @@ interface ChatInputProps {
 	activeAgent?: AgentInfo;
 	onModelPress?: () => void;
 	onAgentPress?: () => void;
+	/** Whether a session is currently active (for placeholder text) */
+	hasActiveSession?: boolean;
 }
 
 function AgentIcon() {
@@ -372,10 +374,14 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 	);
 }
 
+// Default placeholder text matching PWA desktop
+const DEFAULT_PLACEHOLDER_ACTIVE = "# for agents; @ for files; / for commands";
+const DEFAULT_PLACEHOLDER_INACTIVE = "Select or create a session to start chatting";
+
 export function ChatInput({
 	onSend,
 	isLoading = false,
-	placeholder = "# for agents; @ for files; / for commands",
+	placeholder,
 	agents = [],
 	commands = [],
 	onFileSearch,
@@ -384,8 +390,11 @@ export function ChatInput({
 	activeAgent,
 	onModelPress,
 	onAgentPress,
+	hasActiveSession = true,
 }: ChatInputProps) {
-	const { colors } = useTheme();
+	// Use custom placeholder if provided, otherwise use conditional defaults
+	const inputPlaceholder = placeholder ?? (hasActiveSession ? DEFAULT_PLACEHOLDER_ACTIVE : DEFAULT_PLACEHOLDER_INACTIVE);
+	const { colors, isDark } = useTheme();
 	const permissionColors = getPermissionModeColors(permissionMode, colors);
 	const inputRef = useRef<TextInput>(null);
 
@@ -594,7 +603,8 @@ export function ChatInput({
 		(text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
 	// Match desktop's semi-transparent input background
-	const inputBackground = withOpacity(colors.input, OPACITY.selected); // ~10% opacity like bg-input/10
+	// PWA: bg-input/10 dark:bg-input/30 (10% in light, 30% in dark)
+	const inputBackground = withOpacity(colors.input, isDark ? OPACITY.overlay : OPACITY.selected);
 
 	return (
 		<View className={chatInputStyles.container({})}>
@@ -626,11 +636,11 @@ export function ChatInput({
 					onSelectionChange={(e) =>
 						setCursorPosition(e.nativeEvent.selection.start)
 					}
-					placeholder={placeholder}
+					placeholder={inputPlaceholder}
 					placeholderTextColor={withOpacity(colors.mutedForeground, OPACITY.half)}
 					multiline
 					maxLength={10000}
-					editable={!isLoading}
+					editable={!isLoading && hasActiveSession}
 					className={chatInputStyles.textInput({})}
 					style={[typography.body, { color: colors.foreground, textAlignVertical: "top" }]}
 				/>
