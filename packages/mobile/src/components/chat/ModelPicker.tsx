@@ -473,9 +473,10 @@ export function ModelPicker({
 		(providerId: string, modelId: string) => {
 			Haptics.selectionAsync();
 			onModelChange(providerId, modelId);
-			onClose();
+			// Close sheet - onClose will be called by handleSheetChange when sheet reaches -1
+			bottomSheetRef.current?.close();
 		},
-		[onModelChange, onClose],
+		[onModelChange],
 	);
 
 	const handleToggleFavorite = useCallback(
@@ -510,9 +511,9 @@ export function ModelPicker({
 	);
 
 	const handleClose = useCallback(() => {
+		// Only close sheet - onClose will be called by handleSheetChange when sheet reaches -1
 		bottomSheetRef.current?.close();
-		onClose();
-	}, [onClose]);
+	}, []);
 
 	const isSearching = searchQuery.trim().length > 0;
 	const hasResults = filteredProviders.length > 0 || filteredFavorites.length > 0 || filteredRecents.length > 0;
