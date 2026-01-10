@@ -6,15 +6,21 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
-	TouchableOpacity,
 	useWindowDimensions,
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import {
+	AlignJustifyIcon,
+	ChevronDownIcon,
+	DocumentIcon,
+	FileOutlineIcon,
+	LayoutColumnsIcon,
+} from "@/components/icons";
+import { IconButton } from "@/components/ui";
 import { type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { typography, useTheme } from "../../src/theme";
+import { Fonts, FontSizes, typography, useTheme } from "../../src/theme";
 
 type DiffViewMode = "unified" | "side-by-side";
 
@@ -396,7 +402,7 @@ function DiffLineComponent({
 			>
 				<View style={styles.headerPadding} />
 				<Text
-					style={[typography.code, { color: style.sign, fontSize: 11 }]}
+					style={[typography.code, { color: style.sign, fontSize: FontSizes.microSmall }]}
 					numberOfLines={1}
 				>
 					{line.content}
@@ -423,7 +429,7 @@ function DiffLineComponent({
 					<Text
 						style={[
 							typography.code,
-							{ color: colors.mutedForeground, fontSize: 10 },
+							{ color: colors.mutedForeground, fontSize: FontSizes.xxs },
 						]}
 					>
 						{getOldLineNum()}
@@ -433,7 +439,7 @@ function DiffLineComponent({
 					<Text
 						style={[
 							typography.code,
-							{ color: colors.mutedForeground, fontSize: 10 },
+							{ color: colors.mutedForeground, fontSize: FontSizes.xxs },
 						]}
 					>
 						{getNewLineNum()}
@@ -443,7 +449,7 @@ function DiffLineComponent({
 			<Text style={[styles.lineSign, { color: style.sign }]}>{getSign()}</Text>
 			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 				<Text
-					style={[typography.code, { color: colors.foreground, fontSize: 12 }]}
+					style={[typography.code, { color: colors.foreground, fontSize: FontSizes.xs }]}
 				>
 					{highlightCode(line.content)}
 				</Text>
@@ -524,7 +530,7 @@ const SideBySideColumn = memo(function SideBySideColumn({
 					style={[styles.sideBySideLineNumber, { width: lineNumberWidth }]}
 				/>
 				<Text
-					style={[typography.code, { color: colors.info, fontSize: 10 }]}
+					style={[typography.code, { color: colors.info, fontSize: FontSizes.xxs }]}
 					numberOfLines={1}
 				>
 					{side === "left" ? line.content : ""}
@@ -569,7 +575,7 @@ const SideBySideColumn = memo(function SideBySideColumn({
 				<Text
 					style={[
 						typography.code,
-						{ color: colors.mutedForeground, fontSize: 10 },
+						{ color: colors.mutedForeground, fontSize: FontSizes.xxs },
 					]}
 				>
 					{line.lineNumber ?? ""}
@@ -585,7 +591,7 @@ const SideBySideColumn = memo(function SideBySideColumn({
 				style={{ flex: 1 }}
 			>
 				<Text
-					style={[typography.code, { color: colors.foreground, fontSize: 11 }]}
+					style={[typography.code, { color: colors.foreground, fontSize: FontSizes.microSmall }]}
 				>
 					{highlightCode(line.content)}
 				</Text>
@@ -674,33 +680,21 @@ function DiffViewToggle({
 	// When in side-by-side, show unified icon (3 lines)
 	// When in unified, show side-by-side icon (columns)
 	return (
-		<TouchableOpacity
+		<IconButton
+			icon={
+				mode === "side-by-side" ? (
+					<AlignJustifyIcon size={14} color={colors.mutedForeground} />
+				) : (
+					<LayoutColumnsIcon size={14} color={colors.mutedForeground} />
+				)
+			}
+			variant="ghost"
+			size="icon-sm"
 			onPress={handlePress}
-			activeOpacity={0.6}
-			style={styles.viewToggleButton}
-		>
-			{mode === "side-by-side" ? (
-				// Show unified icon (3 horizontal lines) - RiAlignJustify equivalent
-				<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-					<Path
-						d="M4 6h16M4 12h16M4 18h16"
-						stroke={colors.mutedForeground}
-						strokeWidth={2}
-						strokeLinecap="round"
-					/>
-				</Svg>
-			) : (
-				// Show side-by-side icon (two columns) - RiLayoutColumnLine equivalent
-				<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-					<Path
-						d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4m6-18h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"
-						stroke={colors.mutedForeground}
-						strokeWidth={2}
-						strokeLinecap="round"
-					/>
-				</Svg>
-			)}
-		</TouchableOpacity>
+			accessibilityLabel={
+				mode === "side-by-side" ? "Switch to unified view" : "Switch to side-by-side view"
+			}
+		/>
 	);
 }
 
@@ -736,14 +730,7 @@ function FileSelector({
 					},
 				]}
 			>
-				<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-					<Path
-						d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-						stroke={colors.foreground}
-						strokeWidth={2}
-					/>
-					<Path d="M14 2v6h6" stroke={colors.foreground} strokeWidth={2} />
-				</Svg>
+				<FileOutlineIcon size={16} color={colors.foreground} />
 				<Text
 					style={[typography.meta, { color: colors.foreground, flex: 1 }]}
 					numberOfLines={1}
@@ -774,20 +761,11 @@ function FileSelector({
 						)}
 					</View>
 				)}
-				<Svg
-					width={16}
-					height={16}
-					viewBox="0 0 24 24"
-					fill="none"
+				<ChevronDownIcon
+					size={16}
+					color={colors.mutedForeground}
 					style={{ transform: [{ rotate: isOpen ? "180deg" : "0deg" }] }}
-				>
-					<Path
-						d="M6 9l6 6 6-6"
-						stroke={colors.mutedForeground}
-						strokeWidth={2}
-						strokeLinecap="round"
-					/>
-				</Svg>
+				/>
 			</Pressable>
 
 			{isOpen && (
@@ -867,19 +845,7 @@ function EmptyState({ title, message }: { title: string; message: string }) {
 
 	return (
 		<View style={styles.emptyState}>
-			<Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-					stroke={colors.mutedForeground}
-					strokeWidth={1.5}
-				/>
-				<Path
-					d="M14 2v6h6M9 13h6M9 17h6"
-					stroke={colors.mutedForeground}
-					strokeWidth={1.5}
-					strokeLinecap="round"
-				/>
-			</Svg>
+			<DocumentIcon size={32} color={colors.mutedForeground} />
 			<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 				{title}
 			</Text>
@@ -1126,13 +1092,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 	},
-	viewToggleButton: {
-		width: 28,
-		height: 28,
-		alignItems: "center",
-		justifyContent: "center",
-		opacity: 0.6,
-	},
 	statsInline: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1192,8 +1151,8 @@ const styles = StyleSheet.create({
 	lineSign: {
 		width: 20,
 		textAlign: "center",
-		fontFamily: "IBMPlexMono-Medium",
-		fontSize: 12,
+		fontFamily: Fonts.monoMedium,
+		fontSize: FontSizes.xs,
 	},
 	emptyState: {
 		flex: 1,

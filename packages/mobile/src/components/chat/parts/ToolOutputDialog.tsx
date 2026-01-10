@@ -1,7 +1,9 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal, ScrollView, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
+import { CopyIcon, XIcon } from "@/components/icons";
+import { IconButton } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
 import type { ToolPartData } from "./ToolPart";
@@ -113,40 +115,6 @@ function getToolIcon(toolName: string, color: string) {
 	);
 }
 
-function CloseIcon({ color }: { color: string }) {
-	return (
-		<Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M18 6L6 18M6 6l12 12"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
-}
-
-function CopyIcon({ color }: { color: string }) {
-	return (
-		<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-			<Rect
-				x="9"
-				y="9"
-				width="13"
-				height="13"
-				rx="2"
-				stroke={color}
-				strokeWidth={2}
-			/>
-			<Path
-				d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-				stroke={color}
-				strokeWidth={2}
-			/>
-		</Svg>
-	);
-}
-
 function formatInputForDisplay(input: Record<string, unknown>): string {
 	return JSON.stringify(input, null, 2);
 }
@@ -195,9 +163,13 @@ export function ToolOutputDialog({
 							{toolName}
 						</Text>
 					</View>
-					<Pressable onPress={onClose} hitSlop={12} className="p-1">
-						<CloseIcon color={colors.mutedForeground} />
-					</Pressable>
+					<IconButton
+						icon={<XIcon size={20} color={colors.mutedForeground} />}
+						variant="ghost"
+						size="icon-sm"
+						onPress={onClose}
+						accessibilityLabel="Close"
+					/>
 				</View>
 
 				<View
@@ -223,9 +195,13 @@ export function ToolOutputDialog({
 									>
 										Input
 									</Text>
-									<Pressable onPress={handleCopyInput} hitSlop={8}>
-										<CopyIcon color={colors.mutedForeground} />
-									</Pressable>
+									<IconButton
+										icon={<CopyIcon size={18} color={colors.mutedForeground} />}
+										variant="ghost"
+										size="icon-sm"
+										onPress={handleCopyInput}
+										accessibilityLabel="Copy input"
+									/>
 								</View>
 								<View
 									className="rounded-xl border p-3"
@@ -253,9 +229,13 @@ export function ToolOutputDialog({
 									>
 										Output
 									</Text>
-									<Pressable onPress={handleCopyOutput} hitSlop={8}>
-										<CopyIcon color={colors.mutedForeground} />
-									</Pressable>
+									<IconButton
+										icon={<CopyIcon size={18} color={colors.mutedForeground} />}
+										variant="ghost"
+										size="icon-sm"
+										onPress={handleCopyOutput}
+										accessibilityLabel="Copy output"
+									/>
 								</View>
 								<View
 									className="rounded-xl border p-3"
@@ -286,9 +266,13 @@ export function ToolOutputDialog({
 									>
 										Error
 									</Text>
-									<Pressable onPress={handleCopyOutput} hitSlop={8}>
-										<CopyIcon color={colors.mutedForeground} />
-									</Pressable>
+									<IconButton
+										icon={<CopyIcon size={18} color={colors.mutedForeground} />}
+										variant="ghost"
+										size="icon-sm"
+										onPress={handleCopyOutput}
+										accessibilityLabel="Copy error"
+									/>
 								</View>
 								<View
 									className="rounded-xl border p-3"

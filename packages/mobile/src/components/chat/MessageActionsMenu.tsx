@@ -1,8 +1,15 @@
 import * as Haptics from "expo-haptics";
-import { Modal, Pressable, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
-import { typography, useTheme } from "@/theme";
+import { Dimensions, Modal, Pressable, Text, View } from "react-native";
+import { CopyIcon, GitForkIcon, UndoIcon } from "@/components/icons";
+import { getShadowColor, ShadowTokens, typography, useTheme } from "@/theme";
 import { OVERLAYS } from "@/utils/colors";
+
+interface MessageLayout {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
 
 interface MessageActionsMenuProps {
 	visible: boolean;
@@ -11,66 +18,12 @@ interface MessageActionsMenuProps {
 	onBranchSession?: () => void;
 	onRevert?: () => void;
 	isAssistantMessage: boolean;
+	/** Layout of the message bubble for positioning */
+	messageLayout?: MessageLayout;
 }
 
-function CopyIcon({ color }: { color: string }) {
-	return (
-		<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.242a2 2 0 0 0-.602-1.43L16.083 2.57A2 2 0 0 0 14.685 2H10a2 2 0 0 0-2 2z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-			<Path
-				d="M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
-}
-
-function BranchIcon({ color }: { color: string }) {
-	return (
-		<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-			<Path
-				d="M18 9c0 6-12 6-12 9"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
-}
-
-function RevertIcon({ color }: { color: string }) {
-	return (
-		<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<Path
-				d="M3 3v5h5"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
+const MENU_ITEM_HEIGHT = 44;
+const SCREEN_PADDING = 16;
 
 export function MessageActionsMenu({
 	visible,
@@ -78,8 +31,11 @@ export function MessageActionsMenu({
 	onCopy,
 	onBranchSession,
 	onRevert,
+	isAssistantMessage,
+	messageLayout,
 }: MessageActionsMenuProps) {
 	const { colors, isDark } = useTheme();
+	const screenHeight = Dimensions.get("window").height;
 
 	const handleCopy = async () => {
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -99,6 +55,41 @@ export function MessageActionsMenu({
 		onClose();
 	};
 
+	// Calculate number of menu items
+	const menuItemCount = 1 + (onRevert ? 1 : 0) + (onBranchSession ? 1 : 0);
+	const menuHeight = menuItemCount * MENU_ITEM_HEIGHT;
+
+	// Calculate menu position based on message layout
+	const getMenuStyle = () => {
+		if (!messageLayout) {
+			// Fallback: center the menu
+			return {
+				alignSelf: "center" as const,
+				top: screenHeight * 0.4,
+			};
+		}
+
+		const { y, height } = messageLayout;
+
+		// Determine if menu should go above or below the message
+		const spaceBelow = screenHeight - (y + height) - 80;
+		const spaceAbove = y - 120;
+		const menuGoesBelow = spaceBelow >= menuHeight || spaceBelow > spaceAbove;
+
+		const menuTop = menuGoesBelow
+			? y + height + 8
+			: y - menuHeight - 8;
+
+		return {
+			position: "absolute" as const,
+			top: Math.max(100, Math.min(menuTop, screenHeight - menuHeight - 50)),
+			right: isAssistantMessage ? undefined : SCREEN_PADDING,
+			left: isAssistantMessage ? SCREEN_PADDING : undefined,
+		};
+	};
+
+	const menuStyle = getMenuStyle();
+
 	return (
 		<Modal
 			visible={visible}
@@ -107,32 +98,34 @@ export function MessageActionsMenu({
 			onRequestClose={onClose}
 		>
 			<Pressable
-				className="flex-1 justify-center items-center"
+				className="flex-1"
 				style={{ backgroundColor: OVERLAYS.scrimMedium }}
 				onPress={onClose}
 			>
+				{/* Action menu */}
 				<View
-					className="rounded-xl border min-w-[180px] overflow-hidden"
-					style={{
-						backgroundColor: colors.card,
-						borderColor: colors.border,
-						shadowColor: isDark ? "#000" : "#666",
-						shadowOffset: { width: 0, height: 4 },
-						shadowOpacity: 0.15,
-						shadowRadius: 12,
-						elevation: 8,
-					}}
+					className="rounded-xl overflow-hidden"
+					style={[
+						{
+							backgroundColor: colors.card,
+							shadowColor: getShadowColor(isDark),
+							minWidth: 140,
+							...ShadowTokens.menu,
+						},
+						menuStyle,
+					]}
 				>
 					<Pressable
 						onPress={handleCopy}
-						className="flex-row items-center gap-3 px-4 py-3.5"
+						className="flex-row items-center gap-3 px-4"
 						style={({ pressed }) => ({
 							backgroundColor: pressed ? colors.muted : "transparent",
+							height: MENU_ITEM_HEIGHT,
 						})}
 					>
-						<CopyIcon color={colors.foreground} />
+						<CopyIcon size={18} color={colors.foreground} />
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-							Copy Text
+							Copy
 						</Text>
 					</Pressable>
 
@@ -141,16 +134,15 @@ export function MessageActionsMenu({
 							<View className="h-px" style={{ backgroundColor: colors.border }} />
 							<Pressable
 								onPress={handleRevert}
-								className="flex-row items-center gap-3 px-4 py-3.5"
+								className="flex-row items-center gap-3 px-4"
 								style={({ pressed }) => ({
 									backgroundColor: pressed ? colors.muted : "transparent",
+									height: MENU_ITEM_HEIGHT,
 								})}
 							>
-								<RevertIcon color={colors.foreground} />
-								<Text
-									style={[typography.uiLabel, { color: colors.foreground }]}
-								>
-									Revert to Here
+								<UndoIcon size={18} color={colors.foreground} />
+								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+									Revert
 								</Text>
 							</Pressable>
 						</>
@@ -161,16 +153,15 @@ export function MessageActionsMenu({
 							<View className="h-px" style={{ backgroundColor: colors.border }} />
 							<Pressable
 								onPress={handleBranch}
-								className="flex-row items-center gap-3 px-4 py-3.5"
+								className="flex-row items-center gap-3 px-4"
 								style={({ pressed }) => ({
 									backgroundColor: pressed ? colors.muted : "transparent",
+									height: MENU_ITEM_HEIGHT,
 								})}
 							>
-								<BranchIcon color={colors.foreground} />
-								<Text
-									style={[typography.uiLabel, { color: colors.foreground }]}
-								>
-									Fork from Here
+								<GitForkIcon size={18} color={colors.foreground} />
+								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+									Fork
 								</Text>
 							</Pressable>
 						</>

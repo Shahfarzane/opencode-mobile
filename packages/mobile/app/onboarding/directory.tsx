@@ -8,13 +8,19 @@ import {
 	Pressable,
 	StyleSheet,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
+import { Button, Input } from "@/components/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
 import { type FileListEntry, filesApi } from "../../src/api";
-import { PushpinFillIcon, PushpinIcon } from "../../src/components/icons";
+import {
+	ArrowUpIcon,
+	ChevronLeft,
+	ChevronRightIcon,
+	FolderIcon,
+	PushpinFillIcon,
+	PushpinIcon,
+} from "../../src/components/icons";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { Spacing, typography, useTheme } from "../../src/theme";
 
@@ -30,15 +36,7 @@ function BackButton() {
 			style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
 			hitSlop={8}
 		>
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M15 18l-6-6 6-6"
-					stroke={colors.foreground}
-					strokeWidth={2}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
+			<ChevronLeft size={18} color={colors.foreground} />
 			<Text style={[typography.uiLabel, { color: colors.foreground }]}>Back</Text>
 		</Pressable>
 	);
@@ -73,15 +71,7 @@ function DirectoryRow({ item, onPress, isPinned, onTogglePin }: DirectoryRowProp
 				pressed && { opacity: 0.7 },
 			]}
 		>
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-					stroke={colors.primary}
-					strokeWidth={1.5}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
+			<FolderIcon size={18} color={colors.primary} />
 			<Text style={[typography.uiLabel, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
 				{item.name}
 			</Text>
@@ -99,15 +89,7 @@ function DirectoryRow({ item, onPress, isPinned, onTogglePin }: DirectoryRowProp
 					<PushpinIcon size={16} color={colors.mutedForeground} />
 				)}
 			</Pressable>
-			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M9 18l6-6-6-6"
-					stroke={colors.mutedForeground}
-					strokeWidth={2}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
+			<ChevronRightIcon size={16} color={colors.mutedForeground} />
 		</Pressable>
 	);
 }
@@ -140,15 +122,7 @@ function PinnedDirectoryRow({ path, homePath, onPress, onUnpin }: PinnedDirector
 				pressed && { opacity: 0.7 },
 			]}
 		>
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-					stroke={colors.primary}
-					strokeWidth={1.5}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
+			<FolderIcon size={18} color={colors.primary} />
 			<View style={{ flex: 1 }}>
 				<Text style={[typography.uiLabel, { color: colors.foreground }]} numberOfLines={1}>
 					{name}
@@ -330,20 +304,14 @@ export default function DirectoryScreen() {
 
 			{/* Path input */}
 			<View style={styles.pathSection}>
-				<TextInput
+				<Input
 					value={pathInput}
 					onChangeText={setPathInput}
 					onSubmitEditing={handlePathSubmit}
 					placeholder="Enter path..."
-					placeholderTextColor={colors.mutedForeground}
 					autoCapitalize="none"
 					autoCorrect={false}
 					returnKeyType="go"
-					style={[
-						typography.uiLabel,
-						styles.pathInput,
-						{ borderColor: colors.border, color: colors.foreground },
-					]}
 				/>
 			</View>
 
@@ -377,15 +345,7 @@ export default function DirectoryScreen() {
 						pressed && { opacity: 0.7 },
 					]}
 				>
-					<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M17 11l-5-5-5 5M12 6v12"
-							stroke={colors.mutedForeground}
-							strokeWidth={2}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
+					<ArrowUpIcon size={18} color={colors.mutedForeground} />
 					<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
 						Parent directory
 					</Text>
@@ -402,16 +362,14 @@ export default function DirectoryScreen() {
 					<Text style={[typography.meta, { color: colors.destructive, textAlign: "center" }]}>
 						{error}
 					</Text>
-					<Pressable
+					<Button
+						variant="outline"
+						size="md"
 						onPress={() => loadDirectory(currentPath)}
-						style={({ pressed }) => [
-							styles.retryBtn,
-							{ borderColor: colors.border },
-							pressed && { opacity: 0.7 },
-						]}
+						style={{ marginTop: 16 }}
 					>
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Retry</Text>
-					</Pressable>
+						<Button.Label>Retry</Button.Label>
+					</Button>
 				</View>
 			) : (
 				<FlatList
@@ -450,18 +408,14 @@ export default function DirectoryScreen() {
 				<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 					Selected: {displayPath}
 				</Text>
-				<Pressable
-					onPress={handleSelect}
-					style={({ pressed }) => [
-						styles.selectBtn,
-						{ backgroundColor: colors.primary },
-						pressed && { opacity: 0.9 },
-					]}
-				>
-					<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
-						Use This Directory
-					</Text>
-				</Pressable>
+			<Button
+				variant="primary"
+				size="lg"
+				onPress={handleSelect}
+				style={{ width: "100%", marginTop: 12 }}
+			>
+				<Button.Label>Use This Directory</Button.Label>
+			</Button>
 			</View>
 		</View>
 	);

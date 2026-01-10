@@ -1,23 +1,10 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
+import { ChevronDownIcon } from "@/components/icons";
 import { Fonts, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { ToolOutputDialog } from "./ToolOutputDialog";
-
-function ChevronDownIcon({
-	size = 14,
-	color,
-}: {
-	size?: number;
-	color: string;
-}) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-			<Path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z" />
-		</Svg>
-	);
-}
 
 export interface ToolPartData {
 	type: "tool" | "tool-call" | "tool-result";

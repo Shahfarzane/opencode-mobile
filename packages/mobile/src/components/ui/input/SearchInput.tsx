@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { SearchIcon, XIcon } from "@/components/icons";
-import { typography, useTheme } from "@/theme";
+import { IconSizes, typography, useTheme } from "@/theme";
 
 interface SearchInputProps {
   /** Current search value */
@@ -20,6 +20,7 @@ interface SearchInputProps {
  * SearchInput component
  *
  * A pre-styled search input with search icon and clear button.
+ * Matches desktop PWA search input styling.
  *
  * @example
  * <SearchInput
@@ -46,7 +47,7 @@ export const SearchInput = forwardRef<TextInput, SearchInputProps>(
         className={`flex-row items-center rounded-xl px-3 py-2.5 gap-2 ${className ?? ""}`}
         style={{ backgroundColor: colors.muted }}
       >
-        <SearchIcon size={16} color={colors.mutedForeground} />
+        <SearchIcon size={IconSizes.md} color={colors.mutedForeground} />
         <TextInput
           ref={ref}
           value={value}
@@ -60,8 +61,13 @@ export const SearchInput = forwardRef<TextInput, SearchInputProps>(
           autoFocus={autoFocus}
         />
         {value.length > 0 && (
-          <Pressable onPress={() => onChangeText("")} hitSlop={8}>
-            <XIcon size={16} color={colors.mutedForeground} />
+          <Pressable
+            onPress={() => onChangeText("")}
+            accessibilityLabel="Clear search"
+            accessibilityRole="button"
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
+            <XIcon size={IconSizes.md} color={colors.mutedForeground} />
           </Pressable>
         )}
       </View>

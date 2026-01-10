@@ -2,36 +2,10 @@ import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { ChevronRightIcon } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { FixedLineHeights, FontSizes, Radius, Spacing, typography, useTheme } from "@/theme";
 import { MAX_CODE_BLOCK_HEIGHT } from "./CodeBlock.styles";
-
-// Chevron icon component
-function ChevronIcon({
-	expanded,
-	color,
-}: {
-	expanded: boolean;
-	color: string;
-}) {
-	return (
-		<Svg
-			width={12}
-			height={12}
-			viewBox="0 0 24 24"
-			fill="none"
-			style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}
-		>
-			<Path
-				d="M9 18l6-6-6-6"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
 
 type CodeBlockProps = {
 	code: string;
@@ -387,7 +361,11 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 				}}
 			>
 				<View style={{ flexDirection: "row", alignItems: "center", gap: Spacing[2] }}>
-					<ChevronIcon expanded={expanded} color={colors.mutedForeground} />
+					<ChevronRightIcon
+						size={12}
+						color={colors.mutedForeground}
+						style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}
+					/>
 					<View
 						style={{
 							width: 10,
@@ -408,7 +386,9 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 						({lines.length} {lines.length === 1 ? "line" : "lines"})
 					</Text>
 				</View>
-				<Pressable
+				<Button
+					variant="ghost"
+					size="sm"
 					onPress={(e) => {
 						e.stopPropagation();
 						handleCopy();
@@ -418,7 +398,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{copied ? "Copied!" : "Copy"}
 					</Text>
-				</Pressable>
+				</Button>
 			</Pressable>
 
 			{/* Code content - collapsible */}

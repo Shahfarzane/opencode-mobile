@@ -15,8 +15,38 @@ export type ButtonVariant =
 
 /**
  * Button size options
+ *
+ * Mobile-optimized sizes:
+ * - xs: 28px - Extra compact UI
+ * - sm: 36px - Compact, matches desktop default
+ * - md: 44px - iOS minimum touch target (default)
+ * - lg: 56px - Prominent actions
+ *
+ * Icon button sizes:
+ * - icon-xs: 24px - Very compact icons
+ * - icon-sm: 32px - Compact icons
+ * - icon-md: 40px - Standard icons
+ * - icon-lg: 48px - Large icons
+ *
+ * Desktop-equivalent sizes (for PWA parity):
+ * - desktop: 36px - Matches PWA default button
+ * - desktop-sm: 32px - Matches PWA small button
+ * - desktop-lg: 40px - Matches PWA large button
+ * - icon-desktop: 36px - Matches PWA icon button
  */
-export type ButtonSize = "sm" | "md" | "lg" | "xs" | "icon-sm" | "icon-md" | "icon-lg";
+export type ButtonSize =
+  | "xs"
+  | "sm"
+  | "md"
+  | "lg"
+  | "icon-xs"
+  | "icon-sm"
+  | "icon-md"
+  | "icon-lg"
+  | "desktop"
+  | "desktop-sm"
+  | "desktop-lg"
+  | "icon-desktop";
 
 /**
  * Props for the Button root component

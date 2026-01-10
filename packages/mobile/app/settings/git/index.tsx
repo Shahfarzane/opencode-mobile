@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	title: {
-		fontSize: 17,
+		fontSize: FontSizes.h2,
 		fontFamily: Fonts.semiBold,
 		textAlign: "center",
 	},

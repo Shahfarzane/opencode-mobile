@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SettingsScreen } from "@/components/settings";
-import { Fonts, Spacing, useTheme } from "@/theme";
+import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
 import { type ThemeMode, useThemeMode } from "@/theme/ThemeProvider";
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
 		paddingTop: Spacing[6],
 	},
 	sectionHeader: {
-		fontSize: 13,
+		fontSize: FontSizes.meta,
 		fontFamily: Fonts.medium,
 		textTransform: "uppercase",
 		letterSpacing: 0.5,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
 		elevation: 2,
 	},
 	segmentLabel: {
-		fontSize: 14,
+		fontSize: FontSizes.uiLabel,
 		fontFamily: Fonts.medium,
 	},
 });

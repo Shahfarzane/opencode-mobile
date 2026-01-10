@@ -8,10 +8,20 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { Button, IconButton, Input } from "@/components/ui";
+import {
+	ArrowDownIcon,
+	ArrowUpIcon,
+	CheckIcon,
+	ChevronDownIcon,
+	ClockIcon,
+	GitBranchIcon,
+	RefreshIcon,
+	SparkleIcon,
+	UndoIcon,
+} from "@/components/icons";
 import {
 	type GitLog,
 	type GitStatus,
@@ -19,7 +29,7 @@ import {
 	gitApi,
 } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { typography, useTheme } from "../../src/theme";
+import { FontSizes, typography, useTheme } from "../../src/theme";
 
 type FileStatusType = "staged" | "modified" | "untracked";
 
@@ -33,7 +43,7 @@ function getFileStatus(file: GitStatusFile): FileStatusType {
 	return "modified";
 }
 
-function Checkbox({ checked, color }: { checked: boolean; color: string }) {
+function Checkbox({ checked, color, checkColor }: { checked: boolean; color: string; checkColor: string }) {
 	return (
 		<View
 			style={[
@@ -44,17 +54,7 @@ function Checkbox({ checked, color }: { checked: boolean; color: string }) {
 				},
 			]}
 		>
-			{checked && (
-				<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-					<Path
-						d="M20 6L9 17l-5-5"
-						stroke="white"
-						strokeWidth={3}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</Svg>
-			)}
+			{checked && <CheckIcon size={12} color={checkColor} />}
 		</View>
 	);
 }
@@ -96,107 +96,6 @@ function DiffStats({
 	);
 }
 
-// Icon components for header
-function RefreshIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function PullIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 4v16m0 0l-6-6m6 6l6-6"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function PushIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 20V4m0 0l-6 6m6-6l6 6"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function BranchIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-			<Path
-				d="M18 9a9 9 0 0 1-9 9"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
-}
-
-function ChevronIcon({ color, size = 16, direction = "down" }: { color: string; size?: number; direction?: "up" | "down" }) {
-	return (
-		<Svg
-			width={size}
-			height={size}
-			viewBox="0 0 24 24"
-			fill="none"
-			style={{ transform: [{ rotate: direction === "up" ? "180deg" : "0deg" }] }}
-		>
-			<Path
-				d="M6 9l6 6 6-6"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
-}
-
-function RevertIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<Path
-				d="M3 3v5h5"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
 
 function GitHeader({
 	status,
@@ -223,14 +122,14 @@ function GitHeader({
 		<View style={[styles.gitHeader, { borderBottomColor: colors.border }]}>
 			{/* Branch selector */}
 			<Pressable style={[styles.branchSelector, { backgroundColor: colors.card }]}>
-				<BranchIcon color={colors.primary} size={14} />
+				<GitBranchIcon color={colors.primary} size={14} />
 				<Text
 					style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}
 					numberOfLines={1}
 				>
 					{status?.current ?? "main"}
 				</Text>
-				<ChevronIcon color={colors.mutedForeground} size={14} />
+				<ChevronDownIcon color={colors.mutedForeground} size={14} />
 			</Pressable>
 
 			{/* Sync status - always show */}
@@ -246,49 +145,55 @@ function GitHeader({
 			{/* Action buttons */}
 			<View style={styles.headerActions}>
 				{/* Refresh */}
-				<Pressable
-					onPress={onRefresh}
-					disabled={isBusy}
-					style={[styles.headerIconButton, { opacity: isBusy ? 0.5 : 1 }]}
-				>
-					{isRefreshing ? (
+				<IconButton
+					icon={isRefreshing ? (
 						<ActivityIndicator size="small" color={colors.mutedForeground} />
 					) : (
 						<RefreshIcon color={colors.mutedForeground} size={18} />
 					)}
-				</Pressable>
+					variant="ghost"
+					size="icon-sm"
+					accessibilityLabel="Refresh"
+					onPress={onRefresh}
+					disabled={isBusy}
+					style={{ opacity: isBusy ? 0.5 : 1 }}
+				/>
 
 				{/* Pull */}
-				<Pressable
+				<IconButton
+					icon={isPulling ? (
+						<ActivityIndicator size="small" color={colors.mutedForeground} />
+					) : (
+						<ArrowDownIcon color={colors.mutedForeground} size={18} />
+					)}
+					variant="ghost"
+					size="icon-sm"
+					accessibilityLabel="Pull"
 					onPress={onPull}
 					disabled={isBusy || !status}
-					style={[styles.headerIconButton, { opacity: isBusy || !status ? 0.5 : 1 }]}
-				>
-					{isPulling ? (
-						<ActivityIndicator size="small" color={colors.mutedForeground} />
-					) : (
-						<PullIcon color={colors.mutedForeground} size={18} />
-					)}
-				</Pressable>
+					style={{ opacity: isBusy || !status ? 0.5 : 1 }}
+				/>
 
 				{/* Push */}
-				<Pressable
-					onPress={onPush}
-					disabled={isBusy || !status}
-					style={[styles.headerIconButton, { opacity: isBusy || !status ? 0.5 : 1 }]}
-				>
-					{isPushing ? (
+				<IconButton
+					icon={isPushing ? (
 						<ActivityIndicator size="small" color={colors.mutedForeground} />
 					) : (
-						<PushIcon color={colors.mutedForeground} size={18} />
+						<ArrowUpIcon color={colors.mutedForeground} size={18} />
 					)}
-				</Pressable>
+					variant="ghost"
+					size="icon-sm"
+					accessibilityLabel="Push"
+					onPress={onPush}
+					disabled={isBusy || !status}
+					style={{ opacity: isBusy || !status ? 0.5 : 1 }}
+				/>
 			</View>
 
 			{/* Branch dropdown (placeholder for future) */}
 			<Pressable style={[styles.branchDropdown, { backgroundColor: colors.card }]}>
-				<BranchIcon color={colors.mutedForeground} size={14} />
-				<ChevronIcon color={colors.mutedForeground} size={14} />
+				<GitBranchIcon color={colors.mutedForeground} size={14} />
+				<ChevronDownIcon color={colors.mutedForeground} size={14} />
 			</Pressable>
 		</View>
 	);
@@ -340,7 +245,7 @@ function FileItem({
 			]}
 		>
 			{showCheckbox && (
-				<Checkbox checked={isSelected ?? false} color={colors.primary} />
+				<Checkbox checked={isSelected ?? false} color={colors.primary} checkColor={colors.primaryForeground} />
 			)}
 			<View style={styles.statusIcon}>
 				<Text
@@ -365,20 +270,19 @@ function FileItem({
 				/>
 			)}
 			{/* Revert button - show for all files, functional for modified */}
-			<Pressable
-				onPress={canRevert ? onRevert : undefined}
-				disabled={!canRevert || isReverting}
-				style={[
-					styles.revertButton,
-					{ opacity: canRevert && !isReverting ? 1 : 0.3 },
-				]}
-			>
-				{isReverting ? (
+			<IconButton
+				icon={isReverting ? (
 					<ActivityIndicator size="small" color={colors.mutedForeground} />
 				) : (
-					<RevertIcon color={colors.mutedForeground} size={14} />
+					<UndoIcon color={colors.mutedForeground} size={14} />
 				)}
-			</Pressable>
+				variant="ghost"
+				size="icon-sm"
+				accessibilityLabel="Revert changes"
+				onPress={canRevert ? onRevert : undefined}
+				disabled={!canRevert || isReverting}
+				style={{ opacity: canRevert && !isReverting ? 1 : 0.3 }}
+			/>
 		</Pressable>
 	);
 }
@@ -456,14 +360,7 @@ function HistorySection({
 				style={[styles.historySectionHeader, { backgroundColor: colors.muted }]}
 			>
 				<View style={styles.historySectionTitle}>
-					<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
-							stroke={colors.mutedForeground}
-							strokeWidth={2}
-							strokeLinecap="round"
-						/>
-					</Svg>
+					<ClockIcon size={16} color={colors.mutedForeground} />
 					<Text
 						style={[
 							typography.meta,
@@ -482,20 +379,11 @@ function HistorySection({
 						</View>
 					)}
 				</View>
-				<Svg
-					width={16}
-					height={16}
-					viewBox="0 0 24 24"
-					fill="none"
+				<ChevronDownIcon
+					size={16}
+					color={colors.mutedForeground}
 					style={{ transform: [{ rotate: isExpanded ? "180deg" : "0deg" }] }}
-				>
-					<Path
-						d="M6 9l6 6 6-6"
-						stroke={colors.mutedForeground}
-						strokeWidth={2}
-						strokeLinecap="round"
-					/>
-				</Svg>
+				/>
 			</Pressable>
 
 			{isExpanded && (
@@ -548,7 +436,7 @@ function HistorySection({
 									<Text
 										style={[
 											typography.code,
-											{ color: colors.mutedForeground, fontSize: 11 },
+											{ color: colors.mutedForeground, fontSize: FontSizes.microSmall },
 										]}
 									>
 										{entry.hash.slice(0, 7)}
@@ -569,21 +457,6 @@ function HistorySection({
 				</View>
 			)}
 		</View>
-	);
-}
-
-// AI sparkle icon for generate button
-function SparkleIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414m12.728 0l-1.414-1.414M7.05 7.05L5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
 	);
 }
 
@@ -629,95 +502,54 @@ function CommitSection({
 			</View>
 
 			{/* Commit message input */}
-			<TextInput
+			<Input
 				value={commitMessage}
 				onChangeText={onCommitMessageChange}
 				placeholder="Commit message"
-				placeholderTextColor={colors.mutedForeground}
 				multiline
-				style={[
-					styles.commitInput,
-					typography.body,
-					{
-						backgroundColor: colors.background,
-						borderColor: colors.border,
-						color: colors.foreground,
-					},
-				]}
+				numberOfLines={3}
 				editable={!isBusy}
 			/>
 
 			{/* Action buttons */}
 			<View style={styles.commitActions}>
 				{/* AI Generate button */}
-				<Pressable
-					onPress={onGenerateMessage}
-					disabled={!hasSelectedFiles || isGeneratingMessage}
-					style={[
-						styles.aiButton,
-						{
-							backgroundColor: colors.muted,
-							opacity: !hasSelectedFiles || isGeneratingMessage ? 0.5 : 1,
-						},
-					]}
-				>
-					{isGeneratingMessage ? (
+				<IconButton
+					icon={isGeneratingMessage ? (
 						<ActivityIndicator size="small" color={colors.foreground} />
 					) : (
 						<SparkleIcon color={colors.foreground} size={16} />
 					)}
-				</Pressable>
+					variant="muted"
+					size="icon-sm"
+					accessibilityLabel="Generate commit message with AI"
+					onPress={onGenerateMessage}
+					disabled={!hasSelectedFiles || isGeneratingMessage}
+				/>
 
 				<View style={{ flex: 1 }} />
 
 				{/* Commit button */}
-				<Pressable
+				<Button
+					variant="outline"
+					size="sm"
 					onPress={onCommit}
-					disabled={!canCommit}
-					style={[
-						styles.commitButton,
-						{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							opacity: canCommit ? 1 : 0.5,
-						},
-					]}
+					isDisabled={!canCommit}
+					isLoading={isCommitting}
 				>
-					{isCommitting ? (
-						<ActivityIndicator size="small" color={colors.foreground} />
-					) : (
-						<>
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>→</Text>
-							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500" }]}>
-								Commit
-							</Text>
-						</>
-					)}
-				</Pressable>
+					<Button.Label>Commit</Button.Label>
+				</Button>
 
 				{/* Commit & Push button */}
-				<Pressable
+				<Button
+					variant="primary"
+					size="sm"
 					onPress={onCommitAndPush}
-					disabled={!canCommit}
-					style={[
-						styles.commitPushButton,
-						{
-							backgroundColor: colors.primary,
-							opacity: canCommit ? 1 : 0.5,
-						},
-					]}
+					isDisabled={!canCommit}
+					isLoading={isPushing}
 				>
-					{isPushing ? (
-						<ActivityIndicator size="small" color={colors.primaryForeground} />
-					) : (
-						<>
-							<Text style={[typography.uiLabel, { color: colors.primaryForeground }]}>↑</Text>
-							<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "500" }]}>
-								Commit & Push
-							</Text>
-						</>
-					)}
-				</Pressable>
+					<Button.Label>Commit & Push</Button.Label>
+				</Button>
 			</View>
 		</View>
 	);
@@ -1105,38 +937,20 @@ export default function GitScreen() {
 								>
 									{selectedFiles.size}/{allUnstagedFiles.length}
 								</Text>
-								<Pressable
+								<Button
+									variant="muted"
+									size="xs"
 									onPress={handleSelectAll}
-									style={[
-										styles.selectionButton,
-										{ backgroundColor: colors.muted },
-									]}
 								>
-									<Text
-										style={[
-											typography.micro,
-											{ color: colors.mutedForeground },
-										]}
-									>
-										All
-									</Text>
-								</Pressable>
-								<Pressable
+									<Button.Label>All</Button.Label>
+								</Button>
+								<Button
+									variant="muted"
+									size="xs"
 									onPress={handleSelectNone}
-									style={[
-										styles.selectionButton,
-										{ backgroundColor: colors.muted },
-									]}
 								>
-									<Text
-										style={[
-											typography.micro,
-											{ color: colors.mutedForeground },
-										]}
-									>
-										None
-									</Text>
-								</Pressable>
+									<Button.Label>None</Button.Label>
+								</Button>
 							</View>
 						</View>
 
@@ -1230,10 +1044,6 @@ const styles = StyleSheet.create({
 		gap: 2,
 		marginLeft: "auto",
 	},
-	headerIconButton: {
-		padding: 8,
-		borderRadius: 8,
-	},
 	branchDropdown: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -1253,10 +1063,6 @@ const styles = StyleSheet.create({
 	statusIcon: {
 		width: 24,
 		alignItems: "center",
-	},
-	revertButton: {
-		padding: 6,
-		marginLeft: 4,
 	},
 	// Checkbox
 	checkbox: {
@@ -1292,11 +1098,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 8,
 	},
-	selectionButton: {
-		borderRadius: 6,
-		paddingHorizontal: 10,
-		paddingVertical: 5,
-	},
 	// Commit section styles
 	commitSection: {
 		marginHorizontal: 12,
@@ -1311,39 +1112,10 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		marginBottom: 10,
 	},
-	commitInput: {
-		minHeight: 60,
-		borderRadius: 8,
-		borderWidth: 1,
-		padding: 10,
-		textAlignVertical: "top",
-		marginBottom: 10,
-	},
 	commitActions: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 8,
-	},
-	aiButton: {
-		padding: 10,
-		borderRadius: 8,
-	},
-	commitButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		borderWidth: 1,
-	},
-	commitPushButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
 	},
 	// Staged section / section header
 	sectionHeader: {

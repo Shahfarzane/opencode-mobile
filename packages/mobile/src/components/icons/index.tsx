@@ -99,6 +99,29 @@ export function FileIcon({
 	);
 }
 
+export function FileOutlineIcon({
+	size = defaultSize,
+	color = defaultColor,
+	strokeWidth = 2,
+	...props
+}: IconProps & { strokeWidth?: number }) {
+	// Stroked file icon
+	return (
+		<Svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke={color}
+			strokeWidth={strokeWidth}
+			{...props}
+		>
+			<Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+			<Path d="M14 2v6h6" />
+		</Svg>
+	);
+}
+
 export function SendIcon({
 	size = defaultSize,
 	color = defaultColor,
@@ -541,6 +564,19 @@ export function ArrowDownIcon({
 	);
 }
 
+export function ArrowRightIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: arrow-right-line
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M16.1716 11L10.8076 5.63604L12.2218 4.22183L20 12L12.2218 19.7782L10.8076 18.364L16.1716 13H4V11H16.1716Z" />
+		</Svg>
+	);
+}
+
 export function AlertCircleIcon({
 	size = defaultSize,
 	color = defaultColor,
@@ -850,6 +886,177 @@ export function AiAgentFillIcon({
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
 			<Path d="M12.0005 2C10.067 2 8.50049 3.567 8.50049 5.5C8.50049 7.433 10.067 9 12.0005 9C13.934 9 15.5005 7.433 15.5005 5.5C15.5005 3.567 13.934 2 12.0005 2ZM6.50049 5.5C6.50049 2.46243 8.96292 0 12.0005 0C15.0381 0 17.5005 2.46243 17.5005 5.5C17.5005 6.77992 17.0536 7.95498 16.3104 8.88663L20.1213 12.6975C20.9024 13.4786 20.9024 14.7449 20.1213 15.526L19.414 16.2333C18.6329 17.0143 17.3666 17.0143 16.5855 16.2333L15.8783 15.526C15.0972 14.7449 15.0972 13.4786 15.8783 12.6975L12.0005 8.81966L8.12267 12.6975C8.90372 13.4786 8.90372 14.7449 8.12267 15.526L7.41544 16.2333C6.63439 17.0143 5.36805 17.0143 4.587 16.2333L3.87977 15.526C3.09872 14.7449 3.09872 13.4786 3.87977 12.6975L7.69061 8.88663C6.94743 7.95498 6.50049 6.77992 6.50049 5.5ZM12.0005 12C14.7619 12 17.0005 14.2386 17.0005 17V18C17.0005 20.2091 15.2096 22 13.0005 22H11.0005C8.79135 22 7.00049 20.2091 7.00049 18V17C7.00049 14.2386 9.23906 12 12.0005 12Z" />
+		</Svg>
+	);
+}
+
+export function QrCodeIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+			<Path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h-3zM18 18h3v3h-3zM15 21v-3M21 15v3" />
+		</Svg>
+	);
+}
+
+export function SparkleIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: sparkling-2-fill
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M13 10H20L11 23V14H4L13 1V10Z" />
+		</Svg>
+	);
+}
+
+export function UndoIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: arrow-go-back-line
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M5.82843 6.99955L8.36396 4.46402L6.94975 3.0498L2 7.99955L6.94975 12.9493L8.36396 11.5351L5.82843 8.99955H13C17.4183 8.99955 21 12.5813 21 16.9996C21 21.4178 17.4183 24.9996 13 24.9996H4V22.9996H13C16.3137 22.9996 19 20.3133 19 16.9996C19 13.6858 16.3137 10.9996 13 10.9996H5.82843V6.99955Z" />
+		</Svg>
+	);
+}
+
+export function RedoIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: arrow-go-forward-line
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M18.1716 6.99955H11C7.68629 6.99955 5 9.68584 5 12.9996C5 16.3133 7.68629 18.9996 11 18.9996H20V20.9996H11C6.58172 20.9996 3 17.4178 3 12.9996C3 8.58127 6.58172 4.99955 11 4.99955H18.1716L15.636 2.46402L17.0503 1.0498L22 5.99955L17.0503 10.9493L15.636 9.53509L18.1716 6.99955Z" />
+		</Svg>
+	);
+}
+
+export function ChevronLeftIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: arrow-left-s-line
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M10.8284 12.0007L15.7782 16.9504L14.364 18.3646L8 12.0007L14.364 5.63672L15.7782 7.05093L10.8284 12.0007Z" />
+		</Svg>
+	);
+}
+
+export function BrainIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: brain-fill
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M3.29921 5.28989C4.52511 3.30505 6.7498 2 9.22024 2C9.67399 2 10.118 2.04031 10.5481 2.1176C11.0065 2.03457 11.4777 1.99158 11.9581 1.99158C14.5726 1.99158 16.8918 3.36693 18.0882 5.41958L18.1093 5.45529C19.6819 5.86194 21.0002 7.26834 21.0002 9.2C21.0002 9.77295 20.8882 10.321 20.6859 10.8244C21.3326 11.6715 21.7156 12.7306 21.7156 13.8811C21.7156 16.0098 20.2309 17.8029 18.2329 18.3304L18.231 18.3309C17.9246 20.2867 16.1946 21.7811 14.1156 21.7811C13.2471 21.7811 12.4416 21.5135 11.7769 21.0556L11.776 21.055C11.5174 21.2085 11.2422 21.3378 10.9538 21.4398C10.2595 21.6857 9.5159 21.8194 8.74138 21.8194C6.46568 21.8194 4.50411 20.5258 3.52952 18.6409C2.19003 18.1098 1.18799 16.9393 1.01127 15.5144C0.418411 14.7887 0.0581055 13.8622 0.0581055 12.8497C0.0581055 11.8303 0.423051 10.8978 1.02388 10.1685C1.0132 10.0506 1.00781 9.93139 1.00781 9.81106C1.00781 7.71023 2.27139 5.91215 4.06626 5.19399C3.76696 5.23203 3.51749 5.25879 3.29921 5.28989ZM5.82422 7.06119C6.16469 6.95645 6.52612 6.9 6.90101 6.9C8.26632 6.9 9.40102 7.78387 9.70102 9H7.58622C7.31008 8.42135 6.72043 8.02121 6.03851 8.00155L5.82422 7.06119ZM11.75 9.5C12.1642 9.5 12.5 9.83579 12.5 10.25V13.5H15.75C16.1642 13.5 16.5 13.8358 16.5 14.25C16.5 14.6642 16.1642 15 15.75 15H12.5V18.25C12.5 18.6642 12.1642 19 11.75 19C11.3358 19 11 18.6642 11 18.25V15H7.75C7.33579 15 7 14.6642 7 14.25C7 13.8358 7.33579 13.5 7.75 13.5H11V10.25C11 9.83579 11.3358 9.5 11.75 9.5Z" />
+		</Svg>
+	);
+}
+
+export function CameraIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: camera-line
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M9.82843 5L7.82843 7H4V19H20V7H16.1716L14.1716 5H9.82843ZM9 3H15L17 5H21C21.5523 5 22 5.44772 22 6V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V6C2 5.44772 2.44772 5 3 5H7L9 3ZM12 18C8.96243 18 6.5 15.5376 6.5 12.5C6.5 9.46243 8.96243 7 12 7C15.0376 7 17.5 9.46243 17.5 12.5C17.5 15.5376 15.0376 18 12 18ZM12 16C13.933 16 15.5 14.433 15.5 12.5C15.5 10.567 13.933 9 12 9C10.067 9 8.5 10.567 8.5 12.5C8.5 14.433 10.067 16 12 16Z" />
+		</Svg>
+	);
+}
+
+export function GitForkIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Remixicon: git-fork-line
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M7 5C7 6.10457 6.10457 7 5 7C3.89543 7 3 6.10457 3 5C3 3.89543 3.89543 3 5 3C6.10457 3 7 3.89543 7 5ZM5 8C2.79086 8 1 6.20914 1 4C1 1.79086 2.79086 0 5 0C7.20914 0 9 1.79086 9 4V5.126C10.7252 5.56706 12 7.13786 12 9V12C12 13.1046 12.8954 14 14 14H16.874C17.4299 12.2748 19.1362 11 21 11C23.2091 11 25 12.7909 25 15C25 17.2091 23.2091 19 21 19C19.1362 19 17.4299 17.7252 16.874 16H14C11.7909 16 10 14.2091 10 12V9C10 7.89543 9.10457 7 8 7H6V5C6 3.89543 5.10457 3 5 3ZM21 17C22.1046 17 23 16.1046 23 15C23 13.8954 22.1046 13 21 13C19.8954 13 19 13.8954 19 15C19 16.1046 19.8954 17 21 17Z" />
+		</Svg>
+	);
+}
+
+export function AlignJustifyIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Three horizontal lines - unified view icon
+	return (
+		<Svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke={color}
+			strokeWidth={2}
+			strokeLinecap="round"
+			{...props}
+		>
+			<Path d="M4 6h16M4 12h16M4 18h16" />
+		</Svg>
+	);
+}
+
+export function LayoutColumnsIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	// Two columns - side-by-side view icon
+	return (
+		<Svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke={color}
+			strokeWidth={2}
+			strokeLinecap="round"
+			{...props}
+		>
+			<Path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4m6-18h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
+		</Svg>
+	);
+}
+
+export function DocumentIcon({
+	size = defaultSize,
+	color = defaultColor,
+	strokeWidth = 1.5,
+	...props
+}: IconProps & { strokeWidth?: number }) {
+	// File with lines - document icon
+	return (
+		<Svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke={color}
+			strokeWidth={strokeWidth}
+			strokeLinecap="round"
+			{...props}
+		>
+			<Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+			<Path d="M14 2v6h6M9 13h6M9 17h6" />
 		</Svg>
 	);
 }

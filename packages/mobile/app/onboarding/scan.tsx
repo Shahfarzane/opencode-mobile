@@ -3,8 +3,9 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Button } from "@/components/ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import { CameraIcon, ChevronLeftIcon } from "@/components/icons";
 import { useServerConnection } from "@/hooks/useServerConnection";
 import { Spacing, typography, useTheme } from "../../src/theme";
 
@@ -21,15 +22,7 @@ function BackButton({ light }: { light?: boolean }) {
 			style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
 			hitSlop={8}
 		>
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M15 18l-6-6 6-6"
-					stroke={color}
-					strokeWidth={2}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
+			<ChevronLeftIcon size={18} color={color} />
 			<Text style={[typography.uiLabel, { color }]}>Back</Text>
 		</Pressable>
 	);
@@ -104,22 +97,7 @@ export default function ScanScreen() {
 				</View>
 
 				<View style={styles.permissionContent}>
-					<Svg width={48} height={48} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-							stroke={colors.mutedForeground}
-							strokeWidth={1.5}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-						<Path
-							d="M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
-							stroke={colors.mutedForeground}
-							strokeWidth={1.5}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
+					<CameraIcon size={48} color={colors.mutedForeground} />
 
 					<Text style={[typography.h2, { color: colors.foreground, marginTop: 24, textAlign: "center" }]}>
 						Camera Access Required
@@ -128,21 +106,17 @@ export default function ScanScreen() {
 						OpenChamber needs camera access to scan QR codes for pairing
 					</Text>
 
-					<Pressable
+					<Button
+						variant="primary"
+						size="lg"
 						onPress={() => {
 							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 							requestPermission();
 						}}
-						style={({ pressed }) => [
-							styles.grantBtn,
-							{ backgroundColor: colors.primary },
-							pressed && { opacity: 0.9 },
-						]}
+						style={{ marginTop: 24 }}
 					>
-						<Text style={[typography.uiLabel, { color: colors.primaryForeground, fontWeight: "600" }]}>
-							Grant Permission
-						</Text>
-					</Pressable>
+						<Button.Label>Grant Permission</Button.Label>
+					</Button>
 				</View>
 			</View>
 		);
