@@ -86,7 +86,7 @@ function AgentIcon() {
 			<Text
 				style={{
 					fontFamily: Fonts.medium,
-					fontSize: FontSizes.uiLabel,
+					fontSize: 12, // Match PWA icon sizing (h-3.5 = 14px, slightly smaller for text)
 					color: colors.info,
 				}}
 			>
@@ -106,7 +106,7 @@ function CommandIcon() {
 			<Text
 				style={{
 					fontFamily: Fonts.medium,
-					fontSize: FontSizes.uiLabel,
+					fontSize: 12, // Match PWA icon sizing
 					color: colors.warning,
 				}}
 			>
@@ -150,7 +150,7 @@ function FileIcon({ extension }: { extension?: string }) {
 			<Text
 				style={{
 					fontFamily: Fonts.medium,
-					fontSize: FontSizes.uiLabel,
+					fontSize: 12, // Match PWA icon sizing
 					color: getColor(),
 				}}
 			>
@@ -222,7 +222,7 @@ function AutocompleteOverlay({
 					{/* Match PWA: typography-meta text-muted-foreground mt-0.5 truncate */}
 					{"description" in item && item.description && (
 						<Text
-							style={[typography.micro, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
+							style={[typography.meta, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
 							numberOfLines={1}
 						>
 							{item.description}
@@ -230,7 +230,7 @@ function AutocompleteOverlay({
 					)}
 					{item.type === "file" && (
 						<Text
-							style={[typography.micro, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
+							style={[typography.meta, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
 							numberOfLines={1}
 						>
 							{item.path}
@@ -247,12 +247,12 @@ function AutocompleteOverlay({
 	}
 
 	// Match PWA styling exactly:
-	// Items: py-2 (8px*2) + content (~24px) = ~40px each
-	// Footer: pt-1 (4px) + pb-1.5 (6px) + text (~14px) = ~24px
-	const AUTOCOMPLETE_ITEM_HEIGHT = 40;
-	const AUTOCOMPLETE_FOOTER_HEIGHT = 24;
-	const AUTOCOMPLETE_MAX_ITEMS = 5; // Match PWA max-h-64 (~256px / ~40px per item)
-	const AUTOCOMPLETE_MAX_HEIGHT = 256; // PWA max-h-64 = 256px
+	// Items: py-2 (8px*2) + name (~16px) + description (~14px + 2px gap) = ~48px with description, ~36px without
+	// Footer: pt-1 (4px) + pb-1.5 (6px) + text (~12px) = ~22px
+	const AUTOCOMPLETE_ITEM_HEIGHT = 48; // Account for description
+	const AUTOCOMPLETE_FOOTER_HEIGHT = 22;
+	const AUTOCOMPLETE_MAX_ITEMS = 5; // Match PWA max-h-64 (~256px)
+	const AUTOCOMPLETE_MAX_HEIGHT = 280; // Slightly larger for proper spacing
 	const contentHeight = Math.min(items.length, AUTOCOMPLETE_MAX_ITEMS) * AUTOCOMPLETE_ITEM_HEIGHT + AUTOCOMPLETE_FOOTER_HEIGHT;
 
 	return (

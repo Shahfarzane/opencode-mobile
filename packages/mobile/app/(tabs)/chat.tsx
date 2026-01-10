@@ -1032,82 +1032,85 @@ export default function ChatScreen() {
 	);
 
 	return (
-		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			style={[styles.container, { backgroundColor: colors.background }]}
-			keyboardVerticalOffset={keyboardOffset}
-		>
-			<View style={styles.messageContainer}>
-				<MessageList
-					messages={messages}
-					isLoading={isLoading}
-					onRevert={handleRevert}
-					onFork={handleFork}
-					onSelectSession={handleSelectSession}
-				/>
-			</View>
+		<View style={[styles.container, { backgroundColor: colors.background }]}>
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				style={styles.container}
+				keyboardVerticalOffset={keyboardOffset}
+			>
+				<View style={styles.messageContainer}>
+					<MessageList
+						messages={messages}
+						isLoading={isLoading}
+						onRevert={handleRevert}
+						onFork={handleFork}
+						onSelectSession={handleSelectSession}
+					/>
+				</View>
 
-			{/* Streaming status indicator */}
-			{(assistantStatus.isActive || isLoading) && (
-				<WorkingPlaceholder
-					isStreaming={isLoading}
-					statusText={assistantStatus.statusText || "Working..."}
-					activityType={assistantStatus.activityType}
-				/>
-			)}
+				{/* Streaming status indicator */}
+				{(assistantStatus.isActive || isLoading) && (
+					<WorkingPlaceholder
+						isStreaming={isLoading}
+						statusText={assistantStatus.statusText || "Working..."}
+						activityType={assistantStatus.activityType}
+					/>
+				)}
 
-			{activePermissions.length > 0 && (
+				{activePermissions.length > 0 && (
+					<View
+						style={[
+							styles.permissionsContainer,
+							{ backgroundColor: colors.background },
+						]}
+					>
+						{activePermissions.map((permission) => (
+							<PermissionCard
+								key={permission.id}
+								permission={permission}
+								onResponse={(response) =>
+									handlePermissionResponse(permission.id, response)
+								}
+							/>
+						))}
+					</View>
+				)}
+
 				<View
 					style={[
-						styles.permissionsContainer,
-						{ backgroundColor: colors.background },
+						styles.inputContainer,
+						{
+							backgroundColor: colors.background,
+							paddingBottom: Math.max(insets.bottom, 12),
+						},
 					]}
 				>
-					{activePermissions.map((permission) => (
-						<PermissionCard
-							key={permission.id}
-							permission={permission}
-							onResponse={(response) =>
-								handlePermissionResponse(permission.id, response)
-							}
-						/>
-					))}
+					<ChatInput
+						onSend={handleSend}
+						isLoading={isLoading}
+						placeholder={
+							isConnected
+								? "# for agents; @ for files; / for commands"
+								: "Connect to server first"
+						}
+						agents={agents.map((a) => ({
+							name: a.name,
+							description: a.description,
+						}))}
+						commands={commands.map((c) => ({
+							name: c.name,
+							description: c.description,
+						}))}
+						onFileSearch={handleFileSearch}
+						modelInfo={modelInfo}
+						activeAgent={activeAgent}
+						onModelPress={() => setShowModelPicker(true)}
+						onAgentPress={() => setShowAgentPicker(true)}
+					/>
 				</View>
-			)}
+			</KeyboardAvoidingView>
 
-			<View
-				style={[
-					styles.inputContainer,
-					{
-						backgroundColor: colors.background,
-						paddingBottom: Math.max(insets.bottom, 12),
-					},
-				]}
-			>
-				<ChatInput
-					onSend={handleSend}
-					isLoading={isLoading}
-					placeholder={
-						isConnected
-							? "# for agents; @ for files; / for commands"
-							: "Connect to server first"
-					}
-					agents={agents.map((a) => ({
-						name: a.name,
-						description: a.description,
-					}))}
-					commands={commands.map((c) => ({
-						name: c.name,
-						description: c.description,
-					}))}
-					onFileSearch={handleFileSearch}
-					modelInfo={modelInfo}
-					activeAgent={activeAgent}
-					onModelPress={() => setShowModelPicker(true)}
-					onAgentPress={() => setShowAgentPicker(true)}
-				/>
-			</View>
-
+			{/* Bottom sheets rendered outside KeyboardAvoidingView to avoid positioning conflicts */}
 			<AgentPicker
 				agents={agents}
 				currentAgentName={currentAgentName}
@@ -1129,7 +1132,7 @@ export default function ChatScreen() {
 				favoriteModels={favoriteModels}
 				onToggleFavorite={handleToggleFavorite}
 			/>
-		</KeyboardAvoidingView>
+		</View>
 	);
 }
 
