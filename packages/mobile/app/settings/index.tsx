@@ -30,7 +30,7 @@ export default function SettingsIndexScreen() {
 	};
 
 	const handleOpenGitHub = () => {
-		Linking.openURL("https://github.com/btriapitsyn/openchamber");
+		Linking.openURL("https://github.com/Shahfarzane/opencode-mobile");
 	};
 
 	return (
@@ -73,7 +73,7 @@ export default function SettingsIndexScreen() {
 			<SettingsGroup>
 				<SettingsRow
 					title="Version"
-					value="1.4.0"
+					value="1.0.0"
 				/>
 				<SettingsRow
 					title="GitHub"

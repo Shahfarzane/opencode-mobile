@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	type Agent,
@@ -1104,8 +1104,14 @@ export default function ChatScreen() {
 						onFileSearch={handleFileSearch}
 						modelInfo={modelInfo}
 						activeAgent={activeAgent}
-						onModelPress={() => setShowModelPicker(true)}
-						onAgentPress={() => setShowAgentPicker(true)}
+						onModelPress={() => {
+							Keyboard.dismiss();
+							setShowModelPicker(true);
+						}}
+						onAgentPress={() => {
+							Keyboard.dismiss();
+							setShowAgentPicker(true);
+						}}
 					/>
 				</View>
 			</KeyboardAvoidingView>
