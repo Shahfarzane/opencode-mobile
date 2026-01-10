@@ -1,6 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Modal, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CopyIcon, GitForkIcon, UndoIcon } from "@/components/icons";
 import { AnimationTokens, getShadowColor, OpacityTokens, ShadowTokens, typography, useTheme } from "@/theme";
 
@@ -24,6 +25,11 @@ interface MessageActionsMenuProps {
 
 const MENU_ITEM_HEIGHT = 44;
 const SCREEN_PADDING = 16;
+const MENU_SIDE_OFFSET = 8; // Matches PWA sideOffset of 8px
+const MENU_BORDER_RADIUS = 12; // rounded-xl = 12px
+const MENU_MIN_WIDTH = 140;
+const HEADER_HEIGHT = 56; // Approximate header height
+const BOTTOM_NAV_HEIGHT = 56; // Approximate bottom navigation height
 
 const SPRING_CONFIG = {
 	...AnimationTokens.menuSpring,
@@ -40,9 +46,14 @@ export function MessageActionsMenu({
 	messageLayout,
 }: MessageActionsMenuProps) {
 	const { colors, isDark } = useTheme();
+	const insets = useSafeAreaInsets();
 	const screenHeight = Dimensions.get("window").height;
 	const [modalVisible, setModalVisible] = useState(false);
 	const progress = useRef(new Animated.Value(0)).current;
+
+	// Calculate safe areas using actual device insets
+	const safeAreaTop = insets.top + HEADER_HEIGHT;
+	const safeAreaBottom = insets.bottom + BOTTOM_NAV_HEIGHT;
 
 	useEffect(() => {
 		if (visible) {
@@ -111,22 +122,29 @@ export function MessageActionsMenu({
 			};
 		}
 
-		const { y, height } = messageLayout;
+		const { x, y, width, height } = messageLayout;
+
+		// Calculate available space above and below the message using actual safe areas
+		const spaceBelow = screenHeight - (y + height) - safeAreaBottom;
+		const spaceAbove = y - safeAreaTop;
 
 		// Determine if menu should go above or below the message
-		const spaceBelow = screenHeight - (y + height) - 80;
-		const spaceAbove = y - 120;
-		const menuGoesBelow = spaceBelow >= menuHeight || spaceBelow > spaceAbove;
+		const menuGoesBelow = spaceBelow >= menuHeight + MENU_SIDE_OFFSET || spaceBelow > spaceAbove;
 
+		// Calculate vertical position
 		const menuTop = menuGoesBelow
-			? y + height + 8
-			: y - menuHeight - 8;
+			? y + height + MENU_SIDE_OFFSET
+			: y - menuHeight - MENU_SIDE_OFFSET;
+
+		// Calculate horizontal position - align with message edge
+		const menuHorizontal = isAssistantMessage
+			? { left: Math.max(SCREEN_PADDING, x) }
+			: { right: SCREEN_PADDING };
 
 		return {
 			position: "absolute" as const,
-			top: Math.max(100, Math.min(menuTop, screenHeight - menuHeight - 50)),
-			right: isAssistantMessage ? undefined : SCREEN_PADDING,
-			left: isAssistantMessage ? SCREEN_PADDING : undefined,
+			top: Math.max(safeAreaTop, Math.min(menuTop, screenHeight - menuHeight - safeAreaBottom)),
+			...menuHorizontal,
 		};
 	};
 
@@ -156,14 +174,15 @@ export function MessageActionsMenu({
 
 				{/* Animated action menu */}
 				<Animated.View
-					className="rounded-xl overflow-hidden"
+					className="overflow-hidden"
 					style={[
 						{
 							backgroundColor: colors.card,
 							borderColor: colors.border,
 							borderWidth: 1,
+							borderRadius: MENU_BORDER_RADIUS,
 							shadowColor: getShadowColor(isDark),
-							minWidth: 140,
+							minWidth: MENU_MIN_WIDTH,
 							...ShadowTokens.menu,
 							opacity: menuOpacity,
 							transform: [{ scale: menuScale }],
@@ -179,7 +198,7 @@ export function MessageActionsMenu({
 							height: MENU_ITEM_HEIGHT,
 						})}
 					>
-						<CopyIcon size={18} color={colors.foreground} />
+						<CopyIcon size={18} color={colors.mutedForeground} />
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 							Copy
 						</Text>
@@ -196,7 +215,7 @@ export function MessageActionsMenu({
 									height: MENU_ITEM_HEIGHT,
 								})}
 							>
-								<UndoIcon size={18} color={colors.foreground} />
+								<UndoIcon size={18} color={colors.mutedForeground} />
 								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 									Revert
 								</Text>
@@ -215,7 +234,7 @@ export function MessageActionsMenu({
 									height: MENU_ITEM_HEIGHT,
 								})}
 							>
-								<GitForkIcon size={18} color={colors.foreground} />
+								<GitForkIcon size={18} color={colors.mutedForeground} />
 								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 									Fork
 								</Text>

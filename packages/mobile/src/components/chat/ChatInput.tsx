@@ -637,7 +637,7 @@ export function ChatInput({
 						setCursorPosition(e.nativeEvent.selection.start)
 					}
 					placeholder={inputPlaceholder}
-					placeholderTextColor={withOpacity(colors.mutedForeground, OPACITY.half)}
+					placeholderTextColor={colors.mutedForeground}
 					multiline
 					maxLength={10000}
 					editable={!isLoading && hasActiveSession}

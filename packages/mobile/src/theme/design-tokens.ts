@@ -129,9 +129,9 @@ export const AnimationTokens = {
 		stiffness: 300,
 	},
 
-	// Menu animation
-	menuCloseDuration: 120, // Slightly faster close for snappier feel
-	menuScaleFrom: 0.92, // Slightly larger start scale for subtler effect
+	// Menu animation - matches PWA zoom-in-95/zoom-out-95
+	menuCloseDuration: 150, // Match PWA duration
+	menuScaleFrom: 0.95, // PWA: zoom-out-95 / zoom-in-95
 	menuScaleTo: 1,
 } as const;
 
@@ -164,6 +164,28 @@ export const ShadowTokens = {
 export const FocusRingTokens = {
 	width: 3, // ring-[3px]
 	opacity: 0.5, // ring-ring/50
+} as const;
+
+/**
+ * Input styling tokens matching desktop PWA
+ *
+ * Desktop input styles from packages/ui/src/components/ui/input.tsx:
+ * - dark:bg-input/30 - 30% opacity background in dark mode
+ * - placeholder:text-muted-foreground - placeholder color
+ * - transition-[color,box-shadow,border-color] - transition properties
+ */
+export const InputTokens = {
+	darkBackgroundOpacity: 0.3, // dark:bg-input/30
+	borderWidth: 1, // border
+	height: {
+		sm: 36, // h-9 - desktop size
+		md: 44, // iOS minimum touch target
+		lg: 56, // Large inputs
+	},
+	padding: {
+		x: 12, // px-3
+		y: 4, // py-1 (desktop), py-2 (mobile)
+	},
 } as const;
 
 /**

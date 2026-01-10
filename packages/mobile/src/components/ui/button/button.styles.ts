@@ -20,9 +20,9 @@ const root = tv({
     variant: {
       primary: "bg-primary",
       secondary: "bg-secondary",
-      outline: "bg-transparent border border-border",
-      ghost: "bg-transparent",
-      destructive: "bg-destructive",
+      outline: "bg-transparent border border-border dark:bg-input/30 dark:border-input",
+      ghost: "bg-transparent dark:active:bg-accent/50",
+      destructive: "bg-destructive dark:bg-destructive/60",
       warning: "bg-warning",
       muted: "bg-muted",
       info: "bg-info",

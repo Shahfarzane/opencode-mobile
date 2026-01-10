@@ -25,6 +25,7 @@ export {
 	FocusRingTokens,
 	getShadowColor,
 	IconSizes,
+	InputTokens,
 	MenuPositioning,
 	MobileSizes,
 	OpacityTokens,

@@ -10,6 +10,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	CopyIcon,
 	FolderIcon,
@@ -62,6 +63,7 @@ export function SessionActionsMenu({
 	anchorPosition,
 }: SessionActionsMenuProps) {
 	const { colors, isDark } = useTheme();
+	const insets = useSafeAreaInsets();
 	const screenWidth = Dimensions.get("window").width;
 	const screenHeight = Dimensions.get("window").height;
 	const [modalVisible, setModalVisible] = useState(false);
@@ -69,14 +71,18 @@ export function SessionActionsMenu({
 
 	const progress = useRef(new Animated.Value(0)).current;
 
+	// Calculate safe areas using actual device insets
+	const safeAreaTop = insets.top + MenuPositioning.margin;
+	const safeAreaBottom = insets.bottom + MenuPositioning.margin;
+
 	// Calculate menu position ensuring it stays within screen bounds
 	const menuPosition = anchorPosition
 		? (() => {
 				const rightOffset = screenWidth - anchorPosition.x;
 				const topOffset = anchorPosition.y + MenuPositioning.margin;
 
-				// Ensure menu doesn't go off-screen bottom
-				const maxTop = screenHeight - menuLayout.height - MenuPositioning.margin;
+				// Ensure menu doesn't go off-screen bottom (using actual safe area)
+				const maxTop = screenHeight - menuLayout.height - safeAreaBottom;
 				const adjustedTop = Math.min(topOffset, maxTop);
 
 				// Ensure menu doesn't go off-screen right
@@ -84,7 +90,7 @@ export function SessionActionsMenu({
 				const adjustedRight = Math.max(rightOffset, minRight);
 
 				return {
-					top: Math.max(adjustedTop, MenuPositioning.margin),
+					top: Math.max(adjustedTop, safeAreaTop),
 					right: adjustedRight,
 				};
 			})()
@@ -232,7 +238,7 @@ export function SessionActionsMenu({
 							backgroundColor: pressed ? colors.muted : "transparent",
 						})}
 					>
-						<PencilIcon color={colors.foreground} size={18} />
+						<PencilIcon color={colors.mutedForeground} size={18} />
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 							Rename
 						</Text>
@@ -251,7 +257,7 @@ export function SessionActionsMenu({
 								backgroundColor: pressed ? colors.muted : "transparent",
 							})}
 						>
-							<ShareIcon color={colors.foreground} size={18} />
+							<ShareIcon color={colors.mutedForeground} size={18} />
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 								Share
 							</Text>
@@ -265,7 +271,7 @@ export function SessionActionsMenu({
 									backgroundColor: pressed ? colors.muted : "transparent",
 								})}
 							>
-								<CopyIcon color={colors.foreground} size={18} />
+								<CopyIcon color={colors.mutedForeground} size={18} />
 								<Text
 									style={[typography.uiLabel, { color: colors.foreground }]}
 								>
@@ -280,7 +286,7 @@ export function SessionActionsMenu({
 									backgroundColor: pressed ? colors.muted : "transparent",
 								})}
 							>
-								<LinkOffIcon color={colors.foreground} size={18} />
+								<LinkOffIcon color={colors.mutedForeground} size={18} />
 								<Text
 									style={[typography.uiLabel, { color: colors.foreground }]}
 								>
@@ -303,7 +309,7 @@ export function SessionActionsMenu({
 									backgroundColor: pressed ? colors.muted : "transparent",
 								})}
 							>
-								<FolderIcon color={colors.foreground} size={18} />
+								<FolderIcon color={colors.mutedForeground} size={18} />
 								<Text
 									style={[typography.uiLabel, { color: colors.foreground }]}
 								>

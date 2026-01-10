@@ -20,13 +20,13 @@ const wrapper = tv({
  * - lg: 56px - Large inputs
  */
 const container = tv({
-  base: "flex-row items-center rounded-lg border",
+  base: "flex-row items-center rounded-lg border bg-transparent dark:bg-input/30",
   variants: {
     state: {
-      default: "border-border bg-input",
-      focused: "border-primary bg-input",
-      error: "border-destructive bg-input",
-      disabled: "border-border bg-input opacity-disabled",
+      default: "border-border",
+      focused: "border-primary",
+      error: "border-destructive",
+      disabled: "border-border opacity-disabled",
     },
     size: {
       // Mobile-optimized sizes
