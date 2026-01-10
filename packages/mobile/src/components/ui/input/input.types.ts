@@ -2,8 +2,16 @@ import type { TextInputProps, TextStyle, ViewStyle } from "react-native";
 
 /**
  * Input size options
+ *
+ * Mobile-optimized sizes:
+ * - sm: 36px - Compact, matches desktop
+ * - md: 44px - iOS minimum touch target (default)
+ * - lg: 56px - Large inputs
+ *
+ * Desktop-equivalent size (for PWA parity):
+ * - desktop: 36px - Exact desktop input size
  */
-export type InputSize = "sm" | "md" | "lg";
+export type InputSize = "sm" | "md" | "lg" | "desktop";
 
 /**
  * Input state for styling

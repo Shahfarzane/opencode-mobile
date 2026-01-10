@@ -8,7 +8,8 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import { CheckIcon } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 
@@ -24,20 +25,6 @@ interface AgentPickerProps {
 	onAgentChange: (agentName: string) => void;
 	visible: boolean;
 	onClose: () => void;
-}
-
-function CheckIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M20 6L9 17l-5-5"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
 }
 
 const AGENT_COLORS = [
@@ -101,15 +88,9 @@ export function AgentPicker({
 					<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 						Select Agent
 					</Text>
-					<Pressable
-						onPress={onClose}
-						className="rounded-lg px-3 py-2"
-						style={{ backgroundColor: colors.muted }}
-					>
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-							Done
-						</Text>
-					</Pressable>
+					<Button variant="muted" size="sm" onPress={onClose}>
+						<Button.Label>Done</Button.Label>
+					</Button>
 				</View>
 
 				<ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 12 }}>

@@ -1,5 +1,6 @@
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { XIcon } from "@/components/icons";
+import { IconButton } from "@/components/ui";
 import { useTheme } from "@/theme";
 
 interface SheetHeaderProps {
@@ -13,14 +14,13 @@ export function SheetHeader({ onClose }: SheetHeaderProps) {
 	return (
 		<View className="flex-row justify-end items-center px-3 pt-1 pb-0">
 			<View className="flex-1" />
-			<Pressable
+			<IconButton
+				icon={<XIcon color={colors.mutedForeground} size={18} />}
+				variant="ghost"
+				size="icon-sm"
 				onPress={onClose}
-				hitSlop={8}
-				className="p-1.5"
-				style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-			>
-				<XIcon color={colors.mutedForeground} size={18} />
-			</Pressable>
+				accessibilityLabel="Close"
+			/>
 		</View>
 	);
 }

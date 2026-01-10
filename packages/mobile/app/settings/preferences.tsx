@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SettingsScreen } from "@/components/settings";
 import { settingsApi, type SettingsPayload } from "@/api";
-import { Fonts, Spacing, useTheme } from "@/theme";
+import { Fonts, FontSizes, Spacing, useTheme } from "@/theme";
 
 interface ToggleRowProps {
 	title: string;
@@ -31,7 +31,7 @@ function ToggleRow({ title, description, value, onValueChange }: ToggleRowProps)
 				value={value}
 				onValueChange={onValueChange}
 				trackColor={{ false: colors.muted, true: colors.primary }}
-				thumbColor="#FFFFFF"
+				thumbColor={colors.card}
 				ios_backgroundColor={colors.muted}
 			/>
 			<View style={styles.toggleContent}>
@@ -158,11 +158,11 @@ const styles = StyleSheet.create({
 		paddingTop: 2,
 	},
 	toggleTitle: {
-		fontSize: 15,
+		fontSize: FontSizes.uiLabel,
 		fontFamily: Fonts.medium,
 	},
 	toggleDescription: {
-		fontSize: 13,
+		fontSize: FontSizes.meta,
 		fontFamily: Fonts.regular,
 		marginTop: 2,
 	},

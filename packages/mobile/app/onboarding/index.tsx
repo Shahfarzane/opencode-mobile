@@ -1,6 +1,8 @@
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Button } from "@/components/ui";
+import { QrCodeIcon } from "@/components/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 import { typography, useTheme } from "../../src/theme";
@@ -103,51 +105,30 @@ export default function OnboardingIndex() {
 
 				{/* Actions */}
 				<View style={styles.actions}>
-					<Pressable
+					<Button
+						variant="primary"
+						size="lg"
 						onPress={() => {
 							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 							router.push("/onboarding/scan");
 						}}
-						style={({ pressed }) => [
-							styles.primaryBtn,
-							{ backgroundColor: colors.primary },
-							pressed && { opacity: 0.9 },
-						]}
+						style={{ width: "100%", flexDirection: "row", gap: 8 }}
 					>
-						<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-							<Path
-								d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"
-								stroke={colors.primaryForeground}
-								strokeWidth={2}
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							/>
-						</Svg>
-						<Text
-							style={[
-								typography.uiLabel,
-								{ color: colors.primaryForeground, fontWeight: "600" },
-							]}
-						>
-							Scan QR Code
-						</Text>
-					</Pressable>
+						<QrCodeIcon size={18} color={colors.primaryForeground} />
+						<Button.Label>Scan QR Code</Button.Label>
+					</Button>
 
-					<Pressable
+					<Button
+						variant="outline"
+						size="lg"
 						onPress={() => {
 							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 							router.push("/onboarding/manual");
 						}}
-						style={({ pressed }) => [
-							styles.secondaryBtn,
-							{ borderColor: colors.border },
-							pressed && { opacity: 0.7 },
-						]}
+						style={{ width: "100%" }}
 					>
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-							Enter URL manually
-						</Text>
-					</Pressable>
+						<Button.Label>Enter URL manually</Button.Label>
+					</Button>
 				</View>
 
 				{/* Footer */}

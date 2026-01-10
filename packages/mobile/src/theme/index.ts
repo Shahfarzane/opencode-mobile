@@ -17,3 +17,22 @@ export {
 	monoFontStyle,
 	typography,
 } from "./typography.styles";
+
+// Design tokens - single source of truth for design system values
+export {
+	AnimationTokens,
+	DesktopSizes,
+	getShadowColor,
+	IconSizes,
+	MenuPositioning,
+	MobileSizes,
+	OpacityTokens,
+	RadiusTokens,
+	ShadowTokens,
+	ZIndexTokens,
+} from "./design-tokens";
+export type {
+	DesktopSizeKey,
+	MobileSizeKey,
+	RadiusKey,
+} from "./design-tokens";

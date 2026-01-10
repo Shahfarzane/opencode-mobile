@@ -9,11 +9,11 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import { ChevronLeftIcon } from "@/components/icons";
+import { Button, Input } from "@/components/ui";
 import { useServerConnection } from "@/hooks/useServerConnection";
 import { Spacing, typography, useTheme } from "../../src/theme";
 
@@ -52,15 +52,7 @@ function BackButton() {
 			style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
 			hitSlop={8}
 		>
-			<Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M15 18l-6-6 6-6"
-					stroke={colors.foreground}
-					strokeWidth={2}
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-			</Svg>
+			<ChevronLeftIcon size={18} color={colors.foreground} />
 			<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 				Back
 			</Text>
@@ -180,85 +172,43 @@ export default function ManualScreen() {
 
 				{/* Server URL */}
 				<View style={styles.field}>
-					<Text
-						style={[
-							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
-						]}
-					>
-						Server URL
-					</Text>
-					<TextInput
+					<Input
+						label="Server URL"
 						value={serverUrl}
 						onChangeText={setServerUrl}
 						placeholder={config.placeholder}
-						placeholderTextColor={colors.mutedForeground}
 						autoCapitalize="none"
 						autoCorrect={false}
 						keyboardType="url"
-						style={[
-							typography.uiLabel,
-							styles.input,
-							{ borderColor: colors.border, color: colors.foreground },
-						]}
+						helperText={config.hint}
 					/>
-					<Text
-						style={[
-							typography.micro,
-							{ color: colors.mutedForeground, marginTop: 6 },
-						]}
-					>
-						{config.hint}
-					</Text>
 				</View>
 
 				{/* Password */}
 				<View style={styles.field}>
-					<Text
-						style={[
-							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
-						]}
-					>
-						Password (optional)
-					</Text>
-					<TextInput
+					<Input
+						label="Password (optional)"
 						value={password}
 						onChangeText={setPassword}
 						placeholder="Enter UI password"
-						placeholderTextColor={colors.mutedForeground}
 						autoCapitalize="none"
 						autoCorrect={false}
 						secureTextEntry
-						style={[
-							typography.uiLabel,
-							styles.input,
-							{ borderColor: colors.border, color: colors.foreground },
-						]}
 					/>
 				</View>
 
 				{/* Connect button */}
 				<View style={styles.actionArea}>
-					<Pressable
+					<Button
+						variant="primary"
+						size="lg"
 						onPress={handleConnect}
-						disabled={isConnecting}
-						style={({ pressed }) => [
-							styles.connectBtn,
-							{ backgroundColor: colors.primary },
-							isConnecting && { opacity: 0.5 },
-							pressed && !isConnecting && { opacity: 0.9 },
-						]}
+						isDisabled={isConnecting}
+						isLoading={isConnecting}
+						style={{ width: "100%" }}
 					>
-						<Text
-							style={[
-								typography.uiLabel,
-								{ color: colors.primaryForeground, fontWeight: "600" },
-							]}
-						>
-							{isConnecting ? "Connecting..." : "Connect"}
-						</Text>
-					</Pressable>
+						<Button.Label>{isConnecting ? "Connecting..." : "Connect"}</Button.Label>
+					</Button>
 				</View>
 			</ScrollView>
 		</KeyboardAvoidingView>

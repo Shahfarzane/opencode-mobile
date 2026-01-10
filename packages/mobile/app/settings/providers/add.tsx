@@ -10,7 +10,6 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,9 +19,8 @@ import {
 	ChevronDownIcon,
 	ChevronLeft,
 	ChevronUpIcon,
-	SearchIcon,
 } from "@/components/icons";
-import { Button, ProviderLogo } from "@/components/ui";
+import { Button, Input, ProviderLogo, SearchInput } from "@/components/ui";
 import { Fonts, FontSizes, Spacing, typography, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
 
@@ -343,15 +341,10 @@ export default function AddProviderScreen() {
 								{ borderBottomColor: colors.border },
 							]}
 						>
-							<SearchIcon size={16} color={colors.mutedForeground} />
-							<TextInput
-								style={[styles.searchInput, { color: colors.foreground }]}
-								placeholder="Search providers..."
-								placeholderTextColor={colors.mutedForeground}
+							<SearchInput
 								value={searchQuery}
 								onChangeText={setSearchQuery}
-								autoCapitalize="none"
-								autoCorrect={false}
+								placeholder="Search providers..."
 							/>
 						</View>
 
@@ -518,29 +511,17 @@ export default function AddProviderScreen() {
 
 							{/* API Key Input */}
 							<View style={styles.authBlock}>
-								<Text
-									style={[styles.fieldLabel, { color: colors.foreground }]}
-								>
-									API key
-								</Text>
 								<View style={styles.apiKeyRow}>
 									<View style={{ flex: 1 }}>
-										<TextInput
-											style={[
-												styles.input,
-												{
-													color: colors.foreground,
-													backgroundColor: colors.muted,
-													borderColor: colors.border,
-												},
-											]}
+										<Input
+											label="API key"
 											placeholder="sk-..."
-											placeholderTextColor={colors.mutedForeground}
 											value={apiKey}
 											onChangeText={setApiKey}
 											secureTextEntry
 											autoCapitalize="none"
 											autoCorrect={false}
+											helperText="Keys are sent directly to OpenCode and never stored by OpenChamber."
 										/>
 									</View>
 									<Button
@@ -549,16 +530,11 @@ export default function AddProviderScreen() {
 										onPress={handleSaveApiKey}
 										isDisabled={isSaving || !apiKey.trim()}
 										isLoading={isSaving}
+										style={{ marginTop: 24 }}
 									>
 										Save key
 									</Button>
 								</View>
-								<Text
-									style={[styles.helperText, { color: colors.mutedForeground }]}
-								>
-									Keys are sent directly to OpenCode and never stored by
-									OpenChamber.
-								</Text>
 							</View>
 
 							{/* OAuth Methods */}
@@ -637,15 +613,7 @@ export default function AddProviderScreen() {
 														{oauthDetails.userCode && (
 															<View style={styles.oauthCodeRow}>
 																<View style={{ flex: 1 }}>
-																	<TextInput
-																		style={[
-																			styles.input,
-																			{
-																				color: colors.foreground,
-																				backgroundColor: colors.background,
-																				borderColor: colors.border,
-																			},
-																		]}
+																	<Input
 																		value={oauthDetails.userCode}
 																		editable={false}
 																	/>
@@ -694,17 +662,8 @@ export default function AddProviderScreen() {
 
 														{/* Authorization code input */}
 														<View style={{ marginTop: Spacing[3] }}>
-															<TextInput
-																style={[
-																	styles.input,
-																	{
-																		color: colors.foreground,
-																		backgroundColor: colors.background,
-																		borderColor: colors.border,
-																	},
-																]}
+															<Input
 																placeholder="Authorization code (if required)"
-																placeholderTextColor={colors.mutedForeground}
 																value={oauthCode}
 																onChangeText={setOauthCode}
 																autoCapitalize="none"
@@ -756,7 +715,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	headerTitle: {
-		fontSize: 17,
+		fontSize: FontSizes.h2,
 		fontFamily: Fonts.semiBold,
 		textAlign: "center",
 	},
@@ -777,7 +736,7 @@ const styles = StyleSheet.create({
 		marginBottom: Spacing[6],
 	},
 	pageTitle: {
-		fontSize: 18,
+		fontSize: FontSizes.h1,
 		fontFamily: Fonts.semiBold,
 		marginBottom: Spacing[1],
 	},

@@ -9,7 +9,14 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import {
+	ChatIcon,
+	ChevronDownIcon,
+	ClockIcon,
+	RedoIcon,
+	UndoIcon,
+} from "@/components/icons";
+import { IconButton } from "@/components/ui";
 import {
 	type Agent,
 	agentsApi,
@@ -1029,114 +1036,6 @@ export default function ChatScreen() {
 			style={[styles.container, { backgroundColor: colors.background }]}
 			keyboardVerticalOffset={keyboardOffset}
 		>
-			<View style={[styles.sessionBar, { borderBottomColor: colors.border }]}>
-				<Pressable onPress={openSessionSheet} style={styles.sessionBarLeft}>
-					<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-							stroke={colors.mutedForeground}
-							strokeWidth={2}
-						/>
-					</Svg>
-					<Text
-						style={[
-							typography.micro,
-							{ color: colors.mutedForeground, flex: 1 },
-						]}
-						numberOfLines={1}
-					>
-						{sessionLabel}
-					</Text>
-					<Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-						<Path
-							d="M6 9l6 6 6-6"
-							stroke={colors.mutedForeground}
-							strokeWidth={2}
-							strokeLinecap="round"
-						/>
-					</Svg>
-				</Pressable>
-				{messages.length > 0 && (
-					<View style={styles.sessionBarActions}>
-						{/* Undo button */}
-						<Pressable
-							onPress={handleUndo}
-							disabled={!canUndo}
-							style={({ pressed }) => [
-								styles.actionIconButton,
-								{ opacity: !canUndo ? 0.4 : pressed ? 0.7 : 1 },
-							]}
-						>
-							<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-								<Path
-									d="M3 7v6h6"
-									stroke={colors.mutedForeground}
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-								<Path
-									d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"
-									stroke={colors.mutedForeground}
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</Svg>
-						</Pressable>
-						{/* Redo button */}
-						<Pressable
-							onPress={handleRedo}
-							style={({ pressed }) => [
-								styles.actionIconButton,
-								{ opacity: pressed ? 0.7 : 1 },
-							]}
-						>
-							<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-								<Path
-									d="M21 7v6h-6"
-									stroke={colors.mutedForeground}
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-								<Path
-									d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"
-									stroke={colors.mutedForeground}
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</Svg>
-						</Pressable>
-						{/* Timeline button */}
-						<Pressable
-							onPress={openTimelineSheet}
-							style={({ pressed }) => [
-								styles.actionIconButton,
-								{ opacity: pressed ? 0.7 : 1 },
-							]}
-						>
-							<Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-								<Path
-									d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"
-									stroke={colors.mutedForeground}
-									strokeWidth={2}
-									strokeLinecap="round"
-								/>
-								<Path
-									d="M12 6v6l4 2"
-									stroke={colors.mutedForeground}
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</Svg>
-						</Pressable>
-					</View>
-				)}
-			</View>
-
 			<View style={styles.messageContainer}>
 				<MessageList
 					messages={messages}
@@ -1261,9 +1160,6 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 4,
-	},
-	actionIconButton: {
-		padding: 6,
 	},
 	messageContainer: {
 		flex: 1,

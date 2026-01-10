@@ -6,7 +6,7 @@ import BottomSheet, {
 import { forwardRef, useCallback, useMemo } from "react";
 import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import { ArrowRightIcon, ClockIcon, GitBranchIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
 import { Fonts, FontSizes, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
@@ -25,65 +25,6 @@ interface TimelineSheetProps {
 	onNavigate: (messageId: string) => void;
 	onFork: (messageId: string) => void;
 	onClose: () => void;
-}
-
-function ClockIcon({ color, size = 16 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-			<Path
-				d="M12 6v6l4 2"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
-}
-
-function GitBranchIcon({ color, size = 14 }: { color: string; size?: number }) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-			<Path
-				d="M18 9c0 6-12 6-12 9"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
-}
-
-function ArrowRightIcon({
-	color,
-	size = 14,
-}: {
-	color: string;
-	size?: number;
-}) {
-	return (
-		<Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M5 12h14M12 5l7 7-7 7"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</Svg>
-	);
 }
 
 function TimelineTurnItem({

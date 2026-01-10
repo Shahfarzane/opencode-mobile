@@ -10,6 +10,14 @@ const wrapper = tv({
 
 /**
  * Input container styles (the border box)
+ *
+ * Size mapping to match desktop PWA:
+ * - Desktop input: h-9 (36px) = "sm" or "desktop"
+ *
+ * Mobile-optimized sizes use larger touch targets:
+ * - sm: 36px - Matches desktop
+ * - md: 44px - iOS minimum touch target (default)
+ * - lg: 56px - Large inputs
  */
 const container = tv({
   base: "flex-row items-center rounded-lg border",
@@ -21,9 +29,12 @@ const container = tv({
       disabled: "border-border bg-input opacity-disabled",
     },
     size: {
+      // Mobile-optimized sizes
       sm: "rounded-md",
       md: "rounded-lg",
       lg: "rounded-xl",
+      // Desktop-equivalent size
+      desktop: "rounded-lg",
     },
     multiline: {
       true: "items-start",
@@ -43,9 +54,12 @@ const input = tv({
   base: "flex-1 px-3 py-2 text-foreground",
   variants: {
     size: {
-      sm: "min-h-9 text-sm",
-      md: "min-h-11 text-base",
-      lg: "min-h-14 text-lg",
+      // Mobile-optimized sizes (touch-friendly)
+      sm: "min-h-9 text-sm",        // 36px - matches desktop
+      md: "min-h-11 text-base",     // 44px - iOS minimum
+      lg: "min-h-14 text-lg",       // 56px - large
+      // Desktop-equivalent size
+      desktop: "min-h-9 text-sm",   // 36px - exact desktop match
     },
     hasLeftIcon: {
       true: "pl-0",
@@ -75,6 +89,7 @@ const label = tv({
       sm: "text-xs",
       md: "text-sm",
       lg: "text-base",
+      desktop: "text-sm", // Matches desktop typography-ui-label
     },
   },
   defaultVariants: {
@@ -96,6 +111,7 @@ const helperText = tv({
       sm: "text-xs",
       md: "text-xs",
       lg: "text-sm",
+      desktop: "text-xs", // Matches desktop
     },
   },
   defaultVariants: {
@@ -127,6 +143,7 @@ const prefix = tv({
       sm: "min-h-9",
       md: "min-h-11",
       lg: "min-h-14",
+      desktop: "min-h-9", // Matches desktop h-9
     },
   },
   defaultVariants: {
