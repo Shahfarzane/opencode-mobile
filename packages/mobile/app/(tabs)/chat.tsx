@@ -1,22 +1,6 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-	KeyboardAvoidingView,
-	Platform,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-	ChatIcon,
-	ChevronDownIcon,
-	ClockIcon,
-	RedoIcon,
-	UndoIcon,
-} from "@/components/icons";
-import { IconButton } from "@/components/ui";
 import {
 	type Agent,
 	agentsApi,
@@ -46,7 +30,6 @@ import {
 	MessageList,
 	ModelPicker,
 	PermissionCard,
-	TimelineSheet,
 } from "../../src/components/chat";
 import { WorkingPlaceholder } from "../../src/components/chat/WorkingPlaceholder";
 import {
@@ -63,7 +46,7 @@ import {
 } from "../../src/hooks/useEventStream";
 import type { MessagePart as StreamingPart } from "../../src/lib/streaming";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { typography, useTheme } from "../../src/theme";
+import { useTheme } from "../../src/theme";
 
 const DEFAULT_CONTEXT_LIMIT = 200000;
 const DEFAULT_OUTPUT_LIMIT = 8192;
@@ -108,7 +91,6 @@ export default function ChatScreen() {
 	const {
 		sessions,
 		currentSessionId,
-		openSessionSheet,
 		selectSession: contextSelectSession,
 		_updateStreamingSessions,
 		_setCurrentSessionId,
@@ -135,8 +117,6 @@ export default function ChatScreen() {
 	const [showModelPicker, setShowModelPicker] = useState(false);
 	const [openChamberSettings, setOpenChamberSettings] =
 		useState<SettingsPayload | null>(null);
-
-	const timelineSheetRef = useRef<BottomSheet>(null);
 
 	const activeAgent: AgentInfo | undefined = useMemo(() => {
 		if (!currentAgentName) return undefined;
@@ -915,11 +895,6 @@ export default function ChatScreen() {
 	const HEADER_HEIGHT = 52;
 	const keyboardOffset = HEADER_HEIGHT + insets.top;
 
-	const currentSession = sessions.find((s) => s.id === sessionId);
-	const sessionLabel =
-		currentSession?.title ||
-		(sessionId ? `Session ${sessionId.slice(0, 8)}` : "New Session");
-
 	const handlePermissionResponse = useCallback(
 		async (permissionId: string, response: PermissionResponse) => {
 			if (!sessionId) return;
@@ -980,55 +955,6 @@ export default function ChatScreen() {
 		},
 		[sessions, contextSelectSession, _setCurrentSessionId],
 	);
-
-	const openTimelineSheet = useCallback(() => {
-		timelineSheetRef.current?.expand();
-	}, []);
-
-	const closeTimelineSheet = useCallback(() => {
-		timelineSheetRef.current?.close();
-	}, []);
-
-	const handleTimelineNavigate = useCallback(
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		(_messageId: string) => {
-			closeTimelineSheet();
-			// Navigate to message - scroll to it
-			// For now, just close the sheet. Full scroll-to-message could be added later.
-		},
-		[closeTimelineSheet],
-	);
-
-	const handleTimelineFork = useCallback(
-		async (messageId: string) => {
-			closeTimelineSheet();
-			await handleFork(messageId);
-		},
-		[closeTimelineSheet, handleFork],
-	);
-
-	const handleUndo = useCallback(async () => {
-		if (!sessionId) return;
-		try {
-			await sessionsApi.revert(sessionId);
-			await loadSessionMessages(sessionId);
-		} catch (error) {
-			console.error("Failed to undo:", error);
-		}
-	}, [sessionId, loadSessionMessages]);
-
-	const handleRedo = useCallback(async () => {
-		if (!sessionId) return;
-		try {
-			await sessionsApi.unrevert(sessionId);
-			await loadSessionMessages(sessionId);
-		} catch (error) {
-			console.error("Failed to redo:", error);
-		}
-	}, [sessionId, loadSessionMessages]);
-
-	// Check if undo/redo is possible based on messages
-	const canUndo = messages.some((m) => m.role === "user");
 
 	return (
 		<KeyboardAvoidingView
@@ -1126,14 +1052,6 @@ export default function ChatScreen() {
 				visible={showModelPicker}
 				onClose={() => setShowModelPicker(false)}
 			/>
-
-			<TimelineSheet
-				ref={timelineSheetRef}
-				messages={messages}
-				onNavigate={handleTimelineNavigate}
-				onFork={handleTimelineFork}
-				onClose={closeTimelineSheet}
-			/>
 		</KeyboardAvoidingView>
 	);
 }
@@ -1141,25 +1059,6 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-	},
-	sessionBar: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 16,
-		paddingVertical: 6,
-		borderBottomWidth: 1,
-	},
-	sessionBarLeft: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	sessionBarActions: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
 	},
 	messageContainer: {
 		flex: 1,

@@ -140,7 +140,7 @@ export function MessageList({
 				keyExtractor={keyExtractor}
 				extraData={messages}
 				{...({ estimatedItemSize: 120 } as object)}
-				contentContainerClassName={messageListStyles.listContent({})}
+				contentContainerStyle={{ paddingTop: 12, paddingBottom: 16 }}
 				onContentSizeChange={handleContentSizeChange}
 				onScroll={handleScroll}
 				scrollEventThrottle={16}

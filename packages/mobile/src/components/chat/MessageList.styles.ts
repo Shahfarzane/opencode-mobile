@@ -21,7 +21,7 @@ const phraseText = tv({
 });
 
 const listContent = tv({
-  base: "pt-4 pb-4",
+  base: "pt-3 pb-4",
   variants: {},
 });
 
