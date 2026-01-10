@@ -475,6 +475,7 @@ function GitHeader({
 				}}
 				onCreate={(name) => {
 					onCreateBranch(name);
+					setBranchModalVisible(false);
 				}}
 				isCheckingOut={isCheckingOut}
 				isCreating={isCreating}
