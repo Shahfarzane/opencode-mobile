@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -196,9 +196,14 @@ function BranchSelectorModal({
 				<Pressable style={[styles.branchModal, { backgroundColor: colors.card }]} onPress={() => {}}>
 					{/* Header */}
 					<View style={[styles.branchModalHeader, { borderBottomColor: colors.border }]}>
-						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
-							Switch Branch
-						</Text>
+						<View>
+							<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+								Switch Branch
+							</Text>
+							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+								{localBranches.length} local · {remoteBranches.length} remote
+							</Text>
+						</View>
 						<IconButton
 							icon={<XIcon size={18} color={colors.mutedForeground} />}
 							variant="ghost"
@@ -286,59 +291,66 @@ function BranchSelectorModal({
 						</View>
 					)}
 
-					{/* Branch lists */}
-					<ScrollView style={styles.branchList}>
-						{/* Local branches */}
-						{filteredLocal.length > 0 && (
-							<View>
+					{/* Branch lists - using fixed height to ensure visibility */}
+					<View style={{ height: 250 }}>
+						<ScrollView
+							style={{ flex: 1 }}
+							contentContainerStyle={{ paddingBottom: 8 }}
+							showsVerticalScrollIndicator
+							nestedScrollEnabled
+						>
+							{/* Local branches */}
+							{filteredLocal.length > 0 && (
+								<View>
+									<Text
+										style={[
+											typography.micro,
+											styles.branchListHeader,
+											{ color: colors.mutedForeground, backgroundColor: colors.muted },
+										]}
+									>
+										LOCAL BRANCHES
+									</Text>
+									{filteredLocal.map((branch) => (
+										<View key={`local-${branch}`}>
+											{renderBranchItem({ item: branch })}
+										</View>
+									))}
+								</View>
+							)}
+
+							{/* Remote branches */}
+							{filteredRemote.length > 0 && (
+								<View style={{ marginTop: 8 }}>
+									<Text
+										style={[
+											typography.micro,
+											styles.branchListHeader,
+											{ color: colors.mutedForeground, backgroundColor: colors.muted },
+										]}
+									>
+										REMOTE BRANCHES
+									</Text>
+									{filteredRemote.map((branch) => (
+										<View key={`remote-${branch}`}>
+											{renderBranchItem({ item: branch, isRemote: true })}
+										</View>
+									))}
+								</View>
+							)}
+
+							{filteredLocal.length === 0 && filteredRemote.length === 0 && (
 								<Text
 									style={[
-										typography.micro,
-										styles.branchListHeader,
-										{ color: colors.mutedForeground, backgroundColor: colors.muted },
+										typography.meta,
+										{ color: colors.mutedForeground, textAlign: "center", padding: 16 },
 									]}
 								>
-									LOCAL BRANCHES
+									{search ? `No branches matching "${search}"` : "No branches available"}
 								</Text>
-								{filteredLocal.map((branch) => (
-									<View key={`local-${branch}`}>
-										{renderBranchItem({ item: branch })}
-									</View>
-								))}
-							</View>
-						)}
-
-						{/* Remote branches */}
-						{filteredRemote.length > 0 && (
-							<View style={{ marginTop: 8 }}>
-								<Text
-									style={[
-										typography.micro,
-										styles.branchListHeader,
-										{ color: colors.mutedForeground, backgroundColor: colors.muted },
-									]}
-								>
-									REMOTE BRANCHES
-								</Text>
-								{filteredRemote.map((branch) => (
-									<View key={`remote-${branch}`}>
-										{renderBranchItem({ item: branch, isRemote: true })}
-									</View>
-								))}
-							</View>
-						)}
-
-						{filteredLocal.length === 0 && filteredRemote.length === 0 && (
-							<Text
-								style={[
-									typography.meta,
-									{ color: colors.mutedForeground, textAlign: "center", padding: 16 },
-								]}
-							>
-								No branches found
-							</Text>
-						)}
-					</ScrollView>
+							)}
+						</ScrollView>
+					</View>
 				</Pressable>
 			</Pressable>
 		</Modal>
@@ -377,11 +389,21 @@ function GitHeader({
 
 	const isBusy = isFetching || isPulling || isPushing || isCheckingOut;
 
-	// Parse local and remote branches
-	const localBranches = branches?.all.filter((b) => !b.startsWith("remotes/")) ?? [];
-	const remoteBranches = branches?.all
-		.filter((b) => b.startsWith("remotes/"))
-		.map((b) => b.replace(/^remotes\/[^/]+\//, "")) ?? [];
+	// Parse local and remote branches (matching PWA implementation exactly)
+	const localBranches = useMemo(() => {
+		if (!branches?.all) return [];
+		return branches.all
+			.filter((branchName: string) => !branchName.startsWith("remotes/"))
+			.sort();
+	}, [branches]);
+
+	const remoteBranches = useMemo(() => {
+		if (!branches?.all) return [];
+		return branches.all
+			.filter((branchName: string) => branchName.startsWith("remotes/"))
+			.map((branchName: string) => branchName.replace(/^remotes\//, ""))
+			.sort();
+	}, [branches]);
 
 	return (
 		<View style={[styles.gitHeader, { borderBottomColor: colors.border }]}>
@@ -1547,6 +1569,7 @@ const styles = StyleSheet.create({
 		maxHeight: "70%",
 		borderRadius: 12,
 		overflow: "hidden",
+		flexDirection: "column",
 	},
 	branchModalHeader: {
 		flexDirection: "row",
