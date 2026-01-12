@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Animated, View, type ViewStyle } from "react-native";
 import { shimmer as shimmerAnimation } from "@/lib/animations";
 import { useTheme } from "@/theme";
+import { withOpacity } from "@/utils/colors";
 import { skeletonStyles } from "./skeleton.styles";
 import type {
   SkeletonAvatarProps,
@@ -75,11 +76,17 @@ function SkeletonRoot({
 
   const baseClassName = skeletonStyles.base({ variant, className });
 
+  const baseTone: ViewStyle = {
+    backgroundColor: withOpacity(colors.card, 0.7),
+    borderColor: withOpacity(colors.border, 0.25),
+    borderWidth: variant === "circle" ? 0 : 1,
+  };
+
   return (
     <Animated.View
       className={baseClassName}
       style={[
-        { backgroundColor: colors.muted },
+        baseTone,
         getVariantStyle(),
         { opacity: animatedValue },
         style,
@@ -87,6 +94,7 @@ function SkeletonRoot({
     />
   );
 }
+
 
 SkeletonRoot.displayName = SKELETON_DISPLAY_NAME;
 

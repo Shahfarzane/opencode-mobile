@@ -7,9 +7,9 @@ const base = tv({
   base: "overflow-hidden bg-muted",
   variants: {
     variant: {
-      rectangle: "rounded-lg",
+      rectangle: "rounded-2xl",
       circle: "rounded-full",
-      text: "rounded",
+      text: "rounded-lg",
     },
   },
   defaultVariants: {
@@ -29,7 +29,7 @@ const textContainer = tv({
  * Skeleton card container styles
  */
 const cardContainer = tv({
-  base: "p-4 rounded-xl border border-border bg-card gap-3",
+  base: "p-4 rounded-2xl border border-border bg-card gap-3",
   variants: {},
 });
 

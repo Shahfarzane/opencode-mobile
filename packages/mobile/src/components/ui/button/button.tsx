@@ -58,6 +58,7 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 		const { colors, isDark } = useTheme();
 
 		const disabled = isDisabled || isLoading;
+		const pressableHitSlop = { top: 8, right: 10, bottom: 8, left: 10 };
 
 		const handlePress = async (
 			event: Parameters<NonNullable<typeof onPress>>[0],
@@ -187,8 +188,15 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 
 		// Dynamic style function for press states
 		const getButtonStyle = ({ pressed }: { pressed: boolean }): ViewStyle[] => {
-			const baseStyle: ViewStyle = { backgroundColor: getBackgroundColor() };
+			const baseStyle: ViewStyle = { backgroundColor: getBackgroundColor(), borderRadius: 18 };
 			const borderStyle: ViewStyle | false = variant === "outline" && { borderColor: getBorderColor() };
+			const glowStyle: ViewStyle | false = !disabled && variant !== "outline" && variant !== "ghost" && {
+				shadowColor: withOpacity(colors.primary, isDark ? 0.45 : 0.32),
+				shadowOffset: { width: 0, height: 10 },
+				shadowOpacity: isDark ? 0.5 : 0.38,
+				shadowRadius: 18,
+				elevation: 8,
+			};
 			const pressedStyle: ViewStyle | false = pressed && !disabled && {
 				backgroundColor: getPressedBackgroundColor(),
 				opacity: 0.95,
@@ -197,6 +205,7 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 			return [
 				baseStyle,
 				borderStyle || {},
+				glowStyle || {},
 				pressedStyle || {},
 				style as ViewStyle,
 			].filter(Boolean) as ViewStyle[];
@@ -208,6 +217,7 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 					ref={ref as never}
 					disabled={disabled}
 					onPress={handlePress}
+					hitSlop={pressableHitSlop}
 					className={rootClassName}
 					style={getButtonStyle}
 					accessibilityRole="button"

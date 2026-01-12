@@ -1,6 +1,7 @@
 import { createContext, forwardRef, useContext, useState } from "react";
 import { Text, TextInput, View, type ViewStyle } from "react-native";
 import { typography, useTheme, FocusRingTokens } from "@/theme";
+import { withOpacity } from "@/utils/colors";
 import { textFieldStyles } from "./textfield.styles";
 import type {
   TextFieldContextValue,
@@ -77,6 +78,16 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
 
     const state = getState();
 
+    const containerTone: ViewStyle = {
+      backgroundColor: withOpacity(colors.card, state === "focused" ? 0.94 : 0.86),
+      borderColor: hasError ? colors.destructive : state === "focused" ? colors.primary : colors.border,
+      shadowColor: withOpacity(colors.foreground, 0.08),
+      shadowOffset: { width: 0, height: state === "focused" ? 12 : 6 },
+      shadowOpacity: state === "focused" ? 0.22 : 0.12,
+      shadowRadius: state === "focused" ? 18 : 10,
+      elevation: 4,
+    };
+
     const contextValue: TextFieldContextValue = {
       size,
       variant,
@@ -114,7 +125,7 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
             <TextFieldLabel size={size}>{label}</TextFieldLabel>
           )}
 
-          <View className={containerClassName} style={[focusRingStyle, containerStyle]}>
+          <View className={containerClassName} style={[focusRingStyle, containerTone, containerStyle]}>
             <TextInput
               ref={ref}
               editable={editable}

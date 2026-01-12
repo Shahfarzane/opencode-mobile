@@ -1,7 +1,9 @@
-import { forwardRef } from "react";
+import * as Haptics from "expo-haptics";
+import { forwardRef, useMemo } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { SearchIcon, XIcon } from "@/components/icons";
 import { IconSizes, typography, useTheme } from "@/theme";
+import { withOpacity } from "@/utils/colors";
 
 interface SearchInputProps {
   /** Current search value */
@@ -42,10 +44,29 @@ export const SearchInput = forwardRef<TextInput, SearchInputProps>(
   ) => {
     const { colors } = useTheme();
 
+    const containerStyle = useMemo(
+      () => ({
+        backgroundColor: withOpacity(colors.card, 0.86),
+        borderColor: withOpacity(colors.border, 0.7),
+        borderWidth: 1,
+        shadowColor: withOpacity(colors.foreground, 0.06),
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.14,
+        shadowRadius: 12,
+        borderRadius: 18,
+      }),
+      [colors],
+    );
+
+    const handleClear = () => {
+      Haptics.selectionAsync().catch(() => {});
+      onChangeText("");
+    };
+
     return (
       <View
-        className={`flex-row items-center rounded-xl px-3 py-2.5 gap-2 ${className ?? ""}`}
-        style={{ backgroundColor: colors.muted }}
+        className={`flex-row items-center rounded-2xl px-3.5 py-3 gap-2 ${className ?? ""}`}
+        style={containerStyle}
       >
         <SearchIcon size={IconSizes.md} color={colors.mutedForeground} />
         <TextInput
@@ -62,7 +83,7 @@ export const SearchInput = forwardRef<TextInput, SearchInputProps>(
         />
         {value.length > 0 && (
           <Pressable
-            onPress={() => onChangeText("")}
+            onPress={handleClear}
             accessibilityLabel="Clear search"
             accessibilityRole="button"
             hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}

@@ -20,7 +20,7 @@ const wrapper = tv({
  * - lg: 56px - Large inputs
  */
 const container = tv({
-  base: "flex-row items-center rounded-lg border bg-transparent dark:bg-input/30",
+  base: "flex-row items-center rounded-2xl border bg-transparent dark:bg-input/25",
   variants: {
     state: {
       default: "border-border",
@@ -30,11 +30,11 @@ const container = tv({
     },
     size: {
       // Mobile-optimized sizes
-      sm: "rounded-md",
-      md: "rounded-lg",
-      lg: "rounded-xl",
+      sm: "rounded-xl",
+      md: "rounded-2xl",
+      lg: "rounded-3xl",
       // Desktop-equivalent size
-      desktop: "rounded-lg",
+      desktop: "rounded-2xl",
     },
     multiline: {
       true: "items-start",

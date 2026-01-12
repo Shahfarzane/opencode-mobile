@@ -1,6 +1,7 @@
 import { createContext, forwardRef, useContext, useState } from "react";
 import { Text, TextInput, View, type ViewStyle } from "react-native";
 import { typography, useTheme, FocusRingTokens } from "@/theme";
+import { withOpacity } from "@/utils/colors";
 import { inputStyles } from "./input.styles";
 import type {
   InputContextValue,
@@ -83,6 +84,16 @@ const InputRoot = forwardRef<TextInput, InputProps>(
 
     const state = getState();
 
+    const containerTone: ViewStyle = {
+      backgroundColor: withOpacity(colors.card, state === "focused" ? 0.94 : 0.82),
+      borderColor: hasError ? colors.destructive : state === "focused" ? colors.primary : colors.border,
+      shadowColor: withOpacity(colors.foreground, 0.08),
+      shadowOffset: { width: 0, height: state === "focused" ? 10 : 6 },
+      shadowOpacity: state === "focused" ? 0.22 : 0.12,
+      shadowRadius: state === "focused" ? 14 : 9,
+      elevation: 3,
+    };
+
     const contextValue: InputContextValue = {
       size,
       state,
@@ -136,7 +147,7 @@ const InputRoot = forwardRef<TextInput, InputProps>(
             <InputLabel size={size}>{label}</InputLabel>
           )}
 
-          <View className={containerClassName} style={focusRingStyle}>
+          <View className={containerClassName} style={[focusRingStyle, containerTone]}>
             {prefix && (
               <View className={prefixClassName}>
                 <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>

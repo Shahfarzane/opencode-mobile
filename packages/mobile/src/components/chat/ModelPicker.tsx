@@ -1,19 +1,11 @@
-import BottomSheet, {
-	BottomSheetBackdrop,
-	type BottomSheetBackdropProps,
-	BottomSheetScrollView,
-	BottomSheetTextInput,
-} from "@gorhom/bottom-sheet";
+import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-	Pressable,
-	Text,
-	View,
-} from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BrainIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon, ClockIcon, ImageIcon, SearchIcon, StarIcon, ToolIcon, XIcon } from "@/components/icons";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
+import { Sheet, SheetScrollView, SheetTextInput } from "@/components/ui/sheet";
 import { Radius, Spacing, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 
@@ -487,19 +479,6 @@ export function ModelPicker({
 		[onToggleFavorite],
 	);
 
-	const renderBackdrop = useCallback(
-		(props: BottomSheetBackdropProps) => (
-			<BottomSheetBackdrop
-				{...props}
-				disappearsOnIndex={-1}
-				appearsOnIndex={0}
-				opacity={0.5}
-				pressBehavior="close"
-			/>
-		),
-		[],
-	);
-
 	const handleSheetChange = useCallback(
 		(index: number) => {
 			if (index === -1) {
@@ -519,17 +498,12 @@ export function ModelPicker({
 	const hasResults = filteredProviders.length > 0 || filteredFavorites.length > 0 || filteredRecents.length > 0;
 
 	return (
-		<BottomSheet
+		<Sheet
 			ref={bottomSheetRef}
-			index={-1}
 			snapPoints={snapPoints}
-			enablePanDownToClose
-			backdropComponent={renderBackdrop}
+			onClose={onClose}
 			onChange={handleSheetChange}
-			backgroundStyle={{ backgroundColor: colors.background }}
-			handleIndicatorStyle={{ backgroundColor: colors.mutedForeground, width: 36 }}
-			keyboardBehavior="interactive"
-			keyboardBlurBehavior="restore"
+			contentPadding={16}
 		>
 			{/* Header */}
 			<View className="px-4 pb-3 flex-row items-center justify-between">
@@ -556,7 +530,7 @@ export function ModelPicker({
 					style={{ backgroundColor: colors.muted }}
 				>
 					<SearchIcon size={16} color={colors.mutedForeground} />
-					<BottomSheetTextInput
+					<SheetTextInput
 						value={searchQuery}
 						onChangeText={setSearchQuery}
 						placeholder="Search providers or models"
@@ -571,6 +545,7 @@ export function ModelPicker({
 							},
 						]}
 					/>
+
 					{searchQuery.length > 0 && (
 						<Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
 							<XIcon size={16} color={colors.mutedForeground} />
@@ -579,7 +554,8 @@ export function ModelPicker({
 				</View>
 			</View>
 
-			<BottomSheetScrollView
+			<SheetScrollView
+
 				contentContainerStyle={{
 					paddingBottom: insets.bottom + 16,
 				}}
@@ -686,7 +662,7 @@ export function ModelPicker({
 						})}
 					</View>
 				)}
-			</BottomSheetScrollView>
-		</BottomSheet>
+			</SheetScrollView>
+		</Sheet>
 	);
 }

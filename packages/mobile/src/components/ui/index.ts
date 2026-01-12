@@ -63,6 +63,8 @@ export const SkeletonText = SkeletonComponent.Text;
 export const SkeletonCard = SkeletonComponent.Card;
 export const SkeletonMessage = SkeletonComponent.Message;
 
+export { Sheet, SheetScrollView, SheetTextInput, SheetView } from "./sheet";
+
 // Other UI components (not yet migrated)
 export { OpenChamberLogo } from "./OpenChamberLogo";
 export { ProviderLogo } from "./ProviderLogo";

@@ -4,12 +4,12 @@ import { tv, combineStyles } from "@/lib/styles";
  * Card root styles
  */
 const root = tv({
-  base: "rounded-xl",
+  base: "rounded-2xl border border-border bg-card",
   variants: {
     variant: {
-      default: "bg-card",
-      elevated: "bg-card shadow-sm",
-      outlined: "bg-card border border-border",
+      default: "",
+      elevated: "shadow-md",
+      outlined: "border border-border",
     },
     padding: {
       none: "p-0",

@@ -9,7 +9,7 @@ import { tv, combineStyles } from "@/lib/styles";
  * - focus ring styling
  */
 const container = tv({
-  base: "w-full rounded-lg border",
+  base: "w-full rounded-2xl border",
   variants: {
     state: {
       default: "border-border bg-transparent",
@@ -22,9 +22,9 @@ const container = tv({
       ghost: "border-transparent",
     },
     size: {
-      sm: "min-h-12 rounded-md", // 48px
-      md: "min-h-16 rounded-lg", // 64px - matches PWA
-      lg: "min-h-20 rounded-xl", // 80px
+      sm: "min-h-12 rounded-xl", // 48px
+      md: "min-h-16 rounded-2xl", // 64px - matches PWA
+      lg: "min-h-20 rounded-3xl", // 80px
     },
   },
   defaultVariants: {
