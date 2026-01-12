@@ -3,13 +3,14 @@ import BottomSheet, {
   BottomSheetScrollView,
   BottomSheetTextInput,
   BottomSheetView,
+  useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
 import type { BottomSheetBackdropProps, BottomSheetProps } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
 import { type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "@/theme";
+import { AnimationTokens, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
 
 interface SheetProps extends Omit<BottomSheetProps, "snapPoints" | "onChange"> {
@@ -53,20 +54,24 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
       [backdropOpacity],
     );
 
-	const handleChange = useCallback(
-		(index: number) => {
-			if (index === 0) {
-				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-			}
-			if (index === -1) {
-				Haptics.selectionAsync().catch(() => {});
-				onClose?.();
-			}
-			onChange?.(index);
-		},
-		[onChange, onClose],
-	);
+    const handleChange = useCallback(
+    		(index: number) => {
+    			if (index === 0) {
+    				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    			}
+    			if (index === -1) {
+    				Haptics.selectionAsync().catch(() => {});
+    				onClose?.();
+    			}
+    			onChange?.(index);
+    		},
+    		[onChange, onClose],
+    	);
 
+    const animationConfigs = useBottomSheetSpringConfigs({
+      ...AnimationTokens.sheetSpring,
+      overshootClamping: true,
+    });
 
     const paddingBottom = useMemo(
       () => Math.max(contentPadding * 1.25, insets.bottom + contentPadding / 2),
@@ -95,6 +100,7 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
         bottomInset={insets.bottom + 8}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
+        animationConfigs={animationConfigs}
         backgroundStyle={[baseBackground, backgroundStyle]}
         handleIndicatorStyle={[
           {

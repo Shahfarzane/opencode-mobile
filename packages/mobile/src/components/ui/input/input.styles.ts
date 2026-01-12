@@ -20,7 +20,7 @@ const wrapper = tv({
  * - lg: 56px - Large inputs
  */
 const container = tv({
-  base: "flex-row items-center rounded-2xl border bg-transparent dark:bg-input/25",
+  base: "flex-row items-center rounded-2xl border border-input bg-transparent dark:bg-input/30",
   variants: {
     state: {
       default: "border-border",
@@ -30,11 +30,11 @@ const container = tv({
     },
     size: {
       // Mobile-optimized sizes
-      sm: "rounded-xl",
+      sm: "rounded-lg",
       md: "rounded-2xl",
       lg: "rounded-3xl",
       // Desktop-equivalent size
-      desktop: "rounded-2xl",
+      desktop: "rounded-lg",
     },
     multiline: {
       true: "items-start",
@@ -51,15 +51,15 @@ const container = tv({
  * TextInput styles
  */
 const input = tv({
-  base: "flex-1 px-3 py-2 text-foreground",
+  base: "flex-1 text-foreground",
   variants: {
     size: {
       // Mobile-optimized sizes (touch-friendly)
-      sm: "min-h-9 text-sm",        // 36px - matches desktop
-      md: "min-h-11 text-base",     // 44px - iOS minimum
-      lg: "min-h-14 text-lg",       // 56px - large
+      sm: "min-h-9",        // 36px - matches desktop
+      md: "min-h-11",     // 44px - iOS minimum
+      lg: "min-h-14",       // 56px - large
       // Desktop-equivalent size
-      desktop: "min-h-9 text-sm",   // 36px - exact desktop match
+      desktop: "min-h-9",   // 36px - exact desktop match
     },
     hasLeftIcon: {
       true: "pl-0",
@@ -68,7 +68,7 @@ const input = tv({
       true: "pr-0",
     },
     multiline: {
-      true: "py-3",
+      true: "",
     },
   },
   defaultVariants: {
@@ -86,10 +86,10 @@ const label = tv({
   base: "text-foreground",
   variants: {
     size: {
-      sm: "text-xs",
-      md: "text-sm",
-      lg: "text-base",
-      desktop: "text-sm", // Matches desktop typography-ui-label
+      sm: "",
+      md: "",
+      lg: "",
+      desktop: "", // Matches desktop typography-ui-label
     },
   },
   defaultVariants: {
@@ -108,10 +108,10 @@ const helperText = tv({
       false: "text-muted-foreground",
     },
     size: {
-      sm: "text-xs",
-      md: "text-xs",
-      lg: "text-sm",
-      desktop: "text-xs", // Matches desktop
+      sm: "",
+      md: "",
+      lg: "",
+      desktop: "", // Matches desktop
     },
   },
   defaultVariants: {
