@@ -1,4 +1,4 @@
-import * as Haptics from "expo-haptics";
+import { selectionAsync } from "expo-haptics";
 import { forwardRef, useMemo } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { SearchIcon, XIcon } from "@/components/icons";
@@ -58,10 +58,10 @@ export const SearchInput = forwardRef<TextInput, SearchInputProps>(
       [colors],
     );
 
-    const handleClear = () => {
-      Haptics.selectionAsync().catch(() => {});
-      onChangeText("");
-    };
+	const handleClear = () => {
+		selectionAsync().catch(() => {});
+		onChangeText("");
+	};
 
     return (
       <View

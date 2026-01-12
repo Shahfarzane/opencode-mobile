@@ -1,3 +1,4 @@
+import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import {
 	useCallback,
@@ -5,7 +6,6 @@ import {
 	useMemo,
 	useRef,
 	useState,
-	type ElementRef,
 } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -393,7 +393,7 @@ export function ModelPicker({
 }: ModelPickerProps) {
 	const { colors } = useTheme();
 	const insets = useSafeAreaInsets();
-	const bottomSheetRef = useRef<ElementRef<typeof Sheet>>(null);
+	const bottomSheetRef = useRef<BottomSheet>(null);
 	const snapPoints = useMemo(() => ["70%", "90%"], []);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
