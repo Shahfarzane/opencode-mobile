@@ -1,11 +1,10 @@
 import BottomSheet, {
   BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
-  type BottomSheetProps,
   BottomSheetScrollView,
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
+import type { BottomSheetBackdropProps, BottomSheetProps } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
 import { type ViewStyle } from "react-native";

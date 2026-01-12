@@ -130,7 +130,6 @@ function ProviderLogoWithFallback({
 	providerId: string;
 	size?: number;
 }) {
-	const { colors } = useTheme();
 	const [showFallback, setShowFallback] = useState(false);
 
 	if (showFallback || !providerId) {

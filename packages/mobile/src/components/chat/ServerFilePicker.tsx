@@ -101,7 +101,7 @@ export function ServerFilePicker({
 			const items = mapEntries(result.entries);
 			loadedDirsRef.current.add(dirPath);
 			setChildrenByDir((prev) => ({ ...prev, [dirPath]: items }));
-		} catch (err) {
+		} catch {
 			setError("Failed to load directory");
 			setChildrenByDir((prev) => ({ ...prev, [dirPath]: [] }));
 		} finally {
@@ -146,7 +146,7 @@ export function ServerFilePicker({
 						path: r.path,
 						type: "file" as const,
 						extension: r.path.includes(".") ? r.path.split(".").pop()?.toLowerCase() : undefined,
-						relativePath: r.path.replace(rootDirectory + "/", ""),
+						relativePath: r.path.replace(`${rootDirectory}/`, ""),
 					}))
 				);
 			} catch {
@@ -223,7 +223,7 @@ export function ServerFilePicker({
 		onClose();
 	}, [selectedFiles, childrenByDir, searchResults, onFilesSelected, onClose]);
 
-	const getFileIconColor = (extension?: string) => {
+	const getFileIconColor = useCallback((extension?: string) => {
 		switch (extension?.toLowerCase()) {
 			case "ts":
 			case "tsx":
@@ -244,7 +244,7 @@ export function ServerFilePicker({
 			default:
 				return colors.mutedForeground;
 		}
-	};
+	}, [colors]);
 
 	const rootItems = childrenByDir[rootDirectory] ?? [];
 	const isSearchActive = searchQuery.trim().length > 0;

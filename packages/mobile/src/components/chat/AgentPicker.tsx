@@ -1,12 +1,16 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
+import BottomSheet, {
+	BottomSheetBackdrop,
+	type BottomSheetBackdropProps,
+	BottomSheetScrollView,
+} from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { Sheet, SheetScrollView } from "@/components/ui/sheet";
 import { Spacing, fontStyle, typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
+import { OPACITY, withOpacity } from "@/utils/colors";
 
 export interface Agent {
 	name: string;
