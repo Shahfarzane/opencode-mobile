@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,

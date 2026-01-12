@@ -23,7 +23,7 @@ const container = tv({
 });
 
 const inputContainer = tv({
-	base: "rounded-xl overflow-hidden",
+	base: "rounded-xl",
 	variants: {},
 });
 

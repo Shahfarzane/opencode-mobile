@@ -73,7 +73,6 @@
     "@babel/core": "^7.28.5",
     "@types/react": "~19.0.14",
     "babel-preset-expo": "^54.0.9",
-    "reactotron-react-native": "^5.1.18",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.4.0",
     "tailwind-variants": "^3.2.2",
