@@ -97,7 +97,7 @@ export default function TabsLayout() {
 	const fetchSessions = useCallback(async () => {
 		setIsLoadingSessions(true);
 		try {
-			const { sessions: data, fromCache } = await fetchSessionsWithCache();
+			const { sessions: data } = await fetchSessionsWithCache();
 			setSessions(data);
 
 			const cacheInfoMap = new Map<string, SessionCacheInfo>();
@@ -108,10 +108,6 @@ export default function TabsLayout() {
 				}
 			}
 			setSessionCacheInfo(cacheInfoMap);
-
-			if (__DEV__ && fromCache) {
-				console.log("[Layout] Sessions loaded from cache");
-			}
 		} catch (error) {
 			console.error("Failed to fetch sessions:", error);
 		} finally {

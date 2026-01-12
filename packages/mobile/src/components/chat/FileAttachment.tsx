@@ -61,9 +61,9 @@ export function FileAttachmentButton({
 
 	useEffect(() => {
 		if (isPickerOpen) {
-			sheetRef.current?.snapToIndex(0);
-		} else {
-			sheetRef.current?.close();
+			requestAnimationFrame(() => {
+				sheetRef.current?.snapToIndex(0);
+			});
 		}
 	}, [isPickerOpen]);
 
@@ -183,12 +183,13 @@ export function FileAttachmentButton({
 				accessibilityLabel="Attach file"
 			/>
 
-			<Sheet
-				ref={sheetRef}
-				snapPoints={snapPoints}
-				onClose={() => setIsPickerOpen(false)}
-				contentPadding={0}
-			>
+			{isPickerOpen && (
+				<Sheet
+					ref={sheetRef}
+					snapPoints={snapPoints}
+					onClose={() => setIsPickerOpen(false)}
+					contentPadding={0}
+				>
 				<View className="pb-2">
 					<View className="px-4 pt-2 pb-1">
 						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
@@ -247,7 +248,8 @@ export function FileAttachmentButton({
 						</>
 					)}
 				</View>
-			</Sheet>
+				</Sheet>
+			)}
 
 			{directory && (
 				<ServerFilePicker
