@@ -645,8 +645,7 @@ export function ChatInput({
 					style={[typography.body, { color: colors.foreground, textAlignVertical: "top" }]}
 				/>
 
-				<View className={chatInputStyles.toolbar({})}>
-					{/* Left: Attachment button (flex-shrink-0) */}
+				<View className={chatInputStyles.toolbar({})} style={{ zIndex: 10 }}>
 					<View className={chatInputStyles.toolbarLeftSection({})}>
 						<View className={chatInputStyles.toolbarButton({})}>
 							<FileAttachmentButton

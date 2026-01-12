@@ -1,6 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { createContext, forwardRef, useContext } from "react";
-import { ActivityIndicator, Pressable, Text, type View, type ViewStyle } from "react-native";
+import { ActivityIndicator, Text, type View, type ViewStyle } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import {
@@ -186,8 +187,8 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 			return withOpacity(baseColor, 0.9);
 		};
 
-		// Dynamic style function for press states
-		const getButtonStyle = ({ pressed }: { pressed: boolean }): ViewStyle[] => {
+		// Compute button styles
+		const getButtonStyle = (): ViewStyle[] => {
 			const baseStyle: ViewStyle = { backgroundColor: getBackgroundColor(), borderRadius: 18 };
 			const borderStyle: ViewStyle | false = variant === "outline" && { borderColor: getBorderColor() };
 			const glowStyle: ViewStyle | false = !disabled && variant !== "outline" && variant !== "ghost" && {
@@ -197,35 +198,31 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 				shadowRadius: 18,
 				elevation: 8,
 			};
-			const pressedStyle: ViewStyle | false = pressed && !disabled && {
-				backgroundColor: getPressedBackgroundColor(),
-				opacity: 0.95,
-			};
 
 			return [
 				baseStyle,
 				borderStyle || {},
 				glowStyle || {},
-				pressedStyle || {},
 				style as ViewStyle,
 			].filter(Boolean) as ViewStyle[];
 		};
 
 		return (
 			<ButtonContext.Provider value={contextValue}>
-				<Pressable
+				<TouchableOpacity
 					ref={ref as never}
 					disabled={disabled}
 					onPress={handlePress}
 					hitSlop={pressableHitSlop}
+					activeOpacity={0.7}
 					className={rootClassName}
-					style={getButtonStyle}
+					style={getButtonStyle()}
 					accessibilityRole="button"
 					accessibilityState={{ disabled }}
 					{...props}
 				>
 					{renderChildren()}
-				</Pressable>
+				</TouchableOpacity>
 			</ButtonContext.Provider>
 		);
 	},

@@ -1116,28 +1116,31 @@ export default function ChatScreen() {
 				</View>
 			</KeyboardAvoidingView>
 
-			{/* Bottom sheets rendered outside KeyboardAvoidingView to avoid positioning conflicts */}
-			<AgentPicker
-				agents={agents}
-				currentAgentName={currentAgentName}
-				onAgentChange={handleAgentChange}
-				visible={showAgentPicker}
-				onClose={() => setShowAgentPicker(false)}
-			/>
+			{showAgentPicker && (
+				<AgentPicker
+					agents={agents}
+					currentAgentName={currentAgentName}
+					onAgentChange={handleAgentChange}
+					visible={showAgentPicker}
+					onClose={() => setShowAgentPicker(false)}
+				/>
+			)}
 
-			<ModelPicker
-				providers={enrichedProviders}
-				currentProviderId={currentProviderId}
-				currentModelId={currentModelId}
-				onModelChange={(providerId, modelId) => {
-					setCurrentProviderId(providerId);
-					setCurrentModelId(modelId);
-				}}
-				visible={showModelPicker}
-				onClose={() => setShowModelPicker(false)}
-				favoriteModels={favoriteModels}
-				onToggleFavorite={handleToggleFavorite}
-			/>
+			{showModelPicker && (
+				<ModelPicker
+					providers={enrichedProviders}
+					currentProviderId={currentProviderId}
+					currentModelId={currentModelId}
+					onModelChange={(providerId, modelId) => {
+						setCurrentProviderId(providerId);
+						setCurrentModelId(modelId);
+					}}
+					visible={showModelPicker}
+					onClose={() => setShowModelPicker(false)}
+					favoriteModels={favoriteModels}
+					onToggleFavorite={handleToggleFavorite}
+				/>
+			)}
 		</View>
 	);
 }

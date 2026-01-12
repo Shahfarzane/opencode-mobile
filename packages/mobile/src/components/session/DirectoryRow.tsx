@@ -1,6 +1,7 @@
 import { impactAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { useCallback } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import {
 	ArrowsMergeIcon,
 	FolderIcon,
@@ -50,53 +51,38 @@ export function DirectoryRow({
 
 	const displayDirectory = formatDirectoryName(directory);
 
-	const getPressedBg = (pressed: boolean) =>
-		pressed
-			? withOpacity(colors.foreground, OPACITY.hover)
-			: "transparent";
-
 	return (
 		<View className="flex-row items-center h-14 px-2">
-			<Pressable
+			<TouchableOpacity
 				onPress={handleChangeDirectory}
+				activeOpacity={0.7}
 				className="flex-1 flex-row items-center gap-2 py-1 rounded-md"
-				style={({ pressed }) => ({ backgroundColor: getPressedBg(pressed) })}
 			>
-				{({ pressed }) => (
-					<>
-						<View
-							className="w-8 h-8 rounded-md items-center justify-center"
-							style={{
-								backgroundColor: withOpacity(colors.foreground, OPACITY.light),
-							}}
-						>
-							<FolderIcon
-								color={
-									pressed
-										? colors.foreground
-										: withOpacity(colors.foreground, OPACITY.secondary)
-								}
-								size={18}
-							/>
-						</View>
-						<Text
-							className="flex-1"
-							style={[
-								typography.uiHeader,
-								fontStyle("600"),
-								{
-									color: pressed
-										? colors.foreground
-										: withOpacity(colors.foreground, OPACITY.secondary),
-								},
-							]}
-							numberOfLines={1}
-						>
-							{displayDirectory}
-						</Text>
-					</>
-				)}
-			</Pressable>
+				<View
+					className="w-8 h-8 rounded-md items-center justify-center"
+					style={{
+						backgroundColor: withOpacity(colors.foreground, OPACITY.light),
+					}}
+				>
+					<FolderIcon
+						color={withOpacity(colors.foreground, OPACITY.secondary)}
+						size={18}
+					/>
+				</View>
+				<Text
+					className="flex-1"
+					style={[
+						typography.uiHeader,
+						fontStyle("600"),
+						{
+							color: withOpacity(colors.foreground, OPACITY.secondary),
+						},
+					]}
+					numberOfLines={1}
+				>
+					{displayDirectory}
+				</Text>
+			</TouchableOpacity>
 
 			{isGitRepo && (onOpenWorktreeManager || onOpenMultiRunLauncher) && (
 				<View className="flex-row items-center">

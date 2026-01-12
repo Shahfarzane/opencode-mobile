@@ -175,9 +175,9 @@ export function FileAttachmentButton({
 	return (
 		<>
 			<IconButton
-				icon={<PlusCircleIcon size={20} color={colors.mutedForeground} />}
+				icon={<PlusCircleIcon size={20} color={colors.foreground} />}
 				variant="ghost"
-				size="icon-sm"
+				size="icon-md"
 				onPress={showOptions}
 				isDisabled={disabled}
 				accessibilityLabel="Attach file"

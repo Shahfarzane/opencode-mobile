@@ -2,11 +2,11 @@ import { impactAsync, selectionAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,
-	Pressable,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import type { Session } from "@/api/sessions";
 import {
 	CheckIcon,
@@ -173,20 +173,6 @@ export function SessionListItem({
 	const hasGitStats =
 		typeof additions === "number" || typeof deletions === "number";
 
-	const getBackgroundColor = (pressed: boolean) => {
-		if (isSelected) {
-			return isDark
-				? withOpacity(colors.accent, OPACITY.strong)
-				: withOpacity(colors.primary, OPACITY.emphasized);
-		}
-		if (pressed) {
-			return isDark
-				? withOpacity(colors.accent, OPACITY.scrim)
-				: withOpacity(colors.primary, OPACITY.hover);
-		}
-		return "transparent";
-	};
-
 	if (isEditing) {
 		return (
 			<View
@@ -230,17 +216,25 @@ export function SessionListItem({
 
 	return (
 		<>
-			<Pressable
-				onPress={handleSelect}
-				disabled={isMissingDirectory}
+			<View
 				className="flex-row items-center px-1.5 py-1 rounded-md mb-0.5 relative"
-				style={({ pressed }) => ({
+				style={{
 					paddingLeft: 6 + depth * 20,
-					backgroundColor: getBackgroundColor(pressed),
+					backgroundColor: isSelected
+						? isDark
+							? withOpacity(colors.accent, OPACITY.strong)
+							: withOpacity(colors.primary, OPACITY.emphasized)
+						: "transparent",
 					opacity: isMissingDirectory ? 0.75 : 1,
-				})}
+				}}
 			>
-				<View className="flex-1 min-w-0">
+				<TouchableOpacity
+					onPress={handleSelect}
+					disabled={isMissingDirectory}
+					activeOpacity={0.7}
+					className="flex-1 min-w-0"
+					style={{ borderRadius: 4 }}
+				>
 					<Animated.Text
 						className="mb-px"
 						style={[
@@ -258,7 +252,12 @@ export function SessionListItem({
 
 					<View className="flex-row items-center gap-2 flex-wrap">
 						{hasChildren && (
-							<Pressable onPress={handleToggleExpand} className="p-0.5" hitSlop={4}>
+							<TouchableOpacity
+								onPress={handleToggleExpand}
+								activeOpacity={0.7}
+								className="p-0.5"
+								hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
+							>
 								{isExpanded ? (
 									<ChevronDownIcon
 										color={withOpacity(colors.foreground, OPACITY.secondary)}
@@ -270,7 +269,7 @@ export function SessionListItem({
 										size={12}
 									/>
 								)}
-							</Pressable>
+							</TouchableOpacity>
 						)}
 
 						<Text style={[typography.micro, { color: withOpacity(colors.foreground, OPACITY.secondary) }]}>
@@ -339,22 +338,22 @@ export function SessionListItem({
 							</View>
 						)}
 					</View>
-				</View>
+				</TouchableOpacity>
 
-			<View ref={menuButtonRef}>
-				<IconButton
-					icon={
-						<MoreVerticalIcon
-							color={withOpacity(colors.foreground, OPACITY.secondary)}
-							size={18}
-						/>
-					}
-					variant="ghost"
-					size="icon-sm"
-					onPress={handleOpenMenu}
-					accessibilityLabel="Session options"
-				/>
-			</View>
+				<View ref={menuButtonRef}>
+					<IconButton
+						icon={
+							<MoreVerticalIcon
+								color={withOpacity(colors.foreground, OPACITY.secondary)}
+								size={18}
+							/>
+						}
+						variant="ghost"
+						size="icon-sm"
+						onPress={handleOpenMenu}
+						accessibilityLabel="Session options"
+					/>
+				</View>
 
 				{isSelected && (
 					<View
@@ -362,7 +361,7 @@ export function SessionListItem({
 						style={{ backgroundColor: colors.primary }}
 					/>
 				)}
-			</Pressable>
+			</View>
 
 		<SessionActionsMenu
 			visible={showMenu}
