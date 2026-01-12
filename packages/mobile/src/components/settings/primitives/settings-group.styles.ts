@@ -4,7 +4,7 @@ import { tv, combineStyles } from "@/lib/styles";
  * Settings group container styles
  */
 const container = tv({
-  base: "mb-4",
+  base: "mb-6",
   variants: {},
 });
 
@@ -21,7 +21,7 @@ const group = tv({
  * iOS HIG: Separator starts from left padding (16px)
  */
 const separator = tv({
-  base: "h-px bg-border ml-4",
+  base: "h-px bg-border",
   variants: {},
 });
 
@@ -29,7 +29,7 @@ const separator = tv({
  * Footer text styles
  */
 const footer = tv({
-  base: "mt-2 px-4 text-muted-foreground",
+  base: "mt-2 text-muted-foreground",
   variants: {},
 });
 

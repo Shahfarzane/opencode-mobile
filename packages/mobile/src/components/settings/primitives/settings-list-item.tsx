@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Fonts, FontSizes, Radius, SemanticSpacing, Spacing, useTheme } from "@/theme";
+import { MobileSizes, Radius, SemanticSpacing, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import type { SettingsListItemProps } from "./settings-list-item.types";
 
@@ -43,19 +43,19 @@ export function SettingsListItem({
       onPressOut={() => setIsPressed(false)}
       disabled={!onPress}
       style={{
-        marginHorizontal: Spacing[1.5],
-        marginVertical: Spacing[0.5],
+        backgroundColor: isPressed && onPress ? pressedBgColor : "transparent",
+        borderRadius: Radius.md,
+        minHeight: MobileSizes.buttonMd,
+        paddingHorizontal: Spacing[4],
+        paddingVertical: SemanticSpacing.gapSm,
       }}
     >
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: Spacing[1.5],
-          paddingVertical: Spacing[1],
-          borderRadius: Radius.md,
-          backgroundColor: isPressed && onPress ? pressedBgColor : "transparent",
-          minHeight: 36,
+          gap: SemanticSpacing.gapSm,
+          flex: 1,
         }}
       >
         {/* Left icon (e.g., provider logo) */}
@@ -73,12 +73,7 @@ export function SettingsListItem({
 
             {/* Title */}
             <Text
-              style={{
-                color: colors.foreground,
-                fontSize: FontSizes.uiLabel,
-                fontFamily: Fonts.regular,
-                flexShrink: 1,
-              }}
+              style={[typography.uiLabel, { color: colors.foreground, flexShrink: 1 }]}
               numberOfLines={1}
             >
               {title}
@@ -100,14 +95,7 @@ export function SettingsListItem({
                   flexShrink: 0,
                 }}
               >
-                <Text
-                  style={{
-                    color: colors.mutedForeground,
-                    fontSize: FontSizes.micro,
-                    fontFamily: Fonts.regular,
-                    lineHeight: FontSizes.micro,
-                  }}
-                >
+                <Text style={[typography.micro, { color: colors.mutedForeground }]}>
                   {badge}
                 </Text>
               </View>
@@ -117,13 +105,13 @@ export function SettingsListItem({
           {/* Subtitle/description */}
           {subtitle && (
             <Text
-              style={{
-                color: withOpacity(colors.mutedForeground, OPACITY.muted),
-                fontSize: FontSizes.micro,
-                fontFamily: Fonts.regular,
-                marginTop: 1,
-                lineHeight: FontSizes.micro * 1.3,
-              }}
+              style={[
+                typography.micro,
+                {
+                  color: withOpacity(colors.mutedForeground, OPACITY.muted),
+                  marginTop: 1,
+                },
+              ]}
               numberOfLines={1}
             >
               {subtitle}

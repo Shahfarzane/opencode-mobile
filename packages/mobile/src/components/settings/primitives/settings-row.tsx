@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import { ChevronRightIcon } from "@/components/icons";
-import { FontSizes, Fonts, SemanticSpacing, Spacing, useTheme } from "@/theme";
+import { MobileSizes, SemanticSpacing, typography, useTheme } from "@/theme";
 import type { SettingsRowProps } from "./settings-row.types";
 
 const DISPLAY_NAME = "SettingsRow";
@@ -42,30 +42,16 @@ export function SettingsRow(props: SettingsRowProps) {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        minHeight: 44,
-        paddingHorizontal: Spacing[4],
+        minHeight: MobileSizes.buttonMd,
+        paddingVertical: SemanticSpacing.gapSm,
       }}
     >
-      <Text
-        style={{
-          color: textColor,
-          fontSize: FontSizes.uiLabel,
-          fontFamily: Fonts.regular,
-        }}
-        numberOfLines={1}
-      >
+      <Text style={[typography.uiLabel, { color: textColor }]} numberOfLines={1}>
         {title}
       </Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: SemanticSpacing.gapSm }}>
         {value && !isToggle && (
-          <Text
-            style={{
-              color: colors.mutedForeground,
-              fontSize: FontSizes.uiLabel,
-              fontFamily: Fonts.regular,
-            }}
-            numberOfLines={1}
-          >
+          <Text style={[typography.uiLabel, { color: colors.mutedForeground }]} numberOfLines={1}>
             {value}
           </Text>
         )}

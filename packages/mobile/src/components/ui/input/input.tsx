@@ -1,6 +1,6 @@
 import { createContext, forwardRef, useContext, useState } from "react";
 import { Text, TextInput, View, type ViewStyle } from "react-native";
-import { typography, useTheme, FocusRingTokens } from "@/theme";
+import { DesktopSizes, FocusRingTokens, MobileSizes, SemanticSpacing, typography, useTheme } from "@/theme";
 import { withOpacity } from "@/utils/colors";
 import { inputStyles } from "./input.styles";
 import type {
@@ -111,6 +111,17 @@ const InputRoot = forwardRef<TextInput, InputProps>(
       className: inputClassName,
     });
 
+    const sizeHeights = {
+      sm: MobileSizes.inputSm,
+      md: MobileSizes.inputMd,
+      lg: MobileSizes.inputLg,
+      desktop: DesktopSizes.inputDefault,
+    } as const;
+
+    const paddingY = size === "desktop" ? DesktopSizes.inputPaddingY : MobileSizes.inputPaddingY;
+    const paddingX = size === "desktop" ? DesktopSizes.inputPaddingX : MobileSizes.inputPaddingX;
+    const minHeight = sizeHeights[size];
+
     const handleFocus = (e: Parameters<NonNullable<typeof onFocus>>[0]) => {
       setIsFocused(true);
       onFocus?.(e);
@@ -147,9 +158,12 @@ const InputRoot = forwardRef<TextInput, InputProps>(
             <InputLabel size={size}>{label}</InputLabel>
           )}
 
-          <View className={containerClassName} style={[focusRingStyle, containerTone]}>
+          <View
+            className={containerClassName}
+            style={[focusRingStyle, containerTone, { minHeight }]}
+          >
             {prefix && (
-              <View className={prefixClassName}>
+              <View className={prefixClassName} style={{ minHeight }}>
                 <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
                   {prefix}
                 </Text>
@@ -171,7 +185,12 @@ const InputRoot = forwardRef<TextInput, InputProps>(
               className={inputClassName_}
               style={[
                 typography.body,
-                { color: colors.foreground },
+                {
+                  color: colors.foreground,
+                  paddingHorizontal: paddingX,
+                  paddingVertical: paddingY,
+                  minHeight,
+                },
                 multilineStyle,
                 inputStyle,
               ]}
@@ -218,7 +237,11 @@ function InputLabel({
   return (
     <Text
       className={labelClassName}
-      style={[typography.uiLabel, { color: colors.foreground }, style]}
+      style={[
+        typography.uiLabel,
+        { color: colors.foreground, marginBottom: SemanticSpacing.gapSm },
+        style,
+      ]}
     >
       {children}
     </Text>
@@ -248,7 +271,10 @@ function InputHelperText({
       className={helperClassName}
       style={[
         typography.micro,
-        { color: isError ? colors.destructive : colors.mutedForeground },
+        {
+          color: isError ? colors.destructive : colors.mutedForeground,
+          marginTop: SemanticSpacing.gapXs,
+        },
         style,
       ]}
     >

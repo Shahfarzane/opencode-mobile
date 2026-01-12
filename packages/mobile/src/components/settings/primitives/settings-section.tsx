@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Fonts, typography, useTheme } from "@/theme";
+import { Fonts, SemanticSpacing, typography, useTheme } from "@/theme";
 import { settingsSectionStyles } from "./settings-section.styles";
 import type { SettingsSectionProps } from "./settings-section.types";
 
@@ -33,21 +33,31 @@ export function SettingsSection({
   const contentClassName = settingsSectionStyles.content({});
 
   return (
-    <View className={containerClassName} style={style}>
+    <View
+      className={containerClassName}
+      style={[{ marginTop: isFirst ? 0 : SemanticSpacing.gapXl }, style]}
+    >
       {showDivider && !isFirst && (
         <View
           className={dividerClassName}
-          style={{ backgroundColor: colors.border }}
+          style={{ backgroundColor: colors.border, marginBottom: SemanticSpacing.gapLg }}
         />
       )}
       {(title || description) && (
-        <View className={headerContainerClassName}>
+        <View
+          className={headerContainerClassName}
+          style={{ marginBottom: SemanticSpacing.gapSm }}
+        >
           {title && (
             <Text
               className={titleClassName}
               style={[
                 typography.uiLabel,
-                { color: colors.foreground, fontFamily: Fonts.semiBold },
+                {
+                  color: colors.foreground,
+                  fontFamily: Fonts.semiBold,
+                  marginBottom: SemanticSpacing.gapXs,
+                },
               ]}
             >
               {title}

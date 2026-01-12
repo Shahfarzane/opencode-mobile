@@ -55,7 +55,7 @@ const scrollView = tv({
  * Scroll content styles
  */
 const scrollContent = tv({
-  base: "pt-5 px-4",
+  base: "pt-4 px-4",
   variants: {},
 });
 
@@ -63,7 +63,7 @@ const scrollContent = tv({
  * Non-scrollable content styles
  */
 const content = tv({
-  base: "flex-1 pt-5 px-4",
+  base: "flex-1 pt-4 px-4",
   variants: {},
 });
 

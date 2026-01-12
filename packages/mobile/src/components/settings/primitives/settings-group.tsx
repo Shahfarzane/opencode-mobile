@@ -1,4 +1,5 @@
 import React from "react";
+import { Children } from "react";
 import { Text, View } from "react-native";
 import { FixedLineHeights, FontSizes, Fonts, useTheme } from "@/theme";
 import { settingsGroupStyles } from "./settings-group.styles";
@@ -24,21 +25,34 @@ export function SettingsGroup({
 }: SettingsGroupProps) {
   const { colors } = useTheme();
 
-  const childArray = React.Children.toArray(children).filter(Boolean);
+  const childArray = Children.toArray(children).filter(Boolean);
+
+  const content = childArray.flatMap((child, index) => {
+    if (index === childArray.length - 1) return [child];
+    const key = typeof child === "object" && child !== null && "key" in child
+      ? `separator-${String(child.key)}`
+      : `separator-${index}`;
+    return [
+      child,
+      <View
+        key={key}
+        className={settingsGroupStyles.separator({})}
+        style={{ backgroundColor: colors.border }}
+      />,
+    ];
+  });
 
   return (
     <View className={settingsGroupStyles.container({ className })} style={style}>
-      <View className={settingsGroupStyles.group({})}>
-        {childArray}
-      </View>
+      <View className={settingsGroupStyles.group({})}>{content}</View>
       {footer && (
         <Text
           className={settingsGroupStyles.footer({})}
           style={{
             color: colors.mutedForeground,
-            fontSize: FontSizes.uiLabel, // 14px - aligned with PWA
+            fontSize: FontSizes.uiLabel,
             fontFamily: Fonts.regular,
-            lineHeight: FixedLineHeights.ui, // 16px
+            lineHeight: FixedLineHeights.ui,
           }}
         >
           {footer}

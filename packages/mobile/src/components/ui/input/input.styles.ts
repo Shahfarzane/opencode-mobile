@@ -83,7 +83,7 @@ const input = tv({
  * Label styles
  */
 const label = tv({
-  base: "mb-2 text-foreground",
+  base: "text-foreground",
   variants: {
     size: {
       sm: "text-xs",
@@ -101,7 +101,7 @@ const label = tv({
  * Helper text styles
  */
 const helperText = tv({
-  base: "mt-1.5",
+  base: "",
   variants: {
     isError: {
       true: "text-destructive",

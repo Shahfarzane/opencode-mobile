@@ -1,6 +1,6 @@
 import { createContext, forwardRef, useContext, useState } from "react";
 import { Text, TextInput, View, type ViewStyle } from "react-native";
-import { typography, useTheme, FocusRingTokens } from "@/theme";
+import { FocusRingTokens, MobileSizes, SemanticSpacing, typography, useTheme } from "@/theme";
 import { withOpacity } from "@/utils/colors";
 import { textFieldStyles } from "./textfield.styles";
 import type {
@@ -98,6 +98,16 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
     const containerClassName = textFieldStyles.container({ state, variant, size, className });
     const inputClassName_ = textFieldStyles.input({ size, variant, className: inputClassName });
 
+    const sizeHeights = {
+      sm: MobileSizes.inputSm,
+      md: MobileSizes.inputMd,
+      lg: MobileSizes.inputLg,
+    } as const;
+
+    const paddingY = MobileSizes.inputPaddingY;
+    const paddingX = MobileSizes.inputPaddingX;
+    const minHeight = sizeHeights[size];
+
     const handleFocus = (e: Parameters<NonNullable<typeof onFocus>>[0]) => {
       setIsFocused(true);
       onFocus?.(e);
@@ -125,7 +135,10 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
             <TextFieldLabel size={size}>{label}</TextFieldLabel>
           )}
 
-          <View className={containerClassName} style={[focusRingStyle, containerTone, containerStyle]}>
+          <View
+            className={containerClassName}
+            style={[focusRingStyle, containerTone, containerStyle, { minHeight }]}
+          >
             <TextInput
               ref={ref}
               editable={editable}
@@ -136,7 +149,13 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
               className={inputClassName_}
               style={[
                 typography.body,
-                { color: colors.foreground, textAlignVertical: multiline ? "top" : "center" },
+                {
+                  color: colors.foreground,
+                  textAlignVertical: multiline ? "top" : "center",
+                  paddingHorizontal: paddingX,
+                  paddingVertical: paddingY,
+                  minHeight,
+                },
                 inputStyle,
               ]}
               {...props}
@@ -175,7 +194,10 @@ function TextFieldLabel({ children, size: sizeProp, className }: TextFieldLabelP
   return (
     <Text
       className={labelClassName}
-      style={[typography.uiLabel, { color: colors.foreground }]}
+      style={[
+        typography.uiLabel,
+        { color: colors.foreground, marginBottom: SemanticSpacing.gapSm },
+      ]}
     >
       {children}
     </Text>
@@ -211,7 +233,10 @@ function TextFieldHelperText({
       className={helperClassName}
       style={[
         typography.micro,
-        { color: isError ? colors.destructive : colors.mutedForeground },
+        {
+          color: isError ? colors.destructive : colors.mutedForeground,
+          marginTop: SemanticSpacing.gapXs,
+        },
       ]}
     >
       {children}
