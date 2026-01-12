@@ -66,7 +66,10 @@ export function WorkspaceGroup({
 					className="flex-1"
 					style={[
 						typography.micro,
-						{ color: colors.mutedForeground, fontFamily: Fonts.medium },
+						{
+							color: withOpacity(colors.foreground, OPACITY.secondary),
+							fontFamily: Fonts.medium,
+						},
 					]}
 					numberOfLines={1}
 				>
@@ -83,7 +86,7 @@ export function WorkspaceGroup({
 					})}
 					hitSlop={8}
 				>
-					<PlusIcon color={withOpacity(colors.mutedForeground, OPACITY.secondary)} size={18} />
+					<PlusIcon color={withOpacity(colors.foreground, OPACITY.secondary)} size={18} />
 				</Pressable>
 			</Pressable>
 
@@ -102,8 +105,8 @@ export function WorkspaceGroup({
 									style={[
 										typography.micro,
 										{
-											color: withOpacity(colors.mutedForeground, OPACITY.secondary),
-											fontSize: FontSizes.xs,
+									color: withOpacity(colors.foreground, OPACITY.secondary),
+									fontSize: FontSizes.xs,
 										},
 									]}
 								>
@@ -117,7 +120,10 @@ export function WorkspaceGroup({
 					{sessionCount === 0 && (
 						<Text
 							className="py-1 px-1"
-							style={[typography.micro, { color: colors.mutedForeground }]}
+							style={[
+								typography.micro,
+								{ color: withOpacity(colors.foreground, OPACITY.secondary) },
+							]}
 						>
 							No sessions in this workspace yet.
 						</Text>

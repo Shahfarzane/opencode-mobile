@@ -16,6 +16,7 @@ import {
 	subscribeToNetworkStatus,
 } from "@/lib/sessionSync";
 import { fontStyle, typography, useTheme } from "@/theme";
+import { OPACITY, withOpacity } from "@/utils/colors";
 import { DirectoryRow } from "./DirectoryRow";
 import { type SessionCacheInfo, SessionListItem } from "./SessionListItem";
 import { SheetHeader } from "./SheetHeader";
@@ -109,6 +110,27 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		const snapPoints = useMemo(() => {
 			return ["50%", "90%"];
 		}, []);
+
+		const sheetBackgroundStyle = useMemo(
+			() => ({
+				backgroundColor: colors.card,
+				borderColor: withOpacity(colors.border, OPACITY.border),
+				borderWidth: 1,
+				borderRadius: 24,
+				overflow: "hidden" as const,
+			}),
+			[colors],
+		);
+
+		const sheetHandleStyle = useMemo(
+			() => ({
+				backgroundColor: withOpacity(colors.mutedForeground, OPACITY.secondary),
+				width: 48,
+				height: 5,
+				borderRadius: 999,
+			}),
+			[colors],
+		);
 
 		const sortedSessions = useMemo(() => {
 			return [...sessions].sort((a, b) => {
@@ -407,8 +429,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				snapPoints={snapPoints}
 				enablePanDownToClose={true}
 				topInset={insets.top}
-				backgroundStyle={{ backgroundColor: colors.background }}
-				handleIndicatorStyle={{ backgroundColor: colors.mutedForeground }}
+				backgroundStyle={sheetBackgroundStyle}
+				handleIndicatorStyle={sheetHandleStyle}
 				backdropComponent={renderBackdrop}
 				style={{ zIndex: 1000, elevation: 1000 }}
 			>
@@ -450,24 +472,33 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				>
 					{isLoading ? (
 						<View className="items-center py-6 gap-1">
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								Loading sessions...
-							</Text>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: withOpacity(colors.foreground, OPACITY.secondary) },
+							]}
+						>
+							Loading sessions...
+						</Text>
 						</View>
 					) : sessions.length === 0 ? (
 						<View className="items-center py-6 gap-1">
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								No sessions yet
-							</Text>
-							<Text
-								style={[typography.micro, { color: colors.mutedForeground }]}
-							>
-								Create your first session to start coding.
-							</Text>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: withOpacity(colors.foreground, OPACITY.secondary) },
+							]}
+						>
+							No sessions yet
+						</Text>
+						<Text
+							style={[
+								typography.micro,
+								{ color: withOpacity(colors.foreground, OPACITY.secondary) },
+							]}
+						>
+							Create your first session to start coding.
+						</Text>
 						</View>
 					) : (
 						groupedSessions.map((group) => {

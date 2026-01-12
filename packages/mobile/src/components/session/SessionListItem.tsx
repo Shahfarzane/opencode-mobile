@@ -260,14 +260,20 @@ export function SessionListItem({
 						{hasChildren && (
 							<Pressable onPress={handleToggleExpand} className="p-0.5" hitSlop={4}>
 								{isExpanded ? (
-									<ChevronDownIcon color={withOpacity(colors.mutedForeground, OPACITY.muted)} size={12} />
+									<ChevronDownIcon
+										color={withOpacity(colors.foreground, OPACITY.secondary)}
+										size={12}
+									/>
 								) : (
-									<ChevronRightIcon color={withOpacity(colors.mutedForeground, OPACITY.muted)} size={12} />
+									<ChevronRightIcon
+										color={withOpacity(colors.foreground, OPACITY.secondary)}
+										size={12}
+									/>
 								)}
 							</Pressable>
 						)}
 
-						<Text style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.muted) }]}>
+						<Text style={[typography.micro, { color: withOpacity(colors.foreground, OPACITY.secondary) }]}>
 							{formatDateLabel(timestamp)}
 						</Text>
 
@@ -309,7 +315,7 @@ export function SessionListItem({
 						)}
 
 						{hasChildren && (
-							<Text style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.muted) }]}>
+							<Text style={[typography.micro, { color: withOpacity(colors.foreground, OPACITY.secondary) }]}>
 								{childCount} {childCount === 1 ? "task" : "tasks"}
 							</Text>
 						)}
@@ -337,7 +343,12 @@ export function SessionListItem({
 
 			<View ref={menuButtonRef}>
 				<IconButton
-					icon={<MoreVerticalIcon color={colors.mutedForeground} size={18} />}
+					icon={
+						<MoreVerticalIcon
+							color={withOpacity(colors.foreground, OPACITY.secondary)}
+							size={18}
+						/>
+					}
 					variant="ghost"
 					size="icon-sm"
 					onPress={handleOpenMenu}

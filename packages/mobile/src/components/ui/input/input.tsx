@@ -1,6 +1,14 @@
 import { createContext, forwardRef, useContext, useState } from "react";
 import { Text, TextInput, View, type ViewStyle } from "react-native";
-import { DesktopSizes, FocusRingTokens, MobileSizes, SemanticSpacing, typography, useTheme } from "@/theme";
+import {
+  DesktopSizes,
+  FocusRingTokens,
+  InputTokens,
+  MobileSizes,
+  SemanticSpacing,
+  typography,
+  useTheme,
+} from "@/theme";
 import { withOpacity } from "@/utils/colors";
 import { inputStyles } from "./input.styles";
 import type {
@@ -68,7 +76,7 @@ const InputRoot = forwardRef<TextInput, InputProps>(
     },
     ref
   ) => {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
     const hasError = !!error;
@@ -85,7 +93,9 @@ const InputRoot = forwardRef<TextInput, InputProps>(
     const state = getState();
 
     const containerTone: ViewStyle = {
-      backgroundColor: withOpacity(colors.card, state === "focused" ? 0.94 : 0.82),
+      backgroundColor: isDark
+        ? withOpacity(colors.input, InputTokens.darkBackgroundOpacity)
+        : "transparent",
       borderColor: hasError ? colors.destructive : state === "focused" ? colors.primary : colors.border,
       shadowColor: withOpacity(colors.foreground, 0.08),
       shadowOffset: { width: 0, height: state === "focused" ? 10 : 6 },
@@ -93,6 +103,13 @@ const InputRoot = forwardRef<TextInput, InputProps>(
       shadowRadius: state === "focused" ? 14 : 9,
       elevation: 3,
     };
+
+    const inputTypography =
+      size === "sm" || size === "desktop"
+        ? typography.bodySmall
+        : size === "lg"
+          ? typography.uiHeader
+          : typography.body;
 
     const contextValue: InputContextValue = {
       size,
@@ -184,7 +201,7 @@ const InputRoot = forwardRef<TextInput, InputProps>(
               placeholderTextColor={colors.mutedForeground}
               className={inputClassName_}
               style={[
-                typography.body,
+                inputTypography,
                 {
                   color: colors.foreground,
                   paddingHorizontal: paddingX,

@@ -65,25 +65,33 @@ export function DirectoryRow({
 				{({ pressed }) => (
 					<>
 						<View
-							className="w-8 h-8 rounded-md items-center justify-center"
-							style={{
-								backgroundColor: withOpacity(colors.foreground, OPACITY.hover),
-							}}
-						>
-							<FolderIcon
-								color={pressed ? colors.foreground : colors.mutedForeground}
-								size={18}
-							/>
-						</View>
-						<Text
-							className="flex-1"
-							style={[
-								typography.uiHeader,
-								fontStyle("600"),
-								{ color: pressed ? colors.foreground : colors.mutedForeground },
-							]}
-							numberOfLines={1}
-						>
+						className="w-8 h-8 rounded-md items-center justify-center"
+						style={{
+							backgroundColor: withOpacity(colors.foreground, OPACITY.light),
+						}}
+					>
+						<FolderIcon
+							color={
+								pressed
+									? colors.foreground
+									: withOpacity(colors.foreground, OPACITY.secondary)
+							}
+							size={18}
+						/>
+					</View>
+					<Text
+						className="flex-1"
+						style={[
+							typography.uiHeader,
+							fontStyle("600"),
+							{
+								color: pressed
+									? colors.foreground
+									: withOpacity(colors.foreground, OPACITY.secondary),
+							},
+						]}
+						numberOfLines={1}
+					>
 							{displayDirectory}
 						</Text>
 					</>
@@ -94,7 +102,12 @@ export function DirectoryRow({
 				<View className="flex-row items-center">
 					{onOpenWorktreeManager && (
 						<IconButton
-							icon={<GitBranchIcon color={colors.mutedForeground} size={18} />}
+							icon={
+								<GitBranchIcon
+									color={withOpacity(colors.foreground, OPACITY.secondary)}
+									size={18}
+								/>
+							}
 							variant="ghost"
 							size="icon-sm"
 							onPress={handleOpenWorktreeManager}

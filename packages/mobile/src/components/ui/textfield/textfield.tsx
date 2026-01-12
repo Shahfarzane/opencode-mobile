@@ -1,6 +1,13 @@
 import { createContext, forwardRef, useContext, useState } from "react";
 import { Text, TextInput, View, type ViewStyle } from "react-native";
-import { FocusRingTokens, MobileSizes, SemanticSpacing, typography, useTheme } from "@/theme";
+import {
+  FocusRingTokens,
+  InputTokens,
+  MobileSizes,
+  SemanticSpacing,
+  typography,
+  useTheme,
+} from "@/theme";
 import { withOpacity } from "@/utils/colors";
 import { textFieldStyles } from "./textfield.styles";
 import type {
@@ -62,7 +69,7 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
     },
     ref
   ) => {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
     const hasError = !!error;
@@ -79,7 +86,9 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
     const state = getState();
 
     const containerTone: ViewStyle = {
-      backgroundColor: withOpacity(colors.card, state === "focused" ? 0.94 : 0.86),
+      backgroundColor: isDark
+        ? withOpacity(colors.input, InputTokens.darkBackgroundOpacity)
+        : "transparent",
       borderColor: hasError ? colors.destructive : state === "focused" ? colors.primary : colors.border,
       shadowColor: withOpacity(colors.foreground, 0.08),
       shadowOffset: { width: 0, height: state === "focused" ? 12 : 6 },
@@ -87,6 +96,13 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
       shadowRadius: state === "focused" ? 18 : 10,
       elevation: 4,
     };
+
+    const textFieldTypography =
+      size === "sm"
+        ? typography.bodySmall
+        : size === "lg"
+          ? typography.uiHeader
+          : typography.body;
 
     const contextValue: TextFieldContextValue = {
       size,
@@ -148,7 +164,7 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
               placeholderTextColor={colors.mutedForeground}
               className={inputClassName_}
               style={[
-                typography.body,
+                textFieldTypography,
                 {
                   color: colors.foreground,
                   textAlignVertical: multiline ? "top" : "center",

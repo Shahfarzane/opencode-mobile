@@ -63,9 +63,9 @@ const label = tv({
   base: "text-foreground",
   variants: {
     size: {
-      sm: "text-xs",
-      md: "text-sm",
-      lg: "text-base",
+      sm: "",
+      md: "",
+      lg: "",
     },
   },
   defaultVariants: {
@@ -84,9 +84,9 @@ const helperText = tv({
       false: "text-muted-foreground",
     },
     size: {
-      sm: "text-xs",
-      md: "text-xs",
-      lg: "text-sm",
+      sm: "",
+      md: "",
+      lg: "",
     },
   },
   defaultVariants: {
