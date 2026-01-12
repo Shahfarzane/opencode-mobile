@@ -105,8 +105,9 @@ export default function ManualScreen() {
 
 	return (
 		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
+			behavior={Platform.OS === "ios" ? "position" : "height"}
 			style={[styles.container, { backgroundColor: colors.background }]}
+			keyboardVerticalOffset={insets.top + Spacing.sm}
 		>
 			<ScrollView
 				style={styles.scrollView}

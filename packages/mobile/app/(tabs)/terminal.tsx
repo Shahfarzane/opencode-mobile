@@ -400,7 +400,7 @@ export default function TerminalScreen() {
 	// PWA-style terminal layout
 	return (
 		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
+			behavior={Platform.OS === "ios" ? "position" : "height"}
 			style={[styles.container, { backgroundColor: colors.background }]}
 			keyboardVerticalOffset={keyboardOffset}
 		>

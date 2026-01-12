@@ -117,7 +117,12 @@ export function DirectoryRow({
 
 					{onOpenMultiRunLauncher && (
 						<IconButton
-							icon={<ArrowsMergeIcon color={colors.mutedForeground} size={18} />}
+							icon={
+								<ArrowsMergeIcon
+									color={withOpacity(colors.foreground, OPACITY.secondary)}
+									size={18}
+								/>
+							}
 							variant="ghost"
 							size="icon-sm"
 							onPress={handleOpenMultiRunLauncher}

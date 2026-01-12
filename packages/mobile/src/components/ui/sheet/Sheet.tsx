@@ -1,14 +1,15 @@
 import BottomSheet, {
   BottomSheetBackdrop,
+  type BottomSheetBackdropProps,
   BottomSheetScrollView,
   BottomSheetTextInput,
   BottomSheetView,
+  type BottomSheetProps,
   useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
-import type { BottomSheetBackdropProps, BottomSheetProps } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
-import { type ViewStyle } from "react-native";
+import type { ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimationTokens, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";

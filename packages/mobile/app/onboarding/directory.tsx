@@ -383,9 +383,9 @@ export default function DirectoryScreen() {
 
 	return (
 		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
+			behavior={Platform.OS === "ios" ? "position" : "height"}
 			style={styles.container}
-			keyboardVerticalOffset={0}
+			keyboardVerticalOffset={insets.top + Spacing.sm}
 		>
 			<View
 				style={[

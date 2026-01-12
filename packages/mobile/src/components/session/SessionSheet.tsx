@@ -2,6 +2,7 @@ import BottomSheet, {
 	BottomSheetBackdrop,
 	type BottomSheetBackdropProps,
 	BottomSheetScrollView,
+	useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
@@ -15,7 +16,7 @@ import {
 	type NetworkStatus,
 	subscribeToNetworkStatus,
 } from "@/lib/sessionSync";
-import { fontStyle, typography, useTheme } from "@/theme";
+import { AnimationTokens, RadiusTokens, fontStyle, typography, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
 import { DirectoryRow } from "./DirectoryRow";
 import { type SessionCacheInfo, SessionListItem } from "./SessionListItem";
@@ -116,7 +117,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				backgroundColor: colors.card,
 				borderColor: withOpacity(colors.border, OPACITY.border),
 				borderWidth: 1,
-				borderRadius: 24,
+				borderRadius: RadiusTokens["3xl"],
 				overflow: "hidden" as const,
 			}),
 			[colors],
@@ -131,6 +132,11 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			}),
 			[colors],
 		);
+
+		const animationConfigs = useBottomSheetSpringConfigs({
+			...AnimationTokens.sheetSpring,
+			overshootClamping: true,
+		});
 
 		const sortedSessions = useMemo(() => {
 			return [...sessions].sort((a, b) => {
@@ -429,6 +435,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				snapPoints={snapPoints}
 				enablePanDownToClose={true}
 				topInset={insets.top}
+				animationConfigs={animationConfigs}
 				backgroundStyle={sheetBackgroundStyle}
 				handleIndicatorStyle={sheetHandleStyle}
 				backdropComponent={renderBackdrop}

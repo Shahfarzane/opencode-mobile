@@ -120,8 +120,8 @@ const TextFieldRoot = forwardRef<TextInput, TextFieldProps>(
       lg: MobileSizes.inputLg,
     } as const;
 
-    const paddingY = MobileSizes.inputPaddingY;
-    const paddingX = MobileSizes.inputPaddingX;
+    const paddingY = variant === "ghost" ? 0 : MobileSizes.inputPaddingY;
+    const paddingX = variant === "ghost" ? 0 : MobileSizes.inputPaddingX;
     const minHeight = sizeHeights[size];
 
     const handleFocus = (e: Parameters<NonNullable<typeof onFocus>>[0]) => {
