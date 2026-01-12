@@ -140,7 +140,7 @@ export default function ManualScreen() {
 				</Text>
 
 				{/* Connection type tabs */}
-				<View style={[styles.tabs, { borderColor: colors.border + "66" }]}>
+				<View style={[styles.tabs, { borderColor: `${colors.border}66` }]}>
 					{(Object.keys(CONFIGS) as ConnectionType[]).map((type) => {
 						const isActive = connectionType === type;
 						return (
@@ -152,7 +152,7 @@ export default function ManualScreen() {
 								}}
 								style={[
 									styles.tab,
-									isActive && { backgroundColor: colors.primary + "1A" },
+									isActive && { backgroundColor: `${colors.primary}1A` },
 								]}
 							>
 								<Text

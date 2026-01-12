@@ -70,7 +70,7 @@ function DirectoryRow({ item, onPress, isPinned, onTogglePin }: DirectoryRowProp
 			}}
 			style={({ pressed }) => [
 				styles.row,
-				{ borderColor: colors.border + "66" },
+				{ borderColor: `${colors.border}66` },
 				pressed && { opacity: 0.7 },
 			]}
 		>
@@ -108,7 +108,7 @@ function PinnedDirectoryRow({ path, homePath, onPress, onUnpin }: PinnedDirector
 	const { colors } = useTheme();
 
 	const displayPath = homePath && path.startsWith(homePath)
-		? "~" + path.slice(homePath.length)
+		? `~${path.slice(homePath.length)}`
 		: path;
 
 	const name = path.split("/").pop() || path;
@@ -121,7 +121,7 @@ function PinnedDirectoryRow({ path, homePath, onPress, onUnpin }: PinnedDirector
 			}}
 			style={({ pressed }) => [
 				styles.pinnedRow,
-				{ borderColor: colors.border + "66", backgroundColor: colors.card },
+				{ borderColor: `${colors.border}66`, backgroundColor: colors.card },
 				pressed && { opacity: 0.7 },
 			]}
 		>
@@ -272,7 +272,7 @@ export default function DirectoryScreen() {
 	const handlePathSubmit = useCallback(() => {
 		const path = pathInput.trim();
 		if (path) {
-			const expanded = path.startsWith("~") && homePath ? homePath + path.slice(1) : path;
+			const expanded = path.startsWith("~") && homePath ? `${homePath}${path.slice(1)}` : path;
 			loadDirectory(expanded);
 		}
 	}, [pathInput, homePath, loadDirectory]);
@@ -281,7 +281,7 @@ export default function DirectoryScreen() {
 
 	const displayPath =
 		homePath && currentPath.startsWith(homePath)
-			? "~" + currentPath.slice(homePath.length)
+			? `~${currentPath.slice(homePath.length)}`
 			: currentPath;
 
 	// Memoize header component to avoid re-renders
@@ -346,7 +346,7 @@ export default function DirectoryScreen() {
 					onPress={handleGoUp}
 					style={({ pressed }) => [
 						styles.goUpRow,
-						{ borderColor: colors.border + "66" },
+						{ borderColor: `${colors.border}66` },
 						pressed && { opacity: 0.7 },
 					]}
 				>
@@ -427,7 +427,7 @@ export default function DirectoryScreen() {
 					style={[
 						styles.bottomBar,
 						{
-							borderTopColor: colors.border + "66",
+							borderTopColor: `${colors.border}66`,
 							backgroundColor: colors.background,
 							paddingBottom: insets.bottom + 24,
 						},

@@ -527,7 +527,7 @@ export default function TerminalScreen() {
 								onSubmitEditing={() => {
 									const value = inputValueRef.current;
 									if (value) {
-										sendInput(value + "\n");
+										sendInput(`${value}\n`);
 										inputRef.current?.clear();
 										inputValueRef.current = "";
 									}

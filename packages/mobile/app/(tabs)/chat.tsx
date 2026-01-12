@@ -310,7 +310,7 @@ export default function ChatScreen() {
 				let textContent = "";
 				for (const p of partsArray) {
 					if (p.type === "text") {
-						textContent += p.content || p.text || "";
+						textContent = `${textContent}${p.content || p.text || ""}`;
 					}
 				}
 
@@ -382,7 +382,7 @@ export default function ChatScreen() {
 				let textContent = "";
 				for (const p of partsArray) {
 					if (p.type === "text") {
-						textContent += p.content || p.text || "";
+						textContent = `${textContent}${p.content || p.text || ""}`;
 					}
 				}
 
@@ -750,7 +750,7 @@ export default function ChatScreen() {
 								parts.push(converted);
 
 								if (part.type === "text") {
-									content += part.text || part.content || "";
+									content = `${content}${part.text || part.content || ""}`;
 								}
 							}
 						}

@@ -1,4 +1,4 @@
-import * as Haptics from "expo-haptics";
+import { impactAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 import {
@@ -34,17 +34,17 @@ export function DirectoryRow({
 	const { colors } = useTheme();
 
 	const handleChangeDirectory = useCallback(async () => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		await impactAsync(ImpactFeedbackStyle.Light);
 		onChangeDirectory?.();
 	}, [onChangeDirectory]);
 
 	const handleOpenWorktreeManager = useCallback(async () => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		await impactAsync(ImpactFeedbackStyle.Light);
 		onOpenWorktreeManager?.();
 	}, [onOpenWorktreeManager]);
 
 	const handleOpenMultiRunLauncher = useCallback(async () => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		await impactAsync(ImpactFeedbackStyle.Light);
 		onOpenMultiRunLauncher?.();
 	}, [onOpenMultiRunLauncher]);
 

@@ -1,4 +1,4 @@
-import * as Haptics from "expo-haptics";
+import { impactAsync, selectionAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 import { PlusIcon } from "@/components/icons";
@@ -33,17 +33,17 @@ export function WorkspaceGroup({
 	const { colors } = useTheme();
 
 	const handleToggleCollapse = useCallback(async () => {
-		await Haptics.selectionAsync();
+		await selectionAsync();
 		onToggleCollapse();
 	}, [onToggleCollapse]);
 
 	const handleCreateSession = useCallback(async () => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		await impactAsync(ImpactFeedbackStyle.Light);
 		onCreateSession();
 	}, [onCreateSession]);
 
 	const handleToggleShowMore = useCallback(async () => {
-		await Haptics.selectionAsync();
+		await selectionAsync();
 		showMoreButton?.onToggle();
 	}, [showMoreButton]);
 

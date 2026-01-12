@@ -1,4 +1,4 @@
-import * as Haptics from "expo-haptics";
+import { impactAsync, selectionAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,
@@ -129,12 +129,12 @@ export function SessionListItem({
 
 	const handleSelect = useCallback(async () => {
 		if (isMissingDirectory) return;
-		await Haptics.selectionAsync();
+		await selectionAsync();
 		onSelect();
 	}, [isMissingDirectory, onSelect]);
 
 	const handleOpenMenu = useCallback(async () => {
-		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+		await impactAsync(ImpactFeedbackStyle.Medium);
 		menuButtonRef.current?.measureInWindow((x, y, width, height) => {
 			setMenuAnchor({ x: x + width, y: y + height });
 			setShowMenu(true);
@@ -160,7 +160,7 @@ export function SessionListItem({
 	}, []);
 
 	const handleToggleExpand = useCallback(async () => {
-		await Haptics.selectionAsync();
+		await selectionAsync();
 		onToggleExpand?.();
 	}, [onToggleExpand]);
 
