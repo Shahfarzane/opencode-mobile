@@ -2,16 +2,23 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import { Button } from "@/components/ui";
+import {
+	ActivityIndicator,
+	Alert,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraIcon, ChevronLeftIcon } from "@/components/icons";
+import { Button } from "@/components/ui";
 import { useServerConnection } from "@/hooks/useServerConnection";
 import { Spacing, typography, useTheme } from "../../src/theme";
 
 function BackButton({ light }: { light?: boolean }) {
 	const { colors } = useTheme();
-	const color = light ? colors.primaryForeground : colors.foreground;
+	const color = light ? "#fff" : colors.foreground;
 
 	return (
 		<Pressable
@@ -62,7 +69,10 @@ export default function ScanScreen() {
 
 		try {
 			if (!data.startsWith("openchamber://pair")) {
-				Alert.alert("Invalid QR Code", "Please scan a valid OpenChamber pairing QR code");
+				Alert.alert(
+					"Invalid QR Code",
+					"Please scan a valid OpenChamber pairing QR code",
+				);
 				setScanned(false);
 				return;
 			}
@@ -92,17 +102,33 @@ export default function ScanScreen() {
 	if (!permission.granted) {
 		return (
 			<View style={[styles.container, { backgroundColor: colors.background }]}>
-				<View style={{ paddingTop: insets.top + Spacing.md, paddingHorizontal: Spacing.lg }}>
+				<View
+					style={{
+						paddingTop: insets.top + Spacing.md,
+						paddingHorizontal: Spacing.lg,
+					}}
+				>
 					<BackButton />
 				</View>
 
 				<View style={styles.permissionContent}>
 					<CameraIcon size={48} color={colors.mutedForeground} />
 
-					<Text style={[typography.h2, { color: colors.foreground, marginTop: 24, textAlign: "center" }]}>
+					<Text
+						style={[
+							typography.h2,
+							{ color: colors.foreground, marginTop: 24, textAlign: "center" },
+						]}
+					>
 						Camera Access Required
 					</Text>
-					<Text style={[typography.meta, styles.permissionText, { color: colors.mutedForeground }]}>
+					<Text
+						style={[
+							typography.meta,
+							styles.permissionText,
+							{ color: colors.mutedForeground },
+						]}
+					>
 						OpenChamber needs camera access to scan QR codes for pairing
 					</Text>
 
@@ -123,7 +149,9 @@ export default function ScanScreen() {
 	}
 
 	return (
-		<View style={[styles.cameraContainer, { backgroundColor: colors.background }]}>
+		<View
+			style={[styles.cameraContainer, { backgroundColor: colors.background }]}
+		>
 			<View style={[styles.cameraHeader, { top: insets.top + Spacing.md }]}>
 				<BackButton light />
 			</View>
@@ -142,18 +170,44 @@ export default function ScanScreen() {
 			<View
 				style={[
 					styles.bottomPanel,
-					{ backgroundColor: colors.background, paddingBottom: insets.bottom + Spacing.lg },
+					{
+						backgroundColor: colors.background,
+						paddingBottom: insets.bottom + Spacing.lg,
+					},
 				]}
 			>
-				<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600", textAlign: "center" }]}>
+				<Text
+					style={[
+						typography.uiLabel,
+						{
+							color: colors.foreground,
+							fontWeight: "600",
+							textAlign: "center",
+						},
+					]}
+				>
 					Scan QR Code
 				</Text>
-				<Text style={[typography.meta, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>
+				<Text
+					style={[
+						typography.meta,
+						{
+							color: colors.mutedForeground,
+							textAlign: "center",
+							marginTop: 8,
+						},
+					]}
+				>
 					Open Settings → Device Pairing in the web interface
 				</Text>
 
 				{scanned && (
-					<Text style={[typography.meta, { color: colors.primary, textAlign: "center", marginTop: 12 }]}>
+					<Text
+						style={[
+							typography.meta,
+							{ color: colors.primary, textAlign: "center", marginTop: 12 },
+						]}
+					>
 						{isConnecting ? "Connecting..." : "Processing..."}
 					</Text>
 				)}

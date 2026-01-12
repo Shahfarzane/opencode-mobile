@@ -3,11 +3,22 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BrainIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon, ClockIcon, ImageIcon, SearchIcon, StarIcon, ToolIcon, XIcon } from "@/components/icons";
+import {
+	BrainIcon,
+	CheckIcon,
+	ChevronDownIcon,
+	ChevronRightIcon,
+	ClockIcon,
+	ImageIcon,
+	SearchIcon,
+	StarIcon,
+	ToolIcon,
+	XIcon,
+} from "@/components/icons";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { Sheet, SheetScrollView, SheetTextInput } from "@/components/ui/sheet";
-import { Radius, Spacing, fontStyle, typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
+import { fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
+import { OPACITY, withOpacity } from "@/utils/colors";
 
 interface ModelMetadata {
 	reasoning?: boolean;
@@ -57,11 +68,15 @@ function formatContextLength(value?: number | null): string {
 	}
 	if (value >= 1000000) {
 		const formatted = (value / 1000000).toFixed(1);
-		return formatted.endsWith(".0") ? `${Math.floor(value / 1000000)}M` : `${formatted}M`;
+		return formatted.endsWith(".0")
+			? `${Math.floor(value / 1000000)}M`
+			: `${formatted}M`;
 	}
 	if (value >= 1000) {
 		const formatted = (value / 1000).toFixed(1);
-		return formatted.endsWith(".0") ? `${Math.floor(value / 1000)}K` : `${formatted}K`;
+		return formatted.endsWith(".0")
+			? `${Math.floor(value / 1000)}K`
+			: `${formatted}K`;
 	}
 	return String(value);
 }
@@ -76,7 +91,8 @@ function ProviderSymbol({ providerId }: { providerId: string }) {
 		const normalizedId = id.toLowerCase();
 		if (normalizedId.includes("anthropic")) return "A\\";
 		if (normalizedId.includes("openai")) return "O";
-		if (normalizedId.includes("google") || normalizedId.includes("gemini")) return "G";
+		if (normalizedId.includes("google") || normalizedId.includes("gemini"))
+			return "G";
 		if (normalizedId.includes("mistral")) return "M";
 		if (normalizedId.includes("groq")) return "Gr";
 		if (normalizedId.includes("ollama")) return "Ol";
@@ -91,7 +107,9 @@ function ProviderSymbol({ providerId }: { providerId: string }) {
 	};
 
 	return (
-		<Text style={[typography.micro, fontStyle("600"), { color: colors.foreground }]}>
+		<Text
+			style={[typography.micro, fontStyle("600"), { color: colors.foreground }]}
+		>
 			{getProviderSymbol(providerId)}
 		</Text>
 	);
@@ -100,7 +118,13 @@ function ProviderSymbol({ providerId }: { providerId: string }) {
 /**
  * Provider logo with fallback to text symbol
  */
-function ProviderLogoWithFallback({ providerId, size = 16 }: { providerId: string; size?: number }) {
+function ProviderLogoWithFallback({
+	providerId,
+	size = 16,
+}: {
+	providerId: string;
+	size?: number;
+}) {
 	const { colors } = useTheme();
 	const [showFallback, setShowFallback] = useState(false);
 
@@ -151,12 +175,20 @@ function ProviderHeader({
 			onPress={onPress}
 			className="flex-row items-center justify-between px-3 py-2"
 			style={({ pressed }) => ({
-				backgroundColor: pressed ? withOpacity(colors.muted, 0.5) : "transparent",
+				backgroundColor: pressed
+					? withOpacity(colors.muted, 0.5)
+					: "transparent",
 			})}
 		>
 			<View className="flex-row items-center gap-2 flex-1">
 				<ProviderLogo providerId={providerId} size={14} />
-				<Text style={[typography.body, fontStyle("500"), { color: colors.foreground }]}>
+				<Text
+					style={[
+						typography.body,
+						fontStyle("500"),
+						{ color: colors.foreground },
+					]}
+				>
 					{providerName}
 				</Text>
 				{isCurrent && (
@@ -180,7 +212,8 @@ function ProviderHeader({
 function CapabilityIcons({ model }: { model: Model }) {
 	const { colors } = useTheme();
 	const metadata = model.metadata;
-	const icons: Array<{ key: string; Icon: typeof BrainIcon; label: string }> = [];
+	const icons: Array<{ key: string; Icon: typeof BrainIcon; label: string }> =
+		[];
 
 	// Check for reasoning capability
 	if (metadata?.reasoning) {
@@ -230,17 +263,21 @@ function ModelRow({
 }) {
 	const { colors } = useTheme();
 	const displayName = model.name || model.id;
-	const truncatedName = displayName.length > 24 ? `${displayName.substring(0, 21)}...` : displayName;
+	const truncatedName =
+		displayName.length > 24
+			? `${displayName.substring(0, 21)}...`
+			: displayName;
 	const contextStr = formatContextLength(model.contextLength);
 	const outputStr = formatContextLength(model.outputLength);
 	// Format as "XXX ctx • XXX out" like PWA
-	const contextDisplay = contextStr && outputStr
-		? `${contextStr} ctx • ${outputStr} out`
-		: contextStr
-			? `${contextStr} ctx`
-			: outputStr
-				? `${outputStr} out`
-				: "";
+	const contextDisplay =
+		contextStr && outputStr
+			? `${contextStr} ctx • ${outputStr} out`
+			: contextStr
+				? `${contextStr} ctx`
+				: outputStr
+					? `${outputStr} out`
+					: "";
 
 	return (
 		<Pressable
@@ -255,10 +292,11 @@ function ModelRow({
 			})}
 		>
 			{/* Left: Provider icon (optional) + Model name */}
-			<View className="flex-row items-center gap-1.5 min-w-0" style={{ flex: 1 }}>
-				{showProviderIcon && (
-					<ProviderLogo providerId={providerId} size={12} />
-				)}
+			<View
+				className="flex-row items-center gap-1.5 min-w-0"
+				style={{ flex: 1 }}
+			>
+				{showProviderIcon && <ProviderLogo providerId={providerId} size={12} />}
 				<Text
 					style={[
 						typography.body,
@@ -273,7 +311,12 @@ function ModelRow({
 
 			{/* Middle: Context info (spaced evenly) */}
 			{contextDisplay ? (
-				<Text style={[typography.micro, { color: colors.mutedForeground, marginHorizontal: 8 }]}>
+				<Text
+					style={[
+						typography.micro,
+						{ color: colors.mutedForeground, marginHorizontal: 8 },
+					]}
+				>
 					{contextDisplay}
 				</Text>
 			) : null}
@@ -349,7 +392,9 @@ export function ModelPicker({
 	const bottomSheetRef = useRef<BottomSheet>(null);
 	const snapPoints = useMemo(() => ["70%", "90%"], []);
 	const [searchQuery, setSearchQuery] = useState("");
-	const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
+	const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
+		new Set(),
+	);
 
 	// Handle visibility changes
 	useEffect(() => {
@@ -361,16 +406,22 @@ export function ModelPicker({
 	}, [visible]);
 
 	// Filter to only show providers that are enabled and have models
-	const availableProviders = useMemo(() =>
-		providers.filter(
-			(provider) => provider.enabled && provider.models && provider.models.length > 0,
-		),
-	[providers]);
+	const availableProviders = useMemo(
+		() =>
+			providers.filter(
+				(provider) =>
+					provider.enabled && provider.models && provider.models.length > 0,
+			),
+		[providers],
+	);
 
 	// Helper to check if model is favorite
-	const isFavorite = useCallback((provId: string, modId: string) => {
-		return favoriteModels.has(`${provId}/${modId}`);
-	}, [favoriteModels]);
+	const isFavorite = useCallback(
+		(provId: string, modId: string) => {
+			return favoriteModels.has(`${provId}/${modId}`);
+		},
+		[favoriteModels],
+	);
 
 	// Filter providers/models based on search query
 	const filteredProviders = useMemo(() => {
@@ -391,7 +442,11 @@ export function ModelPicker({
 
 	// Get favorite models list
 	const favoriteModelsList = useMemo(() => {
-		const favorites: { providerId: string; providerName: string; model: Model }[] = [];
+		const favorites: {
+			providerId: string;
+			providerName: string;
+			model: Model;
+		}[] = [];
 		for (const provider of availableProviders) {
 			if (provider.models) {
 				for (const model of provider.models) {
@@ -414,17 +469,25 @@ export function ModelPicker({
 		if (!query) return favoriteModelsList;
 		return favoriteModelsList.filter(({ model, providerName }) => {
 			const modelName = (model.name || model.id).toLowerCase();
-			return modelName.includes(query) || providerName.toLowerCase().includes(query);
+			return (
+				modelName.includes(query) || providerName.toLowerCase().includes(query)
+			);
 		});
 	}, [favoriteModelsList, searchQuery]);
 
 	// Get recent models list
 	const recentModelsList = useMemo(() => {
-		const recents: { providerId: string; providerName: string; model: Model }[] = [];
+		const recents: {
+			providerId: string;
+			providerName: string;
+			model: Model;
+		}[] = [];
 		for (const recent of recentModels) {
-			const provider = availableProviders.find(p => p.id === recent.providerId);
+			const provider = availableProviders.find(
+				(p) => p.id === recent.providerId,
+			);
 			if (provider?.models) {
-				const model = provider.models.find(m => m.id === recent.modelId);
+				const model = provider.models.find((m) => m.id === recent.modelId);
 				if (model) {
 					recents.push({
 						providerId: provider.id,
@@ -443,14 +506,16 @@ export function ModelPicker({
 		if (!query) return recentModelsList;
 		return recentModelsList.filter(({ model, providerName }) => {
 			const modelName = (model.name || model.id).toLowerCase();
-			return modelName.includes(query) || providerName.toLowerCase().includes(query);
+			return (
+				modelName.includes(query) || providerName.toLowerCase().includes(query)
+			);
 		});
 	}, [recentModelsList, searchQuery]);
 
 	// Toggle provider expansion
 	const toggleProviderExpansion = useCallback((providerId: string) => {
 		Haptics.selectionAsync();
-		setExpandedProviders(prev => {
+		setExpandedProviders((prev) => {
 			const newSet = new Set(prev);
 			if (newSet.has(providerId)) {
 				newSet.delete(providerId);
@@ -479,15 +544,12 @@ export function ModelPicker({
 		[onToggleFavorite],
 	);
 
-	const handleSheetChange = useCallback(
-		(index: number) => {
-			if (index === -1) {
-				onClose();
-				setSearchQuery("");
-			}
-		},
-		[onClose],
-	);
+	const handleSheetChange = useCallback((index: number) => {
+		if (index === -1) {
+			// onClose is already called by Sheet component's handleChange
+			setSearchQuery("");
+		}
+	}, []);
 
 	const handleClose = useCallback(() => {
 		// Only close sheet - onClose will be called by handleSheetChange when sheet reaches -1
@@ -495,7 +557,10 @@ export function ModelPicker({
 	}, []);
 
 	const isSearching = searchQuery.trim().length > 0;
-	const hasResults = filteredProviders.length > 0 || filteredFavorites.length > 0 || filteredRecents.length > 0;
+	const hasResults =
+		filteredProviders.length > 0 ||
+		filteredFavorites.length > 0 ||
+		filteredRecents.length > 0;
 
 	return (
 		<Sheet
@@ -507,7 +572,13 @@ export function ModelPicker({
 		>
 			{/* Header */}
 			<View className="px-4 pb-3 flex-row items-center justify-between">
-				<Text style={[typography.uiHeader, fontStyle("600"), { color: colors.foreground }]}>
+				<Text
+					style={[
+						typography.uiHeader,
+						fontStyle("600"),
+						{ color: colors.foreground },
+					]}
+				>
 					Select model
 				</Text>
 				<Pressable
@@ -555,7 +626,6 @@ export function ModelPicker({
 			</View>
 
 			<SheetScrollView
-
 				contentContainerStyle={{
 					paddingBottom: insets.bottom + 16,
 				}}
@@ -574,12 +644,24 @@ export function ModelPicker({
 							<View style={{ marginBottom: 8 }}>
 								<View className="flex-row items-center gap-2 px-3 py-1.5">
 									<ClockIcon size={14} color={colors.mutedForeground} />
-									<Text style={[typography.micro, fontStyle("600"), { color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 }]}>
+									<Text
+										style={[
+											typography.micro,
+											fontStyle("600"),
+											{
+												color: colors.mutedForeground,
+												textTransform: "uppercase",
+												letterSpacing: 0.5,
+											},
+										]}
+									>
 										Recent
 									</Text>
 								</View>
 								{filteredRecents.map(({ providerId, model }) => {
-									const isSelected = providerId === currentProviderId && model.id === currentModelId;
+									const isSelected =
+										providerId === currentProviderId &&
+										model.id === currentModelId;
 									return (
 										<ModelRow
 											key={`recent-${providerId}-${model.id}`}
@@ -588,7 +670,11 @@ export function ModelPicker({
 											isSelected={isSelected}
 											isFavorite={isFavorite(providerId, model.id)}
 											onSelect={() => handleModelSelect(providerId, model.id)}
-											onToggleFavorite={onToggleFavorite ? () => handleToggleFavorite(providerId, model.id) : undefined}
+											onToggleFavorite={
+												onToggleFavorite
+													? () => handleToggleFavorite(providerId, model.id)
+													: undefined
+											}
 											showProviderIcon
 										/>
 									);
@@ -601,13 +687,29 @@ export function ModelPicker({
 						{filteredFavorites.length > 0 && (
 							<View style={{ marginBottom: 8 }}>
 								<View className="flex-row items-center gap-2 px-3 py-1.5">
-									<StarIcon size={14} color={colors.primary} fill={colors.primary} />
-									<Text style={[typography.micro, fontStyle("600"), { color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 }]}>
+									<StarIcon
+										size={14}
+										color={colors.primary}
+										fill={colors.primary}
+									/>
+									<Text
+										style={[
+											typography.micro,
+											fontStyle("600"),
+											{
+												color: colors.mutedForeground,
+												textTransform: "uppercase",
+												letterSpacing: 0.5,
+											},
+										]}
+									>
 										Favorites
 									</Text>
 								</View>
 								{filteredFavorites.map(({ providerId, model }) => {
-									const isSelected = providerId === currentProviderId && model.id === currentModelId;
+									const isSelected =
+										providerId === currentProviderId &&
+										model.id === currentModelId;
 									return (
 										<ModelRow
 											key={`fav-${providerId}-${model.id}`}
@@ -616,7 +718,11 @@ export function ModelPicker({
 											isSelected={isSelected}
 											isFavorite={true}
 											onSelect={() => handleModelSelect(providerId, model.id)}
-											onToggleFavorite={onToggleFavorite ? () => handleToggleFavorite(providerId, model.id) : undefined}
+											onToggleFavorite={
+												onToggleFavorite
+													? () => handleToggleFavorite(providerId, model.id)
+													: undefined
+											}
 											showProviderIcon
 										/>
 									);
@@ -641,8 +747,13 @@ export function ModelPicker({
 									{isExpanded && (
 										<View style={{ paddingLeft: 8 }}>
 											{provider.models?.map((model) => {
-												const isSelected = provider.id === currentProviderId && model.id === currentModelId;
-												const modelIsFavorite = isFavorite(provider.id, model.id);
+												const isSelected =
+													provider.id === currentProviderId &&
+													model.id === currentModelId;
+												const modelIsFavorite = isFavorite(
+													provider.id,
+													model.id,
+												);
 												return (
 													<ModelRow
 														key={`${provider.id}-${model.id}`}
@@ -650,8 +761,15 @@ export function ModelPicker({
 														providerId={provider.id}
 														isSelected={isSelected}
 														isFavorite={modelIsFavorite}
-														onSelect={() => handleModelSelect(provider.id, model.id)}
-														onToggleFavorite={onToggleFavorite ? () => handleToggleFavorite(provider.id, model.id) : undefined}
+														onSelect={() =>
+															handleModelSelect(provider.id, model.id)
+														}
+														onToggleFavorite={
+															onToggleFavorite
+																? () =>
+																		handleToggleFavorite(provider.id, model.id)
+																: undefined
+														}
 													/>
 												);
 											})}
