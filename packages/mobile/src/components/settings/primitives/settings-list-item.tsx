@@ -1,4 +1,4 @@
-import * as Haptics from "expo-haptics";
+import { impactAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { MobileSizes, Radius, SemanticSpacing, Spacing, typography, useTheme } from "@/theme";
@@ -26,7 +26,7 @@ export function SettingsListItem({
 
   const handlePress = useCallback(() => {
     if (onPress) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      impactAsync(ImpactFeedbackStyle.Light);
       onPress();
     }
   }, [onPress]);

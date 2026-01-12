@@ -27,11 +27,13 @@ export function SettingsGroup({
 
   const childArray = Children.toArray(children).filter(Boolean);
 
-  const content = childArray.flatMap((child, index) => {
-    if (index === childArray.length - 1) return [child];
+  const lastChild = childArray.at(-1);
+
+  const content = childArray.flatMap((child) => {
+    if (child === lastChild) return [child];
     const key = typeof child === "object" && child !== null && "key" in child
       ? `separator-${String(child.key)}`
-      : `separator-${index}`;
+      : `separator-${String(child)}`;
     return [
       child,
       <View

@@ -1,4 +1,4 @@
-import * as Haptics from "expo-haptics";
+import { impactAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { useCallback } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import { ChevronRightIcon } from "@/components/icons";
@@ -19,7 +19,7 @@ export function SettingsRow(props: SettingsRowProps) {
 
   const handlePress = useCallback(() => {
     if (isNavigation && props.onPress) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        impactAsync(ImpactFeedbackStyle.Light);
       props.onPress();
     }
   }, [isNavigation, props]);
@@ -27,7 +27,7 @@ export function SettingsRow(props: SettingsRowProps) {
   const handleToggleChange = useCallback(
     (newValue: boolean) => {
       if (isToggle && props.onToggleChange) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      impactAsync(ImpactFeedbackStyle.Light);
         props.onToggleChange(newValue);
       }
     },
