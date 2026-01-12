@@ -10,7 +10,9 @@ export interface ToolPart {
 	type: "tool";
 	id?: string;
 	callID?: string;
+	toolId?: string;
 	tool?: string;
+	toolName?: string;
 	state?: {
 		status?: "pending" | "running" | "completed" | "error" | "aborted";
 		input?: Record<string, unknown>;
@@ -18,6 +20,47 @@ export interface ToolPart {
 		error?: string;
 		time?: { start?: number; end?: number };
 	};
+	input?: Record<string, unknown>;
+	output?: string;
+	error?: string;
+}
+
+export interface ToolCallPart {
+	type: "tool-call";
+	id?: string;
+	callID?: string;
+	toolId?: string;
+	tool?: string;
+	toolName?: string;
+	state?: {
+		status?: "pending" | "running" | "completed" | "error" | "aborted";
+		input?: Record<string, unknown>;
+		output?: string;
+		error?: string;
+		time?: { start?: number; end?: number };
+	};
+	input?: Record<string, unknown>;
+	output?: string;
+	error?: string;
+}
+
+export interface ToolResultPart {
+	type: "tool-result";
+	id?: string;
+	callID?: string;
+	toolId?: string;
+	tool?: string;
+	toolName?: string;
+	state?: {
+		status?: "pending" | "running" | "completed" | "error" | "aborted";
+		input?: Record<string, unknown>;
+		output?: string;
+		error?: string;
+		time?: { start?: number; end?: number };
+	};
+	input?: Record<string, unknown>;
+	output?: string;
+	error?: string;
 }
 
 export interface ReasoningPart {
@@ -50,6 +93,8 @@ export interface FilePart {
 export type MessagePart =
 	| TextPart
 	| ToolPart
+	| ToolCallPart
+	| ToolResultPart
 	| ReasoningPart
 	| StepStartPart
 	| StepFinishPart

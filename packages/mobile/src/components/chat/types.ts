@@ -89,15 +89,30 @@ export function inferProviderIdFromModelName(modelName?: string): string | undef
 }
 
 export function convertStreamingPart(part: StreamingPart): MessagePart {
-	if (part.type === "tool") {
-		const toolPart = part as StreamingPart & { type: "tool" };
+	// Handle all tool-related part types (tool, tool-call, tool-result)
+	if (part.type === "tool" || part.type === "tool-call" || part.type === "tool-result") {
+		const toolPart = part as StreamingPart & {
+			type: "tool" | "tool-call" | "tool-result";
+			tool?: string;
+			toolName?: string;
+			callID?: string;
+			toolId?: string;
+			state?: unknown;
+			input?: Record<string, unknown>;
+			output?: string;
+			error?: string;
+		};
 		return {
-			type: "tool",
+			type: toolPart.type,
 			id: toolPart.id,
-			toolName: toolPart.tool,
-			tool: toolPart.tool,
-			callID: toolPart.callID,
+			toolName: toolPart.tool || toolPart.toolName,
+			tool: toolPart.tool || toolPart.toolName,
+			callID: toolPart.callID || toolPart.toolId,
+			toolId: toolPart.callID || toolPart.toolId,
 			state: toolPart.state,
+			input: toolPart.input,
+			output: toolPart.output,
+			error: toolPart.error,
 		};
 	}
 

@@ -128,12 +128,9 @@ export function SessionListItem({
 	}, [isStreaming, animatedOpacity]);
 
 	const handleSelect = useCallback(async () => {
-		console.log("[SessionListItem] handleSelect called, isMissingDirectory:", isMissingDirectory);
 		if (isMissingDirectory) return;
 		await selectionAsync();
-		console.log("[SessionListItem] calling onSelect");
 		onSelect();
-		console.log("[SessionListItem] onSelect completed");
 	}, [isMissingDirectory, onSelect]);
 
 	const handleOpenMenu = useCallback(async () => {
@@ -220,9 +217,15 @@ export function SessionListItem({
 	return (
 		<>
 			<View
-				className="flex-row items-center px-1.5 py-1 rounded-md mb-0.5 relative"
 				style={{
+					position: "relative",
+					flexDirection: "row",
+					alignItems: "center",
+					paddingVertical: 4,
 					paddingLeft: 6 + depth * 20,
+					paddingRight: 28,
+					borderRadius: 6,
+					marginBottom: 2,
 					backgroundColor: isSelected
 						? isDark
 							? withOpacity(colors.accent, OPACITY.strong)
@@ -235,8 +238,7 @@ export function SessionListItem({
 					onPress={handleSelect}
 					disabled={isMissingDirectory}
 					activeOpacity={0.7}
-					className="flex-1 min-w-0"
-					style={{ borderRadius: 4 }}
+					style={{ borderRadius: 4, flex: 1 }}
 				>
 					<Animated.Text
 						className="mb-px"
@@ -253,7 +255,7 @@ export function SessionListItem({
 						{sessionTitle}
 					</Animated.Text>
 
-					<View className="flex-row items-center gap-2 flex-wrap">
+					<View className="flex-row items-center gap-2" style={{ flexWrap: "wrap" }}>
 						{hasChildren && (
 							<TouchableOpacity
 								onPress={handleToggleExpand}
@@ -343,7 +345,16 @@ export function SessionListItem({
 					</View>
 				</TouchableOpacity>
 
-				<View ref={menuButtonRef}>
+				<View
+					ref={menuButtonRef}
+					style={{
+						position: "absolute",
+						right: 4,
+						top: 0,
+						bottom: 0,
+						justifyContent: "center",
+					}}
+				>
 					<IconButton
 						icon={
 							<MoreVerticalIcon
@@ -360,8 +371,16 @@ export function SessionListItem({
 
 				{isSelected && (
 					<View
-						className="absolute right-0 top-1 bottom-1 w-0.5 rounded-sm"
-						style={{ backgroundColor: colors.primary }}
+						pointerEvents="none"
+						style={{
+							position: "absolute",
+							right: 0,
+							top: 4,
+							bottom: 4,
+							width: 2,
+							borderRadius: 1,
+							backgroundColor: colors.primary,
+						}}
 					/>
 				)}
 			</View>

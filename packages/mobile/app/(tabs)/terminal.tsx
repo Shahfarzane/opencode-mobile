@@ -17,7 +17,13 @@ import { Button } from "../../src/components/ui";
 import { useTerminalStream } from "../../src/hooks/useTerminalStream";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { useTerminalStore } from "../../src/stores/useTerminalStore";
-import { Radius, Spacing, fontStyle, typography, useTheme } from "../../src/theme";
+import {
+	fontStyle,
+	Radius,
+	Spacing,
+	typography,
+	useTheme,
+} from "../../src/theme";
 
 // PWA-style special keys
 const SPECIAL_KEYS = [
@@ -190,7 +196,6 @@ export default function TerminalScreen() {
 		},
 		[sessionId, isConnected],
 	);
-
 
 	const handleSpecialKey = useCallback(
 		(key: string) => {
@@ -420,7 +425,9 @@ export default function TerminalScreen() {
 						{truncatedPath}
 					</Text>
 					{isConnected && !hasExited && (
-						<View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+						<View
+							style={[styles.statusDot, { backgroundColor: colors.success }]}
+						/>
 					)}
 					{hasExited && (
 						<Text style={[typography.micro, { color: colors.mutedForeground }]}>
@@ -429,18 +436,10 @@ export default function TerminalScreen() {
 					)}
 				</View>
 				<View style={styles.headerActions}>
-					<Button
-						variant="primary"
-						size="xs"
-						onPress={clearOutput}
-					>
+					<Button variant="primary" size="xs" onPress={clearOutput}>
 						<Button.Label>Clear</Button.Label>
 					</Button>
-					<Button
-						variant="primary"
-						size="xs"
-						onPress={restartSession}
-					>
+					<Button variant="primary" size="xs" onPress={restartSession}>
 						<Button.Label>Restart</Button.Label>
 					</Button>
 				</View>
@@ -469,12 +468,8 @@ export default function TerminalScreen() {
 								style={[
 									styles.specialKey,
 									{
-										backgroundColor: isActive
-											? colors.primary
-											: colors.muted,
-										borderColor: isActive
-											? colors.primary
-											: colors.border,
+										backgroundColor: isActive ? colors.primary : colors.muted,
+										borderColor: isActive ? colors.primary : colors.border,
 									},
 								]}
 							>
@@ -505,7 +500,10 @@ export default function TerminalScreen() {
 				<ScrollView
 					ref={scrollViewRef}
 					style={[styles.terminalOutput, { backgroundColor: terminalBg }]}
-					contentContainerStyle={[styles.terminalContent, { paddingBottom: Math.max(insets.bottom, Spacing[5]) }]}
+					contentContainerStyle={[
+						styles.terminalContent,
+						{ paddingBottom: Math.max(insets.bottom, Spacing[5]) },
+					]}
 					keyboardShouldPersistTaps="handled"
 					keyboardDismissMode="none"
 					contentInsetAdjustmentBehavior="automatic"
@@ -550,7 +548,7 @@ export default function TerminalScreen() {
 									{
 										flex: 1,
 										color: terminalText,
-										backgroundColor: 'transparent',
+										backgroundColor: "transparent",
 										padding: 0,
 										margin: 0,
 										minHeight: 20,
@@ -561,7 +559,12 @@ export default function TerminalScreen() {
 					)}
 
 					{hasExited && (
-						<Text style={[typography.code, { color: colors.mutedForeground, marginTop: 8 }]}>
+						<Text
+							style={[
+								typography.code,
+								{ color: colors.mutedForeground, marginTop: 8 },
+							]}
+						>
 							[Session ended - tap Restart to begin a new session]
 						</Text>
 					)}
@@ -615,7 +618,7 @@ const styles = StyleSheet.create({
 	headerActions: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: Spacing[2],
+		gap: Spacing[2.5],
 	},
 	statusDot: {
 		width: Spacing[2],

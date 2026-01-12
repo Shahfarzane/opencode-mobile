@@ -20,7 +20,7 @@ const wrapper = tv({
  * - lg: 56px - Large inputs
  */
 const container = tv({
-  base: "flex-row items-center rounded-2xl border border-input bg-transparent dark:bg-input/30",
+  base: "flex-row items-center border border-input bg-transparent dark:bg-input/30",
   variants: {
     state: {
       default: "border-border",
@@ -29,10 +29,10 @@ const container = tv({
       disabled: "border-border opacity-disabled",
     },
     size: {
-      // Mobile-optimized sizes
+      // Mobile-optimized sizes - using rounded-lg style like PWA
       sm: "rounded-lg",
-      md: "rounded-2xl",
-      lg: "rounded-3xl",
+      md: "rounded-lg",
+      lg: "rounded-xl",
       // Desktop-equivalent size
       desktop: "rounded-lg",
     },

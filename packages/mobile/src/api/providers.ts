@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from "../lib/httpClient";
+import { apiDelete, apiGet, apiPost, apiPut } from "../lib/httpClient";
 
 export interface Model {
 	id: string;
@@ -22,17 +22,7 @@ type ProvidersResponse = RawProviderFromAPI[] | { data?: RawProviderFromAPI[] };
 function transformProviderModelsToArray(raw: RawProviderFromAPI): Provider {
 	const modelsRecord = raw.models ?? {};
 	const modelsArray = Object.values(modelsRecord);
-	
-	if (__DEV__) {
-		console.log(`[Providers] Transforming provider "${raw.id}":`, {
-			rawModelsType: typeof raw.models,
-			rawModelsIsArray: Array.isArray(raw.models),
-			rawModelsKeys: raw.models ? Object.keys(raw.models).slice(0, 3) : [],
-			transformedCount: modelsArray.length,
-			firstModel: modelsArray[0] ? { id: modelsArray[0].id, name: modelsArray[0].name } : null,
-		});
-	}
-	
+
 	return {
 		id: raw.id,
 		name: raw.name,
@@ -43,15 +33,6 @@ function transformProviderModelsToArray(raw: RawProviderFromAPI): Provider {
 
 function unwrapProviders(response: unknown): Provider[] {
 	let rawProviders: RawProviderFromAPI[] = [];
-
-	if (__DEV__) {
-		console.log("[Providers] Raw API response:", {
-			type: typeof response,
-			isArray: Array.isArray(response),
-			keys: response && typeof response === "object" ? Object.keys(response as object).slice(0, 5) : [],
-			sample: JSON.stringify(response).slice(0, 500),
-		});
-	}
 
 	if (Array.isArray(response)) {
 		rawProviders = response;
@@ -68,21 +49,8 @@ function unwrapProviders(response: unknown): Provider[] {
 		}
 	}
 
-	if (__DEV__) {
-		console.log("[Providers] Extracted raw providers:", {
-			count: rawProviders.length,
-			providerIds: rawProviders.map(p => p.id),
-		});
-	}
-
 	const result = rawProviders.map(transformProviderModelsToArray);
-	
-	if (__DEV__) {
-		console.log("[Providers] Final transformed providers:", 
-			result.map(p => ({ id: p.id, modelCount: p.models?.length, firstModelName: p.models?.[0]?.name }))
-		);
-	}
-	
+
 	return result;
 }
 
@@ -107,31 +75,18 @@ export const providersApi = {
 	 */
 	async listConnected(): Promise<Provider[]> {
 		try {
-			const response = await apiGet<ConfigProvidersResponse>("/api/config/providers", {}, true);
-
-			if (__DEV__) {
-				console.log("[Providers] Config providers response:", {
-					type: typeof response,
-					keys: response && typeof response === "object" ? Object.keys(response) : [],
-					providerCount: response?.providers?.length,
-				});
-			}
+			const response = await apiGet<ConfigProvidersResponse>(
+				"/api/config/providers",
+				{},
+				true,
+			);
 
 			const rawProviders = response?.providers ?? [];
 			const result = rawProviders.map(transformProviderModelsToArray);
 
-			if (__DEV__) {
-				console.log("[Providers] Connected providers:",
-					result.map(p => ({ id: p.id, modelCount: p.models?.length }))
-				);
-			}
-
 			return result;
 		} catch (error) {
-			if (__DEV__) {
-				console.error("[Providers] Failed to get connected providers:", error);
-			}
-			// Fallback to empty array on error
+			console.error("[Providers] Failed to get connected providers:", error);
 			return [];
 		}
 	},
@@ -152,7 +107,10 @@ export const providersApi = {
 	/**
 	 * Save API key for a provider (used for connecting new providers)
 	 */
-	async saveApiKey(providerId: string, apiKey: string): Promise<{ success: boolean; error?: string }> {
+	async saveApiKey(
+		providerId: string,
+		apiKey: string,
+	): Promise<{ success: boolean; error?: string }> {
 		try {
 			const response = await apiPut<{ error?: string }>(
 				`/api/auth/${encodeURIComponent(providerId)}`,
@@ -164,7 +122,8 @@ export const providersApi = {
 			}
 			return { success: true };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Failed to save API key";
+			const message =
+				error instanceof Error ? error.message : "Failed to save API key";
 			return { success: false, error: message };
 		}
 	},
@@ -172,7 +131,9 @@ export const providersApi = {
 	/**
 	 * Disconnect a provider (remove authentication)
 	 */
-	async disconnect(providerId: string): Promise<{ success: boolean; error?: string }> {
+	async disconnect(
+		providerId: string,
+	): Promise<{ success: boolean; error?: string }> {
 		try {
 			await apiDelete(
 				`/api/provider/${encodeURIComponent(providerId)}/auth`,
@@ -180,7 +141,10 @@ export const providersApi = {
 			);
 			return { success: true };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Failed to disconnect provider";
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to disconnect provider";
 			return { success: false, error: message };
 		}
 	},
@@ -190,13 +154,11 @@ export const providersApi = {
 	 */
 	async getAuthMethods(): Promise<Record<string, AuthMethod[]>> {
 		try {
-			const response = await apiGet<Record<string, unknown>>("/api/provider/auth", {}, true);
-
-			if (__DEV__) {
-				console.log("[Providers] Auth methods response:", {
-					keys: Object.keys(response || {}),
-				});
-			}
+			const response = await apiGet<Record<string, unknown>>(
+				"/api/provider/auth",
+				{},
+				true,
+			);
 
 			// Parse and normalize the auth methods
 			const result: Record<string, AuthMethod[]> = {};
@@ -205,16 +167,14 @@ export const providersApi = {
 					if (Array.isArray(value)) {
 						result[providerId] = value.filter(
 							(entry): entry is AuthMethod =>
-								typeof entry === "object" && entry !== null
+								typeof entry === "object" && entry !== null,
 						);
 					}
 				}
 			}
 			return result;
 		} catch (error) {
-			if (__DEV__) {
-				console.error("[Providers] Failed to get auth methods:", error);
-			}
+			console.error("[Providers] Failed to get auth methods:", error);
 			return {};
 		}
 	},
@@ -222,7 +182,10 @@ export const providersApi = {
 	/**
 	 * Start OAuth flow for a provider
 	 */
-	async startOAuth(providerId: string, methodIndex: number): Promise<OAuthStartResult> {
+	async startOAuth(
+		providerId: string,
+		methodIndex: number,
+	): Promise<OAuthStartResult> {
 		try {
 			const response = await apiPost<Record<string, unknown>>(
 				`/api/provider/${encodeURIComponent(providerId)}/oauth/authorize`,
@@ -231,10 +194,12 @@ export const providersApi = {
 			);
 
 			// Extract OAuth details from various response formats
-			const data = (response?.data as Record<string, unknown>) ?? response ?? {};
+			const data =
+				(response?.data as Record<string, unknown>) ?? response ?? {};
 			const url =
 				(typeof data.url === "string" && data.url) ||
-				(typeof data.verification_uri_complete === "string" && data.verification_uri_complete) ||
+				(typeof data.verification_uri_complete === "string" &&
+					data.verification_uri_complete) ||
 				(typeof data.verification_uri === "string" && data.verification_uri) ||
 				undefined;
 			const instructions =
@@ -249,7 +214,8 @@ export const providersApi = {
 
 			return { success: true, url, instructions, userCode };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Failed to start OAuth flow";
+			const message =
+				error instanceof Error ? error.message : "Failed to start OAuth flow";
 			return { success: false, error: message };
 		}
 	},
@@ -257,7 +223,11 @@ export const providersApi = {
 	/**
 	 * Complete OAuth flow for a provider
 	 */
-	async completeOAuth(providerId: string, methodIndex: number, code?: string): Promise<{ success: boolean; error?: string }> {
+	async completeOAuth(
+		providerId: string,
+		methodIndex: number,
+		code?: string,
+	): Promise<{ success: boolean; error?: string }> {
 		try {
 			const body: { method: number; code?: string } = { method: methodIndex };
 			if (code) {
@@ -271,7 +241,10 @@ export const providersApi = {
 			);
 			return { success: true };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Failed to complete OAuth flow";
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to complete OAuth flow";
 			return { success: false, error: message };
 		}
 	},

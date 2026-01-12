@@ -1,6 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import {
+	Keyboard,
+	KeyboardAvoidingView,
+	Platform,
+	StyleSheet,
+	View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	type Agent,
@@ -8,14 +14,12 @@ import {
 	type Command,
 	commandsApi,
 	filesApi,
-	type Model,
 	type Provider,
 	providersApi,
 	type SettingsPayload,
 	sessionsApi,
 	settingsApi,
 } from "../../src/api";
-import { fetchModelsMetadata, getContextLength, type ModelMetadata } from "../../src/lib/modelsMetadata";
 import type {
 	AgentInfo,
 	Message,
@@ -47,6 +51,11 @@ import {
 	type StreamEvent,
 	useEventStream,
 } from "../../src/hooks/useEventStream";
+import {
+	fetchModelsMetadata,
+	getContextLength,
+	type ModelMetadata,
+} from "../../src/lib/modelsMetadata";
 import type { MessagePart as StreamingPart } from "../../src/lib/streaming";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { useTheme } from "../../src/theme";
@@ -106,7 +115,9 @@ export default function ChatScreen() {
 	const [permissions, setPermissions] = useState<Permission[]>([]);
 
 	const [providers, setProviders] = useState<Provider[]>([]);
-	const [modelsMetadata, setModelsMetadata] = useState<Map<string, ModelMetadata>>(new Map());
+	const [modelsMetadata, setModelsMetadata] = useState<
+		Map<string, ModelMetadata>
+	>(new Map());
 	const [currentProviderId, setCurrentProviderId] = useState<
 		string | undefined
 	>();
@@ -144,22 +155,26 @@ export default function ChatScreen() {
 	}, []);
 
 	// Handler to toggle a model as favorite
-	const handleToggleFavorite = useCallback(async (providerId: string, modelId: string) => {
-		const key = `${providerId}/${modelId}`;
-		setFavoriteModels((prev) => {
-			const newSet = new Set(prev);
-			if (newSet.has(key)) {
-				newSet.delete(key);
-			} else {
-				newSet.add(key);
-			}
-			// Persist to storage
-			AsyncStorage.setItem("favoriteModels", JSON.stringify(Array.from(newSet))).catch((err) =>
-				console.error("Failed to save favorite models:", err)
-			);
-			return newSet;
-		});
-	}, []);
+	const handleToggleFavorite = useCallback(
+		async (providerId: string, modelId: string) => {
+			const key = `${providerId}/${modelId}`;
+			setFavoriteModels((prev) => {
+				const newSet = new Set(prev);
+				if (newSet.has(key)) {
+					newSet.delete(key);
+				} else {
+					newSet.add(key);
+				}
+				// Persist to storage
+				AsyncStorage.setItem(
+					"favoriteModels",
+					JSON.stringify(Array.from(newSet)),
+				).catch((err) => console.error("Failed to save favorite models:", err));
+				return newSet;
+			});
+		},
+		[],
+	);
 
 	const activeAgent: AgentInfo | undefined = useMemo(() => {
 		if (!currentAgentName) return undefined;
@@ -514,7 +529,11 @@ export default function ChatScreen() {
 		return providers.map((provider) => ({
 			...provider,
 			models: provider.models?.map((model) => {
-				const contextLength = getContextLength(modelsMetadata, provider.id, model.id);
+				const contextLength = getContextLength(
+					modelsMetadata,
+					provider.id,
+					model.id,
+				);
 				return contextLength ? { ...model, contextLength } : model;
 			}),
 		}));

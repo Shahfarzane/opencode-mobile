@@ -49,7 +49,10 @@ export function WorkspaceGroup({
 	}, [showMoreButton]);
 
 	return (
-		<View className="mb-1">
+		<View
+			className="mb-1"
+			style={{ width: "100%" }}
+		>
 			<View
 				className="flex-row items-center justify-between pt-1.5 pb-1 px-1 border-b"
 				style={{ borderBottomColor: colors.border }}
@@ -85,7 +88,10 @@ export function WorkspaceGroup({
 			</View>
 
 			{!isCollapsed && (
-				<View className="pt-1 gap-2.5">
+				<View
+					className="pt-1 gap-2.5"
+					style={{ width: "100%" }}
+				>
 					{children}
 
 					{showMoreButton &&

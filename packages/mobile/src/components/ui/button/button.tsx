@@ -1,9 +1,14 @@
 import * as Haptics from "expo-haptics";
 import { createContext, forwardRef, useContext } from "react";
-import { ActivityIndicator, Text, type View, type ViewStyle } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import {
+	ActivityIndicator,
+	Pressable,
+	Text,
+	type View,
+	type ViewStyle,
+} from "react-native";
 import { typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
+import { OPACITY, withOpacity } from "@/utils/colors";
 import {
 	BUTTON_DISPLAY_NAME,
 	BUTTON_LABEL_DISPLAY_NAME,
@@ -91,7 +96,9 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 					return colors.secondary;
 				case "destructive":
 					// PWA: dark:bg-destructive/60
-					return isDark ? withOpacity(colors.destructive, 0.6) : colors.destructive;
+					return isDark
+						? withOpacity(colors.destructive, 0.6)
+						: colors.destructive;
 				case "warning":
 					return colors.warning;
 				case "muted":
@@ -100,7 +107,9 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 					return colors.info;
 				case "outline":
 					// PWA: dark:bg-input/30 - 30% opacity of input color in dark mode
-					return isDark ? withOpacity(colors.input, OPACITY.overlay) : "transparent";
+					return isDark
+						? withOpacity(colors.input, OPACITY.overlay)
+						: "transparent";
 				case "ghost":
 					return "transparent";
 				default:
@@ -161,7 +170,6 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 		};
 
 		// Get pressed background color - matches PWA hover states
-		// PWA: outline dark:hover:bg-input/50, ghost dark:hover:bg-accent/50
 		const getPressedBackgroundColor = () => {
 			const baseColor = getBackgroundColor();
 
@@ -187,39 +195,75 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 			return withOpacity(baseColor, 0.9);
 		};
 
-		// Compute button styles
-		const getButtonStyle = (): ViewStyle[] => {
-			const baseStyle: ViewStyle = { backgroundColor: getBackgroundColor(), borderRadius: 18 };
-			const borderStyle: ViewStyle | false = variant === "outline" && { borderColor: getBorderColor() };
-			const glowStyle: ViewStyle | false = !disabled && variant !== "outline" && variant !== "ghost" && {
-				shadowColor: withOpacity(colors.primary, isDark ? 0.45 : 0.32),
-				shadowOffset: { width: 0, height: 10 },
-				shadowOpacity: isDark ? 0.5 : 0.38,
-				shadowRadius: 18,
-				elevation: 8,
+		// Get border radius based on size - matches PWA rounded-lg (8px) style
+		const getBorderRadius = () => {
+			switch (size) {
+				case "xs":
+					return 6;
+				case "sm":
+				case "desktop-sm":
+					return 8;
+				case "lg":
+					return 10;
+				case "icon-xs":
+					return 6;
+				case "icon-sm":
+					return 8;
+				case "icon-md":
+				case "icon-lg":
+				case "icon-desktop":
+					return 10;
+				default:
+					return 8; // Default to rounded-lg equivalent
+			}
+		};
+
+		// Compute button styles - matches PWA design with subtle shadows
+		const getButtonStyle = (pressed: boolean): ViewStyle[] => {
+			const baseStyle: ViewStyle = {
+				backgroundColor: pressed
+					? getPressedBackgroundColor()
+					: getBackgroundColor(),
+				borderRadius: getBorderRadius(),
 			};
+
+			const borderStyle: ViewStyle | false = variant === "outline" && {
+				borderColor: getBorderColor(),
+				borderWidth: 1,
+			};
+
+			// Subtle shadow for solid buttons (not outline/ghost) - much more subtle than before
+			const shadowStyle: ViewStyle | false = !disabled &&
+				!pressed &&
+				variant !== "outline" &&
+				variant !== "ghost" && {
+					shadowColor: colors.foreground,
+					shadowOffset: { width: 0, height: 1 },
+					shadowOpacity: isDark ? 0.15 : 0.08,
+					shadowRadius: 2,
+					elevation: 2,
+				};
 
 			return [
 				baseStyle,
 				borderStyle || {},
-				glowStyle || {},
+				shadowStyle || {},
 				style as ViewStyle,
 			].filter(Boolean) as ViewStyle[];
 		};
 
-		// Filter out props that are incompatible with TouchableOpacity
-		const { testID, accessibilityLabel, accessibilityHint, ...restProps } = props;
+		// Filter out props that are incompatible with Pressable
+		const { testID, accessibilityLabel, accessibilityHint } = props;
 
 		return (
 			<ButtonContext.Provider value={contextValue}>
-				<TouchableOpacity
+				<Pressable
 					ref={ref as never}
 					disabled={disabled ?? false}
 					onPress={handlePress as unknown as () => void}
 					hitSlop={pressableHitSlop}
-					activeOpacity={0.7}
 					className={rootClassName}
-					style={getButtonStyle()}
+					style={({ pressed }) => getButtonStyle(pressed)}
 					accessibilityRole="button"
 					accessibilityState={{ disabled: disabled ?? false }}
 					testID={testID ?? undefined}
@@ -227,7 +271,7 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 					accessibilityHint={accessibilityHint ?? undefined}
 				>
 					{renderChildren()}
-				</TouchableOpacity>
+				</Pressable>
 			</ButtonContext.Provider>
 		);
 	},

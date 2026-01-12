@@ -1,9 +1,7 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useEffect, useMemo, useRef } from "react";
-import { Text, View } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import { Animated, Dimensions, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
 	CopyIcon,
 	FolderIcon,
@@ -12,8 +10,19 @@ import {
 	ShareIcon,
 	TrashIcon,
 } from "@/components/icons";
-import { Sheet } from "@/components/ui/sheet";
-import { typography, useTheme } from "@/theme";
+import {
+	AnimationTokens,
+	getShadowColor,
+	IconSizes,
+	MenuPositioning,
+	MobileSizes,
+	OpacityTokens,
+	RadiusTokens,
+	ShadowTokens,
+	typography,
+	useTheme,
+} from "@/theme";
+import { withOpacity } from "@/utils/colors";
 
 interface SessionActionsMenuProps {
 	visible: boolean;
@@ -29,6 +38,9 @@ interface SessionActionsMenuProps {
 	anchorPosition?: { x: number; y: number } | null;
 }
 
+const MENU_WIDTH = 220;
+const SCREEN_PADDING = MobileSizes.gapLg;
+
 export function SessionActionsMenu({
 	visible,
 	onClose,
@@ -40,29 +52,52 @@ export function SessionActionsMenu({
 	isShared = false,
 	shareUrl,
 	worktreePath,
+	anchorPosition,
 }: SessionActionsMenuProps) {
-	const { colors } = useTheme();
-	const sheetRef = useRef<BottomSheet>(null);
-	const snapPoints = useMemo(() => ["58%"], []);
+	const { colors, isDark } = useTheme();
+	const scaleAnim = useRef(new Animated.Value(AnimationTokens.menuScaleFrom)).current;
+	const opacityAnim = useRef(new Animated.Value(0)).current;
 
 	useEffect(() => {
 		if (visible) {
-			sheetRef.current?.snapToIndex(0);
+			Animated.parallel([
+				Animated.spring(scaleAnim, {
+					toValue: AnimationTokens.menuScaleTo,
+					useNativeDriver: true,
+					...AnimationTokens.menuSpring,
+				}),
+				Animated.timing(opacityAnim, {
+					toValue: 1,
+					duration: AnimationTokens.durationDefault,
+					useNativeDriver: true,
+				}),
+			]).start();
 		} else {
-			sheetRef.current?.close();
+			Animated.parallel([
+				Animated.timing(scaleAnim, {
+					toValue: AnimationTokens.menuScaleFrom,
+					duration: AnimationTokens.menuCloseDuration,
+					useNativeDriver: true,
+				}),
+				Animated.timing(opacityAnim, {
+					toValue: 0,
+					duration: AnimationTokens.menuCloseDuration,
+					useNativeDriver: true,
+				}),
+			]).start();
 		}
-	}, [visible]);
+	}, [visible, scaleAnim, opacityAnim]);
 
 	const handleRename = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		onClose();
 		onRename();
-		sheetRef.current?.close();
 	};
 
 	const handleShare = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		onClose();
 		onShare?.();
-		sheetRef.current?.close();
 	};
 
 	const handleCopyLink = async () => {
@@ -70,14 +105,14 @@ export function SessionActionsMenu({
 			await Clipboard.setStringAsync(shareUrl);
 			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		}
+		onClose();
 		onCopyLink?.();
-		sheetRef.current?.close();
 	};
 
 	const handleUnshare = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		onClose();
 		onUnshare?.();
-		sheetRef.current?.close();
 	};
 
 	const handleCopyWorktreePath = async () => {
@@ -85,16 +120,16 @@ export function SessionActionsMenu({
 			await Clipboard.setStringAsync(worktreePath);
 			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		}
-		sheetRef.current?.close();
+		onClose();
 	};
 
 	const handleDelete = async () => {
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+		onClose();
 		onDelete();
-		sheetRef.current?.close();
 	};
 
-	const actions = [
+	const actions = useMemo(() => [
 		{ key: "rename", label: "Rename", icon: PencilIcon, onPress: handleRename },
 		...(!isShared
 			? [{ key: "share", label: "Share", icon: ShareIcon, onPress: handleShare }]
@@ -109,44 +144,161 @@ export function SessionActionsMenu({
 			? [{ key: "copy-path", label: "Copy worktree path", icon: FolderIcon, onPress: handleCopyWorktreePath }]
 			: []),
 		{ key: "delete", label: "Delete", icon: TrashIcon, onPress: handleDelete, destructive: true },
-	];
+	], [isShared, shareUrl, worktreePath]);
 
-	// Don't render anything when not visible - this prevents touch interception
-	if (!visible) {
-		return null;
-	}
+	// Calculate menu position
+	const screenWidth = Dimensions.get("window").width;
+	const screenHeight = Dimensions.get("window").height;
+
+	const menuPosition = useMemo(() => {
+		if (!anchorPosition) {
+			return { top: screenHeight / 2 - 100, right: SCREEN_PADDING };
+		}
+
+		// Position menu to the left of the anchor (three-dot button)
+		let x = anchorPosition.x - MENU_WIDTH - MenuPositioning.margin;
+		let y = anchorPosition.y;
+
+		// Ensure menu stays within screen bounds
+		if (x < SCREEN_PADDING) {
+			x = SCREEN_PADDING;
+		}
+		if (x + MENU_WIDTH > screenWidth - SCREEN_PADDING) {
+			x = screenWidth - MENU_WIDTH - SCREEN_PADDING;
+		}
+
+		// Estimate menu height based on item height
+		const estimatedHeight = actions.length * MobileSizes.buttonMd + MobileSizes.gapMd;
+		if (y + estimatedHeight > screenHeight - 100) {
+			y = screenHeight - estimatedHeight - 100;
+		}
+		if (y < 100) {
+			y = 100;
+		}
+
+		return { top: y, left: x };
+	}, [anchorPosition, screenWidth, screenHeight, actions.length]);
+
+	const shadowColor = getShadowColor(isDark);
 
 	return (
-		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
-			<View className="pb-2">
-				<View className="px-4 pt-2 pb-1">
-					<Text style={[typography.uiHeader, { color: colors.foreground }]}>Session actions</Text>
-				</View>
-				<View className="border-t" style={{ borderTopColor: colors.border }} />
-				{actions.map((action, index) => (
-					<View key={action.key}>
-						<TouchableOpacity
-							onPress={action.onPress}
-							activeOpacity={0.7}
-							className="flex-row items-center gap-3 px-4 py-3"
-							accessibilityRole="menuitem"
-						>
-							<action.icon size={18} color={action.destructive ? colors.destructive : colors.mutedForeground} />
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: action.destructive ? colors.destructive : colors.foreground },
-								]}
-							>
-								{action.label}
-							</Text>
-						</TouchableOpacity>
-						{index < actions.length - 1 && (
-							<View className="h-px" style={{ backgroundColor: colors.border }} />
-						)}
+		<Modal
+			visible={visible}
+			transparent
+			animationType="none"
+			onRequestClose={onClose}
+		>
+			<Pressable style={styles.backdrop} onPress={onClose}>
+				<Animated.View
+					style={[
+						styles.menuContainer,
+						{
+							opacity: opacityAnim,
+							transform: [
+								{ scale: scaleAnim },
+								{
+									translateY: scaleAnim.interpolate({
+										inputRange: [AnimationTokens.menuScaleFrom, AnimationTokens.menuScaleTo],
+										outputRange: [-MobileSizes.gapMd, 0],
+									}),
+								},
+							],
+							shadowColor,
+							...ShadowTokens.menu,
+							...menuPosition,
+						},
+					]}
+				>
+					<View
+						style={[
+							styles.menuContent,
+							{
+								backgroundColor: isDark
+									? withOpacity(colors.card, 0.98)
+									: colors.card,
+								borderColor: withOpacity(colors.border, OpacityTokens.subtle),
+							},
+						]}
+					>
+						{actions.map((action, index) => (
+							<View key={action.key}>
+								<Pressable
+									onPress={action.onPress}
+									style={({ pressed }) => [
+										styles.menuItem,
+										{
+											backgroundColor: pressed
+												? withOpacity(colors.foreground, OpacityTokens.faint)
+												: "transparent",
+										},
+									]}
+								>
+									<Text
+										style={[
+											typography.uiLabel,
+											styles.menuItemText,
+											{
+												color: action.destructive
+													? colors.destructive
+													: colors.foreground,
+											},
+										]}
+									>
+										{action.label}
+									</Text>
+									<action.icon
+										size={MenuPositioning.iconSize}
+										color={
+											action.destructive
+												? colors.destructive
+												: colors.mutedForeground
+										}
+									/>
+								</Pressable>
+								{index < actions.length - 1 && (
+									<View
+										style={[
+											styles.separator,
+											{ backgroundColor: withOpacity(colors.border, OpacityTokens.subtle) },
+										]}
+									/>
+								)}
+							</View>
+						))}
 					</View>
-				))}
-			</View>
-		</Sheet>
+				</Animated.View>
+			</Pressable>
+		</Modal>
 	);
 }
+
+const styles = StyleSheet.create({
+	backdrop: {
+		flex: 1,
+	},
+	menuContainer: {
+		position: "absolute",
+		width: MENU_WIDTH,
+	},
+	menuContent: {
+		borderRadius: RadiusTokens.xl,
+		overflow: "hidden",
+		borderWidth: 1,
+	},
+	menuItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: MenuPositioning.itemPaddingX,
+		paddingVertical: MenuPositioning.itemPaddingY,
+		minHeight: MobileSizes.buttonMd,
+		gap: MenuPositioning.itemGap,
+	},
+	menuItemText: {
+		flex: 1,
+	},
+	separator: {
+		height: StyleSheet.hairlineWidth,
+		marginLeft: MenuPositioning.itemPaddingX,
+	},
+});

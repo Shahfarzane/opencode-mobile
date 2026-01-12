@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { ChevronDownIcon } from "@/components/icons";
+import { ChevronDownIcon, ChevronRightIcon } from "@/components/icons";
 import { Fonts, Radius, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { ToolOutputDialog } from "./ToolOutputDialog";
@@ -246,29 +246,43 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 		(part.input?.sessionId as string) ||
 		(part.output && tryParseSessionId(part.output));
 
+	const handlePress = () => {
+		setIsExpanded(!isExpanded);
+	};
+
 	return (
-		<View className="my-1">
+		<View style={{ marginVertical: 4 }}>
 			<Pressable
-				onPress={() => setIsExpanded(!isExpanded)}
-				className="flex-row items-center gap-2 rounded-lg px-2 py-1.5"
-				style={{
-					backgroundColor: withOpacity(colors.toolBackground, OPACITY.half),
+				onPress={handlePress}
+				style={({ pressed }) => ({
+					flexDirection: "row",
+					alignItems: "center",
+					gap: 8,
+					paddingHorizontal: 10,
+					paddingVertical: 8,
+					minHeight: 40,
+					backgroundColor: pressed
+						? withOpacity(colors.toolBackground, OPACITY.secondary)
+						: withOpacity(colors.toolBackground, OPACITY.half),
 					borderColor: withOpacity(colors.toolBorder, OPACITY.half),
 					borderWidth: 1,
 					borderRadius: Radius.lg,
-				}}
+				})}
 			>
-				<View className="flex-row items-center gap-2 flex-1 min-w-0">
-					<View className="w-3.5 h-3.5 justify-center items-center">
+				<View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+					<View style={{ width: 16, height: 16, justifyContent: "center", alignItems: "center" }}>
 						{isExpanded ? (
-							<ChevronDownIcon size={16} color={colors.mutedForeground} />
+							<ChevronDownIcon size={14} color={colors.mutedForeground} />
 						) : (
-							getToolIcon(
-								toolName,
-								part.state === "error"
-									? colors.destructive
-									: colors.mutedForeground,
-							)
+							<ChevronRightIcon size={14} color={colors.mutedForeground} />
+						)}
+					</View>
+					<View style={{ width: 14, height: 14, justifyContent: "center", alignItems: "center" }}>
+						{getToolIcon(
+							toolName,
+							part.state === "error"
+								? colors.destructive
+								: colors.mutedForeground,
 						)}
 					</View>
 					<Text
@@ -287,15 +301,14 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					</Text>
 					{description && (
 						<Text
-							className="flex-1"
-							style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.secondary) }]}
+							style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.secondary), flex: 1 }]}
 							numberOfLines={1}
 						>
 							{description}
 						</Text>
 					)}
 				</View>
-				<View className="flex-row items-center gap-1 shrink-0">
+				<View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 0 }}>
 					{part.state === "running" && (
 						<Text style={[typography.micro, { color: colors.info }]}>●</Text>
 					)}

@@ -487,7 +487,7 @@ function AssistantMessage({
 				</View>
 			)}
 
-			<Pressable ref={bubbleRef} onLongPress={openMenu} style={{ paddingLeft: Spacing[3] }}>
+			<View ref={bubbleRef} style={{ paddingLeft: Spacing[3] }}>
 				{hasParts ? (
 					message.parts!.map((part, idx) => (
 						<RenderPart
@@ -501,14 +501,16 @@ function AssistantMessage({
 						/>
 					))
 				) : (
-					<View style={{ marginBottom: Spacing[1] }}>
-						<MarkdownRenderer content={message.content} />
-						{isStreaming && (
-							<Text style={{ marginLeft: Spacing[0.5], color: colors.primary }}>▊</Text>
-						)}
-					</View>
+					<Pressable onLongPress={openMenu}>
+						<View style={{ marginBottom: Spacing[1] }}>
+							<MarkdownRenderer content={message.content} />
+							{isStreaming && (
+								<Text style={{ marginLeft: Spacing[0.5], color: colors.primary }}>▊</Text>
+							)}
+						</View>
+					</Pressable>
 				)}
-			</Pressable>
+			</View>
 			{/* Inline action icons for assistant messages */}
 			{showActionIcons && (
 				<View className="flex-row items-center gap-1 mt-1 pl-3">

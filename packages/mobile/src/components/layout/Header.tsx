@@ -1,3 +1,5 @@
+import { selectionAsync } from "expo-haptics";
+import { useCallback } from "react";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type ContextUsage, ContextUsageDisplay } from "@/components/chat";
@@ -67,6 +69,14 @@ export function Header({
 	const showContextUsage =
 		activeTab === "chat" && contextUsage && contextUsage.totalTokens > 0;
 
+	const handleTabPress = useCallback(
+		(tabId: MainTab) => {
+			selectionAsync().catch(() => {});
+			onTabChange(tabId);
+		},
+		[onTabChange],
+	);
+
 	return (
 		<View
 			className={headerStyles.container({})}
@@ -94,34 +104,42 @@ export function Header({
 
 				{/* Right section: Tabs + settings */}
 				<View className={headerStyles.rightSection({})}>
-					{tabs.map((tab) => {
-						const isActive = activeTab === tab.id;
-						const showDiffDot = tab.id === "diff" && diffFileCount > 0;
-						return (
-							<Pressable
-								key={tab.id}
-								onPress={() => onTabChange(tab.id)}
-								className={headerStyles.iconButton({})}
-								hitSlop={4}
-							>
-								<View className={headerStyles.tabContent({})}>
-									{getTabIcon(
-										tab.id,
-										isActive ? colors.foreground : colors.mutedForeground,
-										20,
-									)}
-									{/* Dot indicator for diff tab when there are changes */}
-									{showDiffDot && (
-										<View
-											className={headerStyles.changeDot({})}
-											style={{ backgroundColor: colors.primary }}
-										/>
-									)}
-								</View>
-							</Pressable>
-						);
-					})}
+					{/* Tabs group */}
+					<View className="flex-row items-center">
+						{tabs.map((tab) => {
+							const isActive = activeTab === tab.id;
+							const showDiffDot = tab.id === "diff" && diffFileCount > 0;
 
+							return (
+								<Pressable
+									key={tab.id}
+									onPress={() => handleTabPress(tab.id)}
+									className={headerStyles.tabButton({ isActive })}
+									hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+									accessibilityLabel={tab.label}
+									accessibilityRole="tab"
+									accessibilityState={{ selected: isActive }}
+								>
+									<View className={headerStyles.tabContent({})}>
+										{getTabIcon(
+											tab.id,
+											isActive ? colors.foreground : colors.mutedForeground,
+											20,
+										)}
+										{/* Dot indicator for diff tab when there are changes */}
+										{showDiffDot && (
+											<View
+												className={headerStyles.changeDot({})}
+												style={{ backgroundColor: colors.primary }}
+											/>
+										)}
+									</View>
+								</Pressable>
+							);
+						})}
+					</View>
+
+					{/* Settings button */}
 					<View className={headerStyles.tabContent({})}>
 						<IconButton
 							icon={<SettingsIcon color={colors.mutedForeground} size={20} />}

@@ -40,6 +40,7 @@
     "@ronradtke/react-native-markdown-display": "^8.1.0",
     "@shopify/flash-list": "2.0.2",
     "expo": "~54.0.30",
+    "expo-blur": "^15.0.8",
     "expo-camera": "~17.0.10",
     "expo-clipboard": "^8.0.8",
     "expo-constants": "~18.0.12",

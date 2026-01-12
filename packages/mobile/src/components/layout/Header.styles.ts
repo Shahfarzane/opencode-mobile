@@ -6,7 +6,7 @@ const container = tv({
 });
 
 const content = tv({
-  base: "flex-row items-center justify-between px-3 py-2",
+  base: "flex-row items-center justify-between gap-2 px-3 py-2",
   variants: {},
 });
 
@@ -22,7 +22,22 @@ const rightSection = tv({
 
 const iconButton = tv({
   base: "w-9 h-9 items-center justify-center",
-  variants: {},
+  variants: {
+    isActive: {
+      true: "",
+      false: "",
+    },
+  },
+});
+
+const tabButton = tv({
+  base: "w-9 h-9 items-center justify-center relative",
+  variants: {
+    isActive: {
+      true: "",
+      false: "",
+    },
+  },
 });
 
 const tabContent = tv({
@@ -56,6 +71,7 @@ export const headerStyles = combineStyles({
   leftSection,
   rightSection,
   iconButton,
+  tabButton,
   tabContent,
   updateDot,
   changeDot,

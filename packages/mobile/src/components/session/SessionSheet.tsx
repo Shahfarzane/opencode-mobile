@@ -1,6 +1,4 @@
 import BottomSheet, {
-	BottomSheetBackdrop,
-	type BottomSheetBackdropProps,
 	BottomSheetScrollView,
 	useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
@@ -276,10 +274,8 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 
 		const handleSelectSession = useCallback(
 			(session: Session) => {
-				console.log("[SessionSheet] handleSelectSession called, session:", session.id);
 				// Haptics handled by SessionListItem
 				onSelectSession(session);
-				console.log("[SessionSheet] onSelectSession completed");
 			},
 			[onSelectSession],
 		);
@@ -344,18 +340,6 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 			(ref as React.RefObject<BottomSheet>)?.current?.close();
 		}, [ref]);
 
-		const renderBackdrop = useCallback(
-			(props: BottomSheetBackdropProps) => (
-				<BottomSheetBackdrop
-					{...props}
-					disappearsOnIndex={-1}
-					appearsOnIndex={0}
-					opacity={0.5}
-				/>
-			),
-			[],
-		);
-
 		const isOffline = networkStatus === "offline";
 
 		const renderSessionNode = useCallback(
@@ -387,7 +371,10 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				};
 
 				return (
-					<View key={session.id}>
+					<View
+						key={session.id}
+						style={{ width: "100%", alignSelf: "stretch" }}
+					>
 						<SessionListItem
 							session={session}
 							isSelected={isSelected}
@@ -408,7 +395,7 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 							onDelete={handleDelete}
 						/>
 						{hasChildren && isExpanded && (
-							<View>
+							<View style={{ width: "100%" }}>
 								{node.children.map((child) =>
 									renderSessionNode(child, depth + 1),
 								)}
@@ -440,12 +427,12 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				snapPoints={snapPoints}
 				enablePanDownToClose={true}
 				enableContentPanningGesture={false}
+				enableHandlePanningGesture={true}
 				topInset={insets.top}
 				animationConfigs={animationConfigs}
 				backgroundStyle={sheetBackgroundStyle}
 				handleIndicatorStyle={sheetHandleStyle}
-				backdropComponent={renderBackdrop}
-				style={{ zIndex: 9999, elevation: 9999 }}
+				containerStyle={{ pointerEvents: "box-none" }}
 			>
 				<SheetHeader title="Sessions" onClose={handleDismiss} />
 

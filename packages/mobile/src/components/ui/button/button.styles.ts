@@ -14,34 +14,36 @@ import { tv, combineStyles } from "@/lib/styles";
  * - Mobile large (56px) = "lg"
  */
 const root = tv({
-  base: "relative overflow-hidden flex-row items-center justify-center rounded-2xl",
+  // Base layout styles only - colors handled via inline styles for theme support
+  base: "relative overflow-hidden flex-row items-center justify-center",
   variants: {
+    // Variant classes for non-color styles only (colors set inline via useTheme)
     variant: {
-      primary: "bg-primary",
-      secondary: "bg-secondary",
-      outline: "bg-transparent border border-border/80 dark:bg-input/30 dark:border-input",
-      ghost: "bg-transparent dark:active:bg-accent/40",
-      destructive: "bg-destructive dark:bg-destructive/70",
-      warning: "bg-warning",
-      muted: "bg-muted",
-      info: "bg-info",
+      primary: "",
+      secondary: "",
+      outline: "border",
+      ghost: "",
+      destructive: "",
+      warning: "",
+      muted: "",
+      info: "",
     },
     size: {
-      // Mobile-optimized sizes (touch-friendly)
-      xs: "h-7 px-2 gap-1 rounded-xl",
-      sm: "h-9 px-3 gap-1.5 rounded-2xl",
-      md: "h-11 px-4 gap-2 rounded-2xl",
-      lg: "h-14 px-6 gap-2.5 rounded-2xl",
+      // Mobile-optimized sizes - using rounded-lg (8px) style like PWA
+      xs: "h-7 px-2.5 gap-1",      // Compact size for toolbars
+      sm: "h-8 px-3 gap-1.5",      // Small button
+      md: "h-10 px-4 gap-2",       // Default mobile button
+      lg: "h-12 px-5 gap-2",       // Large mobile button
       // Icon button sizes
-      "icon-xs": "h-6 w-6 rounded-lg",
-      "icon-sm": "h-8 w-8 rounded-xl",
-      "icon-md": "h-10 w-10 rounded-2xl",
-      "icon-lg": "h-12 w-12 rounded-2xl",
+      "icon-xs": "h-7 w-7",
+      "icon-sm": "h-8 w-8",
+      "icon-md": "h-10 w-10",
+      "icon-lg": "h-12 w-12",
       // Desktop-equivalent sizes (for parity with PWA)
-      "desktop": "h-9 px-4 gap-2 rounded-2xl",        // h-9 = 36px (desktop default)
-      "desktop-sm": "h-8 px-3 gap-1.5 rounded-xl",   // h-8 = 32px (desktop sm)
-      "desktop-lg": "h-10 px-6 gap-2 rounded-2xl",    // h-10 = 40px (desktop lg)
-      "icon-desktop": "h-9 w-9 rounded-xl",          // size-9 = 36px (desktop icon)
+      "desktop": "h-9 px-4 gap-2",        // h-9 = 36px (desktop default)
+      "desktop-sm": "h-8 px-3 gap-1.5",   // h-8 = 32px (desktop sm)
+      "desktop-lg": "h-10 px-6 gap-2",    // h-10 = 40px (desktop lg)
+      "icon-desktop": "h-9 w-9",          // size-9 = 36px (desktop icon)
     },
     isDisabled: {
       true: "opacity-disabled",
