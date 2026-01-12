@@ -186,7 +186,7 @@ function ProviderHeader({
 			})}
 		>
 			<View className="flex-row items-center gap-2 flex-1">
-				<ProviderLogo providerId={providerId} size={14} />
+				<ProviderLogoWithFallback providerId={providerId} size={14} />
 				<Text
 					style={[
 						typography.body,

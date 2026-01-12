@@ -1,9 +1,12 @@
+import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { Modal, ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useRef } from "react";
+import { Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { CopyIcon, XIcon } from "@/components/icons";
 import { IconButton } from "@/components/ui";
+import { Sheet, SheetScrollView } from "@/components/ui/sheet";
 import { fontStyle, typography, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
 import type { ToolPartData } from "./ToolPart";
@@ -57,21 +60,8 @@ function getToolIcon(toolName: string, color: string) {
 	if (name === "bash" || name === "shell" || name === "terminal") {
 		return (
 			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-				<Rect
-					x="2"
-					y="4"
-					width="20"
-					height="16"
-					rx="2"
-					stroke={color}
-					strokeWidth={2}
-				/>
-				<Path
-					d="M6 9l3 3-3 3M12 15h6"
-					stroke={color}
-					strokeWidth={2}
-					strokeLinecap="round"
-				/>
+				<Rect x="2" y="4" width="20" height="16" rx="2" stroke={color} strokeWidth={2} />
+				<Path d="M6 9l3 3-3 3M12 15h6" stroke={color} strokeWidth={2} strokeLinecap="round" />
 			</Svg>
 		);
 	}
@@ -80,12 +70,7 @@ function getToolIcon(toolName: string, color: string) {
 		return (
 			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
 				<Circle cx="11" cy="11" r="8" stroke={color} strokeWidth={2} />
-				<Path
-					d="M21 21l-4.35-4.35"
-					stroke={color}
-					strokeWidth={2}
-					strokeLinecap="round"
-				/>
+				<Path d="M21 21l-4.35-4.35" stroke={color} strokeWidth={2} strokeLinecap="round" />
 			</Svg>
 		);
 	}
@@ -119,13 +104,19 @@ function formatInputForDisplay(input: Record<string, unknown>): string {
 	return JSON.stringify(input, null, 2);
 }
 
-export function ToolOutputDialog({
-	visible,
-	onClose,
-	part,
-}: ToolOutputDialogProps) {
+export function ToolOutputDialog({ visible, onClose, part }: ToolOutputDialogProps) {
 	const { colors } = useTheme();
 	const toolName = part.toolName || "Tool";
+	const sheetRef = useRef<BottomSheet>(null);
+	const snapPoints = useMemo(() => ["85%"], []);
+
+	useEffect(() => {
+		if (visible) {
+			sheetRef.current?.snapToIndex(0);
+		} else {
+			sheetRef.current?.close();
+		}
+	}, [visible]);
 
 	const handleCopyOutput = async () => {
 		const content = part.output || part.error || "";
@@ -143,177 +134,70 @@ export function ToolOutputDialog({
 	};
 
 	return (
-		<Modal
-			visible={visible}
-			animationType="slide"
-			presentationStyle="pageSheet"
-			onRequestClose={onClose}
-		>
-			<View className="flex-1" style={{ backgroundColor: colors.background }}>
-				<View className="flex-row items-center justify-between px-4 py-3">
-					<View className="flex-row items-center gap-2">
-						{getToolIcon(toolName, colors.foreground)}
-						<Text
-							style={[
-								typography.uiHeader,
-								fontStyle("600"),
-								{ color: colors.foreground },
-							]}
-						>
-							{toolName}
-						</Text>
-					</View>
-					<IconButton
-						icon={<XIcon size={20} color={colors.mutedForeground} />}
-						variant="ghost"
-						size="icon-sm"
-						onPress={onClose}
-						accessibilityLabel="Close"
-					/>
+		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
+			<View className="px-4 pt-2 pb-3 flex-row items-center justify-between">
+				<View className="flex-row items-center gap-2">
+					{getToolIcon(toolName, colors.foreground)}
+					<Text style={[typography.uiHeader, fontStyle("600"), { color: colors.foreground }]}>{toolName}</Text>
 				</View>
-
-				<View
-					className="flex-1 mx-4 mb-4 rounded-xl border overflow-hidden"
-					style={{
-						backgroundColor: withOpacity(colors.card, OPACITY.overlay),
-						borderColor: withOpacity(colors.border, OPACITY.overlay),
-					}}
-				>
-					<ScrollView
-						className="flex-1"
-						contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
-					>
-						{part.input && Object.keys(part.input).length > 0 && (
-							<View className="mb-4">
-								<View className="flex-row items-center justify-between mb-2">
-									<Text
-										style={[
-											typography.meta,
-											fontStyle("500"),
-											{ color: colors.mutedForeground },
-										]}
-									>
-										Input
-									</Text>
-									<IconButton
-										icon={<CopyIcon size={18} color={colors.mutedForeground} />}
-										variant="ghost"
-										size="icon-sm"
-										onPress={handleCopyInput}
-										accessibilityLabel="Copy input"
-									/>
-								</View>
-								<View
-									className="rounded-xl border p-3"
-									style={{
-										backgroundColor: "transparent",
-										borderColor: withOpacity(colors.border, OPACITY.emphasized),
-									}}
-								>
-									<Text style={[typography.code, { color: colors.foreground }]}>
-										{formatInputForDisplay(part.input)}
-									</Text>
-								</View>
-							</View>
-						)}
-
-						{part.output && part.output.trim().length > 0 && (
-							<View className="mb-4">
-								<View className="flex-row items-center justify-between mb-2">
-									<Text
-										style={[
-											typography.meta,
-											fontStyle("500"),
-											{ color: colors.mutedForeground },
-										]}
-									>
-										Output
-									</Text>
-									<IconButton
-										icon={<CopyIcon size={18} color={colors.mutedForeground} />}
-										variant="ghost"
-										size="icon-sm"
-										onPress={handleCopyOutput}
-										accessibilityLabel="Copy output"
-									/>
-								</View>
-								<View
-									className="rounded-xl border p-3"
-									style={{
-										backgroundColor: "transparent",
-										borderColor: withOpacity(colors.border, OPACITY.emphasized),
-									}}
-								>
-									<Text
-										style={[typography.code, { color: colors.foreground }]}
-										selectable
-									>
-										{part.output}
-									</Text>
-								</View>
-							</View>
-						)}
-
-						{part.error && part.error.trim().length > 0 && (
-							<View className="mb-4">
-								<View className="flex-row items-center justify-between mb-2">
-									<Text
-										style={[
-											typography.meta,
-											fontStyle("500"),
-											{ color: colors.destructive },
-										]}
-									>
-										Error
-									</Text>
-									<IconButton
-										icon={<CopyIcon size={18} color={colors.mutedForeground} />}
-										variant="ghost"
-										size="icon-sm"
-										onPress={handleCopyOutput}
-										accessibilityLabel="Copy error"
-									/>
-								</View>
-								<View
-									className="rounded-xl border p-3"
-									style={{
-										backgroundColor: withOpacity(
-											colors.destructive,
-											OPACITY.hover,
-										),
-										borderColor: withOpacity(
-											colors.destructive,
-											OPACITY.emphasized,
-										),
-									}}
-								>
-									<Text
-										style={[typography.code, { color: colors.destructive }]}
-										selectable
-									>
-										{part.error}
-									</Text>
-								</View>
-							</View>
-						)}
-
-						{!part.output && !part.error && (
-							<View className="items-center py-10 gap-2">
-								<Text
-									style={[typography.body, { color: colors.mutedForeground }]}
-								>
-									Command completed successfully
-								</Text>
-								<Text
-									style={[typography.micro, { color: colors.mutedForeground }]}
-								>
-									No output was produced
-								</Text>
-							</View>
-						)}
-					</ScrollView>
-				</View>
+				<IconButton
+					icon={<XIcon size={20} color={colors.mutedForeground} />}
+					variant="ghost"
+					size="icon-sm"
+					onPress={() => sheetRef.current?.close()}
+					accessibilityLabel="Close"
+				/>
 			</View>
-		</Modal>
+			<View className="border-t" style={{ borderTopColor: colors.border }} />
+
+			<View className="mx-4 my-3 rounded-xl border overflow-hidden" style={{ backgroundColor: withOpacity(colors.card, OPACITY.overlay), borderColor: withOpacity(colors.border, OPACITY.overlay) }}>
+				<SheetScrollView contentContainerStyle={{ padding: 12, paddingBottom: 40 }}>
+					{part.input && Object.keys(part.input).length > 0 && (
+						<View className="mb-4">
+							<View className="flex-row items-center justify-between mb-2">
+								<Text style={[typography.meta, fontStyle("500"), { color: colors.mutedForeground }]}>Input</Text>
+								<IconButton
+									icon={<CopyIcon size={18} color={colors.mutedForeground} />}
+									variant="ghost"
+									size="icon-sm"
+									onPress={handleCopyInput}
+									accessibilityLabel="Copy input"
+								/>
+							</View>
+							<View className="rounded-xl border p-3" style={{ backgroundColor: "transparent", borderColor: withOpacity(colors.border, OPACITY.emphasized) }}>
+								<Text style={[typography.code, { color: colors.foreground }]}>{formatInputForDisplay(part.input)}</Text>
+							</View>
+						</View>
+					)}
+
+					{part.output && part.output.trim().length > 0 && (
+						<View className="mb-4">
+							<View className="flex-row items-center justify-between mb-2">
+								<Text style={[typography.meta, fontStyle("500"), { color: colors.mutedForeground }]}>Output</Text>
+								<IconButton
+									icon={<CopyIcon size={18} color={colors.mutedForeground} />}
+									variant="ghost"
+									size="icon-sm"
+									onPress={handleCopyOutput}
+									accessibilityLabel="Copy output"
+								/>
+							</View>
+							<View className="rounded-xl border p-3" style={{ backgroundColor: "transparent", borderColor: withOpacity(colors.border, OPACITY.emphasized) }}>
+								<Text style={[typography.code, { color: colors.foreground }]}>{part.output}</Text>
+							</View>
+						</View>
+					)}
+
+					{part.error && part.error.trim().length > 0 && (
+						<View>
+							<Text style={[typography.meta, fontStyle("500"), { color: colors.destructive, marginBottom: 8 }]}>Error</Text>
+							<View className="rounded-xl border p-3" style={{ backgroundColor: withOpacity(colors.destructive, 0.08), borderColor: withOpacity(colors.destructive, 0.2) }}>
+								<Text style={[typography.code, { color: colors.destructive }]}>{part.error}</Text>
+							</View>
+						</View>
+					)}
+				</SheetScrollView>
+			</View>
+		</Sheet>
 	);
 }
