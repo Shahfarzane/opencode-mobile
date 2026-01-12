@@ -1,20 +1,20 @@
+import type BottomSheet from "@gorhom/bottom-sheet";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import type BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Image, Pressable, Text, View } from "react-native";
 import {
-	Alert,
-	Image,
-	Pressable,
-	Text,
-	View,
-} from "react-native";
-import { FileIcon, FolderIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
+	FileIcon,
+	FolderIcon,
+	ImageIcon,
+	PlusCircleIcon,
+	XIcon,
+} from "@/components/icons";
 import { IconButton } from "@/components/ui";
 import { Sheet } from "@/components/ui/sheet";
-import { typography, useTheme } from "@/theme";
 import { useConnectionStore } from "@/stores/useConnectionStore";
+import { typography, useTheme } from "@/theme";
 import { ServerFilePicker } from "./ServerFilePicker";
 
 export interface AttachedFile {
@@ -191,36 +191,58 @@ export function FileAttachmentButton({
 			>
 				<View className="pb-2">
 					<View className="px-4 pt-2 pb-1">
-						<Text style={[typography.uiHeader, { color: colors.foreground }]}>Attach file</Text>
+						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
+							Attach file
+						</Text>
 					</View>
-					<View className="border-t" style={{ borderTopColor: colors.border }} />
+					<View
+						className="border-t"
+						style={{ borderTopColor: colors.border }}
+					/>
 					<Pressable
 						onPress={handleImagePick}
 						className="flex-row items-center gap-3 px-4 py-3"
-						style={({ pressed }) => ({ backgroundColor: pressed ? colors.muted : "transparent" })}
+						style={({ pressed }) => ({
+							backgroundColor: pressed ? colors.muted : "transparent",
+						})}
 					>
 						<ImageIcon size={20} color={colors.foreground} />
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Photo Library</Text>
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+							Photo Library
+						</Text>
 					</Pressable>
 					<View className="h-px" style={{ backgroundColor: colors.border }} />
 					<Pressable
 						onPress={handleDocumentPick}
 						className="flex-row items-center gap-3 px-4 py-3"
-						style={({ pressed }) => ({ backgroundColor: pressed ? colors.muted : "transparent" })}
+						style={({ pressed }) => ({
+							backgroundColor: pressed ? colors.muted : "transparent",
+						})}
 					>
 						<FileIcon size={20} color={colors.foreground} />
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Files</Text>
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
+							Files
+						</Text>
 					</Pressable>
 					{directory && (
 						<>
-							<View className="h-px" style={{ backgroundColor: colors.border }} />
+							<View
+								className="h-px"
+								style={{ backgroundColor: colors.border }}
+							/>
 							<Pressable
 								onPress={handleOpenServerPicker}
 								className="flex-row items-center gap-3 px-4 py-3"
-								style={({ pressed }) => ({ backgroundColor: pressed ? colors.muted : "transparent" })}
+								style={({ pressed }) => ({
+									backgroundColor: pressed ? colors.muted : "transparent",
+								})}
 							>
 								<FolderIcon size={20} color={colors.foreground} />
-								<Text style={[typography.uiLabel, { color: colors.foreground }]}>Project Files</Text>
+								<Text
+									style={[typography.uiLabel, { color: colors.foreground }]}
+								>
+									Project Files
+								</Text>
 							</Pressable>
 						</>
 					)}
@@ -261,10 +283,7 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 						}}
 					>
 						{isImage && file.uri ? (
-							<Image
-								source={{ uri: file.uri }}
-								className="w-8 h-8 rounded"
-							/>
+							<Image source={{ uri: file.uri }} className="w-8 h-8 rounded" />
 						) : (
 							<View
 								className="w-8 h-8 rounded items-center justify-center"
@@ -305,5 +324,3 @@ export function AttachedFilesList({ files, onRemove }: AttachedFilesListProps) {
 		</View>
 	);
 }
-
-

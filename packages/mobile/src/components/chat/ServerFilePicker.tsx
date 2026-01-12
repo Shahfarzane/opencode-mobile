@@ -1,5 +1,5 @@
-import * as Haptics from "expo-haptics";
 import type BottomSheet from "@gorhom/bottom-sheet";
+import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
@@ -8,6 +8,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { type FileListEntry, filesApi } from "@/api/files";
 import {
 	CheckIcon,
 	ChevronDownIcon,
@@ -19,8 +20,7 @@ import {
 import { Button, SearchInput } from "@/components/ui";
 import { Sheet } from "@/components/ui/sheet";
 import { typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
-import { filesApi, type FileListEntry } from "@/api/files";
+import { OPACITY, withOpacity } from "@/utils/colors";
 
 interface FileInfo {
 	name: string;
@@ -55,7 +55,9 @@ export function ServerFilePicker({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 	const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
-	const [childrenByDir, setChildrenByDir] = useState<Record<string, FileInfo[]>>({});
+	const [childrenByDir, setChildrenByDir] = useState<
+		Record<string, FileInfo[]>
+	>({});
 	const [searchResults, setSearchResults] = useState<FileInfo[]>([]);
 
 	const loadedDirsRef = useRef<Set<string>>(new Set());
@@ -76,9 +78,10 @@ export function ServerFilePicker({
 				name: entry.name,
 				path: entry.path,
 				type: entry.isDirectory ? ("directory" as const) : ("file" as const),
-				extension: !entry.isDirectory && entry.name.includes(".")
-					? entry.name.split(".").pop()?.toLowerCase()
-					: undefined,
+				extension:
+					!entry.isDirectory && entry.name.includes(".")
+						? entry.name.split(".").pop()?.toLowerCase()
+						: undefined,
 			}))
 			.sort((a, b) => {
 				if (a.type !== b.type) {
@@ -88,26 +91,29 @@ export function ServerFilePicker({
 			});
 	}, []);
 
-	const loadDirectory = useCallback(async (dirPath: string) => {
-		if (loadedDirsRef.current.has(dirPath)) {
-			return;
-		}
+	const loadDirectory = useCallback(
+		async (dirPath: string) => {
+			if (loadedDirsRef.current.has(dirPath)) {
+				return;
+			}
 
-		setLoading(true);
-		setError(null);
+			setLoading(true);
+			setError(null);
 
-		try {
-			const result = await filesApi.listDirectory(dirPath);
-			const items = mapEntries(result.entries);
-			loadedDirsRef.current.add(dirPath);
-			setChildrenByDir((prev) => ({ ...prev, [dirPath]: items }));
-		} catch {
-			setError("Failed to load directory");
-			setChildrenByDir((prev) => ({ ...prev, [dirPath]: [] }));
-		} finally {
-			setLoading(false);
-		}
-	}, [mapEntries]);
+			try {
+				const result = await filesApi.listDirectory(dirPath);
+				const items = mapEntries(result.entries);
+				loadedDirsRef.current.add(dirPath);
+				setChildrenByDir((prev) => ({ ...prev, [dirPath]: items }));
+			} catch {
+				setError("Failed to load directory");
+				setChildrenByDir((prev) => ({ ...prev, [dirPath]: [] }));
+			} finally {
+				setLoading(false);
+			}
+		},
+		[mapEntries],
+	);
 
 	// Load root directory on open
 	useEffect(() => {
@@ -145,9 +151,11 @@ export function ServerFilePicker({
 						name: r.path.split("/").pop() || r.path,
 						path: r.path,
 						type: "file" as const,
-						extension: r.path.includes(".") ? r.path.split(".").pop()?.toLowerCase() : undefined,
+						extension: r.path.includes(".")
+							? r.path.split(".").pop()?.toLowerCase()
+							: undefined,
 						relativePath: r.path.replace(`${rootDirectory}/`, ""),
-					}))
+					})),
 				);
 			} catch {
 				setSearchResults([]);
@@ -163,42 +171,48 @@ export function ServerFilePicker({
 		};
 	}, [searchQuery, rootDirectory]);
 
-	const toggleDirectory = useCallback(async (dirPath: string) => {
-		await Haptics.selectionAsync();
-		const isExpanded = expandedDirs.has(dirPath);
+	const toggleDirectory = useCallback(
+		async (dirPath: string) => {
+			await Haptics.selectionAsync();
+			const isExpanded = expandedDirs.has(dirPath);
 
-		if (isExpanded) {
-			setExpandedDirs((prev) => {
-				const next = new Set(prev);
-				next.delete(dirPath);
-				return next;
-			});
-		} else {
-			setExpandedDirs((prev) => {
-				const next = new Set(prev);
-				next.add(dirPath);
-				return next;
-			});
-			await loadDirectory(dirPath);
-		}
-	}, [expandedDirs, loadDirectory]);
+			if (isExpanded) {
+				setExpandedDirs((prev) => {
+					const next = new Set(prev);
+					next.delete(dirPath);
+					return next;
+				});
+			} else {
+				setExpandedDirs((prev) => {
+					const next = new Set(prev);
+					next.add(dirPath);
+					return next;
+				});
+				await loadDirectory(dirPath);
+			}
+		},
+		[expandedDirs, loadDirectory],
+	);
 
-	const toggleFileSelection = useCallback((filePath: string) => {
-		Haptics.selectionAsync();
-		if (multiSelect) {
-			setSelectedFiles((prev) => {
-				const next = new Set(prev);
-				if (next.has(filePath)) {
-					next.delete(filePath);
-				} else {
-					next.add(filePath);
-				}
-				return next;
-			});
-		} else {
-			setSelectedFiles(new Set([filePath]));
-		}
-	}, [multiSelect]);
+	const toggleFileSelection = useCallback(
+		(filePath: string) => {
+			Haptics.selectionAsync();
+			if (multiSelect) {
+				setSelectedFiles((prev) => {
+					const next = new Set(prev);
+					if (next.has(filePath)) {
+						next.delete(filePath);
+					} else {
+						next.add(filePath);
+					}
+					return next;
+				});
+			} else {
+				setSelectedFiles(new Set([filePath]));
+			}
+		},
+		[multiSelect],
+	);
 
 	const handleConfirm = useCallback(async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -223,28 +237,31 @@ export function ServerFilePicker({
 		onClose();
 	}, [selectedFiles, childrenByDir, searchResults, onFilesSelected, onClose]);
 
-	const getFileIconColor = useCallback((extension?: string) => {
-		switch (extension?.toLowerCase()) {
-			case "ts":
-			case "tsx":
-			case "js":
-			case "jsx":
-				return colors.info;
-			case "json":
-				return colors.warning;
-			case "md":
-			case "mdx":
-				return colors.mutedForeground;
-			case "png":
-			case "jpg":
-			case "jpeg":
-			case "gif":
-			case "svg":
-				return colors.success;
-			default:
-				return colors.mutedForeground;
-		}
-	}, [colors]);
+	const getFileIconColor = useCallback(
+		(extension?: string) => {
+			switch (extension?.toLowerCase()) {
+				case "ts":
+				case "tsx":
+				case "js":
+				case "jsx":
+					return colors.info;
+				case "json":
+					return colors.warning;
+				case "md":
+				case "mdx":
+					return colors.mutedForeground;
+				case "png":
+				case "jpg":
+				case "jpeg":
+				case "gif":
+				case "svg":
+					return colors.success;
+				default:
+					return colors.mutedForeground;
+			}
+		},
+		[colors],
+	);
 
 	const rootItems = childrenByDir[rootDirectory] ?? [];
 	const isSearchActive = searchQuery.trim().length > 0;
@@ -269,7 +286,10 @@ export function ServerFilePicker({
 						className="flex-row items-center py-2 px-3"
 						style={[
 							{ paddingLeft: 12 + level * 16 },
-							!isDirectory && isSelected && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
+							!isDirectory &&
+								isSelected && {
+									backgroundColor: withOpacity(colors.primary, OPACITY.active),
+								},
 						]}
 					>
 						{isDirectory ? (
@@ -279,7 +299,11 @@ export function ServerFilePicker({
 								) : (
 									<ChevronRightIcon size={14} color={colors.mutedForeground} />
 								)}
-								<FolderIcon size={16} color={colors.primary} style={{ marginLeft: 4 }} />
+								<FolderIcon
+									size={16}
+									color={colors.primary}
+									style={{ marginLeft: 4 }}
+								/>
 							</>
 						) : (
 							<View style={{ width: 14 }} />
@@ -307,7 +331,9 @@ export function ServerFilePicker({
 
 					{isDirectory && isExpanded && children.length > 0 && (
 						<View>
-							{children.map((child) => renderFileItem({ item: child, level: level + 1 }))}
+							{children.map((child) =>
+								renderFileItem({ item: child, level: level + 1 }),
+							)}
 						</View>
 					)}
 				</View>
@@ -322,38 +348,71 @@ export function ServerFilePicker({
 			toggleDirectory,
 			toggleFileSelection,
 			getFileIconColor,
-		]
+		],
 	);
 
 	const displayItems = isSearchActive ? searchResults : rootItems;
 
 	return (
-		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
+		<Sheet
+			ref={sheetRef}
+			snapPoints={snapPoints}
+			onClose={onClose}
+			contentPadding={0}
+		>
 			<View className="flex-1">
 				<View className="flex-row items-center justify-between px-4 pt-2 pb-3">
 					<Pressable onPress={() => sheetRef.current?.close()} hitSlop={8}>
 						<XIcon size={24} color={colors.foreground} />
 					</Pressable>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>Select Project Files</Text>
+					<Text
+						style={[
+							typography.uiLabel,
+							{ color: colors.foreground, fontWeight: "600" },
+						]}
+					>
+						Select Project Files
+					</Text>
 					<View style={{ width: 24 }} />
 				</View>
 				<View className="border-t" style={{ borderTopColor: colors.border }} />
 
-				<View className="px-4 py-2 border-b" style={{ borderBottomColor: colors.border }}>
-					<SearchInput value={searchQuery} onChangeText={setSearchQuery} placeholder="Search files..." />
+				<View
+					className="px-4 py-2 border-b"
+					style={{ borderBottomColor: colors.border }}
+				>
+					<SearchInput
+						value={searchQuery}
+						onChangeText={setSearchQuery}
+						placeholder="Search files..."
+					/>
 				</View>
 
 				<View className="flex-1">
 					{loading && !isSearchActive && displayItems.length === 0 && (
 						<View className="flex-1 items-center justify-center">
 							<ActivityIndicator color={colors.primary} />
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground, marginTop: 8 }]}>Loading files...</Text>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.mutedForeground, marginTop: 8 },
+								]}
+							>
+								Loading files...
+							</Text>
 						</View>
 					)}
 
 					{error && (
 						<View className="flex-1 items-center justify-center px-4">
-							<Text style={[typography.uiLabel, { color: colors.destructive, textAlign: "center" }]}>{error}</Text>
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: colors.destructive, textAlign: "center" },
+								]}
+							>
+								{error}
+							</Text>
 						</View>
 					)}
 
@@ -365,7 +424,9 @@ export function ServerFilePicker({
 
 					{!loading && !error && displayItems.length === 0 && !searching && (
 						<View className="flex-1 items-center justify-center">
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
+							<Text
+								style={[typography.uiLabel, { color: colors.mutedForeground }]}
+							>
 								{isSearchActive ? "No files found" : "No files in directory"}
 							</Text>
 						</View>
@@ -382,13 +443,21 @@ export function ServerFilePicker({
 					)}
 				</View>
 
-				<View className="flex-row items-center justify-between px-4 py-3 border-t" style={{ borderTopColor: colors.border }}>
+				<View
+					className="flex-row items-center justify-between px-4 py-3 border-t"
+					style={{ borderTopColor: colors.border }}
+				>
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{selectedFiles.size > 0
 							? `${selectedFiles.size} file${selectedFiles.size !== 1 ? "s" : ""} selected`
 							: "No files selected"}
 					</Text>
-					<Button variant={selectedFiles.size > 0 ? "primary" : "muted"} size="sm" onPress={handleConfirm} isDisabled={selectedFiles.size === 0}>
+					<Button
+						variant={selectedFiles.size > 0 ? "primary" : "muted"}
+						size="sm"
+						onPress={handleConfirm}
+						isDisabled={selectedFiles.size === 0}
+					>
 						<Button.Label>Attach Files</Button.Label>
 					</Button>
 				</View>

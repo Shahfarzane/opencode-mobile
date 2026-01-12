@@ -1,12 +1,6 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -300,7 +294,9 @@ function ModelRow({
 				className="flex-row items-center gap-1.5 min-w-0"
 				style={{ flex: 1 }}
 			>
-				{showProviderIcon && <ProviderLogoWithFallback providerId={providerId} size={12} />}
+				{showProviderIcon && (
+					<ProviderLogoWithFallback providerId={providerId} size={12} />
+				)}
 				<Text
 					style={[
 						typography.body,

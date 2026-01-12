@@ -251,7 +251,10 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 					});
 				}
 
-				groups.get(key)!.sessions.push(buildNode(session));
+				const group = groups.get(key);
+				if (group) {
+					group.sessions.push(buildNode(session));
+				}
 			});
 
 			if (!groups.has("main")) {
