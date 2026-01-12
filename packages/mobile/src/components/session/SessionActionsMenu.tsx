@@ -197,7 +197,7 @@ export function SessionActionsMenu({
 					<Animated.View
 						style={{
 							flex: 1,
-							backgroundColor: "#000",
+							backgroundColor: colors.overlay,
 							opacity: backdropOpacity,
 						}}
 					/>

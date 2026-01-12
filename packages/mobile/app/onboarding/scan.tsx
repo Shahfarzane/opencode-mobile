@@ -11,7 +11,7 @@ import { Spacing, typography, useTheme } from "../../src/theme";
 
 function BackButton({ light }: { light?: boolean }) {
 	const { colors } = useTheme();
-	const color = light ? "#fff" : colors.foreground;
+	const color = light ? colors.primaryForeground : colors.foreground;
 
 	return (
 		<Pressable
@@ -123,7 +123,7 @@ export default function ScanScreen() {
 	}
 
 	return (
-		<View style={styles.cameraContainer}>
+		<View style={[styles.cameraContainer, { backgroundColor: colors.background }]}>
 			<View style={[styles.cameraHeader, { top: insets.top + Spacing.md }]}>
 				<BackButton light />
 			</View>
@@ -199,8 +199,8 @@ const styles = StyleSheet.create({
 	},
 	cameraContainer: {
 		flex: 1,
-		backgroundColor: "#000",
 	},
+
 	cameraHeader: {
 		position: "absolute",
 		left: 0,

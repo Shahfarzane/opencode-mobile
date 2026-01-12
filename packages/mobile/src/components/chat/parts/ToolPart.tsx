@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { ChevronDownIcon } from "@/components/icons";
-import { Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { Fonts, Radius, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { ToolOutputDialog } from "./ToolOutputDialog";
 
@@ -250,12 +250,18 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 		<View className="my-1">
 			<Pressable
 				onPress={() => setIsExpanded(!isExpanded)}
-				className="flex-row items-center gap-2 rounded-xl px-2 py-1.5"
+				className="flex-row items-center gap-2 rounded-lg px-2 py-1.5"
+				style={{
+					backgroundColor: withOpacity(colors.toolBackground, OPACITY.half),
+					borderColor: withOpacity(colors.toolBorder, OPACITY.half),
+					borderWidth: 1,
+					borderRadius: Radius.lg,
+				}}
 			>
 				<View className="flex-row items-center gap-2 flex-1 min-w-0">
 					<View className="w-3.5 h-3.5 justify-center items-center">
 						{isExpanded ? (
-							<ChevronDownIcon size={14} color={colors.mutedForeground} />
+							<ChevronDownIcon size={16} color={colors.mutedForeground} />
 						) : (
 							getToolIcon(
 								toolName,
@@ -300,8 +306,8 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 				<View
 					className="mt-2 ml-5 pl-3 border-l gap-2"
 					style={{
-						borderColor: withOpacity(colors.border, OPACITY.half),
-						backgroundColor: colors.background,
+						borderColor: withOpacity(colors.toolBorder, OPACITY.half),
+						backgroundColor: withOpacity(colors.toolBackground, OPACITY.light),
 					}}
 				>
 					{part.input && Object.keys(part.input).length > 0 && (

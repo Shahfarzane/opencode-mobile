@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { fontStyle, typography, useTheme } from "@/theme";
+import { Spacing, fontStyle, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 
 export interface Agent {
@@ -27,23 +27,12 @@ interface AgentPickerProps {
 	onClose: () => void;
 }
 
-const AGENT_COLORS = [
-	"#3B82F6",
-	"#10B981",
-	"#F59E0B",
-	"#EF4444",
-	"#8B5CF6",
-	"#EC4899",
-	"#06B6D4",
-	"#84CC16",
-];
-
-function getAgentColor(name: string): string {
+function getAgentColor(name: string, palette: string[]): string {
 	let hash = 0;
 	for (let i = 0; i < name.length; i++) {
 		hash = name.charCodeAt(i) + ((hash << 5) - hash);
 	}
-	return AGENT_COLORS[Math.abs(hash) % AGENT_COLORS.length];
+	return palette[Math.abs(hash) % palette.length];
 }
 
 export function AgentPicker({
@@ -55,6 +44,16 @@ export function AgentPicker({
 }: AgentPickerProps) {
 	const { colors } = useTheme();
 	const insets = useSafeAreaInsets();
+	const agentPalette = [
+		colors.info,
+		colors.success,
+		colors.warning,
+		colors.destructive,
+		colors.primary,
+		colors.infoForeground,
+		colors.successForeground,
+		colors.warningForeground,
+	];
 
 	const primaryAgents = agents.filter(
 		(agent) =>
@@ -93,10 +92,11 @@ export function AgentPicker({
 					</Button>
 				</View>
 
-				<ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 12 }}>
+				<ScrollView className="flex-1" contentContainerStyle={{ padding: Spacing[4], gap: Spacing[3] }}>
 					{primaryAgents.map((agent) => {
-						const isSelected = agent.name === currentAgentName;
-						const agentColor = getAgentColor(agent.name);
+					const isSelected = agent.name === currentAgentName;
+					const agentColor = getAgentColor(agent.name, agentPalette);
+
 
 						return (
 							<Pressable

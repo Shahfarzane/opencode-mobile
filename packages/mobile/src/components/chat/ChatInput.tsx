@@ -86,7 +86,7 @@ function AgentIcon() {
 			<Text
 				style={{
 					fontFamily: Fonts.medium,
-					fontSize: 12, // Match PWA icon sizing (h-3.5 = 14px, slightly smaller for text)
+					fontSize: FontSizes.micro,
 					color: colors.info,
 				}}
 			>
@@ -106,7 +106,7 @@ function CommandIcon() {
 			<Text
 				style={{
 					fontFamily: Fonts.medium,
-					fontSize: 12, // Match PWA icon sizing
+					fontSize: FontSizes.micro,
 					color: colors.warning,
 				}}
 			>
@@ -150,7 +150,7 @@ function FileIcon({ extension }: { extension?: string }) {
 			<Text
 				style={{
 					fontFamily: Fonts.medium,
-					fontSize: 12, // Match PWA icon sizing
+					fontSize: FontSizes.micro,
 					color: getColor(),
 				}}
 			>
@@ -731,8 +731,9 @@ export function ChatInput({
 									/>
 								)
 							}
-							variant="ghost"
-							size="icon-sm"
+						variant="ghost"
+						size="icon-md"
+
 							onPress={handleSend}
 							isDisabled={!canSend && !isLoading}
 							accessibilityLabel={isLoading ? "Stop" : "Send message"}

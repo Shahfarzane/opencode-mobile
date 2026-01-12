@@ -25,7 +25,7 @@ import {
 	PushpinIcon,
 } from "../../src/components/icons";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { Spacing, typography, useTheme } from "../../src/theme";
+import { FontSizes, Spacing, typography, useTheme } from "../../src/theme";
 
 function BackButton() {
 	const { colors } = useTheme();
@@ -466,38 +466,38 @@ const styles = StyleSheet.create({
 		paddingRight: 12,
 	},
 	pathSection: {
-		paddingHorizontal: 24,
-		marginTop: 24,
-		marginBottom: 8,
+		paddingHorizontal: Spacing[6],
+		marginTop: Spacing[6],
+		marginBottom: Spacing[2],
 	},
 	pathInput: {
 		borderWidth: 1,
-		borderRadius: 8,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
+		borderRadius: Spacing[2],
+		paddingHorizontal: Spacing[3.5],
+		paddingVertical: Spacing[3],
 		minHeight: 48,
-		fontSize: 16,
+		fontSize: FontSizes.markdown,
 	},
 	goUpRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		marginHorizontal: 16,
-		marginTop: 8,
-		marginBottom: 8,
-		padding: 14,
+		gap: Spacing[2.5],
+		marginHorizontal: Spacing[4],
+		marginTop: Spacing[2],
+		marginBottom: Spacing[2],
+		padding: Spacing[3.5],
 		borderWidth: 1,
-		borderRadius: 8,
+		borderRadius: Spacing[2],
 	},
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		marginHorizontal: 16,
-		marginBottom: 8,
-		padding: 14,
+		gap: Spacing[2.5],
+		marginHorizontal: Spacing[4],
+		marginBottom: Spacing[2],
+		padding: Spacing[3.5],
 		borderWidth: 1,
-		borderRadius: 8,
+		borderRadius: Spacing[2],
 	},
 	loadingContainer: {
 		paddingVertical: 32,

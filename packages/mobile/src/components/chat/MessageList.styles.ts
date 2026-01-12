@@ -6,12 +6,12 @@ const container = tv({
 });
 
 const emptyContainer = tv({
-  base: "flex-1 items-center justify-center px-8 gap-5",
+  base: "flex-1 items-center justify-center px-8 gap-6",
   variants: {},
 });
 
 const textLoopContainer = tv({
-  base: "min-h-[24px]",
+  base: "min-h-[28px]",
   variants: {},
 });
 

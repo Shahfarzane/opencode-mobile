@@ -32,12 +32,12 @@ export function TextLoop({
 			RNAnimated.parallel([
 				RNAnimated.timing(opacity, {
 					toValue: 0,
-					duration: 300,
+					duration: 500,
 					useNativeDriver: true,
 				}),
 				RNAnimated.timing(translateY, {
 					toValue: -20,
-					duration: 300,
+					duration: 500,
 					useNativeDriver: true,
 				}),
 			]).start(() => {
@@ -46,12 +46,12 @@ export function TextLoop({
 				RNAnimated.parallel([
 					RNAnimated.timing(opacity, {
 						toValue: 1,
-						duration: 300,
+						duration: 500,
 						useNativeDriver: true,
 					}),
 					RNAnimated.timing(translateY, {
 						toValue: 0,
-						duration: 300,
+						duration: 500,
 						useNativeDriver: true,
 					}),
 				]).start();

@@ -46,26 +46,24 @@ const phrases = [
 
 function EmptyState() {
 	const { colors } = useTheme();
-	const textColor = withOpacity(colors.foreground, OPACITY.overlay);
+	const textColor = withOpacity(colors.foreground, OPACITY.scrim);
 
 	return (
 		<View className={messageListStyles.emptyContainer({})}>
-			<OpenChamberLogo width={120} height={120} opacity={0.15} isAnimated />
+			<OpenChamberLogo width={140} height={140} opacity={0.2} isAnimated />
 			<TextLoop
 				interval={4}
-				style={{ minHeight: 24 }}
+				style={{ minHeight: 28 }}
 				textStyle={
 					{
-						...typography.uiLabel,
+						...typography.markdown,
 						textAlign: "center",
 						color: textColor,
 					} as TextStyle
 				}
 			>
 				{phrases.map((phrase) => (
-					<Text key={phrase} style={[typography.uiLabel, { color: textColor }]}>
-						"{phrase}..."
-					</Text>
+					<Text key={phrase} style={[typography.markdown, { color: textColor, textAlign: "center" }]}>"{phrase}…"</Text>
 				))}
 			</TextLoop>
 		</View>

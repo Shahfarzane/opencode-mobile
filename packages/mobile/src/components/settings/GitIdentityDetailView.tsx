@@ -21,17 +21,6 @@ interface GitIdentityDetailViewProps {
   onDeleted?: () => void;
 }
 
-const COLORS = [
-  "#ef4444",
-  "#f97316",
-  "#eab308",
-  "#22c55e",
-  "#14b8a6",
-  "#3b82f6",
-  "#8b5cf6",
-  "#ec4899",
-];
-
 export function GitIdentityDetailView({
   profileId,
   onBack,
@@ -49,6 +38,17 @@ export function GitIdentityDetailView({
   const [color, setColor] = useState<string | null>(null);
 
   const isNewProfile = profileId === "__new__";
+
+  const colorPalette = [
+    colors.destructive,
+    colors.warning,
+    colors.success,
+    colors.info,
+    colors.primary,
+    colors.successForeground,
+    colors.infoForeground,
+    colors.warningForeground,
+  ];
 
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
@@ -232,7 +232,7 @@ export function GitIdentityDetailView({
             Visual indicator for this profile
           </Text>
           <View className="flex-row gap-3 flex-wrap">
-            {COLORS.map((c) => (
+            {colorPalette.map((c) => (
               <Pressable
                 key={c}
                 onPress={() => setColor(c === color ? null : c)}
@@ -245,7 +245,7 @@ export function GitIdentityDetailView({
                   },
                 ]}
               >
-                {color === c && <CheckIcon size={16} color="#fff" />}
+                {color === c && <CheckIcon size={16} color={colors.cardForeground} />}
               </Pressable>
             ))}
           </View>

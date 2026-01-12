@@ -12,29 +12,6 @@ type CodeBlockProps = {
 	language: string;
 };
 
-const LANGUAGE_COLORS: Record<string, string> = {
-	typescript: "#3178C6",
-	javascript: "#F7DF1E",
-	python: "#3776AB",
-	rust: "#DEA584",
-	go: "#00ADD8",
-	ruby: "#CC342D",
-	java: "#B07219",
-	swift: "#F05138",
-	kotlin: "#A97BFF",
-	css: "#1572B6",
-	html: "#E34F26",
-	json: "#292929",
-	yaml: "#CB171E",
-	bash: "#4EAA25",
-	shell: "#4EAA25",
-	sql: "#336791",
-	graphql: "#E10098",
-	markdown: "#083FA1",
-	tsx: "#3178C6",
-	jsx: "#61DAFB",
-};
-
 // Simple syntax highlighting tokens
 type TokenType =
 	| "keyword"
@@ -47,28 +24,6 @@ type TokenType =
 interface Token {
 	type: TokenType;
 	text: string;
-}
-
-// Get syntax highlighting colors based on theme
-function getTokenColor(type: TokenType, isDark: boolean): string {
-	const colors = isDark
-		? {
-				keyword: "#C586C0", // purple
-				string: "#CE9178", // orange
-				comment: "#6A9955", // green
-				number: "#B5CEA8", // light green
-				function: "#DCDCAA", // yellow
-				default: "#D4D4D4", // light gray
-			}
-		: {
-				keyword: "#AF00DB", // purple
-				string: "#A31515", // red
-				comment: "#008000", // green
-				number: "#098658", // teal
-				function: "#795E26", // brown
-				default: "#000000", // black
-			};
-	return colors[type];
 }
 
 // Keywords for common languages
@@ -311,12 +266,23 @@ function tokenize(code: string, language: string): Token[] {
 }
 
 export function CodeBlock({ code, language }: CodeBlockProps) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 	const [copied, setCopied] = useState(false);
 	const [expanded, setExpanded] = useState(true);
 
-	const languageColor =
-		LANGUAGE_COLORS[language.toLowerCase()] || colors.mutedForeground;
+	const languageColor = colors.syntaxType;
+
+	const tokenColors = useMemo(
+		() => ({
+			keyword: colors.syntaxKeyword,
+			string: colors.syntaxString,
+			comment: colors.syntaxComment,
+			number: colors.syntaxNumber,
+			function: colors.syntaxFunction,
+			default: colors.syntaxForeground,
+		}),
+		[colors],
+	);
 
 	const handleCopy = useCallback(async () => {
 		await Clipboard.setStringAsync(code);
@@ -446,7 +412,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 													fontFamily: typography.code.fontFamily,
 													fontSize: FontSizes.code,
 													lineHeight: FixedLineHeights.code,
-													color: getTokenColor(token.type, isDark),
+													color: tokenColors[token.type] ?? tokenColors.default,
 												}}
 											>
 												{token.text}

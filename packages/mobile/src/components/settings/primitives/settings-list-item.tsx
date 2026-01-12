@@ -43,7 +43,7 @@ export function SettingsListItem({
       onPressOut={() => setIsPressed(false)}
       disabled={!onPress}
       style={{
-        marginHorizontal: Spacing[3],
+        marginHorizontal: Spacing[1.5],
         marginVertical: Spacing[0.5],
       }}
     >

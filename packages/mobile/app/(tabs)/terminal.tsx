@@ -17,7 +17,7 @@ import { Button } from "../../src/components/ui";
 import { useTerminalStream } from "../../src/hooks/useTerminalStream";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
 import { useTerminalStore } from "../../src/stores/useTerminalStore";
-import { typography, useTheme } from "../../src/theme";
+import { Radius, Spacing, fontStyle, typography, useTheme } from "../../src/theme";
 
 // PWA-style special keys
 const SPECIAL_KEYS = [
@@ -34,7 +34,7 @@ const SPECIAL_KEYS = [
 
 export default function TerminalScreen() {
 	const insets = useSafeAreaInsets();
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 	const { directory, isConnected: isServerConnected } = useConnectionStore();
 	const scrollViewRef = useRef<ScrollView>(null);
 	const inputRef = useRef<TextInput>(null);
@@ -62,8 +62,8 @@ export default function TerminalScreen() {
 		reset,
 	} = useTerminalStore();
 
-	const terminalBg = isDark ? "#0D0D0D" : "#1C1B1A";
-	const terminalText = "#CECDC3";
+	const terminalBg = colors.syntaxBackground;
+	const terminalText = colors.syntaxForeground;
 
 	// Truncate directory path like PWA (replace home with ~)
 	const truncatedPath = directory
@@ -485,7 +485,7 @@ export default function TerminalScreen() {
 											color: isActive
 												? colors.primaryForeground
 												: colors.foreground,
-											fontWeight: "500",
+											...fontStyle("500"),
 										},
 									]}
 								>
@@ -505,7 +505,7 @@ export default function TerminalScreen() {
 				<ScrollView
 					ref={scrollViewRef}
 					style={[styles.terminalOutput, { backgroundColor: terminalBg }]}
-					contentContainerStyle={[styles.terminalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
+					contentContainerStyle={[styles.terminalContent, { paddingBottom: Math.max(insets.bottom, Spacing[5]) }]}
 					keyboardShouldPersistTaps="handled"
 					keyboardDismissMode="none"
 				>
@@ -593,49 +593,49 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
-		padding: 20,
+		padding: Spacing[5],
 	},
 	// PWA-style header bar
 	headerBar: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2],
 		borderBottomWidth: 1,
 	},
 	headerLeft: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
+		gap: Spacing[2],
 	},
 	headerActions: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
+		gap: Spacing[2],
 	},
 	statusDot: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
+		width: Spacing[2],
+		height: Spacing[2],
+		borderRadius: Radius.DEFAULT,
 	},
 	// Special keys row - PWA style
 	specialKeysRow: {
 		borderBottomWidth: 1,
 	},
 	specialKeysContent: {
-		paddingHorizontal: 8,
-		paddingVertical: 8,
-		gap: 6,
+		paddingHorizontal: Spacing[2],
+		paddingVertical: Spacing[2],
+		gap: Spacing[1.5],
 		flexDirection: "row",
 	},
 	specialKey: {
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-		borderRadius: 6,
+		paddingHorizontal: Spacing[2.5],
+		paddingVertical: Spacing[1.5],
+		borderRadius: Radius.md,
 		borderWidth: 1,
-		minWidth: 32,
+		minWidth: Spacing[8],
 		alignItems: "center",
 	},
 	// Terminal content
@@ -646,20 +646,20 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	terminalContent: {
-		padding: 8,
-		paddingBottom: 20,
+		padding: Spacing[2],
+		paddingBottom: Spacing[5],
 	},
 	terminalText: {
 		lineHeight: 16,
 	},
 	errorBanner: {
-		padding: 8,
+		padding: Spacing[2],
 		borderTopWidth: 1,
 	},
 	// Inline input (typing inside terminal)
 	inlineInputRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		marginTop: 4,
+		marginTop: Spacing[1],
 	},
 });

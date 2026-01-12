@@ -20,7 +20,7 @@ import {
 import { IconButton } from "@/components/ui";
 import { type GitStatus, type GitStatusFile, gitApi } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { Fonts, FontSizes, typography, useTheme } from "../../src/theme";
+import { Fonts, FontSizes, Radius, fontStyle, typography, useTheme } from "../../src/theme";
 
 type DiffViewMode = "unified" | "side-by-side";
 
@@ -323,27 +323,28 @@ function DiffLineComponent({
 	isLast?: boolean;
 	isNarrow?: boolean;
 }) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 
 	const lineNumberWidth = isNarrow ? 32 : 36;
 
 	const getLineStyle = () => {
 		switch (line.type) {
-			case "add":
-				return {
-					bg: isDark ? "rgba(74, 222, 128, 0.15)" : "rgba(34, 197, 94, 0.1)",
-					sign: colors.success,
-				};
-			case "remove":
-				return {
-					bg: isDark ? "rgba(248, 113, 113, 0.15)" : "rgba(239, 68, 68, 0.1)",
-					sign: colors.destructive,
-				};
-			case "chunk":
-				return {
-					bg: isDark ? "rgba(96, 165, 250, 0.1)" : "rgba(59, 130, 246, 0.05)",
-					sign: colors.info,
-				};
+		case "add":
+			return {
+				bg: colors.diffAddedBackground,
+				sign: colors.diffAdded,
+			};
+		case "remove":
+			return {
+				bg: colors.diffRemovedBackground,
+				sign: colors.diffRemoved,
+			};
+		case "chunk":
+			return {
+				bg: colors.diffModifiedBackground,
+				sign: colors.diffModified,
+			};
+
 			case "header":
 				return {
 					bg: colors.muted,
@@ -385,10 +386,10 @@ function DiffLineComponent({
 	};
 
 	const borderRadiusStyle = {
-		borderTopLeftRadius: isFirst ? 8 : 0,
-		borderTopRightRadius: isFirst ? 8 : 0,
-		borderBottomLeftRadius: isLast ? 8 : 0,
-		borderBottomRightRadius: isLast ? 8 : 0,
+		borderTopLeftRadius: isFirst ? Radius.lg : 0,
+		borderTopRightRadius: isFirst ? Radius.lg : 0,
+		borderBottomLeftRadius: isLast ? Radius.lg : 0,
+		borderBottomRightRadius: isLast ? Radius.lg : 0,
 	};
 
 	if (line.type === "header" || line.type === "chunk") {
@@ -467,21 +468,20 @@ const SideBySideColumn = memo(function SideBySideColumn({
 	side: "left" | "right";
 	width: number;
 }) {
-	const { colors, isDark } = useTheme();
+	const { colors } = useTheme();
 	const lineNumberWidth = 32;
 
 	const getBackgroundColor = () => {
 		switch (line.type) {
-			case "add":
-				return isDark ? "rgba(74, 222, 128, 0.15)" : "rgba(34, 197, 94, 0.1)";
-			case "remove":
-				return isDark ? "rgba(248, 113, 113, 0.15)" : "rgba(239, 68, 68, 0.1)";
-			case "empty":
-				return isDark
-					? "rgba(128, 128, 128, 0.05)"
-					: "rgba(128, 128, 128, 0.03)";
-			case "chunk":
-				return isDark ? "rgba(96, 165, 250, 0.1)" : "rgba(59, 130, 246, 0.05)";
+		case "add":
+			return colors.diffAddedBackground;
+		case "remove":
+			return colors.diffRemovedBackground;
+		case "empty":
+			return colors.muted;
+		case "chunk":
+			return colors.diffModifiedBackground;
+
 			case "header":
 				return colors.muted;
 			default:
@@ -743,7 +743,8 @@ function FileSelector({
 							<Text
 								style={[
 									typography.micro,
-									{ color: colors.success, fontWeight: "600" },
+										{ color: colors.success, ...fontStyle("600") },
+
 								]}
 							>
 								+{stats.insertions}
@@ -812,7 +813,7 @@ function FileSelector({
 												<Text
 													style={[
 														typography.micro,
-														{ color: colors.success, fontWeight: "600" },
+														{ color: colors.success, ...fontStyle("600") },
 													]}
 												>
 													+{itemStats.insertions}
@@ -822,7 +823,7 @@ function FileSelector({
 												<Text
 													style={[
 														typography.micro,
-														{ color: colors.destructive, fontWeight: "600" },
+														{ color: colors.destructive, ...fontStyle("600") },
 													]}
 												>
 													-{itemStats.deletions}

@@ -35,7 +35,7 @@ import {
 	gitApi,
 } from "../../src/api";
 import { useConnectionStore } from "../../src/stores/useConnectionStore";
-import { FontSizes, typography, useTheme } from "../../src/theme";
+import { FontSizes, Spacing, fontStyle, typography, useTheme } from "../../src/theme";
 import { withOpacity } from "../../src/utils/colors";
 
 type FileStatusType = "staged" | "modified" | "untracked";
@@ -83,7 +83,8 @@ function DiffStats({
 				<Text
 					style={[
 						typography.micro,
-						{ color: colors.success, fontWeight: "600" },
+						fontStyle("600"),
+						{ color: colors.success, fontSize: FontSizes.microSmall },
 					]}
 				>
 					+{insertions}
@@ -93,7 +94,8 @@ function DiffStats({
 				<Text
 					style={[
 						typography.micro,
-						{ color: colors.destructive, fontWeight: "600" },
+						fontStyle("600"),
+						{ color: colors.destructive, fontSize: FontSizes.microSmall },
 					]}
 				>
 					-{deletions}
@@ -172,19 +174,20 @@ function BranchSelectorModal({
 		<Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
 			<Pressable style={styles.modalOverlay} onPress={handleClose}>
 				<Pressable
-					style={[
-						styles.branchModal,
-						{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							shadowColor: "#000",
-						}
-					]}
+				style={[
+					styles.branchModal,
+					{
+						backgroundColor: colors.card,
+						borderColor: colors.border,
+						shadowColor: withOpacity(colors.foreground, 0.3),
+					}
+				]}
+
 					onPress={() => {}}
 				>
 					{/* Header */}
 					<View style={[styles.branchModalHeader, { borderBottomColor: colors.border }]}>
-						<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+						<Text style={[typography.uiLabel, fontStyle("600"), { color: colors.foreground }]}>
 							Switch Branch
 						</Text>
 						<Pressable onPress={handleClose} hitSlop={8}>
@@ -410,7 +413,7 @@ function GitHeader({
 			>
 				<GitBranchIcon color={colors.primary} size={14} />
 				<Text
-					style={[typography.uiLabel, { color: colors.foreground, fontWeight: "500", maxWidth: 120 }]}
+					style={[typography.uiLabel, fontStyle("500"), { color: colors.foreground, maxWidth: 120 }]}
 					numberOfLines={1}
 				>
 					{status?.current ?? "main"}
@@ -550,7 +553,8 @@ function FileItem({
 				<Text
 					style={[
 						typography.uiLabel,
-						{ color: statusColors[status], fontWeight: "700" },
+						fontStyle("700"),
+						{ color: statusColors[status] },
 					]}
 				>
 					{statusIcons[status]}
@@ -594,7 +598,8 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
 			<Text
 				style={[
 					typography.meta,
-					{ color: colors.mutedForeground, fontWeight: "500" },
+					fontStyle("500"),
+					{ color: colors.mutedForeground },
 				]}
 			>
 				{title}
@@ -663,7 +668,8 @@ function HistorySection({
 					<Text
 						style={[
 							typography.meta,
-							{ color: colors.mutedForeground, fontWeight: "500" },
+							fontStyle("500"),
+							{ color: colors.mutedForeground },
 						]}
 					>
 						History
@@ -792,7 +798,7 @@ function CommitSection({
 		<View style={[styles.commitSection, { borderColor: colors.border, backgroundColor: colors.card }]}>
 			{/* Header */}
 			<View style={styles.commitSectionHeader}>
-				<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
+				<Text style={[typography.uiLabel, fontStyle("600"), { color: colors.foreground }]}>
 					Commit
 				</Text>
 				<Text style={[typography.meta, { color: colors.mutedForeground }]}>
@@ -1277,11 +1283,13 @@ export default function GitScreen() {
 				{allUnstagedFiles.length > 0 && (
 					<View style={[styles.changesSection, { borderColor: colors.border, backgroundColor: colors.card }]}>
 						<View style={styles.changesHeader}>
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: colors.foreground, fontWeight: "600" },
-								]}
+					<Text
+						style={[
+							typography.uiLabel,
+							fontStyle("600"),
+							{ color: colors.foreground },
+						]}
+
 							>
 								Changes
 							</Text>
@@ -1410,9 +1418,10 @@ const styles = StyleSheet.create({
 	fileItem: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
+		gap: Spacing[2],
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
+		minHeight: Spacing[11],
 	},
 	statusIcon: {
 		width: 24,
@@ -1576,54 +1585,54 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	branchSearchContainer: {
-		paddingHorizontal: 12,
-		paddingVertical: 10,
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
 	},
 	branchSearchInput: {
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		borderRadius: 10,
-		fontSize: 15,
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
+		borderRadius: Spacing[2.5],
+		fontSize: FontSizes.uiHeader,
 	},
 	createBranchButton: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		gap: Spacing[2.5],
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[3],
 		borderBottomWidth: 1,
 	},
 	createBranchForm: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		gap: 12,
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
+		gap: Spacing[3],
 		borderBottomWidth: 1,
 	},
 	createBranchInput: {
 		flex: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		borderRadius: 10,
-		fontSize: 15,
+		paddingHorizontal: Spacing[3],
+		paddingVertical: Spacing[2.5],
+		borderRadius: Spacing[2.5],
+		fontSize: FontSizes.uiHeader,
 	},
 	branchList: {
 		maxHeight: 280,
 	},
 	branchListContent: {
-		paddingVertical: 4,
+		paddingVertical: Spacing[1],
 	},
 	branchSection: {
-		paddingTop: 4,
+		paddingTop: Spacing[1],
 	},
 	branchSectionHeader: {
-		fontSize: 12,
-		fontWeight: "600",
+		fontSize: FontSizes.micro,
+		...fontStyle("600"),
 		textTransform: "uppercase",
 		letterSpacing: 0.5,
-		paddingHorizontal: 16,
-		paddingVertical: 8,
+		paddingHorizontal: Spacing[4],
+		paddingVertical: Spacing[2],
 	},
 	branchItem: {
 		flexDirection: "row",

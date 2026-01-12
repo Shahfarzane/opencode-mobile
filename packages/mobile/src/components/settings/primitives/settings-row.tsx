@@ -49,7 +49,7 @@ export function SettingsRow(props: SettingsRowProps) {
       <Text
         style={{
           color: textColor,
-          fontSize: FontSizes.markdown, // 16px - close to iOS HIG 17pt
+          fontSize: FontSizes.uiLabel,
           fontFamily: Fonts.regular,
         }}
         numberOfLines={1}
@@ -61,7 +61,7 @@ export function SettingsRow(props: SettingsRowProps) {
           <Text
             style={{
               color: colors.mutedForeground,
-              fontSize: FontSizes.markdown, // 16px - close to iOS HIG 17pt
+              fontSize: FontSizes.uiLabel,
               fontFamily: Fonts.regular,
             }}
             numberOfLines={1}

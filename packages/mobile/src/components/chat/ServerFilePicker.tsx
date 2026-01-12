@@ -66,7 +66,7 @@ export function ServerFilePicker({
 			.map((entry) => ({
 				name: entry.name,
 				path: entry.path,
-				type: entry.isDirectory ? "directory" : "file",
+				type: entry.isDirectory ? ("directory" as const) : ("file" as const),
 				extension: !entry.isDirectory && entry.name.includes(".")
 					? entry.name.split(".").pop()?.toLowerCase()
 					: undefined,

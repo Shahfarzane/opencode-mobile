@@ -149,8 +149,12 @@ function MessageActionButton({
 			onPress={onPress}
 			accessibilityLabel={accessibilityLabel}
 			style={{
-				padding: Spacing[1.5],
+				padding: Spacing[2.5],
 				borderRadius: Radius.md,
+				minWidth: Spacing[9],
+				minHeight: Spacing[9],
+				alignItems: "center",
+				justifyContent: "center",
 			}}
 		>
 			{icon}
@@ -419,16 +423,23 @@ function AssistantMessage({
 		setTimeout(() => setCopied(false), 2000);
 	};
 
+	const agentPalette = [
+		colors.info,
+		colors.success,
+		colors.warning,
+		colors.destructive,
+		colors.primary,
+		colors.infoForeground,
+		colors.successForeground,
+		colors.warningForeground,
+	];
+
 	const getAgentColor = (name: string) => {
-		const agentColors = [
-			"#3B82F6", "#10B981", "#F59E0B", "#EF4444",
-			"#8B5CF6", "#EC4899", "#06B6D4", "#84CC16",
-		];
 		let hash = 0;
 		for (let i = 0; i < name.length; i++) {
 			hash = name.charCodeAt(i) + ((hash << 5) - hash);
 		}
-		return agentColors[Math.abs(hash) % agentColors.length];
+		return agentPalette[Math.abs(hash) % agentPalette.length];
 	};
 
 	// Only show action icons when message is complete (not streaming)
@@ -437,40 +448,46 @@ function AssistantMessage({
 	return (
 		<View className="mb-2 px-3">
 			{showHeader && (
-				<View className="flex-row items-center gap-2 mb-2 pl-3">
+				<View className="flex-row items-center gap-1.5 mb-2 pl-3">
 					<View className="items-center justify-center">
 						<MessageProviderLogo providerId={message.providerId} modelName={modelName} />
 					</View>
 					<Text
 						style={[
-							typography.uiHeader,
-							fontStyle("700"),
+							typography.uiLabel,
+							fontStyle("500"),
 							{ color: colors.foreground },
 						]}
 						numberOfLines={1}
 					>
 						{modelName || "Assistant"}
 					</Text>
-					{agentName && (
-						<View
-							className="px-1.5 py-0 rounded"
-							style={{ backgroundColor: withOpacity(getAgentColor(agentName), OPACITY.emphasized) }}
-						>
-							<Text
-								style={[
-									typography.micro,
-									fontStyle("500"),
-									{ color: getAgentColor(agentName) },
-								]}
+
+
+					{agentName && (() => {
+						const agentColor = getAgentColor(agentName);
+						return (
+							<View
+								className="px-1.5 py-0 rounded"
+								style={{ backgroundColor: withOpacity(agentColor, OPACITY.emphasized) }}
 							>
-								{agentName}
-							</Text>
-						</View>
-					)}
+								<Text
+									style={[
+										typography.micro,
+										fontStyle("500"),
+										{ color: agentColor },
+									]}
+								>
+									{agentName}
+								</Text>
+							</View>
+						);
+					})()}
+
 				</View>
 			)}
 
-			<Pressable ref={bubbleRef} onLongPress={openMenu} style={{ paddingLeft: 12 }}>
+			<Pressable ref={bubbleRef} onLongPress={openMenu} style={{ paddingLeft: Spacing[3] }}>
 				{hasParts ? (
 					message.parts!.map((part, idx) => (
 						<RenderPart
