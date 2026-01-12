@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { forwardRef, useMemo } from "react";
+import * as Haptics from "expo-haptics";
 import { Pressable, TextInput, View } from "react-native";
 import { SearchIcon, XIcon } from "@/components/icons";
 import { IconSizes, typography, useTheme } from "@/theme";

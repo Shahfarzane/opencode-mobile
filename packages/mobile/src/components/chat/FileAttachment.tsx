@@ -1,13 +1,11 @@
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useCallback, useRef, useState } from "react";
+import type BottomSheet from "@gorhom/bottom-sheet";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Alert,
-	Dimensions,
 	Image,
-	type LayoutRectangle,
-	Modal,
 	Pressable,
 	Text,
 	View,

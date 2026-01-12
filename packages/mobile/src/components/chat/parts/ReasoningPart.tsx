@@ -3,8 +3,16 @@ import type { ComponentType, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { BrainIcon, ChevronDownIcon } from "@/components/icons";
-import { Fonts, FontSizes, LineHeights, Radius, Spacing, typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
+import {
+	FontSizes,
+	Fonts,
+	LineHeights,
+	Radius,
+	Spacing,
+	typography,
+	useTheme,
+} from "@/theme";
+import { OPACITY, withOpacity } from "@/utils/colors";
 
 const Markdown = MarkdownLib as unknown as ComponentType<{
 	style?: Record<string, unknown>;
@@ -178,7 +186,9 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 						<Text
 							style={[
 								typography.meta,
-								{ color: withOpacity(colors.mutedForeground, OPACITY.secondary) },
+								{
+									color: withOpacity(colors.mutedForeground, OPACITY.secondary),
+								},
 							]}
 							numberOfLines={1}
 						>
@@ -191,7 +201,9 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 			{isExpanded && (
 				<View
 					className="ml-1.5 pl-4 py-1 border-l"
-					style={{ borderLeftColor: withOpacity(colors.border, OPACITY.strong) }}
+					style={{
+						borderLeftColor: withOpacity(colors.border, OPACITY.strong),
+					}}
 				>
 					<ReasoningMarkdown
 						content={textContent + (part.isStreaming ? " ▊" : "")}

@@ -1,16 +1,8 @@
+import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-	Animated,
-	Dimensions,
-	type LayoutChangeEvent,
-	Modal,
-	Pressable,
-	Text,
-	View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useEffect, useMemo, useRef } from "react";
+import { Pressable, Text, View } from "react-native";
 import {
 	CopyIcon,
 	FolderIcon,
@@ -19,16 +11,8 @@ import {
 	ShareIcon,
 	TrashIcon,
 } from "@/components/icons";
-import {
-	AnimationTokens,
-	getShadowColor,
-	MenuPositioning,
-	OpacityTokens,
-	ShadowTokens,
-	typography,
-	useTheme,
-} from "@/theme";
-import { sessionActionsMenuStyles } from "./SessionActionsMenu.styles";
+import { Sheet } from "@/components/ui/sheet";
+import { typography, useTheme } from "@/theme";
 
 interface SessionActionsMenuProps {
 	visible: boolean;
@@ -44,11 +28,6 @@ interface SessionActionsMenuProps {
 	anchorPosition?: { x: number; y: number } | null;
 }
 
-const SPRING_CONFIG = {
-	...AnimationTokens.menuSpring,
-	useNativeDriver: true,
-};
-
 export function SessionActionsMenu({
 	visible,
 	onClose,
@@ -60,97 +39,29 @@ export function SessionActionsMenu({
 	isShared = false,
 	shareUrl,
 	worktreePath,
-	anchorPosition,
 }: SessionActionsMenuProps) {
-	const { colors, isDark } = useTheme();
-	const insets = useSafeAreaInsets();
-	const screenWidth = Dimensions.get("window").width;
-	const screenHeight = Dimensions.get("window").height;
-	const [modalVisible, setModalVisible] = useState(false);
-	const [menuLayout, setMenuLayout] = useState<{ width: number; height: number }>({ width: MenuPositioning.width, height: 200 });
-
-	const progress = useRef(new Animated.Value(0)).current;
-
-	// Calculate safe areas using actual device insets
-	const safeAreaTop = insets.top + MenuPositioning.margin;
-	const safeAreaBottom = insets.bottom + MenuPositioning.margin;
-
-	// Calculate menu position ensuring it stays within screen bounds
-	const menuPosition = anchorPosition
-		? (() => {
-				const rightOffset = screenWidth - anchorPosition.x;
-				const topOffset = anchorPosition.y + MenuPositioning.margin;
-
-				// Ensure menu doesn't go off-screen bottom (using actual safe area)
-				const maxTop = screenHeight - menuLayout.height - safeAreaBottom;
-				const adjustedTop = Math.min(topOffset, maxTop);
-
-				// Ensure menu doesn't go off-screen right
-				const minRight = MenuPositioning.margin;
-				const adjustedRight = Math.max(rightOffset, minRight);
-
-				return {
-					top: Math.max(adjustedTop, safeAreaTop),
-					right: adjustedRight,
-				};
-			})()
-		: null;
-
-	const handleLayout = useCallback((event: LayoutChangeEvent) => {
-		const { width, height } = event.nativeEvent.layout;
-		setMenuLayout({ width, height });
-	}, []);
+	const { colors } = useTheme();
+	const sheetRef = useRef<BottomSheet>(null);
+	const snapPoints = useMemo(() => ["58%"], []);
 
 	useEffect(() => {
 		if (visible) {
-			setModalVisible(true);
-			Animated.spring(progress, {
-				toValue: 1,
-				...SPRING_CONFIG,
-			}).start();
+			sheetRef.current?.snapToIndex(0);
 		} else {
-			Animated.timing(progress, {
-				toValue: 0,
-				duration: AnimationTokens.menuCloseDuration,
-				useNativeDriver: true,
-			}).start(({ finished }) => {
-				if (finished) {
-					setModalVisible(false);
-				}
-			});
+			sheetRef.current?.close();
 		}
-	}, [visible, progress]);
-
-	const backdropOpacity = progress.interpolate({
-		inputRange: [0, 1],
-		outputRange: [0, OpacityTokens.backdrop],
-	});
-
-	const menuOpacity = progress.interpolate({
-		inputRange: [0, 0.3, 1],
-		outputRange: [0, 0.8, 1],
-	});
-
-	const menuScale = progress.interpolate({
-		inputRange: [0, 1],
-		outputRange: [AnimationTokens.menuScaleFrom, AnimationTokens.menuScaleTo],
-	});
-
-	// Transform origin: top-right corner
-	// Since React Native transforms from center, we need to translate to achieve top-right origin
-	const halfWidth = menuLayout.width / 2;
-	const halfHeight = menuLayout.height / 2;
+	}, [visible]);
 
 	const handleRename = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		onRename();
-		onClose();
+		sheetRef.current?.close();
 	};
 
 	const handleShare = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		onShare?.();
-		onClose();
+		sheetRef.current?.close();
 	};
 
 	const handleCopyLink = async () => {
@@ -159,13 +70,13 @@ export function SessionActionsMenu({
 			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		}
 		onCopyLink?.();
-		onClose();
+		sheetRef.current?.close();
 	};
 
 	const handleUnshare = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		onUnshare?.();
-		onClose();
+		sheetRef.current?.close();
 	};
 
 	const handleCopyWorktreePath = async () => {
@@ -173,171 +84,65 @@ export function SessionActionsMenu({
 			await Clipboard.setStringAsync(worktreePath);
 			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		}
-		onClose();
+		sheetRef.current?.close();
 	};
 
 	const handleDelete = async () => {
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 		onDelete();
-		onClose();
+		sheetRef.current?.close();
 	};
 
+	const actions = [
+		{ key: "rename", label: "Rename", icon: PencilIcon, onPress: handleRename },
+		...(!isShared
+			? [{ key: "share", label: "Share", icon: ShareIcon, onPress: handleShare }]
+			: []),
+		...(isShared && shareUrl
+			? [{ key: "copy-link", label: "Copy link", icon: CopyIcon, onPress: handleCopyLink }]
+			: []),
+		...(isShared
+			? [{ key: "unshare", label: "Stop sharing", icon: LinkOffIcon, onPress: handleUnshare }]
+			: []),
+		...(worktreePath
+			? [{ key: "copy-path", label: "Copy worktree path", icon: FolderIcon, onPress: handleCopyWorktreePath }]
+			: []),
+		{ key: "delete", label: "Delete", icon: TrashIcon, onPress: handleDelete, destructive: true },
+	];
+
 	return (
-		<Modal
-			visible={modalVisible}
-			transparent
-			animationType="none"
-			onRequestClose={onClose}
-		>
-			<View className={sessionActionsMenuStyles.overlay({})}>
-				<Pressable
-					style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-					onPress={onClose}
-				>
-					<Animated.View
-						style={{
-							flex: 1,
-							backgroundColor: colors.overlay,
-							opacity: backdropOpacity,
-						}}
-					/>
-				</Pressable>
-				<Animated.View
-					onLayout={handleLayout}
-					className={sessionActionsMenuStyles.menu({})}
-					style={[
-						{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							borderWidth: 1,
-							shadowColor: getShadowColor(isDark),
-							...ShadowTokens.menu,
-							minWidth: MenuPositioning.width,
-							opacity: menuOpacity,
-							// Transform origin: top-right corner
-							// Translate to move top-right to center, scale, then translate back
-							transform: [
-								{ translateX: halfWidth },
-								{ translateY: -halfHeight },
-								{ scale: menuScale },
-								{ translateX: -halfWidth },
-								{ translateY: halfHeight },
-							],
-						},
-						menuPosition && {
-							position: "absolute",
-							top: menuPosition.top,
-							right: menuPosition.right,
-						},
-					]}
-				>
-					<Pressable
-						onPress={handleRename}
-						className={sessionActionsMenuStyles.menuItem({})}
-						style={({ pressed }) => ({
-							backgroundColor: pressed ? colors.muted : "transparent",
-						})}
-					>
-						<PencilIcon color={colors.mutedForeground} size={18} />
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-							Rename
-						</Text>
-					</Pressable>
-
-					<View
-						className={sessionActionsMenuStyles.divider({})}
-						style={{ backgroundColor: colors.border }}
-					/>
-
-					{!isShared ? (
+		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
+			<View className="pb-2">
+				<View className="px-4 pt-2 pb-1">
+					<Text style={[typography.uiHeader, { color: colors.foreground }]}>Session actions</Text>
+				</View>
+				<View className="border-t" style={{ borderTopColor: colors.border }} />
+				{actions.map((action, index) => (
+					<View key={action.key}>
 						<Pressable
-							onPress={handleShare}
-							className={sessionActionsMenuStyles.menuItem({})}
+							onPress={action.onPress}
+							className="flex-row items-center gap-3 px-4 py-3"
 							style={({ pressed }) => ({
 								backgroundColor: pressed ? colors.muted : "transparent",
 							})}
+							accessibilityRole="menuitem"
 						>
-							<ShareIcon color={colors.mutedForeground} size={18} />
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-								Share
+							<action.icon size={18} color={action.destructive ? colors.destructive : colors.mutedForeground} />
+							<Text
+								style={[
+									typography.uiLabel,
+									{ color: action.destructive ? colors.destructive : colors.foreground },
+								]}
+							>
+								{action.label}
 							</Text>
 						</Pressable>
-					) : (
-						<>
-							<Pressable
-								onPress={handleCopyLink}
-								className={sessionActionsMenuStyles.menuItem({})}
-								style={({ pressed }) => ({
-									backgroundColor: pressed ? colors.muted : "transparent",
-								})}
-							>
-								<CopyIcon color={colors.mutedForeground} size={18} />
-								<Text
-									style={[typography.uiLabel, { color: colors.foreground }]}
-								>
-									Copy Link
-								</Text>
-							</Pressable>
-
-							<Pressable
-								onPress={handleUnshare}
-								className={sessionActionsMenuStyles.menuItem({})}
-								style={({ pressed }) => ({
-									backgroundColor: pressed ? colors.muted : "transparent",
-								})}
-							>
-								<LinkOffIcon color={colors.mutedForeground} size={18} />
-								<Text
-									style={[typography.uiLabel, { color: colors.foreground }]}
-								>
-									Unshare
-								</Text>
-							</Pressable>
-						</>
-					)}
-
-					{worktreePath && (
-						<>
-							<View
-								className={sessionActionsMenuStyles.divider({})}
-								style={{ backgroundColor: colors.border }}
-							/>
-							<Pressable
-								onPress={handleCopyWorktreePath}
-								className={sessionActionsMenuStyles.menuItem({})}
-								style={({ pressed }) => ({
-									backgroundColor: pressed ? colors.muted : "transparent",
-								})}
-							>
-								<FolderIcon color={colors.mutedForeground} size={18} />
-								<Text
-									style={[typography.uiLabel, { color: colors.foreground }]}
-								>
-									Copy Worktree Path
-								</Text>
-							</Pressable>
-						</>
-					)}
-
-					<View
-						className={sessionActionsMenuStyles.divider({})}
-						style={{ backgroundColor: colors.border }}
-					/>
-
-					<Pressable
-						onPress={handleDelete}
-						className={sessionActionsMenuStyles.menuItem({})}
-						style={({ pressed }) => ({
-							backgroundColor: pressed ? colors.muted : "transparent",
-						})}
-					>
-						<TrashIcon color={colors.destructive} size={18} />
-						<Text style={[typography.uiLabel, { color: colors.destructive }]}>
-							Delete
-						</Text>
-					</Pressable>
-				</Animated.View>
+						{index < actions.length - 1 && (
+							<View className="h-px" style={{ backgroundColor: colors.border }} />
+						)}
+					</View>
+				))}
 			</View>
-		</Modal>
+		</Sheet>
 	);
 }
