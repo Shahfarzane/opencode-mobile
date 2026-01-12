@@ -1,9 +1,9 @@
 import BottomSheet, {
   BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
   BottomSheetScrollView,
   BottomSheetTextInput,
   BottomSheetView,
+  type BottomSheetBackdropProps,
   type BottomSheetProps,
   useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";

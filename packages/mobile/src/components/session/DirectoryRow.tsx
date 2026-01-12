@@ -65,33 +65,33 @@ export function DirectoryRow({
 				{({ pressed }) => (
 					<>
 						<View
-						className="w-8 h-8 rounded-md items-center justify-center"
-						style={{
-							backgroundColor: withOpacity(colors.foreground, OPACITY.light),
-						}}
-					>
-						<FolderIcon
-							color={
-								pressed
-									? colors.foreground
-									: withOpacity(colors.foreground, OPACITY.secondary)
-							}
-							size={18}
-						/>
-					</View>
-					<Text
-						className="flex-1"
-						style={[
-							typography.uiHeader,
-							fontStyle("600"),
-							{
-								color: pressed
-									? colors.foreground
-									: withOpacity(colors.foreground, OPACITY.secondary),
-							},
-						]}
-						numberOfLines={1}
-					>
+							className="w-8 h-8 rounded-md items-center justify-center"
+							style={{
+								backgroundColor: withOpacity(colors.foreground, OPACITY.light),
+							}}
+						>
+							<FolderIcon
+								color={
+									pressed
+										? colors.foreground
+										: withOpacity(colors.foreground, OPACITY.secondary)
+								}
+								size={18}
+							/>
+						</View>
+						<Text
+							className="flex-1"
+							style={[
+								typography.uiHeader,
+								fontStyle("600"),
+								{
+									color: pressed
+										? colors.foreground
+										: withOpacity(colors.foreground, OPACITY.secondary),
+								},
+							]}
+							numberOfLines={1}
+						>
 							{displayDirectory}
 						</Text>
 					</>

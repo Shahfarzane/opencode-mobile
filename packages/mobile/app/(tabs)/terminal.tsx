@@ -388,7 +388,7 @@ export default function TerminalScreen() {
 	if (nonTerminalContent) {
 		return (
 			<KeyboardAvoidingView
-				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				behavior={Platform.OS === "ios" ? "position" : "height"}
 				style={[styles.container, { backgroundColor: colors.background }]}
 				keyboardVerticalOffset={keyboardOffset}
 			>
