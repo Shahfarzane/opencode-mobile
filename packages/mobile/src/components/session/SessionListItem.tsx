@@ -128,9 +128,12 @@ export function SessionListItem({
 	}, [isStreaming, animatedOpacity]);
 
 	const handleSelect = useCallback(async () => {
+		console.log("[SessionListItem] handleSelect called, isMissingDirectory:", isMissingDirectory);
 		if (isMissingDirectory) return;
 		await selectionAsync();
+		console.log("[SessionListItem] calling onSelect");
 		onSelect();
+		console.log("[SessionListItem] onSelect completed");
 	}, [isMissingDirectory, onSelect]);
 
 	const handleOpenMenu = useCallback(async () => {

@@ -275,9 +275,11 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 		}, [sortedSessions, sessionMap, currentDirectory, buildNode]);
 
 		const handleSelectSession = useCallback(
-			async (session: Session) => {
-				await Haptics.selectionAsync();
+			(session: Session) => {
+				console.log("[SessionSheet] handleSelectSession called, session:", session.id);
+				// Haptics handled by SessionListItem
 				onSelectSession(session);
+				console.log("[SessionSheet] onSelectSession completed");
 			},
 			[onSelectSession],
 		);
@@ -437,12 +439,13 @@ export const SessionSheet = forwardRef<BottomSheet, SessionSheetProps>(
 				index={-1}
 				snapPoints={snapPoints}
 				enablePanDownToClose={true}
+				enableContentPanningGesture={false}
 				topInset={insets.top}
 				animationConfigs={animationConfigs}
 				backgroundStyle={sheetBackgroundStyle}
 				handleIndicatorStyle={sheetHandleStyle}
 				backdropComponent={renderBackdrop}
-				style={{ zIndex: 1000, elevation: 1000 }}
+				style={{ zIndex: 9999, elevation: 9999 }}
 			>
 				<SheetHeader title="Sessions" onClose={handleDismiss} />
 

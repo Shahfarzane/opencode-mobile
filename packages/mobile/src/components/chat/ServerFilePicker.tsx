@@ -1,13 +1,13 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
+import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	FlatList,
-	Pressable,
 	Text,
 	View,
 } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { type FileListEntry, filesApi } from "@/api/files";
 import {
 	CheckIcon,
@@ -65,7 +65,12 @@ export function ServerFilePicker({
 
 	useEffect(() => {
 		if (visible) {
-			sheetRef.current?.snapToIndex(0);
+			// Use requestAnimationFrame to ensure sheet is ready
+			requestAnimationFrame(() => {
+				setTimeout(() => {
+					sheetRef.current?.snapToIndex(0);
+				}, 100);
+			});
 		} else {
 			sheetRef.current?.close();
 		}
@@ -275,7 +280,7 @@ export function ServerFilePicker({
 
 			return (
 				<View key={item.path}>
-					<Pressable
+					<TouchableOpacity
 						onPress={() => {
 							if (isDirectory) {
 								void toggleDirectory(item.path);
@@ -283,6 +288,7 @@ export function ServerFilePicker({
 								toggleFileSelection(item.path);
 							}
 						}}
+						activeOpacity={0.7}
 						className="flex-row items-center py-2 px-3"
 						style={[
 							{ paddingLeft: 12 + level * 16 },
@@ -327,7 +333,7 @@ export function ServerFilePicker({
 						{!isDirectory && isSelected && (
 							<CheckIcon size={16} color={colors.primary} />
 						)}
-					</Pressable>
+					</TouchableOpacity>
 
 					{isDirectory && isExpanded && children.length > 0 && (
 						<View>
@@ -353,18 +359,23 @@ export function ServerFilePicker({
 
 	const displayItems = isSearchActive ? searchResults : rootItems;
 
+	if (!visible) {
+		return null;
+	}
+
 	return (
 		<Sheet
 			ref={sheetRef}
 			snapPoints={snapPoints}
 			onClose={onClose}
 			contentPadding={0}
+			enablePanDownToClose={true}
 		>
 			<View className="flex-1">
 				<View className="flex-row items-center justify-between px-4 pt-2 pb-3">
-					<Pressable onPress={() => sheetRef.current?.close()} hitSlop={8}>
+					<TouchableOpacity onPress={() => sheetRef.current?.close()} hitSlop={8} activeOpacity={0.7}>
 						<XIcon size={24} color={colors.foreground} />
-					</Pressable>
+					</TouchableOpacity>
 					<Text
 						style={[
 							typography.uiLabel,
@@ -433,10 +444,10 @@ export function ServerFilePicker({
 					)}
 
 					{!loading && !error && displayItems.length > 0 && (
-						<FlatList
+						<BottomSheetFlatList<FileInfo>
 							data={displayItems}
-							keyExtractor={(item) => item.path}
-							renderItem={({ item }) => renderFileItem({ item, level: 0 })}
+							keyExtractor={(item: FileInfo) => item.path}
+							renderItem={({ item }: { item: FileInfo }) => renderFileItem({ item, level: 0 })}
 							showsVerticalScrollIndicator={false}
 							keyboardShouldPersistTaps="handled"
 						/>

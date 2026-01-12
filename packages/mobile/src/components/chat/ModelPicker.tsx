@@ -1,7 +1,8 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	BrainIcon,
@@ -169,14 +170,10 @@ function ProviderHeader({
 	const { colors } = useTheme();
 
 	return (
-		<Pressable
+		<TouchableOpacity
 			onPress={onPress}
+			activeOpacity={0.7}
 			className="flex-row items-center justify-between px-3 py-2"
-			style={({ pressed }) => ({
-				backgroundColor: pressed
-					? withOpacity(colors.muted, 0.5)
-					: "transparent",
-			})}
 		>
 			<View className="flex-row items-center gap-2 flex-1">
 				<ProviderLogoWithFallback providerId={providerId} size={14} />
@@ -200,7 +197,7 @@ function ProviderHeader({
 			) : (
 				<ChevronRightIcon size={12} color={colors.mutedForeground} />
 			)}
-		</Pressable>
+		</TouchableOpacity>
 	);
 }
 
@@ -278,16 +275,15 @@ function ModelRow({
 					: "";
 
 	return (
-		<Pressable
+		<TouchableOpacity
 			onPress={onSelect}
+			activeOpacity={0.7}
 			className="flex-row items-center py-2 px-3"
-			style={({ pressed }) => ({
-				backgroundColor: pressed
-					? colors.muted
-					: isSelected
-						? withOpacity(colors.primary, OPACITY.light)
-						: "transparent",
-			})}
+			style={{
+				backgroundColor: isSelected
+					? withOpacity(colors.primary, OPACITY.light)
+					: "transparent",
+			}}
 		>
 			{/* Left: Provider icon (optional) + Model name */}
 			<View
@@ -335,11 +331,9 @@ function ModelRow({
 					/>
 				)}
 				{onToggleFavorite && (
-					<Pressable
-						onPress={(e) => {
-							e.stopPropagation();
-							onToggleFavorite();
-						}}
+					<TouchableOpacity
+						onPress={onToggleFavorite}
+						activeOpacity={0.7}
 						hitSlop={8}
 						style={{
 							width: 28,
@@ -353,10 +347,10 @@ function ModelRow({
 							color={isFavorite ? colors.warning : colors.mutedForeground}
 							fill={isFavorite ? colors.warning : "transparent"}
 						/>
-					</Pressable>
+					</TouchableOpacity>
 				)}
 			</View>
-		</Pressable>
+		</TouchableOpacity>
 	);
 }
 
@@ -399,7 +393,12 @@ export function ModelPicker({
 	// Handle visibility changes
 	useEffect(() => {
 		if (visible) {
-			bottomSheetRef.current?.snapToIndex(0);
+			// Use requestAnimationFrame to ensure sheet is ready
+			requestAnimationFrame(() => {
+				setTimeout(() => {
+					bottomSheetRef.current?.snapToIndex(0);
+				}, 100);
+			});
 		} else {
 			bottomSheetRef.current?.close();
 		}
@@ -565,11 +564,16 @@ export function ModelPicker({
 		filteredFavorites.length > 0 ||
 		filteredRecents.length > 0;
 
+	if (!visible) {
+		return null;
+	}
+
 	return (
 		<Sheet
 			ref={bottomSheetRef}
 			snapPoints={snapPoints}
 			onChange={handleSheetChange}
+			onClose={onClose}
 			contentPadding={16}
 		>
 			{/* Header */}
@@ -583,17 +587,17 @@ export function ModelPicker({
 				>
 					Select model
 				</Text>
-				<Pressable
+				<TouchableOpacity
 					onPress={handleClose}
 					hitSlop={12}
-					style={({ pressed }) => ({
+					activeOpacity={0.7}
+					style={{
 						padding: Spacing[1.5],
 						borderRadius: Radius.full,
-						backgroundColor: pressed ? colors.muted : "transparent",
-					})}
+					}}
 				>
 					<XIcon size={20} color={colors.mutedForeground} />
-				</Pressable>
+				</TouchableOpacity>
 			</View>
 
 			{/* Search Input */}
@@ -620,9 +624,9 @@ export function ModelPicker({
 					/>
 
 					{searchQuery.length > 0 && (
-						<Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+						<TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={8}>
 							<XIcon size={16} color={colors.mutedForeground} />
-						</Pressable>
+						</TouchableOpacity>
 					)}
 				</View>
 			</View>

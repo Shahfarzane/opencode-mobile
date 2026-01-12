@@ -207,19 +207,24 @@ const ButtonRoot = forwardRef<View, ButtonProps>(
 			].filter(Boolean) as ViewStyle[];
 		};
 
+		// Filter out props that are incompatible with TouchableOpacity
+		const { testID, accessibilityLabel, accessibilityHint, ...restProps } = props;
+
 		return (
 			<ButtonContext.Provider value={contextValue}>
 				<TouchableOpacity
 					ref={ref as never}
-					disabled={disabled}
-					onPress={handlePress}
+					disabled={disabled ?? false}
+					onPress={handlePress as unknown as () => void}
 					hitSlop={pressableHitSlop}
 					activeOpacity={0.7}
 					className={rootClassName}
 					style={getButtonStyle()}
 					accessibilityRole="button"
-					accessibilityState={{ disabled }}
-					{...props}
+					accessibilityState={{ disabled: disabled ?? false }}
+					testID={testID ?? undefined}
+					accessibilityLabel={accessibilityLabel ?? undefined}
+					accessibilityHint={accessibilityHint ?? undefined}
 				>
 					{renderChildren()}
 				</TouchableOpacity>

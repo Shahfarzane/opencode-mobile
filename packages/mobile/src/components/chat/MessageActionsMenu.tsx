@@ -1,7 +1,8 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { useEffect, useMemo, useRef } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { CopyIcon, GitForkIcon, UndoIcon } from "@/components/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { typography, useTheme } from "@/theme";
@@ -89,6 +90,11 @@ export function MessageActionsMenu({
 			: []),
 	];
 
+	// Don't render anything when not visible - this prevents touch interception
+	if (!visible) {
+		return null;
+	}
+
 	return (
 		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
 			<View className="pb-2">
@@ -98,15 +104,15 @@ export function MessageActionsMenu({
 				<View className="border-t" style={{ borderTopColor: colors.border }} />
 				{actions.map((action, index) => (
 					<View key={action.key}>
-						<Pressable
+						<TouchableOpacity
 							onPress={action.onPress}
+							activeOpacity={0.7}
 							className="flex-row items-center gap-3 px-4 py-3"
-							style={({ pressed }) => ({ backgroundColor: pressed ? colors.muted : "transparent" })}
 							accessibilityRole="menuitem"
 						>
 							<action.icon size={18} color={colors.mutedForeground} />
 							<Text style={[typography.uiLabel, { color: colors.foreground }]}>{action.label}</Text>
-						</Pressable>
+						</TouchableOpacity>
 						{index < actions.length - 1 && <View className="h-px" style={{ backgroundColor: colors.border }} />}
 					</View>
 				))}

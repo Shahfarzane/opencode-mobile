@@ -1,9 +1,12 @@
 import BottomSheet, {
   BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetModalProvider,
   BottomSheetScrollView,
   BottomSheetTextInput,
   BottomSheetView,
   type BottomSheetBackdropProps,
+  type BottomSheetModalProps,
   type BottomSheetProps,
   useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
@@ -20,16 +23,20 @@ interface SheetProps extends Omit<BottomSheetProps, "snapPoints" | "onChange"> {
   onClose?: () => void;
   contentPadding?: number;
   onChange?: (index: number) => void;
+  enableContentPanningGesture?: boolean;
+  enableHandlePanningGesture?: boolean;
 }
 
 export const Sheet = forwardRef<BottomSheet, SheetProps>(
   (
     {
       snapPoints = ["64%", "92%"],
-      backdropOpacity = 0.55,
+      backdropOpacity = 0.4,
       onClose,
       onChange,
       enablePanDownToClose = true,
+      enableContentPanningGesture = true,
+      enableHandlePanningGesture = true,
       contentPadding = 16,
       children,
       backgroundStyle,
@@ -81,13 +88,13 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
 
     const baseBackground: ViewStyle = useMemo(
       () => ({
-        backgroundColor: withOpacity(colors.background, isDark ? 0.95 : 0.98),
-        borderColor: withOpacity(colors.border, OPACITY.overlay),
+        backgroundColor: colors.card,
+        borderColor: withOpacity(colors.border, OPACITY.border),
         borderWidth: 1,
         borderRadius: 26,
         overflow: "hidden",
       }),
-      [colors.background, colors.border, isDark],
+      [colors.card, colors.border],
     );
 
     return (
@@ -96,6 +103,8 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose={enablePanDownToClose}
+        enableContentPanningGesture={enableContentPanningGesture}
+        enableHandlePanningGesture={enableHandlePanningGesture}
         backdropComponent={renderBackdrop}
         onChange={handleChange}
         bottomInset={insets.bottom + 8}
@@ -112,11 +121,12 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
           },
           handleIndicatorStyle,
         ]}
-        style={[{ zIndex: 1000, elevation: 20 }, style]}
+        style={[{ zIndex: 9999, elevation: 9999 }, style]}
         {...props}
       >
         <BottomSheetView
           style={{
+            flex: 1,
             paddingHorizontal: contentPadding,
             paddingBottom,
           }}

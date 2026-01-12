@@ -134,10 +134,12 @@ export default function TabsLayout() {
 	});
 
 	const selectSession = useCallback((session: Session) => {
+		console.log("[TabsLayout] selectSession called, session:", session.id);
 		setCurrentSessionIdRef.current(session.id);
 		sheetRef.current?.close();
 		// Navigate to chat tab when selecting a session
 		setActiveTab("chat");
+		console.log("[TabsLayout] selectSession completed");
 		// ChatScreen will handle loading messages via its own effect
 	}, []);
 
@@ -221,8 +223,8 @@ export default function TabsLayout() {
 	// const handleOpenMultiRunLauncher = useCallback(() => {}, []);
 
 	const handleMenuPress = useCallback(() => {
-		router.push("/onboarding/directory");
-	}, []);
+		openSessionSheet();
+	}, [openSessionSheet]);
 
 	const handleSettingsPress = useCallback(() => {
 		router.push("/settings");

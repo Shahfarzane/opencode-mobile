@@ -49,7 +49,7 @@ const toolbarRightSection = tv({
 });
 
 const toolbarButton = tv({
-	base: "w-9 h-9 items-center justify-center rounded-lg shrink-0",
+	base: "w-10 h-10 items-center justify-center rounded-lg shrink-0",
 	variants: {},
 });
 

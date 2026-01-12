@@ -3,7 +3,8 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, Pressable, Text, View } from "react-native";
+import { Alert, Image, Text, View } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import {
 	FileIcon,
 	FolderIcon,
@@ -59,13 +60,20 @@ export function FileAttachmentButton({
 	const snapPoints = useMemo(() => ["32%"], []);
 	const directory = useConnectionStore((state) => state.directory);
 
-	useEffect(() => {
-		if (isPickerOpen) {
+	// Track if we need to open the sheet after it mounts
+	const shouldOpenRef = useRef(false);
+
+	// Use callback ref to open sheet when it mounts
+	const handleSheetRef = useCallback((sheet: BottomSheet | null) => {
+		sheetRef.current = sheet;
+		if (sheet && shouldOpenRef.current) {
+			// Small delay to ensure sheet is fully mounted
 			requestAnimationFrame(() => {
-				sheetRef.current?.snapToIndex(0);
+				sheet.snapToIndex(0);
+				shouldOpenRef.current = false;
 			});
 		}
-	}, [isPickerOpen]);
+	}, []);
 
 	const handleImagePick = useCallback(async () => {
 		setIsPickerOpen(false);
@@ -169,6 +177,7 @@ export function FileAttachmentButton({
 	const showOptions = useCallback(async () => {
 		if (disabled) return;
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		shouldOpenRef.current = true;
 		setIsPickerOpen(true);
 	}, [disabled]);
 
@@ -185,12 +194,13 @@ export function FileAttachmentButton({
 
 			{isPickerOpen && (
 				<Sheet
-					ref={sheetRef}
+					ref={handleSheetRef}
 					snapPoints={snapPoints}
 					onClose={() => setIsPickerOpen(false)}
 					contentPadding={0}
+					enablePanDownToClose={true}
 				>
-				<View className="pb-2">
+					<View className="pb-2">
 					<View className="px-4 pt-2 pb-1">
 						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
 							Attach file
@@ -200,43 +210,37 @@ export function FileAttachmentButton({
 						className="border-t"
 						style={{ borderTopColor: colors.border }}
 					/>
-					<Pressable
+					<TouchableOpacity
 						onPress={handleImagePick}
+						activeOpacity={0.7}
 						className="flex-row items-center gap-3 px-4 py-3"
-						style={({ pressed }) => ({
-							backgroundColor: pressed ? colors.muted : "transparent",
-						})}
 					>
 						<ImageIcon size={20} color={colors.foreground} />
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 							Photo Library
 						</Text>
-					</Pressable>
+					</TouchableOpacity>
 					<View className="h-px" style={{ backgroundColor: colors.border }} />
-					<Pressable
+					<TouchableOpacity
 						onPress={handleDocumentPick}
+						activeOpacity={0.7}
 						className="flex-row items-center gap-3 px-4 py-3"
-						style={({ pressed }) => ({
-							backgroundColor: pressed ? colors.muted : "transparent",
-						})}
 					>
 						<FileIcon size={20} color={colors.foreground} />
 						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
 							Files
 						</Text>
-					</Pressable>
+					</TouchableOpacity>
 					{directory && (
 						<>
 							<View
 								className="h-px"
 								style={{ backgroundColor: colors.border }}
 							/>
-							<Pressable
+							<TouchableOpacity
 								onPress={handleOpenServerPicker}
+								activeOpacity={0.7}
 								className="flex-row items-center gap-3 px-4 py-3"
-								style={({ pressed }) => ({
-									backgroundColor: pressed ? colors.muted : "transparent",
-								})}
 							>
 								<FolderIcon size={20} color={colors.foreground} />
 								<Text
@@ -244,10 +248,10 @@ export function FileAttachmentButton({
 								>
 									Project Files
 								</Text>
-							</Pressable>
+							</TouchableOpacity>
 						</>
 					)}
-				</View>
+					</View>
 				</Sheet>
 			)}
 

@@ -12,8 +12,15 @@ import {
 import { AiAgentIcon, SendIcon, StopIcon } from "@/components/icons";
 import { IconButton } from "@/components/ui";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
-import { FontSizes, Fonts, fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
-import { withOpacity, OPACITY } from "@/utils/colors";
+import {
+	FontSizes,
+	Fonts,
+	fontStyle,
+	Spacing,
+	typography,
+	useTheme,
+} from "@/theme";
+import { OPACITY, withOpacity } from "@/utils/colors";
 import { chatInputStyles, MOBILE_SPACING } from "./ChatInput.styles";
 import {
 	type AttachedFile,
@@ -145,7 +152,9 @@ function FileIcon({ extension }: { extension?: string }) {
 	return (
 		<View
 			className={chatInputStyles.triggerIcon({})}
-			style={{ backgroundColor: withOpacity(colors.mutedForeground, OPACITY.light) }}
+			style={{
+				backgroundColor: withOpacity(colors.mutedForeground, OPACITY.light),
+			}}
 		>
 			<Text
 				style={{
@@ -214,7 +223,13 @@ function AutocompleteOverlay({
 				</View>
 				<View style={{ flex: 1, minWidth: 0 }}>
 					{/* Match PWA: typography-ui-label font-medium */}
-					<Text style={[typography.uiLabel, fontStyle("500"), { color: colors.foreground }]}>
+					<Text
+						style={[
+							typography.uiLabel,
+							fontStyle("500"),
+							{ color: colors.foreground },
+						]}
+					>
 						{item.type === "agent" && `#${item.name}`}
 						{item.type === "command" && `/${item.name}`}
 						{item.type === "file" && `@${item.name}`}
@@ -222,7 +237,10 @@ function AutocompleteOverlay({
 					{/* Match PWA: typography-meta text-muted-foreground mt-0.5 truncate */}
 					{"description" in item && item.description && (
 						<Text
-							style={[typography.meta, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
+							style={[
+								typography.meta,
+								{ color: colors.mutedForeground, marginTop: Spacing[0.5] },
+							]}
 							numberOfLines={1}
 						>
 							{item.description}
@@ -230,7 +248,10 @@ function AutocompleteOverlay({
 					)}
 					{item.type === "file" && (
 						<Text
-							style={[typography.meta, { color: colors.mutedForeground, marginTop: Spacing[0.5] }]}
+							style={[
+								typography.meta,
+								{ color: colors.mutedForeground, marginTop: Spacing[0.5] },
+							]}
 							numberOfLines={1}
 						>
 							{item.path}
@@ -253,7 +274,9 @@ function AutocompleteOverlay({
 	const AUTOCOMPLETE_FOOTER_HEIGHT = 22;
 	const AUTOCOMPLETE_MAX_ITEMS = 5; // Match PWA max-h-64 (~256px)
 	const AUTOCOMPLETE_MAX_HEIGHT = 280; // Slightly larger for proper spacing
-	const contentHeight = Math.min(items.length, AUTOCOMPLETE_MAX_ITEMS) * AUTOCOMPLETE_ITEM_HEIGHT + AUTOCOMPLETE_FOOTER_HEIGHT;
+	const contentHeight =
+		Math.min(items.length, AUTOCOMPLETE_MAX_ITEMS) * AUTOCOMPLETE_ITEM_HEIGHT +
+		AUTOCOMPLETE_FOOTER_HEIGHT;
 
 	return (
 		<Animated.View
@@ -307,12 +330,7 @@ function AutocompleteOverlay({
 					paddingBottom: Spacing[1.5], // pb-1.5 = 6px
 				}}
 			>
-				<Text
-					style={[
-						typography.micro,
-						{ color: colors.mutedForeground },
-					]}
-				>
+				<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 					↑↓ navigate • Enter select • Esc close
 				</Text>
 			</View>
@@ -332,7 +350,6 @@ function getPermissionModeColors(
 	}
 	return null;
 }
-
 
 // Agent badge component with color support and icon
 function AgentBadge({ name, color }: { name: string; color?: string }) {
@@ -365,9 +382,7 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 	return (
 		<View className={chatInputStyles.agentBadgeContainer({})}>
 			<AiAgentIcon size={14} color={badgeColor} />
-			<Text
-				style={[typography.micro, fontStyle("500"), { color: badgeColor }]}
-			>
+			<Text style={[typography.micro, fontStyle("500"), { color: badgeColor }]}>
 				{capitalizedName}
 			</Text>
 		</View>
@@ -376,7 +391,8 @@ function AgentBadge({ name, color }: { name: string; color?: string }) {
 
 // Default placeholder text matching PWA desktop
 const DEFAULT_PLACEHOLDER_ACTIVE = "# for agents; @ for files; / for commands";
-const DEFAULT_PLACEHOLDER_INACTIVE = "Select or create a session to start chatting";
+const DEFAULT_PLACEHOLDER_INACTIVE =
+	"Select or create a session to start chatting";
 
 export function ChatInput({
 	onSend,
@@ -393,7 +409,11 @@ export function ChatInput({
 	hasActiveSession = true,
 }: ChatInputProps) {
 	// Use custom placeholder if provided, otherwise use conditional defaults
-	const inputPlaceholder = placeholder ?? (hasActiveSession ? DEFAULT_PLACEHOLDER_ACTIVE : DEFAULT_PLACEHOLDER_INACTIVE);
+	const inputPlaceholder =
+		placeholder ??
+		(hasActiveSession
+			? DEFAULT_PLACEHOLDER_ACTIVE
+			: DEFAULT_PLACEHOLDER_INACTIVE);
 	const { colors, isDark } = useTheme();
 	const permissionColors = getPermissionModeColors(permissionMode, colors);
 	const inputRef = useRef<TextInput>(null);
@@ -604,7 +624,10 @@ export function ChatInput({
 
 	// Match desktop's semi-transparent input background
 	// PWA: bg-input/10 dark:bg-input/30 (10% in light, 30% in dark)
-	const inputBackground = withOpacity(colors.input, isDark ? OPACITY.overlay : OPACITY.selected);
+	const inputBackground = withOpacity(
+		colors.input,
+		isDark ? OPACITY.overlay : OPACITY.selected,
+	);
 
 	return (
 		<View className={chatInputStyles.container({})}>
@@ -642,10 +665,13 @@ export function ChatInput({
 					maxLength={10000}
 					editable={!isLoading && hasActiveSession}
 					className={chatInputStyles.textInput({})}
-					style={[typography.body, { color: colors.foreground, textAlignVertical: "top" }]}
+					style={[
+						typography.body,
+						{ color: colors.foreground, textAlignVertical: "top" },
+					]}
 				/>
 
-				<View className={chatInputStyles.toolbar({})} style={{ zIndex: 10 }}>
+				<View className={chatInputStyles.toolbar({})}>
 					<View className={chatInputStyles.toolbarLeftSection({})}>
 						<View className={chatInputStyles.toolbarButton({})}>
 							<FileAttachmentButton
@@ -730,9 +756,8 @@ export function ChatInput({
 									/>
 								)
 							}
-						variant="ghost"
-						size="icon-md"
-
+							variant="ghost"
+							size="icon-md"
 							onPress={handleSend}
 							isDisabled={!canSend && !isLoading}
 							accessibilityLabel={isLoading ? "Stop" : "Send message"}

@@ -5,7 +5,8 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
@@ -154,7 +155,7 @@ export function AgentPicker({
 					const agentColor = getAgentColor(agent.name, agentPalette);
 
 					return (
-						<Pressable
+						<TouchableOpacity
 							key={agent.name}
 							onPress={() => handleAgentSelect(agent.name)}
 							className="flex-row items-center justify-between p-3.5 rounded-xl border"
@@ -196,7 +197,7 @@ export function AgentPicker({
 								)}
 							</View>
 							{isSelected && <CheckIcon size={18} color={agentColor} />}
-						</Pressable>
+						</TouchableOpacity>
 					);
 				})}
 			</BottomSheetScrollView>

@@ -269,7 +269,7 @@ export default function TerminalScreen() {
 	}, [isConnected, hasExited]);
 
 	const HEADER_HEIGHT = 52;
-	const keyboardOffset = HEADER_HEIGHT + insets.top;
+	const keyboardOffset = HEADER_HEIGHT + insets.top + 8;
 
 	const renderContent = () => {
 		if (!isServerConnected) {
@@ -388,7 +388,7 @@ export default function TerminalScreen() {
 	if (nonTerminalContent) {
 		return (
 			<KeyboardAvoidingView
-				behavior={Platform.OS === "ios" ? "position" : "height"}
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
 				style={[styles.container, { backgroundColor: colors.background }]}
 				keyboardVerticalOffset={keyboardOffset}
 			>
@@ -400,7 +400,7 @@ export default function TerminalScreen() {
 	// PWA-style terminal layout
 	return (
 		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "position" : "height"}
+			behavior={Platform.OS === "ios" ? "padding" : "height"}
 			style={[styles.container, { backgroundColor: colors.background }]}
 			keyboardVerticalOffset={keyboardOffset}
 		>
@@ -508,6 +508,8 @@ export default function TerminalScreen() {
 					contentContainerStyle={[styles.terminalContent, { paddingBottom: Math.max(insets.bottom, Spacing[5]) }]}
 					keyboardShouldPersistTaps="handled"
 					keyboardDismissMode="none"
+					contentInsetAdjustmentBehavior="automatic"
+					showsVerticalScrollIndicator={true}
 				>
 					<AnsiText
 						text={output || ""}
@@ -641,13 +643,16 @@ const styles = StyleSheet.create({
 	// Terminal content
 	terminalContainer: {
 		flex: 1,
+		minHeight: 0, // Important for flex layout
 	},
 	terminalOutput: {
 		flex: 1,
+		minHeight: 0, // Important for flex layout
 	},
 	terminalContent: {
 		padding: Spacing[2],
 		paddingBottom: Spacing[5],
+		flexGrow: 1, // Ensure content can grow
 	},
 	terminalText: {
 		lineHeight: 16,
