@@ -9,7 +9,7 @@ import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { Spacing, fontStyle, typography, useTheme } from "@/theme";
+import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
 
 export interface Agent {
@@ -41,7 +41,8 @@ export function AgentPicker({
 	visible,
 	onClose,
 }: AgentPickerProps) {
-	const { colors } = useTheme();
+	const { colors, isDark } = useTheme();
+	const insets = useSafeAreaInsets();
 	const sheetRef = useRef<BottomSheet>(null);
 	const snapPoints = useMemo(() => ["68%", "92%"], []);
 	const agentPalette = [
@@ -76,16 +77,78 @@ export function AgentPicker({
 		[onAgentChange],
 	);
 
+	const handleChange = useCallback(
+		(index: number) => {
+			if (index === 0) {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+			}
+			if (index === -1) {
+				Haptics.selectionAsync().catch(() => {});
+				onClose();
+			}
+		},
+		[onClose],
+	);
+
+	const renderBackdrop = useCallback(
+		(backdropProps: BottomSheetBackdropProps) => (
+			<BottomSheetBackdrop
+				{...backdropProps}
+				disappearsOnIndex={-1}
+				appearsOnIndex={0}
+				pressBehavior="close"
+				opacity={0.55}
+			/>
+		),
+		[],
+	);
+
 	return (
-		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
+		<BottomSheet
+			ref={sheetRef}
+			index={-1}
+			snapPoints={snapPoints}
+			enablePanDownToClose
+			backdropComponent={renderBackdrop}
+			onChange={handleChange}
+			bottomInset={insets.bottom + 8}
+			keyboardBehavior="interactive"
+			keyboardBlurBehavior="restore"
+			backgroundStyle={{
+				backgroundColor: withOpacity(colors.background, isDark ? 0.95 : 0.98),
+				borderColor: withOpacity(colors.border, OPACITY.overlay),
+				borderWidth: 1,
+				borderRadius: 26,
+				overflow: "hidden",
+			}}
+			handleIndicatorStyle={{
+				backgroundColor: withOpacity(colors.mutedForeground, 0.9),
+				width: 48,
+				height: 5,
+				borderRadius: 999,
+			}}
+			style={{ zIndex: 1000, elevation: 20 }}
+		>
 			<View className="px-4 pt-2 pb-3 flex-row items-center justify-between">
-				<Text style={[typography.uiHeader, { color: colors.foreground }]}>Select agent</Text>
-				<Button variant="muted" size="sm" onPress={() => sheetRef.current?.close()}>
+				<Text style={[typography.uiHeader, { color: colors.foreground }]}>
+					Select agent
+				</Text>
+				<Button
+					variant="muted"
+					size="sm"
+					onPress={() => sheetRef.current?.close()}
+				>
 					<Button.Label>Done</Button.Label>
 				</Button>
 			</View>
 
-			<SheetScrollView contentContainerStyle={{ paddingHorizontal: Spacing[4], paddingBottom: Spacing[6], gap: Spacing[3] }}>
+			<BottomSheetScrollView
+				contentContainerStyle={{
+					paddingHorizontal: Spacing[4],
+					paddingBottom: Math.max(Spacing[6], insets.bottom + Spacing[4]),
+					gap: Spacing[3],
+				}}
+			>
 				{primaryAgents.map((agent) => {
 					const isSelected = agent.name === currentAgentName;
 					const agentColor = getAgentColor(agent.name, agentPalette);
@@ -105,7 +168,10 @@ export function AgentPicker({
 						>
 							<View className="flex-1 mr-3">
 								<View className="flex-row items-center gap-2">
-									<View className="w-2 h-2 rounded-full" style={{ backgroundColor: agentColor }} />
+									<View
+										className="w-2 h-2 rounded-full"
+										style={{ backgroundColor: agentColor }}
+									/>
 									<Text
 										style={[
 											typography.uiLabel,
@@ -117,7 +183,14 @@ export function AgentPicker({
 									</Text>
 								</View>
 								{agent.description && (
-									<Text className="mt-1" style={[typography.micro, { color: colors.mutedForeground }]} numberOfLines={2}>
+									<Text
+										className="mt-1"
+										style={[
+											typography.micro,
+											{ color: colors.mutedForeground },
+										]}
+										numberOfLines={2}
+									>
 										{agent.description}
 									</Text>
 								)}
@@ -126,7 +199,7 @@ export function AgentPicker({
 						</Pressable>
 					);
 				})}
-			</SheetScrollView>
-		</Sheet>
+			</BottomSheetScrollView>
+		</BottomSheet>
 	);
 }
