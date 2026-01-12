@@ -8,7 +8,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useMemo } from "react";
-import { View, type ViewStyle } from "react-native";
+import { type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
@@ -54,19 +54,20 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
       [backdropOpacity],
     );
 
-    const handleChange = useCallback(
-      (index: number, _position?: number, _closing?: boolean) => {
-        if (index === 0) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }
-        if (index === -1) {
-          Haptics.selectionAsync().catch(() => {});
-          onClose?.();
-        }
-        onChange?.(index);
-      },
-      [onChange, onClose],
-    );
+	const handleChange = useCallback(
+		(index: number) => {
+			if (index === 0) {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+			}
+			if (index === -1) {
+				Haptics.selectionAsync().catch(() => {});
+				onClose?.();
+			}
+			onChange?.(index);
+		},
+		[onChange, onClose],
+	);
+
 
     const paddingBottom = useMemo(
       () => Math.max(contentPadding * 1.25, insets.bottom + contentPadding / 2),

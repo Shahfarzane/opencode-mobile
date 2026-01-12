@@ -1,5 +1,5 @@
 import { tv } from "@/lib/styles";
-import { combineStyles } from "@/lib/styles";
+import { tv, combineStyles } from "@/lib/styles";
 
 /**
  * Button root styles using tailwind-variants

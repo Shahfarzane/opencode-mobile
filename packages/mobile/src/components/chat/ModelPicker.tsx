@@ -301,7 +301,7 @@ function ModelRow({
 				className="flex-row items-center gap-1.5 min-w-0"
 				style={{ flex: 1 }}
 			>
-				{showProviderIcon && <ProviderLogo providerId={providerId} size={12} />}
+				{showProviderIcon && <ProviderLogoWithFallback providerId={providerId} size={12} />}
 				<Text
 					style={[
 						typography.body,
