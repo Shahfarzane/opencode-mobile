@@ -2,7 +2,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import type BottomSheet from "@gorhom/bottom-sheet";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Alert,
 	Image,
@@ -10,11 +10,10 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileIcon, FolderIcon, ImageIcon, PlusCircleIcon, XIcon } from "@/components/icons";
 import { IconButton } from "@/components/ui";
-import { getShadowColor, ShadowTokens, typography, useTheme } from "@/theme";
-import { OVERLAYS } from "@/utils/colors";
+import { Sheet } from "@/components/ui/sheet";
+import { typography, useTheme } from "@/theme";
 import { useConnectionStore } from "@/stores/useConnectionStore";
 import { ServerFilePicker } from "./ServerFilePicker";
 
@@ -53,15 +52,20 @@ export function FileAttachmentButton({
 	onFileAttached,
 	disabled = false,
 }: FileAttachmentButtonProps) {
-	const { colors, isDark } = useTheme();
-	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
 	const [isServerPickerOpen, setIsServerPickerOpen] = useState(false);
-	const [buttonLayout, setButtonLayout] = useState<LayoutRectangle | null>(
-		null,
-	);
-	const buttonRef = useRef<View>(null);
+	const sheetRef = useRef<BottomSheet>(null);
+	const snapPoints = useMemo(() => ["32%"], []);
 	const directory = useConnectionStore((state) => state.directory);
+
+	useEffect(() => {
+		if (isPickerOpen) {
+			sheetRef.current?.snapToIndex(0);
+		} else {
+			sheetRef.current?.close();
+		}
+	}, [isPickerOpen]);
 
 	const handleImagePick = useCallback(async () => {
 		setIsPickerOpen(false);
@@ -165,86 +169,63 @@ export function FileAttachmentButton({
 	const showOptions = useCallback(async () => {
 		if (disabled) return;
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-		// Measure button position for menu placement
-		buttonRef.current?.measureInWindow((x, y, width, height) => {
-			setButtonLayout({ x, y, width, height });
-			setIsPickerOpen(true);
-		});
+		setIsPickerOpen(true);
 	}, [disabled]);
 
 	return (
 		<>
-			<View ref={buttonRef} collapsable={false}>
-				<IconButton
-					icon={<PlusCircleIcon size={20} color={colors.mutedForeground} />}
-					variant="ghost"
-					size="icon-sm"
-					onPress={showOptions}
-					isDisabled={disabled}
-					accessibilityLabel="Attach file"
-				/>
-			</View>
+			<IconButton
+				icon={<PlusCircleIcon size={20} color={colors.mutedForeground} />}
+				variant="ghost"
+				size="icon-sm"
+				onPress={showOptions}
+				isDisabled={disabled}
+				accessibilityLabel="Attach file"
+			/>
 
-			<Modal
-				visible={isPickerOpen}
-				transparent
-				animationType="fade"
-				onRequestClose={() => setIsPickerOpen(false)}
+			<Sheet
+				ref={sheetRef}
+				snapPoints={snapPoints}
+				onClose={() => setIsPickerOpen(false)}
+				contentPadding={0}
 			>
-				<Pressable
-					className="flex-1"
-					style={{ backgroundColor: OVERLAYS.scrimLight }}
-					onPress={() => setIsPickerOpen(false)}
-				>
-					<View
-						className="rounded-lg border overflow-hidden min-w-[160px]"
-						style={{
-							backgroundColor: colors.card,
-							borderColor: colors.border,
-							position: "absolute",
-							left: Math.max(buttonLayout?.x ?? 16, 16),
-							bottom: buttonLayout
-								? Dimensions.get("window").height - buttonLayout.y + 8
-								: insets.bottom + 80,
-							shadowColor: getShadowColor(isDark),
-							...ShadowTokens.menu,
-						}}
+				<View className="pb-2">
+					<View className="px-4 pt-2 pb-1">
+						<Text style={[typography.uiHeader, { color: colors.foreground }]}>Attach file</Text>
+					</View>
+					<View className="border-t" style={{ borderTopColor: colors.border }} />
+					<Pressable
+						onPress={handleImagePick}
+						className="flex-row items-center gap-3 px-4 py-3"
+						style={({ pressed }) => ({ backgroundColor: pressed ? colors.muted : "transparent" })}
 					>
-						<Pressable
-							onPress={handleImagePick}
-							className="flex-row items-center gap-3 px-4 py-3 border-b"
-							style={{ borderBottomColor: colors.border }}
-						>
-							<ImageIcon size={20} color={colors.foreground} />
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-								Photo Library
-							</Text>
-						</Pressable>
-						<Pressable
-							onPress={handleDocumentPick}
-							className="flex-row items-center gap-3 px-4 py-3 border-b"
-							style={{ borderBottomColor: colors.border }}
-						>
-							<FileIcon size={20} color={colors.foreground} />
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-								Files
-							</Text>
-						</Pressable>
-						{directory && (
+						<ImageIcon size={20} color={colors.foreground} />
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Photo Library</Text>
+					</Pressable>
+					<View className="h-px" style={{ backgroundColor: colors.border }} />
+					<Pressable
+						onPress={handleDocumentPick}
+						className="flex-row items-center gap-3 px-4 py-3"
+						style={({ pressed }) => ({ backgroundColor: pressed ? colors.muted : "transparent" })}
+					>
+						<FileIcon size={20} color={colors.foreground} />
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Files</Text>
+					</Pressable>
+					{directory && (
+						<>
+							<View className="h-px" style={{ backgroundColor: colors.border }} />
 							<Pressable
 								onPress={handleOpenServerPicker}
 								className="flex-row items-center gap-3 px-4 py-3"
+								style={({ pressed }) => ({ backgroundColor: pressed ? colors.muted : "transparent" })}
 							>
 								<FolderIcon size={20} color={colors.foreground} />
-								<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-									Project Files
-								</Text>
+								<Text style={[typography.uiLabel, { color: colors.foreground }]}>Project Files</Text>
 							</Pressable>
-						)}
-					</View>
-				</Pressable>
-			</Modal>
+						</>
+					)}
+				</View>
+			</Sheet>
 
 			{directory && (
 				<ServerFilePicker

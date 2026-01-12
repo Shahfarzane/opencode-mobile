@@ -1,11 +1,17 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
-import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
-import { useEffect, useMemo, useRef } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	type ElementRef,
+} from "react";
 import { Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CopyIcon, GitForkIcon, UndoIcon } from "@/components/icons";
 import { Sheet } from "@/components/ui/sheet";
-import { typography, useTheme } from "@/theme";
+import { MenuPositioning, typography, useTheme } from "@/theme";
+import { withOpacity } from "@/utils/colors";
 
 interface MessageLayout {
 	x: number;
@@ -24,16 +30,22 @@ interface MessageActionsMenuProps {
 	messageLayout?: MessageLayout;
 }
 
+const ACTION_HEIGHT = 48;
+
 export function MessageActionsMenu({
 	visible,
 	onClose,
 	onCopy,
 	onBranchSession,
 	onRevert,
+	isAssistantMessage,
+	messageLayout,
 }: MessageActionsMenuProps) {
 	const { colors } = useTheme();
-	const sheetRef = useRef<BottomSheet>(null);
-	const snapPoints = useMemo(() => ["28%"], []);
+	const insets = useSafeAreaInsets();
+	const sheetRef = useRef<ElementRef<typeof Sheet>>(null);
+
+	const snapPoints = useMemo(() => ["32%", "42%"], []);
 
 	useEffect(() => {
 		if (visible) {
@@ -43,78 +55,148 @@ export function MessageActionsMenu({
 		}
 	}, [visible]);
 
-	const handleCopy = async () => {
+	const handleSheetChange = useCallback(
+		(index: number) => {
+			if (index === -1) {
+				onClose();
+			}
+		},
+		[onClose],
+	);
+
+	const closeSheet = useCallback(() => {
+		sheetRef.current?.close();
+	}, []);
+
+	const handleCopy = useCallback(async () => {
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		onCopy();
-		sheetRef.current?.close();
-	};
+		closeSheet();
+	}, [closeSheet, onCopy]);
 
-	const handleBranch = async () => {
+	const handleBranch = useCallback(async () => {
+		if (!onBranchSession) return;
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-		onBranchSession?.();
-		sheetRef.current?.close();
-	};
+		onBranchSession();
+		closeSheet();
+	}, [closeSheet, onBranchSession]);
 
-	const handleRevert = async () => {
+	const handleRevert = useCallback(async () => {
+		if (!onRevert) return;
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-		onRevert?.();
-		sheetRef.current?.close();
-	};
+		onRevert();
+		closeSheet();
+	}, [closeSheet, onRevert]);
 
-	const actions = [
-		{
-			key: "copy",
-			label: "Copy",
-			icon: CopyIcon,
-			onPress: handleCopy,
-		},
-		...(onRevert
-			? [
-				{
-					key: "revert",
-					label: "Revert",
-					icon: UndoIcon,
-					onPress: handleRevert,
-				},
-			]
-			: []),
-		...(onBranchSession
-			? [
-				{
-					key: "branch",
-					label: "Fork",
-					icon: GitForkIcon,
-					onPress: handleBranch,
-				},
-			]
-			: []),
-	];
+	const menuHeader = useMemo(() => {
+		if (!messageLayout) return undefined;
+		return isAssistantMessage ? "Assistant message" : "Your message";
+	}, [isAssistantMessage, messageLayout]);
 
 	return (
-		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
-			<View className="pb-2">
-				<View className="px-4 pt-2 pb-1">
-					<Text style={[typography.uiHeader, { color: colors.foreground }]}>Message actions</Text>
-				</View>
-				<View className="border-t" style={{ borderTopColor: colors.border }} />
-				{actions.map((action, index) => (
-					<View key={action.key}>
-						<Pressable
-							onPress={action.onPress}
-							className="flex-row items-center gap-3 px-4 py-3"
-							style={({ pressed }) => ({
-								backgroundColor: pressed ? colors.muted : "transparent",
-							})}
-							accessibilityRole="menuitem"
+		<Sheet
+			ref={sheetRef}
+			onChange={handleSheetChange}
+			snapPoints={snapPoints}
+			contentPadding={16}
+			bottomInset={Math.max(insets.bottom, 12)}
+		>
+			<View className="gap-2" style={{ paddingBottom: 4 }}>
+				<View className="flex-row items-center justify-between">
+					<View>
+						<Text
+							style={[
+								typography.uiLabel,
+								{ color: colors.foreground, fontWeight: "600" },
+							]}
 						>
-							<action.icon size={18} color={colors.mutedForeground} />
-							<Text style={[typography.uiLabel, { color: colors.foreground }]}>{action.label}</Text>
-						</Pressable>
-						{index < actions.length - 1 && (
-							<View className="h-px" style={{ backgroundColor: colors.border }} />
+							Message actions
+						</Text>
+						{menuHeader && (
+							<Text style={[typography.micro, { color: colors.mutedForeground }]}>
+								{menuHeader}
+							</Text>
 						)}
 					</View>
-				))}
+					<Pressable
+						onPress={closeSheet}
+						hitSlop={12}
+						style={({ pressed }) => ({
+							backgroundColor: pressed ? withOpacity(colors.muted, 0.6) : "transparent",
+							borderRadius: 999,
+							padding: 6,
+						})}
+						accessibilityRole="button"
+						accessibilityLabel="Close message actions"
+					>
+						<Text style={[typography.micro, { color: colors.mutedForeground }]}>Done</Text>
+					</Pressable>
+				</View>
+
+				<View
+					className="rounded-2xl border overflow-hidden"
+					style={{ borderColor: withOpacity(colors.border, 0.9), backgroundColor: withOpacity(colors.card, 0.9) }}
+				>
+					<Pressable
+						onPress={handleCopy}
+						className="flex-row items-center gap-3 px-4"
+						style={({ pressed }) => ({
+							height: ACTION_HEIGHT,
+							backgroundColor: pressed ? withOpacity(colors.muted, 0.9) : "transparent",
+						})}
+						accessibilityRole="button"
+						accessibilityLabel="Copy message"
+					>
+						<CopyIcon size={MenuPositioning.iconSize} color={colors.mutedForeground} />
+						<Text style={[typography.uiLabel, { color: colors.foreground }]}>Copy</Text>
+					</Pressable>
+
+					{onRevert && (
+						<View
+							className="h-px"
+							style={{ backgroundColor: withOpacity(colors.border, 0.9) }}
+						/>
+					)}
+
+					{onRevert && (
+						<Pressable
+							onPress={handleRevert}
+							className="flex-row items-center gap-3 px-4"
+							style={({ pressed }) => ({
+								height: ACTION_HEIGHT,
+								backgroundColor: pressed ? withOpacity(colors.muted, 0.9) : "transparent",
+							})}
+							accessibilityRole="button"
+							accessibilityLabel="Revert message"
+						>
+							<UndoIcon size={MenuPositioning.iconSize} color={colors.mutedForeground} />
+							<Text style={[typography.uiLabel, { color: colors.foreground }]}>Revert</Text>
+						</Pressable>
+					)}
+
+					{onBranchSession && (
+						<View
+							className="h-px"
+							style={{ backgroundColor: withOpacity(colors.border, 0.9) }}
+						/>
+					)}
+
+					{onBranchSession && (
+						<Pressable
+							onPress={handleBranch}
+							className="flex-row items-center gap-3 px-4"
+							style={({ pressed }) => ({
+								height: ACTION_HEIGHT,
+								backgroundColor: pressed ? withOpacity(colors.muted, 0.9) : "transparent",
+							})}
+							accessibilityRole="button"
+							accessibilityLabel="Fork session"
+						>
+							<GitForkIcon size={MenuPositioning.iconSize} color={colors.mutedForeground} />
+							<Text style={[typography.uiLabel, { color: colors.foreground }]}>Fork</Text>
+						</Pressable>
+					)}
+				</View>
 			</View>
 		</Sheet>
 	);

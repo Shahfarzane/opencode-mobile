@@ -1,14 +1,13 @@
 import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type BottomSheet from "@gorhom/bottom-sheet";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
-	Modal,
 	Pressable,
 	Text,
 	View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	CheckIcon,
 	ChevronDownIcon,
@@ -18,6 +17,7 @@ import {
 	XIcon,
 } from "@/components/icons";
 import { Button, SearchInput } from "@/components/ui";
+import { Sheet } from "@/components/ui/sheet";
 import { typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
 import { filesApi, type FileListEntry } from "@/api/files";
@@ -46,7 +46,8 @@ export function ServerFilePicker({
 	multiSelect = true,
 }: ServerFilePickerProps) {
 	const { colors } = useTheme();
-	const insets = useSafeAreaInsets();
+	const sheetRef = useRef<BottomSheet>(null);
+	const snapPoints = useMemo(() => ["82%", "95%"], []);
 
 	const [loading, setLoading] = useState(false);
 	const [searching, setSearching] = useState(false);
@@ -59,6 +60,14 @@ export function ServerFilePicker({
 
 	const loadedDirsRef = useRef<Set<string>>(new Set());
 	const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		if (visible) {
+			sheetRef.current?.snapToIndex(0);
+		} else {
+			sheetRef.current?.close();
+		}
+	}, [visible]);
 
 	const mapEntries = useCallback((entries: FileListEntry[]): FileInfo[] => {
 		return entries
@@ -319,55 +328,32 @@ export function ServerFilePicker({
 	const displayItems = isSearchActive ? searchResults : rootItems;
 
 	return (
-		<Modal
-			visible={visible}
-			animationType="slide"
-			presentationStyle="pageSheet"
-			onRequestClose={onClose}
-		>
-			<View
-				className="flex-1"
-				style={{ backgroundColor: colors.background, paddingTop: insets.top }}
-			>
-				{/* Header */}
-				<View
-					className="flex-row items-center justify-between px-4 py-3 border-b"
-					style={{ borderBottomColor: colors.border }}
-				>
-					<Pressable onPress={onClose} hitSlop={8}>
+		<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={onClose} contentPadding={0}>
+			<View className="flex-1">
+				<View className="flex-row items-center justify-between px-4 pt-2 pb-3">
+					<Pressable onPress={() => sheetRef.current?.close()} hitSlop={8}>
 						<XIcon size={24} color={colors.foreground} />
 					</Pressable>
-					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>
-						Select Project Files
-					</Text>
+					<Text style={[typography.uiLabel, { color: colors.foreground, fontWeight: "600" }]}>Select Project Files</Text>
 					<View style={{ width: 24 }} />
 				</View>
+				<View className="border-t" style={{ borderTopColor: colors.border }} />
 
-				{/* Search */}
 				<View className="px-4 py-2 border-b" style={{ borderBottomColor: colors.border }}>
-					<SearchInput
-						value={searchQuery}
-						onChangeText={setSearchQuery}
-						placeholder="Search files..."
-					/>
+					<SearchInput value={searchQuery} onChangeText={setSearchQuery} placeholder="Search files..." />
 				</View>
 
-				{/* File List */}
 				<View className="flex-1">
 					{loading && !isSearchActive && displayItems.length === 0 && (
 						<View className="flex-1 items-center justify-center">
 							<ActivityIndicator color={colors.primary} />
-							<Text style={[typography.uiLabel, { color: colors.mutedForeground, marginTop: 8 }]}>
-								Loading files...
-							</Text>
+							<Text style={[typography.uiLabel, { color: colors.mutedForeground, marginTop: 8 }]}>Loading files...</Text>
 						</View>
 					)}
 
 					{error && (
 						<View className="flex-1 items-center justify-center px-4">
-							<Text style={[typography.uiLabel, { color: colors.destructive, textAlign: "center" }]}>
-								{error}
-							</Text>
+							<Text style={[typography.uiLabel, { color: colors.destructive, textAlign: "center" }]}>{error}</Text>
 						</View>
 					)}
 
@@ -396,29 +382,17 @@ export function ServerFilePicker({
 					)}
 				</View>
 
-				{/* Footer */}
-				<View
-					className="flex-row items-center justify-between px-4 py-3 border-t"
-					style={{
-						borderTopColor: colors.border,
-						paddingBottom: Math.max(insets.bottom, 12),
-					}}
-				>
+				<View className="flex-row items-center justify-between px-4 py-3 border-t" style={{ borderTopColor: colors.border }}>
 					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
 						{selectedFiles.size > 0
 							? `${selectedFiles.size} file${selectedFiles.size !== 1 ? "s" : ""} selected`
 							: "No files selected"}
 					</Text>
-					<Button
-						variant={selectedFiles.size > 0 ? "primary" : "muted"}
-						size="sm"
-						onPress={handleConfirm}
-						isDisabled={selectedFiles.size === 0}
-					>
+					<Button variant={selectedFiles.size > 0 ? "primary" : "muted"} size="sm" onPress={handleConfirm} isDisabled={selectedFiles.size === 0}>
 						<Button.Label>Attach Files</Button.Label>
 					</Button>
 				</View>
 			</View>
-		</Modal>
+		</Sheet>
 	);
 }

@@ -549,12 +549,15 @@ export function ModelPicker({
 		[onToggleFavorite],
 	);
 
-	const handleSheetChange = useCallback((index: number) => {
-		if (index === -1) {
-			// onClose is already called by Sheet component's handleChange
-			setSearchQuery("");
-		}
-	}, []);
+	const handleSheetChange = useCallback(
+		(index: number) => {
+			if (index === -1) {
+				onClose();
+				setSearchQuery("");
+			}
+		},
+		[onClose],
+	);
 
 	const handleClose = useCallback(() => {
 		// Only close sheet - onClose will be called by handleSheetChange when sheet reaches -1
@@ -571,7 +574,6 @@ export function ModelPicker({
 		<Sheet
 			ref={bottomSheetRef}
 			snapPoints={snapPoints}
-			onClose={onClose}
 			onChange={handleSheetChange}
 			contentPadding={16}
 		>
