@@ -1,6 +1,6 @@
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type {
 	NativeScrollEvent,
 	NativeSyntheticEvent,
@@ -81,6 +81,21 @@ export function MessageList({
 	const listRef = useRef<FlashListRef<Message>>(null);
 	const [showScrollButton, setShowScrollButton] = useState(false);
 
+	// Create extraData that changes when streaming content changes
+	// This forces FlashList to re-render when message content updates
+	const extraData = useMemo(() => {
+		const streamingMessage = messages.find((m) => m.isStreaming);
+		return {
+			messageCount: messages.length,
+			isLoading,
+			// Include streaming message's content length to detect content changes
+			streamingContentLength: streamingMessage?.content?.length ?? 0,
+			streamingPartsCount: streamingMessage?.parts?.length ?? 0,
+			// Include last part's content for fine-grained updates
+			lastPartContent: streamingMessage?.parts?.slice(-1)[0]?.content?.length ?? 0,
+		};
+	}, [messages, isLoading]);
+
 	const renderItem = useCallback(
 		({ item, index }: { item: Message; index: number }) => {
 			// Determine if we should show header based on previous message
@@ -136,7 +151,7 @@ export function MessageList({
 				data={messages}
 				renderItem={renderItem}
 				keyExtractor={keyExtractor}
-				extraData={messages}
+				extraData={extraData}
 				{...({ estimatedItemSize: 120 } as object)}
 				contentContainerStyle={{ paddingTop: 12, paddingBottom: 16 }}
 				onContentSizeChange={handleContentSizeChange}
