@@ -71,6 +71,10 @@ export interface ModelButtonPosition {
 	y: number;
 	width: number;
 	height: number;
+	/** Width of the entire input container for dropdown sizing */
+	containerWidth: number;
+	/** X position of the container left edge */
+	containerX: number;
 }
 
 interface ChatInputProps {
@@ -632,12 +636,13 @@ export function ChatInput({
 
 	// Model button ref and position measurement
 	const modelButtonRef = useRef<View>(null);
-	const modelButtonPositionRef = useRef<ModelButtonPosition>({ x: 0, y: 0, width: 0, height: 0 });
+	const containerRef = useRef<View>(null);
+	const containerDimensionsRef = useRef({ x: 0, width: 0 });
 
-	const handleModelButtonLayout = useCallback((_event: LayoutChangeEvent) => {
-		// Measure position relative to screen when layout changes
-		modelButtonRef.current?.measureInWindow((x, y, width, height) => {
-			modelButtonPositionRef.current = { x, y, width, height };
+	const handleContainerLayout = useCallback((_event: LayoutChangeEvent) => {
+		// Measure container position and width for dropdown sizing
+		containerRef.current?.measureInWindow((x, _y, width) => {
+			containerDimensionsRef.current = { x, width };
 		});
 	}, []);
 
@@ -646,7 +651,14 @@ export function ChatInput({
 		Haptics.selectionAsync();
 		// Measure current position before opening
 		modelButtonRef.current?.measureInWindow((x, y, width, height) => {
-			onModelPress({ x, y, width, height });
+			onModelPress({
+				x,
+				y,
+				width,
+				height,
+				containerWidth: containerDimensionsRef.current.width,
+				containerX: containerDimensionsRef.current.x,
+			});
 		});
 	}, [onModelPress]);
 
@@ -673,6 +685,8 @@ export function ChatInput({
 			)}
 
 			<View
+				ref={containerRef}
+				onLayout={handleContainerLayout}
 				className={chatInputStyles.inputContainer({})}
 				style={{
 					borderColor: permissionColors?.border ?? colors.border,
@@ -714,7 +728,6 @@ export function ChatInput({
 						{/* Model selector (flex-1 with overflow hidden) */}
 						<View
 							ref={modelButtonRef}
-							onLayout={handleModelButtonLayout}
 							className={chatInputStyles.modelInfoContainer({})}
 						>
 							<Pressable

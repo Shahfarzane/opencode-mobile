@@ -406,7 +406,7 @@ function Separator() {
 }
 
 const DROPDOWN_MAX_HEIGHT = 400;
-const DROPDOWN_WIDTH = 320;
+const DROPDOWN_MIN_WIDTH = 280;
 
 export function ModelPicker({
 	providers,
@@ -459,38 +459,35 @@ export function ModelPicker({
 		}
 	}, [visible, fadeAnim, scaleAnim]);
 
-	// Calculate dropdown position
-	const dropdownPosition = useMemo(() => {
+	// Calculate dropdown position and width - positioned from top, grows downward
+	const dropdownLayout = useMemo(() => {
 		const screenWidth = Dimensions.get("window").width;
-		const screenHeight = Dimensions.get("window").height;
 
 		if (!anchorPosition) {
-			// Default to center-bottom if no anchor
+			// Default to top-center if no anchor
+			const width = Math.max(DROPDOWN_MIN_WIDTH, screenWidth - Spacing[4] * 2);
 			return {
-				bottom: insets.bottom + 80,
-				left: (screenWidth - DROPDOWN_WIDTH) / 2,
+				top: insets.top + Spacing[2],
+				left: (screenWidth - width) / 2,
+				width,
 			};
 		}
 
-		// Position above the button, aligned to the right edge of the button
-		const rightEdge = anchorPosition.x + anchorPosition.width;
-		let left = rightEdge - DROPDOWN_WIDTH;
+		// Use container width if available, otherwise use minimum
+		const width = anchorPosition.containerWidth > 0
+			? anchorPosition.containerWidth
+			: Math.max(DROPDOWN_MIN_WIDTH, screenWidth - Spacing[4] * 2);
 
-		// Ensure it doesn't go off the left edge
-		if (left < Spacing[2]) {
-			left = Spacing[2];
-		}
+		// Position aligned with the container
+		const left = anchorPosition.containerX > 0
+			? anchorPosition.containerX
+			: Spacing[2];
 
-		// Ensure it doesn't go off the right edge
-		if (left + DROPDOWN_WIDTH > screenWidth - Spacing[2]) {
-			left = screenWidth - DROPDOWN_WIDTH - Spacing[2];
-		}
+		// Position from top, below safe area
+		const top = insets.top + Spacing[2];
 
-		// Position above the button with some margin
-		const bottom = screenHeight - anchorPosition.y + Spacing[2];
-
-		return { bottom, left };
-	}, [anchorPosition, insets.bottom]);
+		return { top, left, width };
+	}, [anchorPosition, insets.top]);
 
 	// Filter to only show providers that are enabled and have models
 	const availableProviders = useMemo(
@@ -660,13 +657,13 @@ export function ModelPicker({
 				}}
 				onPress={handleClose}
 			>
-				{/* Dropdown container */}
+				{/* Dropdown container - positioned from top, grows downward */}
 				<Animated.View
 					style={{
 						position: "absolute",
-						bottom: dropdownPosition.bottom,
-						left: dropdownPosition.left,
-						width: DROPDOWN_WIDTH,
+						top: dropdownLayout.top,
+						left: dropdownLayout.left,
+						width: dropdownLayout.width,
 						maxHeight: DROPDOWN_MAX_HEIGHT,
 						backgroundColor: colors.background,
 						borderRadius: Radius.xl,
