@@ -1,8 +1,16 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Text, View } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import {
+	Animated,
+	Dimensions,
+	Keyboard,
+	Modal,
+	Pressable,
+	ScrollView,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	BrainIcon,
@@ -16,9 +24,9 @@ import {
 	XIcon,
 } from "@/components/icons";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
-import { Sheet, SheetScrollView, SheetTextInput } from "@/components/ui/sheet";
 import { fontStyle, Radius, Spacing, typography, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
+import type { ModelButtonPosition } from "./ChatInput";
 
 interface ModelMetadata {
 	reasoning?: boolean;
@@ -54,6 +62,8 @@ interface ModelPickerProps {
 	favoriteModels?: Set<string>;
 	onToggleFavorite?: (providerId: string, modelId: string) => void;
 	recentModels?: Array<{ providerId: string; modelId: string }>;
+	/** Position of the anchor button to position dropdown from */
+	anchorPosition?: ModelButtonPosition;
 }
 
 /**
@@ -170,34 +180,51 @@ function ProviderHeader({
 	const { colors } = useTheme();
 
 	return (
-		<TouchableOpacity
+		<Pressable
 			onPress={onPress}
-			activeOpacity={0.7}
-			className="flex-row items-center justify-between px-3 py-2"
+			style={({ pressed }) => ({
+				flexDirection: "row",
+				alignItems: "center",
+				justifyContent: "space-between",
+				paddingHorizontal: Spacing[3],
+				paddingVertical: Spacing[2],
+				opacity: pressed ? 0.7 : 1,
+			})}
 		>
-			<View className="flex-row items-center gap-2 flex-1">
+			<View
+				style={{
+					flexDirection: "row",
+					alignItems: "center",
+					gap: Spacing[2],
+					flex: 1,
+					minWidth: 0,
+				}}
+			>
 				<ProviderLogoWithFallback providerId={providerId} size={14} />
 				<Text
 					style={[
 						typography.body,
 						fontStyle("500"),
-						{ color: colors.foreground },
+						{ color: colors.foreground, flexShrink: 1 },
 					]}
+					numberOfLines={1}
 				>
 					{providerName}
 				</Text>
 				{isCurrent && (
-					<Text style={[typography.micro, { color: colors.primary }]}>
+					<Text style={[typography.micro, { color: colors.primary, flexShrink: 0 }]}>
 						Current
 					</Text>
 				)}
 			</View>
-			{isExpanded ? (
-				<ChevronDownIcon size={12} color={colors.mutedForeground} />
-			) : (
-				<ChevronRightIcon size={12} color={colors.mutedForeground} />
-			)}
-		</TouchableOpacity>
+			<View style={{ flexShrink: 0, marginLeft: Spacing[2] }}>
+				{isExpanded ? (
+					<ChevronDownIcon size={12} color={colors.mutedForeground} />
+				) : (
+					<ChevronRightIcon size={12} color={colors.mutedForeground} />
+				)}
+			</View>
+		</Pressable>
 	);
 }
 
@@ -228,7 +255,7 @@ function CapabilityIcons({ model }: { model: Model }) {
 	if (icons.length === 0) return null;
 
 	return (
-		<View className="flex-row items-center gap-1">
+		<View style={{ flexDirection: "row", alignItems: "center", gap: Spacing[1] }}>
 			{icons.map(({ key, Icon }) => (
 				<Icon key={key} size={12} color={colors.mutedForeground} />
 			))}
@@ -275,20 +302,28 @@ function ModelRow({
 					: "";
 
 	return (
-		<TouchableOpacity
+		<Pressable
 			onPress={onSelect}
-			activeOpacity={0.7}
-			className="flex-row items-center py-2 px-3"
-			style={{
+			style={({ pressed }) => ({
+				flexDirection: "row",
+				alignItems: "center",
+				paddingVertical: Spacing[2],
+				paddingHorizontal: Spacing[3],
 				backgroundColor: isSelected
 					? withOpacity(colors.primary, OPACITY.light)
 					: "transparent",
-			}}
+				opacity: pressed ? 0.7 : 1,
+			})}
 		>
 			{/* Left: Provider icon (optional) + Model name */}
 			<View
-				className="flex-row items-center gap-1.5 min-w-0"
-				style={{ flex: 1 }}
+				style={{
+					flexDirection: "row",
+					alignItems: "center",
+					gap: Spacing[1.5],
+					flex: 1,
+					minWidth: 0,
+				}}
 			>
 				{showProviderIcon && (
 					<ProviderLogoWithFallback providerId={providerId} size={12} />
@@ -318,7 +353,7 @@ function ModelRow({
 			) : null}
 
 			{/* Right side: capability icons, selected indicator, and favorite */}
-			<View className="flex-row items-center gap-1.5">
+			<View style={{ flexDirection: "row", alignItems: "center", gap: Spacing[1.5] }}>
 				<CapabilityIcons model={model} />
 				{isSelected && (
 					<View
@@ -331,26 +366,26 @@ function ModelRow({
 					/>
 				)}
 				{onToggleFavorite && (
-					<TouchableOpacity
+					<Pressable
 						onPress={onToggleFavorite}
-						activeOpacity={0.7}
 						hitSlop={8}
-						style={{
+						style={({ pressed }) => ({
 							width: 28,
 							height: 28,
 							alignItems: "center",
 							justifyContent: "center",
-						}}
+							opacity: pressed ? 0.7 : 1,
+						})}
 					>
 						<StarIcon
 							size={14}
 							color={isFavorite ? colors.warning : colors.mutedForeground}
 							fill={isFavorite ? colors.warning : "transparent"}
 						/>
-					</TouchableOpacity>
+					</Pressable>
 				)}
 			</View>
-		</TouchableOpacity>
+		</Pressable>
 	);
 }
 
@@ -370,6 +405,9 @@ function Separator() {
 	);
 }
 
+const DROPDOWN_MAX_HEIGHT = 400;
+const DROPDOWN_WIDTH = 320;
+
 export function ModelPicker({
 	providers,
 	currentProviderId,
@@ -380,29 +418,79 @@ export function ModelPicker({
 	favoriteModels = new Set(),
 	onToggleFavorite,
 	recentModels = [],
+	anchorPosition,
 }: ModelPickerProps) {
-	const { colors } = useTheme();
+	const { colors, isDark } = useTheme();
 	const insets = useSafeAreaInsets();
-	const bottomSheetRef = useRef<BottomSheet>(null);
-	const snapPoints = useMemo(() => ["70%", "90%"], []);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
 		new Set(),
 	);
+	const searchInputRef = useRef<TextInput>(null);
 
-	// Handle visibility changes
+	// Animation
+	const fadeAnim = useRef(new Animated.Value(0)).current;
+	const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+	// Handle visibility changes and animations
 	useEffect(() => {
 		if (visible) {
-			// Use requestAnimationFrame to ensure sheet is ready
-			requestAnimationFrame(() => {
-				setTimeout(() => {
-					bottomSheetRef.current?.snapToIndex(0);
-				}, 100);
+			Keyboard.dismiss();
+			Animated.parallel([
+				Animated.timing(fadeAnim, {
+					toValue: 1,
+					duration: 150,
+					useNativeDriver: true,
+				}),
+				Animated.spring(scaleAnim, {
+					toValue: 1,
+					friction: 8,
+					tension: 100,
+					useNativeDriver: true,
+				}),
+			]).start(() => {
+				// Focus search input after animation
+				setTimeout(() => searchInputRef.current?.focus(), 100);
 			});
 		} else {
-			bottomSheetRef.current?.close();
+			fadeAnim.setValue(0);
+			scaleAnim.setValue(0.95);
+			setSearchQuery("");
 		}
-	}, [visible]);
+	}, [visible, fadeAnim, scaleAnim]);
+
+	// Calculate dropdown position
+	const dropdownPosition = useMemo(() => {
+		const screenWidth = Dimensions.get("window").width;
+		const screenHeight = Dimensions.get("window").height;
+
+		if (!anchorPosition) {
+			// Default to center-bottom if no anchor
+			return {
+				bottom: insets.bottom + 80,
+				left: (screenWidth - DROPDOWN_WIDTH) / 2,
+			};
+		}
+
+		// Position above the button, aligned to the right edge of the button
+		const rightEdge = anchorPosition.x + anchorPosition.width;
+		let left = rightEdge - DROPDOWN_WIDTH;
+
+		// Ensure it doesn't go off the left edge
+		if (left < Spacing[2]) {
+			left = Spacing[2];
+		}
+
+		// Ensure it doesn't go off the right edge
+		if (left + DROPDOWN_WIDTH > screenWidth - Spacing[2]) {
+			left = screenWidth - DROPDOWN_WIDTH - Spacing[2];
+		}
+
+		// Position above the button with some margin
+		const bottom = screenHeight - anchorPosition.y + Spacing[2];
+
+		return { bottom, left };
+	}, [anchorPosition, insets.bottom]);
 
 	// Filter to only show providers that are enabled and have models
 	const availableProviders = useMemo(
@@ -529,10 +617,9 @@ export function ModelPicker({
 		(providerId: string, modelId: string) => {
 			Haptics.selectionAsync();
 			onModelChange(providerId, modelId);
-			// Close sheet - onClose will be called by handleSheetChange when sheet reaches -1
-			bottomSheetRef.current?.close();
+			onClose();
 		},
-		[onModelChange],
+		[onModelChange, onClose],
 	);
 
 	const handleToggleFavorite = useCallback(
@@ -543,20 +630,9 @@ export function ModelPicker({
 		[onToggleFavorite],
 	);
 
-	const handleSheetChange = useCallback(
-		(index: number) => {
-			if (index === -1) {
-				onClose();
-				setSearchQuery("");
-			}
-		},
-		[onClose],
-	);
-
 	const handleClose = useCallback(() => {
-		// Only close sheet - onClose will be called by handleSheetChange when sheet reaches -1
-		bottomSheetRef.current?.close();
-	}, []);
+		onClose();
+	}, [onClose]);
 
 	const isSearching = searchQuery.trim().length > 0;
 	const hasResults =
@@ -569,224 +645,294 @@ export function ModelPicker({
 	}
 
 	return (
-		<Sheet
-			ref={bottomSheetRef}
-			snapPoints={snapPoints}
-			onChange={handleSheetChange}
-			onClose={onClose}
-			contentPadding={16}
+		<Modal
+			visible={visible}
+			transparent
+			animationType="none"
+			onRequestClose={handleClose}
+			statusBarTranslucent
 		>
-			{/* Header */}
-			<View className="px-4 pb-3 flex-row items-center justify-between">
-				<Text
-					style={[
-						typography.uiHeader,
-						fontStyle("600"),
-						{ color: colors.foreground },
-					]}
-				>
-					Select model
-				</Text>
-				<TouchableOpacity
-					onPress={handleClose}
-					hitSlop={12}
-					activeOpacity={0.7}
+			{/* Backdrop */}
+			<Pressable
+				style={{
+					flex: 1,
+					backgroundColor: withOpacity("#000000", OPACITY.scrim),
+				}}
+				onPress={handleClose}
+			>
+				{/* Dropdown container */}
+				<Animated.View
 					style={{
-						padding: Spacing[1.5],
-						borderRadius: Radius.full,
+						position: "absolute",
+						bottom: dropdownPosition.bottom,
+						left: dropdownPosition.left,
+						width: DROPDOWN_WIDTH,
+						maxHeight: DROPDOWN_MAX_HEIGHT,
+						backgroundColor: colors.background,
+						borderRadius: Radius.xl,
+						borderWidth: 1,
+						borderColor: colors.border,
+						shadowColor: isDark ? "#000" : "#000",
+						shadowOffset: { width: 0, height: 8 },
+						shadowOpacity: isDark ? 0.4 : 0.15,
+						shadowRadius: 24,
+						elevation: 10,
+						opacity: fadeAnim,
+						transform: [{ scale: scaleAnim }],
+						overflow: "hidden",
 					}}
 				>
-					<XIcon size={20} color={colors.mutedForeground} />
-				</TouchableOpacity>
-			</View>
+					<Pressable>
+						{/* Header */}
+						<View
+							style={{
+								flexDirection: "row",
+								alignItems: "center",
+								justifyContent: "space-between",
+								paddingHorizontal: Spacing[4],
+								paddingTop: Spacing[3],
+								paddingBottom: Spacing[2],
+							}}
+						>
+							<Text
+								style={[
+									typography.uiHeader,
+									fontStyle("600"),
+									{ color: colors.foreground },
+								]}
+							>
+								Select model
+							</Text>
+							<Pressable
+								onPress={handleClose}
+								hitSlop={12}
+								style={({ pressed }) => ({
+									padding: Spacing[1.5],
+									borderRadius: Radius.full,
+									opacity: pressed ? 0.7 : 1,
+								})}
+							>
+								<XIcon size={18} color={colors.mutedForeground} />
+							</Pressable>
+						</View>
 
-			{/* Search Input */}
-			<View className="px-4 pb-3">
-				<View
-					className="flex-row items-center px-3 h-10 rounded-lg"
-					style={{ backgroundColor: colors.muted }}
-				>
-					<SearchIcon size={16} color={colors.mutedForeground} />
-					<SheetTextInput
-						value={searchQuery}
-						onChangeText={setSearchQuery}
-						placeholder="Search providers or models"
-						placeholderTextColor={colors.mutedForeground}
-						style={[
-							typography.body,
-							{
-								flex: 1,
-								marginLeft: Spacing[2],
-								color: colors.foreground,
-								paddingVertical: 0,
-							},
-						]}
-					/>
-
-					{searchQuery.length > 0 && (
-						<TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={8}>
-							<XIcon size={16} color={colors.mutedForeground} />
-						</TouchableOpacity>
-					)}
-				</View>
-			</View>
-
-			<SheetScrollView
-				contentContainerStyle={{
-					paddingBottom: insets.bottom + 16,
-				}}
-				keyboardShouldPersistTaps="handled"
-			>
-				{!hasResults && isSearching ? (
-					<View className="py-8 items-center">
-						<Text style={[typography.body, { color: colors.mutedForeground }]}>
-							No models found
-						</Text>
-					</View>
-				) : (
-					<View>
-						{/* Recent Section */}
-						{filteredRecents.length > 0 && (
-							<View style={{ marginBottom: 8 }}>
-								<View className="flex-row items-center gap-2 px-3 py-1.5">
-									<ClockIcon size={14} color={colors.mutedForeground} />
-									<Text
-										style={[
-											typography.micro,
-											fontStyle("600"),
-											{
-												color: colors.mutedForeground,
-												textTransform: "uppercase",
-												letterSpacing: 0.5,
-											},
-										]}
+						{/* Search Input */}
+						<View style={{ paddingHorizontal: Spacing[4], paddingBottom: Spacing[2] }}>
+							<View
+								style={{
+									flexDirection: "row",
+									alignItems: "center",
+									paddingHorizontal: Spacing[3],
+									height: 36,
+									borderRadius: Radius.lg,
+									backgroundColor: colors.muted,
+								}}
+							>
+								<SearchIcon size={14} color={colors.mutedForeground} />
+								<TextInput
+									ref={searchInputRef}
+									value={searchQuery}
+									onChangeText={setSearchQuery}
+									placeholder="Search models..."
+									placeholderTextColor={colors.mutedForeground}
+									style={[
+										typography.body,
+										{
+											flex: 1,
+											marginLeft: Spacing[2],
+											color: colors.foreground,
+											paddingVertical: 0,
+										},
+									]}
+								/>
+								{searchQuery.length > 0 && (
+									<Pressable
+										onPress={() => setSearchQuery("")}
+										hitSlop={8}
+										style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
 									>
-										Recent
+										<XIcon size={14} color={colors.mutedForeground} />
+									</Pressable>
+								)}
+							</View>
+						</View>
+
+						{/* Content */}
+						<ScrollView
+							style={{ maxHeight: DROPDOWN_MAX_HEIGHT - 100 }}
+							contentContainerStyle={{ paddingBottom: Spacing[2] }}
+							keyboardShouldPersistTaps="handled"
+							showsVerticalScrollIndicator={false}
+						>
+							{!hasResults && isSearching ? (
+								<View style={{ paddingVertical: Spacing[6], alignItems: "center" }}>
+									<Text style={[typography.body, { color: colors.mutedForeground }]}>
+										No models found
 									</Text>
 								</View>
-								{filteredRecents.map(({ providerId, model }) => {
-									const isSelected =
-										providerId === currentProviderId &&
-										model.id === currentModelId;
-									return (
-										<ModelRow
-											key={`recent-${providerId}-${model.id}`}
-											model={model}
-											providerId={providerId}
-											isSelected={isSelected}
-											isFavorite={isFavorite(providerId, model.id)}
-											onSelect={() => handleModelSelect(providerId, model.id)}
-											onToggleFavorite={
-												onToggleFavorite
-													? () => handleToggleFavorite(providerId, model.id)
-													: undefined
-											}
-											showProviderIcon
-										/>
-									);
-								})}
-								<Separator />
-							</View>
-						)}
-
-						{/* Favorites Section */}
-						{filteredFavorites.length > 0 && (
-							<View style={{ marginBottom: 8 }}>
-								<View className="flex-row items-center gap-2 px-3 py-1.5">
-									<StarIcon
-										size={14}
-										color={colors.primary}
-										fill={colors.primary}
-									/>
-									<Text
-										style={[
-											typography.micro,
-											fontStyle("600"),
-											{
-												color: colors.mutedForeground,
-												textTransform: "uppercase",
-												letterSpacing: 0.5,
-											},
-										]}
-									>
-										Favorites
-									</Text>
-								</View>
-								{filteredFavorites.map(({ providerId, model }) => {
-									const isSelected =
-										providerId === currentProviderId &&
-										model.id === currentModelId;
-									return (
-										<ModelRow
-											key={`fav-${providerId}-${model.id}`}
-											model={model}
-											providerId={providerId}
-											isSelected={isSelected}
-											isFavorite={true}
-											onSelect={() => handleModelSelect(providerId, model.id)}
-											onToggleFavorite={
-												onToggleFavorite
-													? () => handleToggleFavorite(providerId, model.id)
-													: undefined
-											}
-											showProviderIcon
-										/>
-									);
-								})}
-								<Separator />
-							</View>
-						)}
-
-						{/* Provider Sections (Collapsible) */}
-						{filteredProviders.map((provider) => {
-							const isExpanded = expandedProviders.has(provider.id);
-							const isCurrent = provider.id === currentProviderId;
-							return (
-								<View key={provider.id}>
-									<ProviderHeader
-										providerId={provider.id}
-										providerName={provider.name}
-										isExpanded={isExpanded}
-										isCurrent={isCurrent}
-										onPress={() => toggleProviderExpansion(provider.id)}
-									/>
-									{isExpanded && (
-										<View style={{ paddingLeft: 8 }}>
-											{provider.models?.map((model) => {
+							) : (
+								<View>
+									{/* Recent Section */}
+									{filteredRecents.length > 0 && (
+										<View style={{ marginBottom: Spacing[2] }}>
+											<View
+												style={{
+													flexDirection: "row",
+													alignItems: "center",
+													gap: Spacing[2],
+													paddingHorizontal: Spacing[3],
+													paddingVertical: Spacing[1.5],
+												}}
+											>
+												<ClockIcon size={12} color={colors.mutedForeground} />
+												<Text
+													style={[
+														typography.micro,
+														fontStyle("600"),
+														{
+															color: colors.mutedForeground,
+															textTransform: "uppercase",
+															letterSpacing: 0.5,
+														},
+													]}
+												>
+													Recent
+												</Text>
+											</View>
+											{filteredRecents.map(({ providerId, model }) => {
 												const isSelected =
-													provider.id === currentProviderId &&
+													providerId === currentProviderId &&
 													model.id === currentModelId;
-												const modelIsFavorite = isFavorite(
-													provider.id,
-													model.id,
-												);
 												return (
 													<ModelRow
-														key={`${provider.id}-${model.id}`}
+														key={`recent-${providerId}-${model.id}`}
 														model={model}
-														providerId={provider.id}
+														providerId={providerId}
 														isSelected={isSelected}
-														isFavorite={modelIsFavorite}
-														onSelect={() =>
-															handleModelSelect(provider.id, model.id)
-														}
+														isFavorite={isFavorite(providerId, model.id)}
+														onSelect={() => handleModelSelect(providerId, model.id)}
 														onToggleFavorite={
 															onToggleFavorite
-																? () =>
-																		handleToggleFavorite(provider.id, model.id)
+																? () => handleToggleFavorite(providerId, model.id)
 																: undefined
 														}
+														showProviderIcon
 													/>
 												);
 											})}
+											<Separator />
 										</View>
 									)}
+
+									{/* Favorites Section */}
+									{filteredFavorites.length > 0 && (
+										<View style={{ marginBottom: Spacing[2] }}>
+											<View
+												style={{
+													flexDirection: "row",
+													alignItems: "center",
+													gap: Spacing[2],
+													paddingHorizontal: Spacing[3],
+													paddingVertical: Spacing[1.5],
+												}}
+											>
+												<StarIcon
+													size={12}
+													color={colors.primary}
+													fill={colors.primary}
+												/>
+												<Text
+													style={[
+														typography.micro,
+														fontStyle("600"),
+														{
+															color: colors.mutedForeground,
+															textTransform: "uppercase",
+															letterSpacing: 0.5,
+														},
+													]}
+												>
+													Favorites
+												</Text>
+											</View>
+											{filteredFavorites.map(({ providerId, model }) => {
+												const isSelected =
+													providerId === currentProviderId &&
+													model.id === currentModelId;
+												return (
+													<ModelRow
+														key={`fav-${providerId}-${model.id}`}
+														model={model}
+														providerId={providerId}
+														isSelected={isSelected}
+														isFavorite={true}
+														onSelect={() => handleModelSelect(providerId, model.id)}
+														onToggleFavorite={
+															onToggleFavorite
+																? () => handleToggleFavorite(providerId, model.id)
+																: undefined
+														}
+														showProviderIcon
+													/>
+												);
+											})}
+											<Separator />
+										</View>
+									)}
+
+									{/* Provider Sections (Collapsible) */}
+									{filteredProviders.map((provider) => {
+										const isExpanded = expandedProviders.has(provider.id);
+										const isCurrent = provider.id === currentProviderId;
+										return (
+											<View key={provider.id}>
+												<ProviderHeader
+													providerId={provider.id}
+													providerName={provider.name}
+													isExpanded={isExpanded}
+													isCurrent={isCurrent}
+													onPress={() => toggleProviderExpansion(provider.id)}
+												/>
+												{isExpanded && (
+													<View style={{ paddingLeft: Spacing[2] }}>
+														{provider.models?.map((model) => {
+															const isSelected =
+																provider.id === currentProviderId &&
+																model.id === currentModelId;
+															const modelIsFavorite = isFavorite(
+																provider.id,
+																model.id,
+															);
+															return (
+																<ModelRow
+																	key={`${provider.id}-${model.id}`}
+																	model={model}
+																	providerId={provider.id}
+																	isSelected={isSelected}
+																	isFavorite={modelIsFavorite}
+																	onSelect={() =>
+																		handleModelSelect(provider.id, model.id)
+																	}
+																	onToggleFavorite={
+																		onToggleFavorite
+																			? () =>
+																					handleToggleFavorite(provider.id, model.id)
+																			: undefined
+																	}
+																/>
+															);
+														})}
+													</View>
+												)}
+											</View>
+										);
+									})}
 								</View>
-							);
-						})}
-					</View>
-				)}
-			</SheetScrollView>
-		</Sheet>
+							)}
+						</ScrollView>
+					</Pressable>
+				</Animated.View>
+			</Pressable>
+		</Modal>
 	);
 }

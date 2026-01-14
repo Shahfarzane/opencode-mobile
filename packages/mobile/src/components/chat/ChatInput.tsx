@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,
 	Keyboard,
+	type LayoutChangeEvent,
 	Pressable,
 	Text,
 	TextInput,
@@ -65,6 +66,13 @@ interface AgentInfo {
 	color?: string;
 }
 
+export interface ModelButtonPosition {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
 interface ChatInputProps {
 	onSend: (message: string, attachedFiles?: AttachedFile[]) => void;
 	isLoading?: boolean;
@@ -77,7 +85,7 @@ interface ChatInputProps {
 	permissionMode?: EditPermissionMode;
 	modelInfo?: ModelInfo;
 	activeAgent?: AgentInfo;
-	onModelPress?: () => void;
+	onModelPress?: (position: ModelButtonPosition) => void;
 	onAgentPress?: () => void;
 	/** Whether a session is currently active (for placeholder text) */
 	hasActiveSession?: boolean;
@@ -622,6 +630,26 @@ export function ChatInput({
 	const canSend =
 		(text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
+	// Model button ref and position measurement
+	const modelButtonRef = useRef<View>(null);
+	const modelButtonPositionRef = useRef<ModelButtonPosition>({ x: 0, y: 0, width: 0, height: 0 });
+
+	const handleModelButtonLayout = useCallback((_event: LayoutChangeEvent) => {
+		// Measure position relative to screen when layout changes
+		modelButtonRef.current?.measureInWindow((x, y, width, height) => {
+			modelButtonPositionRef.current = { x, y, width, height };
+		});
+	}, []);
+
+	const handleModelPress = useCallback(() => {
+		if (!onModelPress) return;
+		Haptics.selectionAsync();
+		// Measure current position before opening
+		modelButtonRef.current?.measureInWindow((x, y, width, height) => {
+			onModelPress({ x, y, width, height });
+		});
+	}, [onModelPress]);
+
 	// Match desktop's semi-transparent input background
 	// PWA: bg-input/10 dark:bg-input/30 (10% in light, 30% in dark)
 	const inputBackground = withOpacity(
@@ -684,14 +712,13 @@ export function ChatInput({
 					{/* Right section: Model + Agent + Send (flex-1) */}
 					<View className={chatInputStyles.toolbarRightSection({})}>
 						{/* Model selector (flex-1 with overflow hidden) */}
-						<View className={chatInputStyles.modelInfoContainer({})}>
+						<View
+							ref={modelButtonRef}
+							onLayout={handleModelButtonLayout}
+							className={chatInputStyles.modelInfoContainer({})}
+						>
 							<Pressable
-								onPress={() => {
-									if (onModelPress) {
-										Haptics.selectionAsync();
-										onModelPress();
-									}
-								}}
+								onPress={handleModelPress}
 								className={chatInputStyles.modelSelector({})}
 								style={({ pressed }) =>
 									pressed && onModelPress ? { opacity: 0.7 } : undefined
