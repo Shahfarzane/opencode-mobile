@@ -1,6 +1,6 @@
 export type { Agent as AgentPickerAgent } from "./AgentPicker";
 export { AgentPicker } from "./AgentPicker";
-export type { AgentInfo, ModelButtonPosition, ModelInfo } from "./ChatInput";
+export type { AgentInfo, ModelInfo } from "./ChatInput";
 export { ChatInput } from "./ChatInput";
 export { ChatMessage } from "./ChatMessage";
 export type { ContextUsage } from "./ContextUsageDisplay";

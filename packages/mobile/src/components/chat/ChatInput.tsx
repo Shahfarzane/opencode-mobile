@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Animated,
 	Keyboard,
-	type LayoutChangeEvent,
 	Pressable,
 	Text,
 	TextInput,
@@ -66,17 +65,6 @@ interface AgentInfo {
 	color?: string;
 }
 
-export interface ModelButtonPosition {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-	/** Width of the entire input container for dropdown sizing */
-	containerWidth: number;
-	/** X position of the container left edge */
-	containerX: number;
-}
-
 interface ChatInputProps {
 	onSend: (message: string, attachedFiles?: AttachedFile[]) => void;
 	isLoading?: boolean;
@@ -89,7 +77,7 @@ interface ChatInputProps {
 	permissionMode?: EditPermissionMode;
 	modelInfo?: ModelInfo;
 	activeAgent?: AgentInfo;
-	onModelPress?: (position: ModelButtonPosition) => void;
+	onModelPress?: () => void;
 	onAgentPress?: () => void;
 	/** Whether a session is currently active (for placeholder text) */
 	hasActiveSession?: boolean;
@@ -634,32 +622,10 @@ export function ChatInput({
 	const canSend =
 		(text.trim().length > 0 || attachedFiles.length > 0) && !isLoading;
 
-	// Model button ref and position measurement
-	const modelButtonRef = useRef<View>(null);
-	const containerRef = useRef<View>(null);
-	const containerDimensionsRef = useRef({ x: 0, width: 0 });
-
-	const handleContainerLayout = useCallback((_event: LayoutChangeEvent) => {
-		// Measure container position and width for dropdown sizing
-		containerRef.current?.measureInWindow((x, _y, width) => {
-			containerDimensionsRef.current = { x, width };
-		});
-	}, []);
-
 	const handleModelPress = useCallback(() => {
 		if (!onModelPress) return;
 		Haptics.selectionAsync();
-		// Measure current position before opening
-		modelButtonRef.current?.measureInWindow((x, y, width, height) => {
-			onModelPress({
-				x,
-				y,
-				width,
-				height,
-				containerWidth: containerDimensionsRef.current.width,
-				containerX: containerDimensionsRef.current.x,
-			});
-		});
+		onModelPress();
 	}, [onModelPress]);
 
 	// Match desktop's semi-transparent input background
@@ -685,8 +651,6 @@ export function ChatInput({
 			)}
 
 			<View
-				ref={containerRef}
-				onLayout={handleContainerLayout}
 				className={chatInputStyles.inputContainer({})}
 				style={{
 					borderColor: permissionColors?.border ?? colors.border,
@@ -726,9 +690,7 @@ export function ChatInput({
 					{/* Right section: Model + Agent + Send (flex-1) */}
 					<View className={chatInputStyles.toolbarRightSection({})}>
 						{/* Model selector (flex-1 with overflow hidden) */}
-						<View
-							ref={modelButtonRef}
-							className={chatInputStyles.modelInfoContainer({})}
+						<View className={chatInputStyles.modelInfoContainer({})}
 						>
 							<Pressable
 								onPress={handleModelPress}

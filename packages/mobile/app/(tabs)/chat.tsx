@@ -35,7 +35,6 @@ import {
 	ChatInput,
 	convertStreamingPart,
 	MessageList,
-	type ModelButtonPosition,
 	ModelPicker,
 	PermissionCard,
 } from "../../src/components/chat";
@@ -131,7 +130,6 @@ export default function ChatScreen() {
 	>();
 	const [showAgentPicker, setShowAgentPicker] = useState(false);
 	const [showModelPicker, setShowModelPicker] = useState(false);
-	const [modelButtonPosition, setModelButtonPosition] = useState<ModelButtonPosition | undefined>(undefined);
 	const [openChamberSettings, setOpenChamberSettings] =
 		useState<SettingsPayload | null>(null);
 
@@ -1125,9 +1123,8 @@ export default function ChatScreen() {
 						onFileSearch={handleFileSearch}
 						modelInfo={modelInfo}
 						activeAgent={activeAgent}
-						onModelPress={(position) => {
+						onModelPress={() => {
 							Keyboard.dismiss();
-							setModelButtonPosition(position);
 							setShowModelPicker(true);
 						}}
 						onAgentPress={() => {
@@ -1161,7 +1158,6 @@ export default function ChatScreen() {
 					onClose={() => setShowModelPicker(false)}
 					favoriteModels={favoriteModels}
 					onToggleFavorite={handleToggleFavorite}
-					anchorPosition={modelButtonPosition}
 				/>
 			)}
 		</View>
