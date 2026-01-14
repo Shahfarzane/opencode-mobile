@@ -1,9 +1,9 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Modal, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
-import { Sheet } from "@/components/ui/sheet";
 import { Fonts, fontStyle, typography, useTheme } from "@/theme";
+import { withOpacity } from "@/utils/colors";
 import { contextUsageDisplayStyles } from "./ContextUsageDisplay.styles";
 
 export interface ContextUsage {
@@ -38,10 +38,10 @@ function formatTokens(tokens: number): string {
 }
 
 export function ContextUsageDisplay({ usage, size = "default" }: ContextUsageDisplayProps) {
-	const { colors } = useTheme();
-	const sheetRef = useRef<BottomSheet>(null);
-	const snapPoints = useMemo(() => ["42%"], []);
+	const { colors, isDark } = useTheme();
+	const insets = useSafeAreaInsets();
 	const [modalVisible, setModalVisible] = useState(false);
+	const fadeAnim = useRef(new Animated.Value(0)).current;
 	const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const getPercentageColor = (pct: number): string => {
@@ -52,11 +52,23 @@ export function ContextUsageDisplay({ usage, size = "default" }: ContextUsageDis
 
 	useEffect(() => {
 		if (modalVisible) {
-			sheetRef.current?.snapToIndex(0);
-		} else {
-			sheetRef.current?.close();
+			Animated.timing(fadeAnim, {
+				toValue: 1,
+				duration: 150,
+				useNativeDriver: true,
+			}).start();
 		}
-	}, [modalVisible]);
+	}, [modalVisible, fadeAnim]);
+
+	const handleClose = useCallback(() => {
+		Animated.timing(fadeAnim, {
+			toValue: 0,
+			duration: 100,
+			useNativeDriver: true,
+		}).start(() => {
+			setModalVisible(false);
+		});
+	}, [fadeAnim]);
 
 	const handleLongPressStart = useCallback(() => {
 		if (longPressTimerRef.current) {
@@ -105,64 +117,111 @@ export function ContextUsageDisplay({ usage, size = "default" }: ContextUsageDis
 				</Text>
 			</Pressable>
 
-			<Sheet ref={sheetRef} snapPoints={snapPoints} onClose={() => setModalVisible(false)} contentPadding={0}>
-				<View className="pb-2">
-					<View className="px-4 pt-2 pb-1">
-						<Text style={[typography.uiHeader, { color: colors.foreground }]}>Context usage</Text>
-					</View>
-					<View className="border-t" style={{ borderTopColor: colors.border }} />
-					<View className={contextUsageDisplayStyles.modalContent({})}>
-						<Text
-							className={contextUsageDisplayStyles.modalTitle({})}
-							style={[typography.uiLabel, { fontFamily: Fonts.semiBold, color: colors.foreground }]}
-						>
-							Context Usage
-						</Text>
-
+			<Modal
+				visible={modalVisible}
+				transparent
+				animationType="none"
+				onRequestClose={handleClose}
+				statusBarTranslucent
+			>
+				<Animated.View
+					style={{
+						flex: 1,
+						backgroundColor: withOpacity("#000000", isDark ? 0.5 : 0.3),
+						opacity: fadeAnim,
+					}}
+				>
+					<Pressable style={{ flex: 1 }} onPress={handleClose}>
 						<View
-							className={contextUsageDisplayStyles.statsContainer({})}
-							style={{ backgroundColor: colors.muted, borderColor: colors.border, borderWidth: 1 }}
+							style={{
+								flex: 1,
+								justifyContent: "flex-end",
+								paddingBottom: insets.bottom + 20,
+								paddingHorizontal: 16,
+							}}
 						>
-							<View className={contextUsageDisplayStyles.statRow({})}>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>Used tokens</Text>
-								<Text style={[typography.meta, fontStyle("500"), { color: colors.foreground }]}>
-									{formatTokens(usage.totalTokens)}
-								</Text>
-							</View>
-
-							<View className={contextUsageDisplayStyles.statRow({})}>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>Context limit</Text>
-								<Text style={[typography.meta, fontStyle("500"), { color: colors.foreground }]}>
-									{formatTokens(usage.contextLimit)}
-								</Text>
-							</View>
-
-							<View className={contextUsageDisplayStyles.statRow({})}>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>Output limit</Text>
-								<Text style={[typography.meta, fontStyle("500"), { color: colors.foreground }]}>
-									{formatTokens(safeOutputLimit)}
-								</Text>
-							</View>
-
-							<View
-								className={contextUsageDisplayStyles.statRowLast({})}
-								style={{ borderTopColor: colors.border, borderTopWidth: 1 }}
-							>
-								<Text style={[typography.meta, { color: colors.mutedForeground }]}>Usage</Text>
-								<Text
-									style={[
-										typography.meta,
-										fontStyle("600"),
-										{ color: percentageColor },
-									]}
+							<Pressable onPress={(e) => e.stopPropagation()}>
+								<Animated.View
+									style={{
+										backgroundColor: colors.card,
+										borderRadius: 16,
+										borderWidth: 1,
+										borderColor: colors.border,
+										overflow: "hidden",
+										transform: [
+											{
+												translateY: fadeAnim.interpolate({
+													inputRange: [0, 1],
+													outputRange: [20, 0],
+												}),
+											},
+										],
+									}}
 								>
-									{Math.min(usage.percentage, 999).toFixed(1)}%
-								</Text>
-							</View>
+									<View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+										<Text style={[typography.uiHeader, { color: colors.foreground }]}>
+											Context usage
+										</Text>
+									</View>
+
+									<View style={{ height: 1, backgroundColor: colors.border }} />
+
+									<View className={contextUsageDisplayStyles.modalContent({})}>
+										<Text
+											className={contextUsageDisplayStyles.modalTitle({})}
+											style={[typography.uiLabel, { fontFamily: Fonts.semiBold, color: colors.foreground }]}
+										>
+											Context Usage
+										</Text>
+
+										<View
+											className={contextUsageDisplayStyles.statsContainer({})}
+											style={{ backgroundColor: colors.muted, borderColor: colors.border, borderWidth: 1 }}
+										>
+											<View className={contextUsageDisplayStyles.statRow({})}>
+												<Text style={[typography.meta, { color: colors.mutedForeground }]}>Used tokens</Text>
+												<Text style={[typography.meta, fontStyle("500"), { color: colors.foreground }]}>
+													{formatTokens(usage.totalTokens)}
+												</Text>
+											</View>
+
+											<View className={contextUsageDisplayStyles.statRow({})}>
+												<Text style={[typography.meta, { color: colors.mutedForeground }]}>Context limit</Text>
+												<Text style={[typography.meta, fontStyle("500"), { color: colors.foreground }]}>
+													{formatTokens(usage.contextLimit)}
+												</Text>
+											</View>
+
+											<View className={contextUsageDisplayStyles.statRow({})}>
+												<Text style={[typography.meta, { color: colors.mutedForeground }]}>Output limit</Text>
+												<Text style={[typography.meta, fontStyle("500"), { color: colors.foreground }]}>
+													{formatTokens(safeOutputLimit)}
+												</Text>
+											</View>
+
+											<View
+												className={contextUsageDisplayStyles.statRowLast({})}
+												style={{ borderTopColor: colors.border, borderTopWidth: 1 }}
+											>
+												<Text style={[typography.meta, { color: colors.mutedForeground }]}>Usage</Text>
+												<Text
+													style={[
+														typography.meta,
+														fontStyle("600"),
+														{ color: percentageColor },
+													]}
+												>
+													{Math.min(usage.percentage, 999).toFixed(1)}%
+												</Text>
+											</View>
+										</View>
+									</View>
+								</Animated.View>
+							</Pressable>
 						</View>
-					</View>
-				</View>
-			</Sheet>
+					</Pressable>
+				</Animated.View>
+			</Modal>
 		</>
 	);
 }
