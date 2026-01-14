@@ -1,13 +1,16 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
-import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
+	Animated,
+	FlatList,
+	Modal,
+	Pressable,
 	Text,
 	View,
 } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type FileListEntry, filesApi } from "@/api/files";
 import {
 	CheckIcon,
@@ -18,7 +21,6 @@ import {
 	XIcon,
 } from "@/components/icons";
 import { Button, SearchInput } from "@/components/ui";
-import { Sheet } from "@/components/ui/sheet";
 import { typography, useTheme } from "@/theme";
 import { OPACITY, withOpacity } from "@/utils/colors";
 
@@ -45,9 +47,9 @@ export function ServerFilePicker({
 	rootDirectory,
 	multiSelect = true,
 }: ServerFilePickerProps) {
-	const { colors } = useTheme();
-	const sheetRef = useRef<BottomSheet>(null);
-	const snapPoints = useMemo(() => ["82%", "95%"], []);
+	const { colors, isDark } = useTheme();
+	const insets = useSafeAreaInsets();
+	const fadeAnim = useRef(new Animated.Value(0)).current;
 
 	const [loading, setLoading] = useState(false);
 	const [searching, setSearching] = useState(false);
@@ -63,18 +65,26 @@ export function ServerFilePicker({
 	const loadedDirsRef = useRef<Set<string>>(new Set());
 	const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+	// Animate in when visible
 	useEffect(() => {
 		if (visible) {
-			// Use requestAnimationFrame to ensure sheet is ready
-			requestAnimationFrame(() => {
-				setTimeout(() => {
-					sheetRef.current?.snapToIndex(0);
-				}, 100);
-			});
-		} else {
-			sheetRef.current?.close();
+			Animated.timing(fadeAnim, {
+				toValue: 1,
+				duration: 200,
+				useNativeDriver: true,
+			}).start();
 		}
-	}, [visible]);
+	}, [visible, fadeAnim]);
+
+	const handleClose = useCallback(() => {
+		Animated.timing(fadeAnim, {
+			toValue: 0,
+			duration: 150,
+			useNativeDriver: true,
+		}).start(() => {
+			onClose();
+		});
+	}, [fadeAnim, onClose]);
 
 	const mapEntries = useCallback((entries: FileListEntry[]): FileInfo[] => {
 		return entries
@@ -239,8 +249,8 @@ export function ServerFilePicker({
 			.filter((file): file is FileInfo => Boolean(file));
 
 		onFilesSelected(selected);
-		onClose();
-	}, [selectedFiles, childrenByDir, searchResults, onFilesSelected, onClose]);
+		handleClose();
+	}, [selectedFiles, childrenByDir, searchResults, onFilesSelected, handleClose]);
 
 	const getFileIconColor = useCallback(
 		(extension?: string) => {
@@ -289,9 +299,14 @@ export function ServerFilePicker({
 							}
 						}}
 						activeOpacity={0.7}
-						className="flex-row items-center py-2 px-3"
 						style={[
-							{ paddingLeft: 12 + level * 16 },
+							{
+								flexDirection: "row",
+								alignItems: "center",
+								paddingVertical: 10,
+								paddingRight: 12,
+								paddingLeft: 12 + level * 16,
+							},
 							!isDirectory &&
 								isSelected && {
 									backgroundColor: withOpacity(colors.primary, OPACITY.active),
@@ -364,115 +379,219 @@ export function ServerFilePicker({
 	}
 
 	return (
-		<Sheet
-			ref={sheetRef}
-			snapPoints={snapPoints}
-			onClose={onClose}
-			contentPadding={0}
-			enablePanDownToClose={true}
+		<Modal
+			visible={visible}
+			transparent
+			animationType="none"
+			onRequestClose={handleClose}
+			statusBarTranslucent
 		>
-			<View className="flex-1">
-				<View className="flex-row items-center justify-between px-4 pt-2 pb-3">
-					<TouchableOpacity onPress={() => sheetRef.current?.close()} hitSlop={8} activeOpacity={0.7}>
-						<XIcon size={24} color={colors.foreground} />
-					</TouchableOpacity>
-					<Text
-						style={[
-							typography.uiLabel,
-							{ color: colors.foreground, fontWeight: "600" },
-						]}
+			<Animated.View
+				style={{
+					flex: 1,
+					backgroundColor: withOpacity("#000000", isDark ? 0.7 : 0.5),
+					opacity: fadeAnim,
+				}}
+			>
+				<Pressable style={{ flex: 1 }} onPress={handleClose}>
+					<View
+						style={{
+							flex: 1,
+							paddingTop: insets.top + 40,
+							paddingBottom: insets.bottom + 20,
+							paddingHorizontal: 16,
+						}}
 					>
-						Select Project Files
-					</Text>
-					<View style={{ width: 24 }} />
-				</View>
-				<View className="border-t" style={{ borderTopColor: colors.border }} />
-
-				<View
-					className="px-4 py-2 border-b"
-					style={{ borderBottomColor: colors.border }}
-				>
-					<SearchInput
-						value={searchQuery}
-						onChangeText={setSearchQuery}
-						placeholder="Search files..."
-					/>
-				</View>
-
-				<View className="flex-1">
-					{loading && !isSearchActive && displayItems.length === 0 && (
-						<View className="flex-1 items-center justify-center">
-							<ActivityIndicator color={colors.primary} />
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: colors.mutedForeground, marginTop: 8 },
-								]}
+						<Pressable
+							style={{ flex: 1 }}
+							onPress={(e) => e.stopPropagation()}
+						>
+							<Animated.View
+								style={{
+									flex: 1,
+									backgroundColor: colors.card,
+									borderRadius: 20,
+									borderWidth: 1,
+									borderColor: colors.border,
+									overflow: "hidden",
+									transform: [
+										{
+											scale: fadeAnim.interpolate({
+												inputRange: [0, 1],
+												outputRange: [0.95, 1],
+											}),
+										},
+									],
+								}}
 							>
-								Loading files...
-							</Text>
-						</View>
-					)}
+								{/* Header */}
+								<View
+									style={{
+										flexDirection: "row",
+										alignItems: "center",
+										justifyContent: "space-between",
+										paddingHorizontal: 16,
+										paddingTop: 12,
+										paddingBottom: 12,
+									}}
+								>
+									<TouchableOpacity
+										onPress={handleClose}
+										hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+										activeOpacity={0.7}
+									>
+										<XIcon size={24} color={colors.foreground} />
+									</TouchableOpacity>
+									<Text
+										style={[
+											typography.uiLabel,
+											{ color: colors.foreground, fontWeight: "600" },
+										]}
+									>
+										Select Project Files
+									</Text>
+									<View style={{ width: 24 }} />
+								</View>
 
-					{error && (
-						<View className="flex-1 items-center justify-center px-4">
-							<Text
-								style={[
-									typography.uiLabel,
-									{ color: colors.destructive, textAlign: "center" },
-								]}
-							>
-								{error}
-							</Text>
-						</View>
-					)}
+								<View style={{ height: 1, backgroundColor: colors.border }} />
 
-					{searching && (
-						<View className="items-center py-4">
-							<ActivityIndicator size="small" color={colors.primary} />
-						</View>
-					)}
+								{/* Search */}
+								<View
+									style={{
+										paddingHorizontal: 16,
+										paddingVertical: 12,
+										borderBottomWidth: 1,
+										borderBottomColor: colors.border,
+									}}
+								>
+									<SearchInput
+										value={searchQuery}
+										onChangeText={setSearchQuery}
+										placeholder="Search files..."
+									/>
+								</View>
 
-					{!loading && !error && displayItems.length === 0 && !searching && (
-						<View className="flex-1 items-center justify-center">
-							<Text
-								style={[typography.uiLabel, { color: colors.mutedForeground }]}
-							>
-								{isSearchActive ? "No files found" : "No files in directory"}
-							</Text>
-						</View>
-					)}
+								{/* Content */}
+								<View style={{ flex: 1 }}>
+									{loading && !isSearchActive && displayItems.length === 0 && (
+										<View
+											style={{
+												flex: 1,
+												alignItems: "center",
+												justifyContent: "center",
+											}}
+										>
+											<ActivityIndicator color={colors.primary} />
+											<Text
+												style={[
+													typography.uiLabel,
+													{ color: colors.mutedForeground, marginTop: 8 },
+												]}
+											>
+												Loading files...
+											</Text>
+										</View>
+									)}
 
-					{!loading && !error && displayItems.length > 0 && (
-						<BottomSheetFlatList<FileInfo>
-							data={displayItems}
-							keyExtractor={(item: FileInfo) => item.path}
-							renderItem={({ item }: { item: FileInfo }) => renderFileItem({ item, level: 0 })}
-							showsVerticalScrollIndicator={false}
-							keyboardShouldPersistTaps="handled"
-						/>
-					)}
-				</View>
+									{error && (
+										<View
+											style={{
+												flex: 1,
+												alignItems: "center",
+												justifyContent: "center",
+												paddingHorizontal: 16,
+											}}
+										>
+											<Text
+												style={[
+													typography.uiLabel,
+													{ color: colors.destructive, textAlign: "center" },
+												]}
+											>
+												{error}
+											</Text>
+										</View>
+									)}
 
-				<View
-					className="flex-row items-center justify-between px-4 py-3 border-t"
-					style={{ borderTopColor: colors.border }}
-				>
-					<Text style={[typography.micro, { color: colors.mutedForeground }]}>
-						{selectedFiles.size > 0
-							? `${selectedFiles.size} file${selectedFiles.size !== 1 ? "s" : ""} selected`
-							: "No files selected"}
-					</Text>
-					<Button
-						variant={selectedFiles.size > 0 ? "primary" : "muted"}
-						size="sm"
-						onPress={handleConfirm}
-						isDisabled={selectedFiles.size === 0}
-					>
-						<Button.Label>Attach Files</Button.Label>
-					</Button>
-				</View>
-			</View>
-		</Sheet>
+									{searching && (
+										<View
+											style={{ alignItems: "center", paddingVertical: 16 }}
+										>
+											<ActivityIndicator size="small" color={colors.primary} />
+										</View>
+									)}
+
+									{!loading &&
+										!error &&
+										displayItems.length === 0 &&
+										!searching && (
+											<View
+												style={{
+													flex: 1,
+													alignItems: "center",
+													justifyContent: "center",
+												}}
+											>
+												<Text
+													style={[
+														typography.uiLabel,
+														{ color: colors.mutedForeground },
+													]}
+												>
+													{isSearchActive
+														? "No files found"
+														: "No files in directory"}
+												</Text>
+											</View>
+										)}
+
+									{!loading && !error && displayItems.length > 0 && (
+										<FlatList<FileInfo>
+											data={displayItems}
+											keyExtractor={(item: FileInfo) => item.path}
+											renderItem={({ item }: { item: FileInfo }) =>
+												renderFileItem({ item, level: 0 })
+											}
+											showsVerticalScrollIndicator={false}
+											keyboardShouldPersistTaps="handled"
+											contentContainerStyle={{ paddingBottom: 8 }}
+										/>
+									)}
+								</View>
+
+								{/* Footer */}
+								<View
+									style={{
+										flexDirection: "row",
+										alignItems: "center",
+										justifyContent: "space-between",
+										paddingHorizontal: 16,
+										paddingVertical: 12,
+										borderTopWidth: 1,
+										borderTopColor: colors.border,
+									}}
+								>
+									<Text
+										style={[typography.micro, { color: colors.mutedForeground }]}
+									>
+										{selectedFiles.size > 0
+											? `${selectedFiles.size} file${selectedFiles.size !== 1 ? "s" : ""} selected`
+											: "No files selected"}
+									</Text>
+									<Button
+										variant={selectedFiles.size > 0 ? "primary" : "muted"}
+										size="sm"
+										onPress={handleConfirm}
+										isDisabled={selectedFiles.size === 0}
+									>
+										<Button.Label>Attach Files</Button.Label>
+									</Button>
+								</View>
+							</Animated.View>
+						</Pressable>
+					</View>
+				</Pressable>
+			</Animated.View>
+		</Modal>
 	);
 }

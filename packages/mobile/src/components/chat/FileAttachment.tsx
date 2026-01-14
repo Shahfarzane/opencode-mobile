@@ -1,10 +1,18 @@
-import type BottomSheet from "@gorhom/bottom-sheet";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	Alert,
+	Animated,
+	Image,
+	Modal,
+	Pressable,
+	Text,
+	View,
+} from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	FileIcon,
 	FolderIcon,
@@ -13,9 +21,9 @@ import {
 	XIcon,
 } from "@/components/icons";
 import { IconButton } from "@/components/ui";
-import { Sheet } from "@/components/ui/sheet";
 import { useConnectionStore } from "@/stores/useConnectionStore";
 import { typography, useTheme } from "@/theme";
+import { withOpacity } from "@/utils/colors";
 import { ServerFilePicker } from "./ServerFilePicker";
 
 export interface AttachedFile {
@@ -53,30 +61,37 @@ export function FileAttachmentButton({
 	onFileAttached,
 	disabled = false,
 }: FileAttachmentButtonProps) {
-	const { colors } = useTheme();
+	const { colors, isDark } = useTheme();
+	const insets = useSafeAreaInsets();
 	const [isPickerOpen, setIsPickerOpen] = useState(false);
 	const [isServerPickerOpen, setIsServerPickerOpen] = useState(false);
-	const sheetRef = useRef<BottomSheet>(null);
-	const snapPoints = useMemo(() => ["32%"], []);
 	const directory = useConnectionStore((state) => state.directory);
+	const fadeAnim = useRef(new Animated.Value(0)).current;
 
-	// Track if we need to open the sheet after it mounts
-	const shouldOpenRef = useRef(false);
-
-	// Use callback ref to open sheet when it mounts
-	const handleSheetRef = useCallback((sheet: BottomSheet | null) => {
-		sheetRef.current = sheet;
-		if (sheet && shouldOpenRef.current) {
-			// Small delay to ensure sheet is fully mounted
-			requestAnimationFrame(() => {
-				sheet.snapToIndex(0);
-				shouldOpenRef.current = false;
-			});
+	useEffect(() => {
+		if (isPickerOpen) {
+			Animated.timing(fadeAnim, {
+				toValue: 1,
+				duration: 150,
+				useNativeDriver: true,
+			}).start();
 		}
-	}, []);
+	}, [isPickerOpen, fadeAnim]);
+
+	const handleClose = useCallback(() => {
+		Animated.timing(fadeAnim, {
+			toValue: 0,
+			duration: 100,
+			useNativeDriver: true,
+		}).start(() => {
+			setIsPickerOpen(false);
+		});
+	}, [fadeAnim]);
 
 	const handleImagePick = useCallback(async () => {
-		setIsPickerOpen(false);
+		handleClose();
+		// Wait for modal to fully close before launching picker
+		await new Promise((resolve) => setTimeout(resolve, 150));
 
 		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 		if (!permission.granted) {
@@ -118,10 +133,12 @@ export function FileAttachmentButton({
 
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		onFileAttached(attachedFile);
-	}, [onFileAttached]);
+	}, [onFileAttached, handleClose]);
 
 	const handleDocumentPick = useCallback(async () => {
-		setIsPickerOpen(false);
+		handleClose();
+		// Wait for modal to fully close before launching picker
+		await new Promise((resolve) => setTimeout(resolve, 150));
 
 		const result = await DocumentPicker.getDocumentAsync({
 			type: "*/*",
@@ -150,7 +167,7 @@ export function FileAttachmentButton({
 
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		onFileAttached(attachedFile);
-	}, [onFileAttached]);
+	}, [onFileAttached, handleClose]);
 
 	const handleServerFilesSelected = useCallback(
 		async (files: Array<{ name: string; path: string }>) => {
@@ -158,7 +175,7 @@ export function FileAttachmentButton({
 				const attachedFile: AttachedFile = {
 					id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
 					name: file.name,
-					type: "text/plain", // Server files are typically text
+					type: "text/plain",
 					size: 0,
 					uri: file.path,
 				};
@@ -170,14 +187,15 @@ export function FileAttachmentButton({
 	);
 
 	const handleOpenServerPicker = useCallback(() => {
-		setIsPickerOpen(false);
-		setIsServerPickerOpen(true);
-	}, []);
+		handleClose();
+		setTimeout(() => {
+			setIsServerPickerOpen(true);
+		}, 150);
+	}, [handleClose]);
 
 	const showOptions = useCallback(async () => {
 		if (disabled) return;
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-		shouldOpenRef.current = true;
 		setIsPickerOpen(true);
 	}, [disabled]);
 
@@ -192,68 +210,141 @@ export function FileAttachmentButton({
 				accessibilityLabel="Attach file"
 			/>
 
-			{isPickerOpen && (
-				<Sheet
-					ref={handleSheetRef}
-					snapPoints={snapPoints}
-					onClose={() => setIsPickerOpen(false)}
-					contentPadding={0}
-					enablePanDownToClose={true}
+			<Modal
+				visible={isPickerOpen}
+				transparent
+				animationType="none"
+				onRequestClose={handleClose}
+				statusBarTranslucent
+			>
+				<Animated.View
+					style={{
+						flex: 1,
+						backgroundColor: withOpacity("#000000", isDark ? 0.5 : 0.3),
+						opacity: fadeAnim,
+					}}
 				>
-					<View className="pb-2">
-					<View className="px-4 pt-2 pb-1">
-						<Text style={[typography.uiHeader, { color: colors.foreground }]}>
-							Attach file
-						</Text>
-					</View>
-					<View
-						className="border-t"
-						style={{ borderTopColor: colors.border }}
-					/>
-					<TouchableOpacity
-						onPress={handleImagePick}
-						activeOpacity={0.7}
-						className="flex-row items-center gap-3 px-4 py-3"
-					>
-						<ImageIcon size={20} color={colors.foreground} />
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-							Photo Library
-						</Text>
-					</TouchableOpacity>
-					<View className="h-px" style={{ backgroundColor: colors.border }} />
-					<TouchableOpacity
-						onPress={handleDocumentPick}
-						activeOpacity={0.7}
-						className="flex-row items-center gap-3 px-4 py-3"
-					>
-						<FileIcon size={20} color={colors.foreground} />
-						<Text style={[typography.uiLabel, { color: colors.foreground }]}>
-							Files
-						</Text>
-					</TouchableOpacity>
-					{directory && (
-						<>
-							<View
-								className="h-px"
-								style={{ backgroundColor: colors.border }}
-							/>
-							<TouchableOpacity
-								onPress={handleOpenServerPicker}
-								activeOpacity={0.7}
-								className="flex-row items-center gap-3 px-4 py-3"
-							>
-								<FolderIcon size={20} color={colors.foreground} />
-								<Text
-									style={[typography.uiLabel, { color: colors.foreground }]}
+					<Pressable style={{ flex: 1 }} onPress={handleClose}>
+						<View
+							style={{
+								flex: 1,
+								justifyContent: "flex-end",
+								paddingBottom: insets.bottom + 80,
+								paddingHorizontal: 16,
+							}}
+						>
+							<Pressable onPress={(e) => e.stopPropagation()}>
+								<Animated.View
+									style={{
+										backgroundColor: colors.card,
+										borderRadius: 16,
+										borderWidth: 1,
+										borderColor: colors.border,
+										overflow: "hidden",
+										transform: [
+											{
+												translateY: fadeAnim.interpolate({
+													inputRange: [0, 1],
+													outputRange: [20, 0],
+												}),
+											},
+										],
+									}}
 								>
-									Project Files
-								</Text>
-							</TouchableOpacity>
-						</>
-					)}
-					</View>
-				</Sheet>
-			)}
+									<View
+										style={{
+											paddingHorizontal: 16,
+											paddingTop: 12,
+											paddingBottom: 8,
+										}}
+									>
+										<Text
+											style={[typography.uiHeader, { color: colors.foreground }]}
+										>
+											Attach file
+										</Text>
+									</View>
+
+									<View
+										style={{ height: 1, backgroundColor: colors.border }}
+									/>
+
+									<TouchableOpacity
+										onPress={handleImagePick}
+										activeOpacity={0.7}
+										style={{
+											flexDirection: "row",
+											alignItems: "center",
+											gap: 12,
+											paddingHorizontal: 16,
+											paddingVertical: 14,
+										}}
+									>
+										<ImageIcon size={20} color={colors.foreground} />
+										<Text
+											style={[typography.uiLabel, { color: colors.foreground }]}
+										>
+											Photo Library
+										</Text>
+									</TouchableOpacity>
+
+									<View
+										style={{ height: 1, backgroundColor: colors.border }}
+									/>
+
+									<TouchableOpacity
+										onPress={handleDocumentPick}
+										activeOpacity={0.7}
+										style={{
+											flexDirection: "row",
+											alignItems: "center",
+											gap: 12,
+											paddingHorizontal: 16,
+											paddingVertical: 14,
+										}}
+									>
+										<FileIcon size={20} color={colors.foreground} />
+										<Text
+											style={[typography.uiLabel, { color: colors.foreground }]}
+										>
+											Files
+										</Text>
+									</TouchableOpacity>
+
+									{directory && (
+										<>
+											<View
+												style={{ height: 1, backgroundColor: colors.border }}
+											/>
+											<TouchableOpacity
+												onPress={handleOpenServerPicker}
+												activeOpacity={0.7}
+												style={{
+													flexDirection: "row",
+													alignItems: "center",
+													gap: 12,
+													paddingHorizontal: 16,
+													paddingVertical: 14,
+												}}
+											>
+												<FolderIcon size={20} color={colors.foreground} />
+												<Text
+													style={[
+														typography.uiLabel,
+														{ color: colors.foreground },
+													]}
+												>
+													Project Files
+												</Text>
+											</TouchableOpacity>
+										</>
+									)}
+								</Animated.View>
+							</Pressable>
+						</View>
+					</Pressable>
+				</Animated.View>
+			</Modal>
 
 			{directory && (
 				<ServerFilePicker
