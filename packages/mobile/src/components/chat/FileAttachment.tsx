@@ -1,4 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -103,7 +104,7 @@ export function FileAttachmentButton({
 		}
 
 		const result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ImagePicker.MediaTypeOptions.Images,
+			mediaTypes: ["images"],
 			allowsMultipleSelection: false,
 			quality: 0.8,
 			base64: true,
@@ -157,12 +158,22 @@ export function FileAttachmentButton({
 			return;
 		}
 
+		// Read file content as base64
+		let base64Content: string | undefined;
+		try {
+			const file = new FileSystem.File(asset.uri);
+			base64Content = await file.base64();
+		} catch (error) {
+			console.warn("Failed to read file content:", error);
+		}
+
 		const attachedFile: AttachedFile = {
 			id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
 			name: asset.name,
 			type: asset.mimeType || "application/octet-stream",
 			size: asset.size || 0,
 			uri: asset.uri,
+			base64: base64Content,
 		};
 
 		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

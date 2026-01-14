@@ -907,16 +907,22 @@ export default function ChatScreen() {
 	);
 
 	const handleSend = useCallback(
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		async (content: string, _attachedFiles?: AttachedFile[]) => {
+		async (content: string, attachedFiles?: AttachedFile[]) => {
 			if (!isConnected || isLoading) return;
 
 			setIsLoading(true);
 
+			// Build display content showing attachments
+			let displayContent = content;
+			if (attachedFiles && attachedFiles.length > 0) {
+				const fileNames = attachedFiles.map((f) => f.name).join(", ");
+				displayContent = `[Attached: ${fileNames}]\n${content}`;
+			}
+
 			const userMessage: Message = {
 				id: `user-${Date.now()}`,
 				role: "user",
-				content,
+				content: displayContent,
 				createdAt: Date.now(),
 			};
 
@@ -948,12 +954,21 @@ export default function ChatScreen() {
 
 				setMessages((prev) => [...prev, assistantMessage]);
 
+				// Convert AttachedFile[] to MessageAttachment[]
+				const attachments = attachedFiles?.map((file) => ({
+					name: file.name,
+					type: file.type,
+					base64: file.base64,
+					uri: file.uri,
+				}));
+
 				await sessionsApi.sendMessage(
 					currentSessionId,
 					content,
 					currentProviderId,
 					currentModelId,
 					currentAgentName,
+					attachments,
 				);
 			} catch (error) {
 				console.error("Failed to send message:", error);

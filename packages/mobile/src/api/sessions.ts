@@ -1,5 +1,12 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "../lib/httpClient";
 
+export interface MessageAttachment {
+	name: string;
+	type: string;
+	base64?: string;
+	uri?: string;
+}
+
 export interface Session {
 	id: string;
 	projectID?: string;
@@ -151,17 +158,40 @@ export const sessionsApi = {
 		providerID?: string,
 		modelID?: string,
 		agentName?: string,
+		attachments?: MessageAttachment[],
 	): Promise<void> {
-		const body: Record<string, unknown> = {
-			parts: [{ type: "text", text }],
-		};
+		// Build parts array - files first, then text
+		const parts: Array<Record<string, unknown>> = [];
+
+		// Add file parts first
+		if (attachments && attachments.length > 0) {
+			for (const attachment of attachments) {
+				if (attachment.base64) {
+					// Create data URL format: data:mime;base64,...
+					const dataUrl = `data:${attachment.type};base64,${attachment.base64}`;
+					parts.push({
+						type: "file",
+						mime: attachment.type,
+						filename: attachment.name,
+						url: dataUrl,
+					});
+				}
+			}
+		}
+
+		// Add text part
+		if (text.trim()) {
+			parts.push({ type: "text", text });
+		}
+
+		const body: Record<string, unknown> = { parts };
 
 		if (providerID && modelID) {
 			body.model = { providerID, modelID };
 		}
 
 		if (agentName) {
-			body.mode = agentName;
+			body.agent = agentName;
 		}
 
 		await apiPost(`/api/session/${sessionId}/prompt_async`, body, true);
