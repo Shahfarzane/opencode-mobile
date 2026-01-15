@@ -11,15 +11,15 @@ import {
 	Folder6Icon,
 	GitBranchIcon,
 	GlobeIcon,
-	LayersIcon,
+	ListCheckIcon,
 	MenuSearchIcon,
 	PencilIcon,
 	TerminalIcon,
 	ToolIcon,
 } from "@/components/icons";
-import { Fonts, Radius, fontStyle, typography, useTheme } from "@/theme";
+import { FontSizes, Fonts, fontStyle, Radius, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
-import { ToolOutputDialog } from "./ToolOutputDialog";
+
 
 export interface ToolPartData {
 	type: "tool" | "tool-call" | "tool-result";
@@ -111,8 +111,12 @@ function getToolIcon(toolName: string, color: string) {
 		return <GlobeIcon size={12} color={color} />;
 	}
 
-	if (name === "todowrite" || name === "todoread" || name === "task") {
-		return <LayersIcon size={12} color={color} />;
+	if (name === "todowrite" || name === "todoread") {
+		return <ListCheckIcon size={12} color={color} />;
+	}
+
+	if (name === "task") {
+		return <ToolIcon size={12} color={color} />;
 	}
 
 	if (name === "skill") {
@@ -234,7 +238,7 @@ function formatToolDescription(part: ToolPartData): string {
 
 export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [showDialog, setShowDialog] = useState(false);
+	const [isOutputExpanded, setIsOutputExpanded] = useState(false);
 	const { colors } = useTheme();
 
 	const toolName = part.toolName || "Tool";
@@ -249,7 +253,12 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 		(part.output && tryParseSessionId(part.output));
 
 	const handlePress = () => {
-		setIsExpanded(!isExpanded);
+		setIsExpanded((prev) => {
+			if (prev) {
+				setIsOutputExpanded(false);
+			}
+			return !prev;
+		});
 	};
 
 	return (
@@ -350,20 +359,32 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 
 					{hasOutput && (
 						<View className={part.input ? "mt-1.5" : ""}>
-							<Text
-								className="mb-1"
-								style={[
-									typography.micro,
-									{ color: colors.mutedForeground, fontFamily: Fonts.medium },
-								]}
+							<Pressable
+								onPress={() => setIsOutputExpanded((prev) => !prev)}
+								className="flex-row items-center gap-1.5 py-1"
 							>
-								Output:
-							</Text>
-							<Text style={[typography.code, { color: colors.foreground }]}>
-								{toolName.toLowerCase() === "glob" && part.output
-									? formatGlobExpandedOutput(part.output)
-									: (part.output?.slice(0, 1000) ?? "") + ((part.output?.length ?? 0) > 1000 ? "..." : "")}
-							</Text>
+								{isOutputExpanded ? (
+									<ChevronDownIcon size={12} color={colors.foreground} />
+								) : (
+									<ChevronRightIcon size={12} color={colors.foreground} />
+								)}
+								<Text
+									style={[
+										typography.meta,
+										fontStyle("500"),
+										{ color: colors.foreground },
+									]}
+								>
+									Output
+								</Text>
+							</Pressable>
+							{isOutputExpanded && (
+								<Text style={[typography.code, { color: colors.foreground }]}> 
+									{toolName.toLowerCase() === "glob" && part.output
+										? formatGlobExpandedOutput(part.output)
+										: part.output ?? ""}
+								</Text>
+							)}
 						</View>
 					)}
 
@@ -384,20 +405,6 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 						</View>
 					)}
 
-					{(hasOutput ||
-						hasError ||
-						(part.input && Object.keys(part.input).length > 0)) && (
-						<Pressable
-							onPress={() => setShowDialog(true)}
-							className="mt-1.5 flex-row items-center gap-1.5 py-1"
-						>
-							<ChevronRightIcon size={12} color={colors.primary} />
-							<Text style={[typography.meta, fontStyle("500"), { color: colors.primary }]}>
-								Output
-							</Text>
-						</Pressable>
-					)}
-
 					{isTaskTool && subAgentSessionId && onSelectSession && (
 						<Pressable
 							onPress={() => onSelectSession(subAgentSessionId)}
@@ -412,11 +419,6 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 				</View>
 			)}
 
-			<ToolOutputDialog
-				visible={showDialog}
-				onClose={() => setShowDialog(false)}
-				part={part}
-			/>
 		</View>
 	);
 }

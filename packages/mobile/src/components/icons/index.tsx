@@ -484,10 +484,21 @@ export function LayersIcon({
 	color = defaultColor,
 	...props
 }: IconProps) {
-	// Remixicon: stack-line
 	return (
 		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
 			<Path d="M20.083 15.2L21.2855 15.9971L12 22.2047L2.71454 15.9971L3.91712 15.2L12 20.4716L20.083 15.2ZM20.083 10.5L21.2855 11.2971L12 17.5047L2.71454 11.2971L3.91712 10.5L12 15.7716L20.083 10.5ZM12 1.79541L21.2855 8.00306L12 14.2047L2.71454 8.00306L12 1.79541ZM12 4.20459L6.31486 8.00306L12 11.8016L17.6851 8.00306L12 4.20459Z" />
+		</Svg>
+	);
+}
+
+export function ListCheckIcon({
+	size = defaultSize,
+	color = defaultColor,
+	...props
+}: IconProps) {
+	return (
+		<Svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+			<Path d="M8 6v3H5V6zM3 4v7h7V4zm10 0h8v2h-8zm0 7h8v2h-8zm0 7h8v2h-8zm-2.293-1.793l-1.414-1.414L6 18.086l-1.793-1.793l-1.414 1.414L6 20.914z" />
 		</Svg>
 	);
 }
