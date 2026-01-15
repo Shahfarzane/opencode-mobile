@@ -1,3 +1,4 @@
+import { FlashList } from "@shopify/flash-list";
 import * as Clipboard from "expo-clipboard";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -39,6 +40,14 @@ import { FontSizes, Spacing, fontStyle, typography, useTheme } from "../../src/t
 import { withOpacity } from "../../src/utils/colors";
 
 type FileStatusType = "staged" | "modified" | "untracked";
+
+type GitRow =
+	| { type: "stagedHeader"; count: number }
+	| { type: "stagedFile"; file: GitStatusFile }
+	| { type: "unstagedHeader"; count: number; selectedCount: number }
+	| { type: "unstagedFile"; file: GitStatusFile }
+	| { type: "commitSection" }
+	| { type: "historySection" };
 
 function getFileStatus(file: GitStatusFile): FileStatusType {
 	if (file.index === "A" || file.index === "M" || file.index === "D") {
@@ -698,57 +707,68 @@ function HistorySection({
 							<ActivityIndicator size="small" color={colors.primary} />
 						</View>
 					) : history && history.all.length > 0 ? (
-						history.all.slice(0, 20).map((entry) => (
-							<View key={entry.hash} style={styles.historyItem}>
-								<View style={styles.historyItemContent}>
-									<Text
-										style={[typography.meta, { color: colors.foreground }]}
-										numberOfLines={1}
-									>
-										{entry.message}
-									</Text>
-									<View style={styles.historyItemMeta}>
+						<FlashList
+							data={history.all.slice(0, 20)}
+							renderItem={({ item }) => (
+								<View style={styles.historyItem}>
+									<View style={styles.historyItemContent}>
 										<Text
-											style={[
-												typography.micro,
-												{ color: colors.mutedForeground },
-											]}
+											style={[typography.meta, { color: colors.foreground }]}
+											numberOfLines={1}
 										>
-											{entry.author_name}
+											{item.message}
 										</Text>
-										<Text
-											style={[
-												typography.micro,
-												{ color: colors.mutedForeground },
-											]}
-										>
-											•
-										</Text>
-										<Text
-											style={[
-												typography.micro,
-												{ color: colors.mutedForeground },
-											]}
-										>
-											{formatDate(entry.date)}
-										</Text>
+										<View style={styles.historyItemMeta}>
+											<Text
+												style={[
+													typography.micro,
+													{ color: colors.mutedForeground },
+												]}
+											>
+												{item.author_name}
+											</Text>
+											<Text
+												style={[
+													typography.micro,
+													{ color: colors.mutedForeground },
+												]}
+											>
+												•
+											</Text>
+											<Text
+												style={[
+													typography.micro,
+													{ color: colors.mutedForeground },
+												]}
+											>
+												{formatDate(item.date)}
+											</Text>
+										</View>
 									</View>
-								</View>
-								<Pressable
-									onPress={() => onCopyHash(entry.hash)}
-									style={[styles.hashButton, { backgroundColor: colors.card }]}
-								>
-									<Text
-										style={[
-											typography.code,
-											{ color: colors.mutedForeground, fontSize: FontSizes.microSmall },
-										]}
+									<Pressable
+										onPress={() => onCopyHash(item.hash)}
+										style={[styles.hashButton, { backgroundColor: colors.card }]}
 									>
-										{entry.hash.slice(0, 7)}
-									</Text>
-								</Pressable>
-							</View>
-						))
+										<Text
+											style={[
+												typography.code,
+												{ color: colors.mutedForeground, fontSize: FontSizes.microSmall },
+											]}
+										>
+											{item.hash.slice(0, 7)}
+										</Text>
+									</Pressable>
+								</View>
+							)}
+							keyExtractor={(item) => item.hash}
+							estimatedItemSize={60}
+							scrollEnabled={false}
+							removeClippedSubviews={true}
+							initialNumToRender={10}
+							maxToRenderPerBatch={10}
+							updateCellsBatchingPeriod={50}
+							windowSize={5}
+						/>
 					) : (
 						<Text
 							style={[
@@ -1269,14 +1289,25 @@ export default function GitScreen() {
 				{stagedFiles.length > 0 && (
 					<View style={[styles.changesSection, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 0 }]}>
 						<SectionHeader title="Staged Changes" count={stagedFiles.length} />
-						{stagedFiles.map((file) => (
+					<FlashList
+						data={stagedFiles}
+						renderItem={({ item }) => (
 							<FileItem
-								key={file.path}
-								file={file}
-								onPress={() => handleUnstageFile(file.path)}
-								diffStats={status?.diffStats?.[file.path]}
+								file={item}
+								onPress={() => handleUnstageFile(item.path)}
+								diffStats={status?.diffStats?.[item.path]}
 							/>
-						))}
+						)}
+						keyExtractor={(item) => item.path}
+						estimatedItemSize={56}
+						scrollEnabled={false}
+						removeClippedSubviews={true}
+						initialNumToRender={16}
+						maxToRenderPerBatch={16}
+						updateCellsBatchingPeriod={50}
+						windowSize={5}
+					/>
+
 					</View>
 				)}
 
@@ -1319,18 +1350,29 @@ export default function GitScreen() {
 							</View>
 						</View>
 
-						{allUnstagedFiles.map((file) => (
+					<FlashList
+						data={allUnstagedFiles}
+						renderItem={({ item }) => (
 							<FileItem
-								key={file.path}
-								file={file}
+								file={item}
 								showCheckbox
-								isSelected={selectedFiles.has(file.path)}
-								onToggleSelect={() => handleToggleSelect(file.path)}
-								onRevert={() => handleRevertFile(file.path)}
-								isReverting={revertingFiles.has(file.path)}
-								diffStats={status?.diffStats?.[file.path]}
+								isSelected={selectedFiles.has(item.path)}
+								onToggleSelect={() => handleToggleSelect(item.path)}
+								onRevert={() => handleRevertFile(item.path)}
+								isReverting={revertingFiles.has(item.path)}
+								diffStats={status?.diffStats?.[item.path]}
 							/>
-						))}
+						)}
+						keyExtractor={(item) => item.path}
+						estimatedItemSize={56}
+						scrollEnabled={false}
+						removeClippedSubviews={true}
+						initialNumToRender={16}
+						maxToRenderPerBatch={16}
+						updateCellsBatchingPeriod={50}
+						windowSize={5}
+					/>
+
 					</View>
 				)}
 

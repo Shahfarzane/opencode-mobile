@@ -1,9 +1,8 @@
+import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -62,39 +61,29 @@ export function ProvidersList({
   }
 
   return (
-    <ScrollView
-      className={listStyles.container({})}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
+    <FlashList
+      data={providers}
+      renderItem={({ item }) => (
+        <SettingsListItem
+          title={item.name || item.id}
+          subtitle={`${item.models?.length || 0} models`}
+          badge={item.enabled ? "Enabled" : undefined}
+          onPress={() => onSelectProvider(item.id)}
         />
+      )}
+      keyExtractor={(item) => item.id}
+      className={listStyles.container({})}
+      ListHeaderComponent={
+        <View
+          className={listStyles.headerSimple({})}
+          style={{ borderBottomColor: colors.border }}
+        >
+          <Text style={[typography.meta, { color: colors.mutedForeground }]}>
+            Total {providers.length}
+          </Text>
+        </View>
       }
-    >
-      <View
-        className={listStyles.headerSimple({})}
-        style={{ borderBottomColor: colors.border }}
-      >
-        <Text style={[typography.meta, { color: colors.mutedForeground }]}>
-          Total {providers.length}
-        </Text>
-      </View>
-
-      <View className={listStyles.section({})}>
-        {providers.map((provider) => (
-          <SettingsListItem
-            key={provider.id}
-            title={provider.name || provider.id}
-            subtitle={`${provider.models?.length || 0} models`}
-            badge={provider.enabled ? "Enabled" : undefined}
-            
-            onPress={() => onSelectProvider(provider.id)}
-          />
-        ))}
-      </View>
-
-      {providers.length === 0 && (
+      ListEmptyComponent={
         <View className={listStyles.emptyContainer({})}>
           <Text style={[typography.uiLabel, { color: colors.mutedForeground }]}>
             No providers connected
@@ -108,7 +97,14 @@ export function ProvidersList({
             Configure API keys in your OpenCode settings to connect providers
           </Text>
         </View>
-      )}
-    </ScrollView>
+      }
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
+      estimatedItemSize={64}
+      initialNumToRender={12}
+      maxToRenderPerBatch={12}
+      updateCellsBatchingPeriod={50}
+      windowSize={5}
+    />
   );
 }

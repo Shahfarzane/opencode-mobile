@@ -402,6 +402,11 @@ export default function DirectoryScreen() {
 					keyboardShouldPersistTaps="always"
 					keyboardDismissMode="interactive"
 					ListHeaderComponent={ListHeader}
+					initialNumToRender={20}
+					maxToRenderPerBatch={20}
+					updateCellsBatchingPeriod={50}
+					windowSize={7}
+					removeClippedSubviews={true}
 					renderItem={({ item }) => (
 						<DirectoryRow
 							item={item}

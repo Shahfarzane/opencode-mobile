@@ -1,15 +1,15 @@
+import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useState,
 } from "react";
 import {
   ActivityIndicator,
-  RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -51,6 +51,10 @@ interface AgentsListProps {
   selectedAgent?: string | null;
   onSelectAgent: (agentName: string) => void;
 }
+
+type AgentListRow =
+  | { type: "section"; title: string }
+  | { type: "agent"; agent: Agent; isBuiltIn: boolean };
 
 export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
   function AgentsList({ selectedAgent: _selectedAgent, onSelectAgent }, ref) {
@@ -96,6 +100,26 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
     const builtInAgents = agents.filter(isAgentBuiltIn);
     const customAgents = agents.filter((a) => !isAgentBuiltIn(a));
 
+    const rows = useMemo<AgentListRow[]>(() => {
+      const next: AgentListRow[] = [];
+
+      if (builtInAgents.length > 0) {
+        next.push({ type: "section", title: "BUILT-IN AGENTS" });
+        for (const agent of builtInAgents) {
+          next.push({ type: "agent", agent, isBuiltIn: true });
+        }
+      }
+
+      if (customAgents.length > 0) {
+        next.push({ type: "section", title: "CUSTOM AGENTS" });
+        for (const agent of customAgents) {
+          next.push({ type: "agent", agent, isBuiltIn: false });
+        }
+      }
+
+      return next;
+    }, [builtInAgents, customAgents]);
+
     if (isLoading) {
       return (
         <View className={listStyles.loadingContainer({})}>
@@ -105,84 +129,67 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
     }
 
     return (
-      <ScrollView
-        className={listStyles.container({})}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-          />
+      <FlashList
+        data={rows}
+        renderItem={({ item }) => {
+          if (item.type === "section") {
+            return (
+              <Text
+                className={listStyles.sectionTitle({})}
+                style={[
+                  typography.micro,
+                  fontStyle("600"),
+                  { color: colors.mutedForeground },
+                ]}
+              >
+                {item.title}
+              </Text>
+            );
+          }
+
+          const agent = item.agent;
+
+          return (
+            <SettingsListItem
+              title={agent.name}
+              subtitle={agent.description}
+              badge={
+                item.isBuiltIn
+                  ? "system"
+                  : (agent as { scope?: string }).scope
+              }
+              icon={
+                item.isBuiltIn ? (
+                  <LockIcon size={12} color={colors.mutedForeground} />
+                ) : undefined
+              }
+              modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
+              onPress={() => onSelectAgent(agent.name)}
+            />
+          );
+        }}
+        keyExtractor={(item, index) =>
+          item.type === "section" ? `section-${item.title}` : `agent-${item.agent.name}-${index}`
         }
-      >
-        <View
-          className={listStyles.header({})}
-          style={{ borderBottomColor: colors.border }}
-        >
-          <Text style={[typography.meta, { color: colors.mutedForeground }]}>
-            Total {agents.length}
-          </Text>
-          <Button
-            variant="ghost"
-            size="xs"
-            onPress={() => onSelectAgent("__new__")}
+        className={listStyles.container({})}
+        ListHeaderComponent={
+          <View
+            className={listStyles.header({})}
+            style={{ borderBottomColor: colors.border }}
           >
-            <PlusIcon size={16} color={colors.mutedForeground} />
-          </Button>
-        </View>
-
-        {builtInAgents.length > 0 && (
-          <View className={listStyles.section({})}>
-            <Text
-              className={listStyles.sectionTitle({})}
-              style={[
-                typography.micro,
-                fontStyle("600"),
-                { color: colors.mutedForeground },
-              ]}
-            >
-              BUILT-IN AGENTS
+            <Text style={[typography.meta, { color: colors.mutedForeground }]}>
+              Total {agents.length}
             </Text>
-            {builtInAgents.map((agent) => (
-              <SettingsListItem
-                key={agent.name}
-                title={agent.name}
-                subtitle={agent.description}
-                badge="system"
-                icon={<LockIcon size={12} color={colors.mutedForeground} />}
-                modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
-                onPress={() => onSelectAgent(agent.name)}
-              />
-            ))}
-          </View>
-        )}
-
-        {customAgents.length > 0 && (
-          <View className={listStyles.section({})}>
-            <Text
-              className={listStyles.sectionTitle({})}
-              style={[
-                typography.micro,
-                fontStyle("600"),
-                { color: colors.mutedForeground },
-              ]}
+            <Button
+              variant="ghost"
+              size="xs"
+              onPress={() => onSelectAgent("__new__")}
             >
-              CUSTOM AGENTS
-            </Text>
-            {customAgents.map((agent) => (
-              <SettingsListItem
-                key={agent.name}
-                title={agent.name}
-                subtitle={agent.description}
-                badge={(agent as { scope?: string }).scope}
-                modeIcon={getAgentModeIcon(agent.mode, colors.primary)}
-                onPress={() => onSelectAgent(agent.name)}
-              />
-            ))}
+              <PlusIcon size={16} color={colors.mutedForeground} />
+            </Button>
           </View>
-        )}
-
-        {agents.length === 0 && (
+        }
+        ListEmptyComponent={
           <View className={listStyles.emptyContainer({})}>
             <Text
               style={[typography.uiLabel, { color: colors.mutedForeground }]}
@@ -198,8 +205,15 @@ export const AgentsList = forwardRef<AgentsListRef, AgentsListProps>(
               <Button.Label>Create your first agent</Button.Label>
             </Button>
           </View>
-        )}
-      </ScrollView>
+        }
+        refreshing={isRefreshing}
+        onRefresh={handleRefresh}
+        estimatedItemSize={64}
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        updateCellsBatchingPeriod={50}
+        windowSize={5}
+      />
     );
   }
 );

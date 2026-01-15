@@ -546,16 +546,22 @@ export function ServerFilePicker({
 										)}
 
 									{!loading && !error && displayItems.length > 0 && (
-										<FlatList<FileInfo>
-											data={displayItems}
-											keyExtractor={(item: FileInfo) => item.path}
-											renderItem={({ item }: { item: FileInfo }) =>
-												renderFileItem({ item, level: 0 })
-											}
-											showsVerticalScrollIndicator={false}
-											keyboardShouldPersistTaps="handled"
-											contentContainerStyle={{ paddingBottom: 8 }}
-										/>
+									<FlatList<FileInfo>
+										data={displayItems}
+										keyExtractor={(item: FileInfo) => item.path}
+										renderItem={({ item }: { item: FileInfo }) =>
+											renderFileItem({ item, level: 0 })
+										}
+										showsVerticalScrollIndicator={false}
+										keyboardShouldPersistTaps="handled"
+										contentContainerStyle={{ paddingBottom: 8 }}
+										initialNumToRender={20}
+										maxToRenderPerBatch={20}
+										updateCellsBatchingPeriod={50}
+										windowSize={7}
+										removeClippedSubviews={true}
+									/>
+
 									)}
 								</View>
 

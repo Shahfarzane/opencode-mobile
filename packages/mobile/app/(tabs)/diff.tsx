@@ -776,11 +776,17 @@ function FileSelector({
 						{ backgroundColor: colors.card, borderColor: colors.border },
 					]}
 				>
-					<FlatList
-						data={files}
-						keyExtractor={(item) => item.path}
-						style={styles.fileList}
-						renderItem={({ item }) => {
+						<FlatList
+							data={files}
+							keyExtractor={(item) => item.path}
+							style={styles.fileList}
+							initialNumToRender={20}
+							maxToRenderPerBatch={20}
+							updateCellsBatchingPeriod={50}
+							windowSize={5}
+							removeClippedSubviews={true}
+							renderItem={({ item }) => {
+
 							const itemStats = diffStats?.[item.path];
 							const isSelected = item.path === selectedPath;
 
@@ -1049,6 +1055,11 @@ export default function DiffScreen() {
 						)}
 						style={[styles.diffList, { backgroundColor: colors.card }]}
 						contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+						initialNumToRender={30}
+						maxToRenderPerBatch={30}
+						updateCellsBatchingPeriod={50}
+						windowSize={7}
+						removeClippedSubviews={true}
 					/>
 				)
 			) : (

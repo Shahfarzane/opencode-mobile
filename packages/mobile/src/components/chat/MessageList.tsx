@@ -17,13 +17,16 @@ import { ChatMessage } from "./ChatMessage";
 import { messageListStyles } from "./MessageList.styles";
 import type { Message } from "./types";
 
-type MessageListProps = {
-	messages: Message[];
-	isLoading?: boolean;
-	onRevert?: (messageId: string) => void;
-	onFork?: (messageId: string) => void;
-	onSelectSession?: (sessionId: string) => void;
-};
+	type MessageListProps = {
+		messages: Message[];
+		isLoading?: boolean;
+		onRevert?: (messageId: string) => void;
+		onFork?: (messageId: string) => void;
+		onSelectSession?: (sessionId: string) => void;
+		hasMore?: boolean;
+		onLoadMore?: () => void;
+	};
+
 
 const phrases = [
 	"Fix the failing tests",
@@ -80,21 +83,23 @@ export function MessageList({
 	const { colors, isDark } = useTheme();
 	const listRef = useRef<FlashListRef<Message>>(null);
 	const [showScrollButton, setShowScrollButton] = useState(false);
+	const loadMorePendingRef = useRef(false);
+	const lastContentHeightRef = useRef(0);
+	const lastScrollOffsetRef = useRef(0);
 
-	// Create extraData that changes when streaming content changes
-	// This forces FlashList to re-render when message content updates
-	const extraData = useMemo(() => {
-		const streamingMessage = messages.find((m) => m.isStreaming);
-		return {
+	const extraData = useMemo(
+		() => ({
 			messageCount: messages.length,
 			isLoading,
-			// Include streaming message's content length to detect content changes
-			streamingContentLength: streamingMessage?.content?.length ?? 0,
-			streamingPartsCount: streamingMessage?.parts?.length ?? 0,
-			// Include last part's content for fine-grained updates
-			lastPartContent: streamingMessage?.parts?.slice(-1)[0]?.content?.length ?? 0,
-		};
-	}, [messages, isLoading]);
+		}),
+		[messages.length, isLoading],
+	);
+
+	const hasMoreRef = useRef(hasMore);
+	const onLoadMoreRef = useRef(onLoadMore);
+
+	hasMoreRef.current = hasMore;
+	onLoadMoreRef.current = onLoadMore;
 
 	const renderItem = useCallback(
 		({ item, index }: { item: Message; index: number }) => {
@@ -117,11 +122,29 @@ export function MessageList({
 
 	const keyExtractor = useCallback((item: Message) => item.id, []);
 
-	const handleContentSizeChange = useCallback(() => {
-		if (messages.length > 0 && !showScrollButton) {
-			listRef.current?.scrollToEnd({ animated: true });
-		}
-	}, [messages.length, showScrollButton]);
+	const handleContentSizeChange = useCallback(
+		(_: number, height: number) => {
+			const previousHeight = lastContentHeightRef.current;
+			lastContentHeightRef.current = height;
+
+			if (loadMorePendingRef.current) {
+				const delta = height - previousHeight;
+				if (delta > 0) {
+					listRef.current?.scrollToOffset({
+						offset: lastScrollOffsetRef.current + delta,
+						animated: false,
+					});
+				}
+				loadMorePendingRef.current = false;
+				return;
+			}
+
+			if (messages.length > 0 && !showScrollButton) {
+				listRef.current?.scrollToEnd({ animated: true });
+			}
+		},
+		[messages.length, showScrollButton],
+	);
 
 	const handleScroll = useCallback(
 		(event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -129,8 +152,21 @@ export function MessageList({
 				event.nativeEvent;
 			const distanceFromBottom =
 				contentSize.height - layoutMeasurement.height - contentOffset.y;
+			const isNearTop = contentOffset.y < 120;
+
+			lastScrollOffsetRef.current = contentOffset.y;
 			// Show button when scrolled more than 100px from bottom
 			setShowScrollButton(distanceFromBottom > 100);
+
+			if (
+				isNearTop &&
+				hasMoreRef.current &&
+				onLoadMoreRef.current &&
+				!loadMorePendingRef.current
+			) {
+				loadMorePendingRef.current = true;
+				onLoadMoreRef.current();
+			}
 		},
 		[],
 	);

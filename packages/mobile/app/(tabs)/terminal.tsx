@@ -43,6 +43,7 @@ export default function TerminalScreen() {
 	const { colors } = useTheme();
 	const { directory, isConnected: isServerConnected } = useConnectionStore();
 	const scrollViewRef = useRef<ScrollView>(null);
+	const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const inputRef = useRef<TextInput>(null);
 	const inputValueRef = useRef<string>("");
 
@@ -226,11 +227,22 @@ export default function TerminalScreen() {
 	);
 
 	useEffect(() => {
-		if (output) {
-			setTimeout(() => {
-				scrollViewRef.current?.scrollToEnd({ animated: true });
-			}, 50);
+		if (!output) return;
+
+		if (scrollTimeoutRef.current) {
+			clearTimeout(scrollTimeoutRef.current);
 		}
+
+		scrollTimeoutRef.current = setTimeout(() => {
+			scrollViewRef.current?.scrollToEnd({ animated: true });
+		}, 80);
+
+		return () => {
+			if (scrollTimeoutRef.current) {
+				clearTimeout(scrollTimeoutRef.current);
+				scrollTimeoutRef.current = null;
+			}
+		};
 	}, [output]);
 
 	useEffect(() => {

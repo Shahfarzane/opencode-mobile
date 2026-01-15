@@ -318,6 +318,10 @@ function AutocompleteOverlay({
 						item.type === "file" ? item.path : `${item.type}-${item.name}`
 					}
 					keyboardShouldPersistTaps="handled"
+					estimatedItemSize={AUTOCOMPLETE_ITEM_HEIGHT}
+					initialNumToRender={8}
+					maxToRenderPerBatch={8}
+					updateCellsBatchingPeriod={50}
 				/>
 			</View>
 			{/* Match PWA footer: px-3 pt-1 pb-1.5 border-t */}

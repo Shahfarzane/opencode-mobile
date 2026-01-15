@@ -41,6 +41,8 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 	const isActiveRef = useRef(true);
 	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 	const terminalExitedRef = useRef(false);
+	const outputQueueRef = useRef<string[]>([]);
+	const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const onDataRef = useRef(onData);
 	const onConnectedRef = useRef(onConnected);
@@ -66,6 +68,10 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 			clearTimeout(connectionTimeoutRef.current);
 			connectionTimeoutRef.current = null;
 		}
+		if (flushTimeoutRef.current) {
+			clearTimeout(flushTimeoutRef.current);
+			flushTimeoutRef.current = null;
+		}
 	}, []);
 
 	const abortConnection = useCallback(() => {
@@ -74,7 +80,28 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 			xhrRef.current = null;
 		}
 		isConnectingRef.current = false;
+		outputQueueRef.current = [];
 	}, []);
+
+	const flushOutputQueue = useCallback(() => {
+		if (outputQueueRef.current.length === 0) return;
+		const merged = outputQueueRef.current.join("");
+		outputQueueRef.current = [];
+		onDataRef.current(merged);
+	}, []);
+
+	const enqueueOutput = useCallback(
+		(chunk: string) => {
+			if (!chunk) return;
+			outputQueueRef.current.push(chunk);
+			if (flushTimeoutRef.current) return;
+			flushTimeoutRef.current = setTimeout(() => {
+				flushTimeoutRef.current = null;
+				flushOutputQueue();
+			}, 16);
+		},
+		[flushOutputQueue],
+	);
 
 	const scheduleReconnect = useCallback(() => {
 		if (
@@ -216,7 +243,7 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 								if (parsed.type === "connected") {
 									console.log("[TerminalStream] Received connected event");
 								} else if (parsed.type === "data" && parsed.data) {
-									onDataRef.current(parsed.data);
+									enqueueOutput(parsed.data);
 								} else if (parsed.type === "exit") {
 									console.log("[TerminalStream] Terminal exited", {
 										exitCode: parsed.exitCode,
@@ -232,7 +259,7 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 								}
 							} catch {
 								if (data.length < 1000) {
-									onDataRef.current(data);
+									enqueueOutput(data);
 								}
 							}
 						}
@@ -291,6 +318,7 @@ export function useTerminalStream(options: UseTerminalStreamOptions) {
 		clearTimers,
 		scheduleReconnect,
 		abortConnection,
+		enqueueOutput,
 	]);
 
 	connectRef.current = connect;

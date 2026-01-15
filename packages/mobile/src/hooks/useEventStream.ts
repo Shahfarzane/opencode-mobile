@@ -71,6 +71,8 @@ export function useEventStream(
 	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 	const connectRef = useRef<() => void>(() => {});
 	const incompleteLineRef = useRef("");
+	const eventQueueRef = useRef<StreamEvent[]>([]);
+	const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	onEventRef.current = onEvent;
 	sessionIdRef.current = sessionId;
@@ -84,6 +86,10 @@ export function useEventStream(
 			clearTimeout(connectionTimeoutRef.current);
 			connectionTimeoutRef.current = null;
 		}
+		if (flushTimeoutRef.current) {
+			clearTimeout(flushTimeoutRef.current);
+			flushTimeoutRef.current = null;
+		}
 	}, []);
 
 	const abortConnection = useCallback(() => {
@@ -92,7 +98,29 @@ export function useEventStream(
 			xhrRef.current = null;
 		}
 		isConnectingRef.current = false;
+		eventQueueRef.current = [];
 	}, []);
+
+	const flushEventQueue = useCallback(() => {
+		const queued = eventQueueRef.current;
+		if (queued.length === 0) return;
+		eventQueueRef.current = [];
+		for (const queuedEvent of queued) {
+			onEventRef.current(queuedEvent);
+		}
+	}, []);
+
+	const enqueueEvent = useCallback(
+		(event: StreamEvent) => {
+			eventQueueRef.current.push(event);
+			if (flushTimeoutRef.current) return;
+			flushTimeoutRef.current = setTimeout(() => {
+				flushTimeoutRef.current = null;
+				flushEventQueue();
+			}, 16);
+		},
+		[flushEventQueue],
+	);
 
 	const doScheduleReconnect = useCallback(() => {
 		if (!isActiveRef.current || !isConnected) {
@@ -228,7 +256,7 @@ export function useEventStream(
 									console.log("[EventStream] Event:", event.type);
 								}
 
-								onEventRef.current(event);
+								enqueueEvent(event);
 							} catch (parseError) {
 								if (DEBUG_STREAM) {
 									console.warn(
@@ -287,6 +315,7 @@ export function useEventStream(
 		isConnected,
 		clearTimers,
 		doScheduleReconnect,
+		enqueueEvent,
 	]);
 
 	connectRef.current = connect;

@@ -212,6 +212,7 @@ export default function ChatScreen() {
 	const currentAssistantMessageIdRef = useRef<string | null>(null);
 	const lastEventTimeRef = useRef<number>(0);
 	const lastUserMessageContentRef = useRef<string>("");
+	const paginationSessionRef = useRef<string | null>(sessionId);
 
 	// Get the current streaming message's parts for status display
 	const streamingMessageParts = useMemo(() => {
@@ -228,6 +229,36 @@ export default function ChatScreen() {
 
 	// Get assistant status for streaming indicator
 	const assistantStatus = useAssistantStatus(streamingMessageParts, isLoading);
+
+	const DEFAULT_VISIBLE_MESSAGES = 200;
+	const MESSAGE_PAGE_SIZE = 100;
+	const [visibleMessageCount, setVisibleMessageCount] = useState(
+		DEFAULT_VISIBLE_MESSAGES,
+	);
+
+	const visibleMessages = useMemo(() => {
+		if (messages.length <= visibleMessageCount) return messages;
+		return messages.slice(messages.length - visibleMessageCount);
+	}, [messages, visibleMessageCount]);
+
+	const hasMoreMessages = messages.length > visibleMessageCount;
+
+	const handleLoadMore = useCallback(() => {
+		setVisibleMessageCount((prev) =>
+			Math.min(messages.length, prev + MESSAGE_PAGE_SIZE),
+		);
+	}, [messages.length]);
+
+	useEffect(() => {
+		setVisibleMessageCount((prev) => Math.min(prev, messages.length));
+	}, [messages.length]);
+
+	useEffect(() => {
+		if (paginationSessionRef.current !== sessionId) {
+			paginationSessionRef.current = sessionId;
+			setVisibleMessageCount(DEFAULT_VISIBLE_MESSAGES);
+		}
+	}, [sessionId]);
 
 	const handleStreamEvent = useCallback(
 		(event: StreamEvent) => {
@@ -1074,11 +1105,13 @@ export default function ChatScreen() {
 			>
 				<View style={styles.messageContainer}>
 					<MessageList
-						messages={messages}
+						messages={visibleMessages}
 						isLoading={isLoading}
 						onRevert={handleRevert}
 						onFork={handleFork}
 						onSelectSession={handleSelectSession}
+						hasMore={hasMoreMessages}
+						onLoadMore={handleLoadMore}
 					/>
 				</View>
 

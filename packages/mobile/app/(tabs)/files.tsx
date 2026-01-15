@@ -331,6 +331,11 @@ export default function FilesScreen() {
 							onRefresh={handleRefresh}
 						/>
 					}
+					initialNumToRender={24}
+					maxToRenderPerBatch={24}
+					updateCellsBatchingPeriod={50}
+					windowSize={7}
+					removeClippedSubviews={true}
 					ListHeaderComponent={
 						canGoUp ? (
 							<Pressable
