@@ -7,6 +7,7 @@ import {
 	SettingsScreen,
 } from "@/components/settings";
 import { useConnectionStore } from "@/stores/useConnectionStore";
+import packageJson from "../../package.json";
 
 export default function SettingsIndexScreen() {
 	const { disconnect } = useConnectionStore();
@@ -25,7 +26,7 @@ export default function SettingsIndexScreen() {
 						router.replace("/onboarding");
 					},
 				},
-			]
+			],
 		);
 	};
 
@@ -71,14 +72,8 @@ export default function SettingsIndexScreen() {
 			</SettingsGroup>
 
 			<SettingsGroup>
-				<SettingsRow
-					title="Version"
-					value="1.0.0"
-				/>
-				<SettingsRow
-					title="GitHub"
-					onPress={handleOpenGitHub}
-				/>
+				<SettingsRow title="Version" value={packageJson.version} />
+				<SettingsRow title="GitHub" onPress={handleOpenGitHub} />
 			</SettingsGroup>
 
 			<SettingsGroup>
