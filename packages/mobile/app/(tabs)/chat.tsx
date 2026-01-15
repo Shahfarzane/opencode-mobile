@@ -213,6 +213,7 @@ export default function ChatScreen() {
 	const lastEventTimeRef = useRef<number>(0);
 	const lastUserMessageContentRef = useRef<string>("");
 	const paginationSessionRef = useRef<string | null>(sessionId);
+	const messagesRef = useRef<Message[]>([]);
 
 	// Get the current streaming message's parts for status display
 	const streamingMessageParts = useMemo(() => {
@@ -243,6 +244,10 @@ export default function ChatScreen() {
 
 	const hasMoreMessages = messages.length > visibleMessageCount;
 
+	useEffect(() => {
+		messagesRef.current = messages;
+	}, [messages]);
+
 	const handleLoadMore = useCallback(() => {
 		setVisibleMessageCount((prev) =>
 			Math.min(messages.length, prev + MESSAGE_PAGE_SIZE),
@@ -259,6 +264,46 @@ export default function ChatScreen() {
 			setVisibleMessageCount(DEFAULT_VISIBLE_MESSAGES);
 		}
 	}, [sessionId]);
+
+	const resolveAssistantMessageId = useCallback(
+		(serverMessageId?: string | null) => {
+			const currentMessages = messagesRef.current;
+			if (
+				serverMessageId &&
+				currentMessages.some((message) => message.id === serverMessageId)
+			) {
+				currentAssistantMessageIdRef.current = serverMessageId;
+				return serverMessageId;
+			}
+
+			const currentId = currentAssistantMessageIdRef.current;
+			if (currentId && currentMessages.some((message) => message.id === currentId)) {
+				if (serverMessageId && serverMessageId !== currentId) {
+					setMessages((prev) =>
+						prev.map((message) =>
+							message.id === currentId
+								? { ...message, id: serverMessageId }
+								: message,
+						),
+					);
+					currentAssistantMessageIdRef.current = serverMessageId;
+					return serverMessageId;
+				}
+				return currentId;
+			}
+
+			const streamingMessage = currentMessages.find(
+				(message) => message.isStreaming,
+			);
+			if (streamingMessage) {
+				currentAssistantMessageIdRef.current = streamingMessage.id;
+				return streamingMessage.id;
+			}
+
+			return currentId;
+		},
+		[],
+	);
 
 	const handleStreamEvent = useCallback(
 		(event: StreamEvent) => {
@@ -310,31 +355,15 @@ export default function ChatScreen() {
 			}
 
 			if (event.type === "message.part.updated" && props.part) {
-				// Extract server's message ID from event
 				const serverMessageId = props.info?.id || props.messageID;
 
-				// Only process parts for assistant messages - ignore user message events
-				// Check both explicit role AND if role is not explicitly "assistant" when it should be
 				if (props.info?.role === "user") {
 					return;
 				}
 
-				// Ensure we have an active assistant message being tracked
-				if (!currentAssistantMessageIdRef.current) {
+				const assistantId = resolveAssistantMessageId(serverMessageId);
+				if (!assistantId) {
 					return;
-				}
-
-				// Skip events for non-assistant messages based on server message ID pattern
-				// Also skip if we can detect this is a user message by other means
-				if (serverMessageId && typeof serverMessageId === "string") {
-					const looksLikeServerMessageId =
-						serverMessageId.startsWith("msg_") ||
-						(serverMessageId.length > 20 &&
-							/^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
-					// Skip if role is explicitly not assistant, or if it looks like a server message and role is undefined
-					if (props.info?.role !== "assistant" && looksLikeServerMessageId) {
-						return;
-					}
 				}
 
 				const streamPart = props.part as StreamingPart;
@@ -342,7 +371,6 @@ export default function ChatScreen() {
 				const converted = convertStreamingPart(streamPart);
 				converted.id = partId;
 
-				// Skip text parts that echo the user's message (server sometimes includes user input in response)
 				if (converted.type === "text") {
 					const partText = (converted.content || converted.text || "").trim();
 					if (partText && partText === lastUserMessageContentRef.current) {
@@ -360,16 +388,13 @@ export default function ChatScreen() {
 					}
 				}
 
-				const assistantId = currentAssistantMessageIdRef.current;
-				if (assistantId) {
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === assistantId
-								? { ...msg, parts: partsArray, content: textContent }
-								: msg,
-						),
-					);
-				}
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.id === assistantId
+							? { ...msg, parts: partsArray, content: textContent }
+							: msg,
+					),
+				);
 			}
 
 			if (event.type === "message.updated") {
@@ -377,27 +402,13 @@ export default function ChatScreen() {
 				const serverParts = props.parts;
 				const serverMessageId = info?.id || props.messageID;
 
-				// Only process assistant messages - ignore user message events
 				if (info?.role === "user") {
 					return;
 				}
 
-				// Ensure we have an active assistant message being tracked
-				if (!currentAssistantMessageIdRef.current) {
+				const assistantId = resolveAssistantMessageId(serverMessageId);
+				if (!assistantId) {
 					return;
-				}
-
-				// Skip events for non-assistant messages based on server message ID pattern
-				// Also skip if we can detect this is a user message by other means
-				if (serverMessageId && typeof serverMessageId === "string") {
-					const looksLikeServerMessageId =
-						serverMessageId.startsWith("msg_") ||
-						(serverMessageId.length > 20 &&
-							/^[0-9A-Z]+$/i.test(serverMessageId.slice(0, 10)));
-					// Skip if role is explicitly not assistant, or if it looks like a server message and role is undefined
-					if (info?.role !== "assistant" && looksLikeServerMessageId) {
-						return;
-					}
 				}
 
 				if (serverParts && Array.isArray(serverParts)) {
@@ -408,7 +419,6 @@ export default function ChatScreen() {
 						const converted = convertStreamingPart(streamPart);
 						converted.id = partId;
 
-						// Skip text parts that echo the user's message (server sometimes includes user input in response)
 						if (converted.type === "text") {
 							const partText = (
 								converted.content ||
@@ -438,42 +448,35 @@ export default function ChatScreen() {
 					info?.finish === "error" ||
 					(info?.time?.completed && typeof info.time.completed === "number");
 
-				// Extract tokens from info if available
-				const messageTokens = (info as { tokens?: number | TokenBreakdown })
-					?.tokens;
+				const messageTokens = (info as { tokens?: number | TokenBreakdown })?.tokens;
 
-				const assistantId = currentAssistantMessageIdRef.current;
-				if (assistantId) {
-					setMessages((prev) =>
-						prev.map((msg) =>
-							msg.id === assistantId
-								? {
-										...msg,
-										parts: partsArray,
-										content: textContent,
-										isStreaming: !isComplete,
-										...(messageTokens !== undefined && {
-											tokens: messageTokens,
-										}),
-									}
-								: msg,
-						),
-					);
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.id === assistantId
+							? {
+									...msg,
+									parts: partsArray,
+									content: textContent,
+									isStreaming: !isComplete,
+									...(messageTokens !== undefined && {
+										tokens: messageTokens,
+									}),
+								}
+							: msg,
+					),
+				);
 
-					if (isComplete) {
-						setIsLoading(false);
-						currentAssistantMessageIdRef.current = null;
-						partsMapRef.current.clear();
-						// Refresh sessions to get updated title after message completion
-						if (_refreshSessions) {
-							// Debounce the refresh slightly to avoid rapid calls
-							setTimeout(() => _refreshSessions(), 500);
-						}
+				if (isComplete) {
+					setIsLoading(false);
+					currentAssistantMessageIdRef.current = null;
+					partsMapRef.current.clear();
+					if (_refreshSessions) {
+						setTimeout(() => _refreshSessions(), 500);
 					}
 				}
 			}
 		},
-		[sessionId, _refreshSessions],
+		[sessionId, _refreshSessions, resolveAssistantMessageId],
 	);
 
 	useEventStream(sessionId, handleStreamEvent);

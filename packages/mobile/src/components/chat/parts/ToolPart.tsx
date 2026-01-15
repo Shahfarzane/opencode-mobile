@@ -253,25 +253,23 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 	};
 
 	return (
-		<View style={{ marginVertical: 4 }}>
+		<View style={{ marginVertical: 2 }}>
 			<Pressable
 				onPress={handlePress}
 				style={({ pressed }) => ({
 					flexDirection: "row",
 					alignItems: "center",
-					gap: 8,
-					paddingHorizontal: 10,
-					paddingVertical: 8,
-					minHeight: 40,
+					gap: 6,
+					paddingHorizontal: 8,
+					paddingVertical: 6,
+					minHeight: 34,
 					backgroundColor: pressed
 						? withOpacity(colors.toolBackground, OPACITY.light)
 						: "transparent",
-					borderColor: withOpacity(colors.toolBorder, OPACITY.light),
-					borderWidth: 1,
 					borderRadius: Radius.lg,
 				})}
 			>
-				<View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+				<View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
 					<View style={{ width: 16, height: 16, justifyContent: "center", alignItems: "center" }}>
 						{isExpanded ? (
 							<ChevronDownIcon size={14} color={colors.mutedForeground} />
@@ -326,7 +324,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 
 			{isExpanded && (
 				<View
-					className="mt-2 ml-5 pl-3 border-l gap-2"
+					className="mt-1.5 ml-4 pl-2 border-l gap-1.5"
 					style={{
 						borderColor: withOpacity(colors.toolBorder, OPACITY.light),
 						backgroundColor: "transparent",
@@ -351,7 +349,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					)}
 
 					{hasOutput && (
-						<View className={part.input ? "mt-2" : ""}>
+						<View className={part.input ? "mt-1.5" : ""}>
 							<Text
 								className="mb-1"
 								style={[
@@ -370,7 +368,7 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					)}
 
 					{hasError && (
-						<View className={part.input || hasOutput ? "mt-2" : ""}>
+						<View className={part.input || hasOutput ? "mt-1.5" : ""}>
 							<Text
 								className="mb-1"
 								style={[
@@ -391,11 +389,11 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 						(part.input && Object.keys(part.input).length > 0)) && (
 						<Pressable
 							onPress={() => setShowDialog(true)}
-							className="mt-2 py-2 px-3 rounded-lg items-center"
-							style={{ backgroundColor: withOpacity(colors.primary, OPACITY.active) }}
+							className="mt-1.5 flex-row items-center gap-1.5 py-1"
 						>
-							<Text style={[typography.micro, { color: colors.primary }]}>
-								View Full Output
+							<ChevronRightIcon size={12} color={colors.primary} />
+							<Text style={[typography.meta, fontStyle("500"), { color: colors.primary }]}>
+								Output
 							</Text>
 						</Pressable>
 					)}
@@ -403,12 +401,11 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					{isTaskTool && subAgentSessionId && onSelectSession && (
 						<Pressable
 							onPress={() => onSelectSession(subAgentSessionId)}
-							className="mt-2 py-2 px-3 rounded-lg flex-row items-center justify-center gap-1.5"
-							style={{ backgroundColor: withOpacity(colors.info, OPACITY.active) }}
+							className="mt-1.5 flex-row items-center gap-1.5 py-1"
 						>
-							{getToolIcon("external_link", colors.info)}
-							<Text style={[typography.micro, { color: colors.info }]}>
-								Open SubAgent Session
+							{getToolIcon("external_link", colors.primary)}
+							<Text style={[typography.meta, fontStyle("500"), { color: colors.primary }]}>
+								Open subAgent session
 							</Text>
 						</Pressable>
 					)}
