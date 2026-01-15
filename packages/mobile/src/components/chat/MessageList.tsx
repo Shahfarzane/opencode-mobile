@@ -79,6 +79,8 @@ export function MessageList({
 	onRevert,
 	onFork,
 	onSelectSession,
+	hasMore,
+	onLoadMore,
 }: MessageListProps) {
 	const { colors, isDark } = useTheme();
 	const listRef = useRef<FlashListRef<Message>>(null);
