@@ -118,6 +118,10 @@ export function ToolOutputDialog({ visible, onClose, part }: ToolOutputDialogPro
 		}
 	}, [visible]);
 
+	if (!visible) {
+		return null;
+	}
+
 	const handleCopyOutput = async () => {
 		const content = part.output || part.error || "";
 		if (content) {

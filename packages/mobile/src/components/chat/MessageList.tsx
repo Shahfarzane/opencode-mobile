@@ -184,19 +184,23 @@ export function MessageList({
 
 	return (
 		<View className={messageListStyles.container({})}>
-			<FlashList
-				ref={listRef}
-				data={messages}
-				renderItem={renderItem}
-				keyExtractor={keyExtractor}
-				extraData={extraData}
-				{...({ estimatedItemSize: 120 } as object)}
-				contentContainerStyle={{ paddingTop: 12, paddingBottom: 16 }}
-				onContentSizeChange={handleContentSizeChange}
-				onScroll={handleScroll}
-				scrollEventThrottle={16}
-				showsVerticalScrollIndicator={false}
-			/>
+		<FlashList
+			ref={listRef}
+			data={messages}
+			renderItem={renderItem}
+			keyExtractor={keyExtractor}
+			extraData={extraData}
+			{...({ estimatedItemSize: 120 } as object)}
+			contentContainerStyle={{ paddingTop: 12, paddingBottom: 16 }}
+			onContentSizeChange={handleContentSizeChange}
+			onScroll={handleScroll}
+			scrollEventThrottle={16}
+			showsVerticalScrollIndicator={false}
+			keyboardShouldPersistTaps="always"
+			keyboardDismissMode="none"
+			removeClippedSubviews={false}
+		/>
+
 			{/* Scroll-to-bottom button */}
 			{showScrollButton && messages.length > 0 && (
 				<View
