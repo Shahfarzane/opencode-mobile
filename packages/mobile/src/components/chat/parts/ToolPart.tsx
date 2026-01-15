@@ -262,9 +262,9 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 					paddingVertical: 8,
 					minHeight: 40,
 					backgroundColor: pressed
-						? withOpacity(colors.toolBackground, OPACITY.secondary)
-						: withOpacity(colors.toolBackground, OPACITY.half),
-					borderColor: withOpacity(colors.toolBorder, OPACITY.half),
+						? withOpacity(colors.toolBackground, OPACITY.light)
+						: "transparent",
+					borderColor: withOpacity(colors.toolBorder, OPACITY.light),
 					borderWidth: 1,
 					borderRadius: Radius.lg,
 				})}
@@ -293,15 +293,22 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 								color:
 									part.state === "error"
 										? colors.destructive
-										: colors.foreground,
-							},
+										: colors.toolTitle,
+								},
 						]}
 					>
+
 						{toolName}
 					</Text>
 					{description && (
 						<Text
-							style={[typography.micro, { color: withOpacity(colors.mutedForeground, OPACITY.secondary), flex: 1 }]}
+							style={[
+								typography.micro,
+								{
+									color: withOpacity(colors.toolDescription, OPACITY.secondary),
+									flex: 1,
+								},
+							]}
 							numberOfLines={1}
 						>
 							{description}
@@ -319,8 +326,8 @@ export function ToolPart({ part, onSelectSession }: ToolPartProps) {
 				<View
 					className="mt-2 ml-5 pl-3 border-l gap-2"
 					style={{
-						borderColor: withOpacity(colors.toolBorder, OPACITY.half),
-						backgroundColor: withOpacity(colors.toolBackground, OPACITY.light),
+						borderColor: withOpacity(colors.toolBorder, OPACITY.light),
+						backgroundColor: "transparent",
 					}}
 				>
 					{part.input && Object.keys(part.input).length > 0 && (

@@ -154,10 +154,18 @@ export function ReasoningPart({ part }: ReasoningPartProps) {
 
 	return (
 		<View className="my-0.5">
-			<Pressable
-				onPress={() => setIsExpanded(!isExpanded)}
-				className="flex-row items-center py-1.5 px-0.5 gap-2"
-			>
+		<Pressable
+			onPress={() => setIsExpanded(!isExpanded)}
+			className="flex-row items-center py-1.5 px-0.5 gap-2"
+			style={({ pressed }) => ({
+				borderRadius: 10,
+				paddingRight: 8,
+				backgroundColor: pressed
+					? withOpacity(colors.toolBackground, OPACITY.light)
+					: "transparent",
+			})}
+		>
+
 				<View className="flex-row items-center gap-2 shrink-0">
 					<View className="w-3.5 h-3.5 items-center justify-center">
 						{isExpanded ? (
