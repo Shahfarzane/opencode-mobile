@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import {
 	ArrowsMergeIcon,
-	FolderIcon,
+	Folder6Icon,
 	GitBranchIcon,
 } from "@/components/icons";
 import { IconButton } from "@/components/ui";
@@ -64,7 +64,7 @@ export function DirectoryRow({
 						backgroundColor: withOpacity(colors.foreground, OPACITY.light),
 					}}
 				>
-					<FolderIcon
+					<Folder6Icon
 						color={withOpacity(colors.foreground, OPACITY.secondary)}
 						size={18}
 					/>

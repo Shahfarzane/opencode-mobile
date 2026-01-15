@@ -17,7 +17,7 @@ import {
 	ChevronDownIcon,
 	ChevronRightIcon,
 	FileIcon,
-	FolderIcon,
+	Folder6Icon,
 	XIcon,
 } from "@/components/icons";
 import { Button, SearchInput } from "@/components/ui";
@@ -320,11 +320,11 @@ export function ServerFilePicker({
 								) : (
 									<ChevronRightIcon size={14} color={colors.mutedForeground} />
 								)}
-								<FolderIcon
-									size={16}
-									color={colors.primary}
-									style={{ marginLeft: 4 }}
-								/>
+							<Folder6Icon
+								color={colors.foreground}
+								size={18}
+							/>
+
 							</>
 						) : (
 							<View style={{ width: 14 }} />

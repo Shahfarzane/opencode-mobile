@@ -16,7 +16,7 @@ import { TouchableOpacity } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	FileIcon,
-	FolderIcon,
+	Folder6Icon,
 	ImageIcon,
 	PlusCircleIcon,
 	XIcon,
@@ -338,7 +338,7 @@ export function FileAttachmentButton({
 													paddingVertical: 14,
 												}}
 											>
-												<FolderIcon size={20} color={colors.foreground} />
+												<Folder6Icon size={20} color={colors.foreground} />
 												<Text
 													style={[
 														typography.uiLabel,

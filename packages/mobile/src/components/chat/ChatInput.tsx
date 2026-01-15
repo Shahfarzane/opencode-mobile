@@ -9,7 +9,7 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import { AiAgentIcon, SendIcon, StopIcon } from "@/components/icons";
+import { AiAgentIcon, CloseCircleIcon, SendIcon } from "@/components/icons";
 import { IconButton } from "@/components/ui";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import {
@@ -754,7 +754,7 @@ export function ChatInput({
 						<IconButton
 							icon={
 								isLoading ? (
-									<StopIcon color={colors.destructive} size={20} />
+									<CloseCircleIcon color={colors.destructive} size={20} />
 								) : (
 									<SendIcon
 										color={canSend ? colors.primary : colors.mutedForeground}

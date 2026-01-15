@@ -1,8 +1,15 @@
 import { Text, View } from "react-native";
 import {
+	BookIcon,
 	ClockIcon,
 	FileEditIcon,
+	FileIcon,
+	FileSearchIcon,
+	Folder6Icon,
+	GitBranchIcon,
 	GlobeIcon,
+	LayersIcon,
+	MenuSearchIcon,
 	PencilIcon,
 	QuestionIcon,
 	TerminalIcon,
@@ -34,6 +41,15 @@ function getToolIcon(toolName: string, color: string, size: number = 16) {
 	}
 
 	if (
+		tool === "read" ||
+		tool === "view" ||
+		tool === "file_read" ||
+		tool === "cat"
+	) {
+		return <FileIcon size={size} color={color} />;
+	}
+
+	if (
 		tool === "bash" ||
 		tool === "shell" ||
 		tool === "cmd" ||
@@ -43,6 +59,23 @@ function getToolIcon(toolName: string, color: string, size: number = 16) {
 		return <TerminalIcon size={size} color={color} />;
 	}
 
+	if (tool === "list" || tool === "ls" || tool === "dir" || tool === "list_files") {
+		return <Folder6Icon size={size} color={color} />;
+	}
+
+	if (
+		tool === "search" ||
+		tool === "grep" ||
+		tool === "find" ||
+		tool === "ripgrep"
+	) {
+		return <MenuSearchIcon size={size} color={color} />;
+	}
+
+	if (tool === "glob") {
+		return <FileSearchIcon size={size} color={color} />;
+	}
+
 	if (
 		tool === "webfetch" ||
 		tool === "fetch" ||
@@ -50,6 +83,31 @@ function getToolIcon(toolName: string, color: string, size: number = 16) {
 		tool === "wget"
 	) {
 		return <GlobeIcon size={size} color={color} />;
+	}
+
+	if (
+		tool === "web-search" ||
+		tool === "websearch" ||
+		tool === "search_web" ||
+		tool === "codesearch" ||
+		tool === "google" ||
+		tool === "bing" ||
+		tool === "duckduckgo" ||
+		tool === "perplexity"
+	) {
+		return <GlobeIcon size={size} color={color} />;
+	}
+
+	if (tool === "todowrite" || tool === "todoread" || tool === "task") {
+		return <LayersIcon size={size} color={color} />;
+	}
+
+	if (tool === "skill") {
+		return <BookIcon size={size} color={color} />;
+	}
+
+	if (tool.startsWith("git")) {
+		return <GitBranchIcon size={size} color={color} />;
 	}
 
 	return <ToolIcon size={size} color={color} />;

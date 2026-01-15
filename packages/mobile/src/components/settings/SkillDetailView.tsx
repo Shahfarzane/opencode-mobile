@@ -15,7 +15,7 @@ import {
   skillsApi,
   isSkillBuiltIn,
 } from "@/api";
-import { ChevronLeft, FolderIcon, GlobeIcon } from "@/components/icons";
+import { ChevronLeft, Folder6Icon, GlobeIcon } from "@/components/icons";
 import { Button, Input } from "@/components/ui";
 import { fontStyle, Spacing, typography, useTheme } from "@/theme";
 import { withOpacity, OPACITY } from "@/utils/colors";
@@ -287,7 +287,8 @@ export function SkillDetailView({
                   scope === "project" && { backgroundColor: withOpacity(colors.primary, OPACITY.active) },
                 ]}
               >
-                <FolderIcon size={16} color={scope === "project" ? colors.primary : colors.mutedForeground} />
+					<Folder6Icon size={16} color={scope === "project" ? colors.primary : colors.mutedForeground} />
+
                 <Text
                   style={[
                     typography.meta,

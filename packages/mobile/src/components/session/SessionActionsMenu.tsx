@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { Animated, Dimensions, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
 	CopyIcon,
-	FolderIcon,
+	Folder6Icon,
 	LinkOffIcon,
 	PencilIcon,
 	ShareIcon,
@@ -141,7 +141,7 @@ export function SessionActionsMenu({
 			? [{ key: "unshare", label: "Stop sharing", icon: LinkOffIcon, onPress: handleUnshare }]
 			: []),
 		...(worktreePath
-			? [{ key: "copy-path", label: "Copy worktree path", icon: FolderIcon, onPress: handleCopyWorktreePath }]
+			? [{ key: "copy-path", label: "Copy worktree path", icon: Folder6Icon, onPress: handleCopyWorktreePath }]
 			: []),
 		{ key: "delete", label: "Delete", icon: TrashIcon, onPress: handleDelete, destructive: true },
 	], [isShared, shareUrl, worktreePath]);

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Text, View } from "react-native";
-import { LoaderIcon, StopIcon } from "@/components/icons";
+import { CloseCircleIcon, LoaderIcon } from "@/components/icons";
 import { Button } from "@/components/ui";
 import { typography, useTheme } from "@/theme";
 import { statusRowStyles } from "./StatusRow.styles";
@@ -74,7 +74,7 @@ export function StatusRow({
 					size="xs"
 					onPress={onAbort}
 				>
-					<StopIcon size={12} color={colors.destructiveForeground} />
+					<CloseCircleIcon size={12} color={colors.destructiveForeground} />
 					<Button.Label>Stop</Button.Label>
 				</Button>
 			)}

@@ -3,8 +3,22 @@ import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useEffect, useMemo, useRef } from "react";
 import { Text, View } from "react-native";
-import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { CopyIcon, XIcon } from "@/components/icons";
+import {
+	BookIcon,
+	CopyIcon,
+	FileEditIcon,
+	FileIcon,
+	FileSearchIcon,
+	Folder6Icon,
+	GitBranchIcon,
+	GlobeIcon,
+	LayersIcon,
+	MenuSearchIcon,
+	PencilIcon,
+	TerminalIcon,
+	ToolIcon,
+	XIcon,
+} from "@/components/icons";
 import { IconButton } from "@/components/ui";
 import { Sheet, SheetScrollView } from "@/components/ui/sheet";
 import { fontStyle, typography, useTheme } from "@/theme";
@@ -20,84 +34,89 @@ interface ToolOutputDialogProps {
 function getToolIcon(toolName: string, color: string) {
 	const name = toolName.toLowerCase();
 
-	if (name === "edit" || name === "write" || name === "str_replace") {
-		return (
-			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-					stroke={color}
-					strokeWidth={2}
-					strokeLinecap="round"
-				/>
-				<Path
-					d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-					stroke={color}
-					strokeWidth={2}
-					strokeLinecap="round"
-				/>
-			</Svg>
-		);
+	if (
+		name === "edit" ||
+		name === "multiedit" ||
+		name === "str_replace" ||
+		name === "str_replace_based_edit_tool"
+	) {
+		return <PencilIcon size={16} color={color} />;
 	}
 
-	if (name === "read" || name === "cat") {
-		return (
-			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-					stroke={color}
-					strokeWidth={2}
-					strokeLinecap="round"
-				/>
-				<Path
-					d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
-					stroke={color}
-					strokeWidth={2}
-				/>
-			</Svg>
-		);
+	if (name === "write" || name === "create" || name === "file_write") {
+		return <FileEditIcon size={16} color={color} />;
 	}
 
-	if (name === "bash" || name === "shell" || name === "terminal") {
-		return (
-			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-				<Rect x="2" y="4" width="20" height="16" rx="2" stroke={color} strokeWidth={2} />
-				<Path d="M6 9l3 3-3 3M12 15h6" stroke={color} strokeWidth={2} strokeLinecap="round" />
-			</Svg>
-		);
+	if (
+		name === "read" ||
+		name === "view" ||
+		name === "file_read" ||
+		name === "cat"
+	) {
+		return <FileIcon size={16} color={color} />;
 	}
 
-	if (name === "grep" || name === "search" || name === "glob") {
-		return (
-			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-				<Circle cx="11" cy="11" r="8" stroke={color} strokeWidth={2} />
-				<Path d="M21 21l-4.35-4.35" stroke={color} strokeWidth={2} strokeLinecap="round" />
-			</Svg>
-		);
+	if (
+		name === "bash" ||
+		name === "shell" ||
+		name === "cmd" ||
+		name === "terminal"
+	) {
+		return <TerminalIcon size={16} color={color} />;
 	}
 
-	if (name === "task") {
-		return (
-			<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-				<Path
-					d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-					stroke={color}
-					strokeWidth={2}
-					strokeLinecap="round"
-				/>
-			</Svg>
-		);
+	if (name === "list" || name === "ls" || name === "dir" || name === "list_files") {
+		return <Folder6Icon size={16} color={color} />;
 	}
 
-	return (
-		<Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-			<Path
-				d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-			/>
-		</Svg>
-	);
+	if (
+		name === "search" ||
+		name === "grep" ||
+		name === "find" ||
+		name === "ripgrep"
+	) {
+		return <MenuSearchIcon size={16} color={color} />;
+	}
+
+	if (name === "glob") {
+		return <FileSearchIcon size={16} color={color} />;
+	}
+
+	if (
+		name === "fetch" ||
+		name === "curl" ||
+		name === "wget" ||
+		name === "webfetch"
+	) {
+		return <GlobeIcon size={16} color={color} />;
+	}
+
+	if (
+		name === "web-search" ||
+		name === "websearch" ||
+		name === "search_web" ||
+		name === "codesearch" ||
+		name === "google" ||
+		name === "bing" ||
+		name === "duckduckgo" ||
+		name === "perplexity"
+	) {
+		return <GlobeIcon size={16} color={color} />;
+	}
+
+	if (name === "todowrite" || name === "todoread" || name === "task") {
+		return <LayersIcon size={16} color={color} />;
+	}
+
+	if (name === "skill") {
+		return <BookIcon size={16} color={color} />;
+	}
+
+	if (name.startsWith("git")) {
+		return <GitBranchIcon size={16} color={color} />;
+	}
+
+	return <ToolIcon size={16} color={color} />;
 }
 
 function formatInputForDisplay(input: Record<string, unknown>): string {
